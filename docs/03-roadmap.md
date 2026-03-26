@@ -70,6 +70,7 @@ None — this is the starting point.
 - GitHub Actions (or equivalent) workflow for: lint, analyze, test across all packages
 - Per-package test isolation (Melos filtered test runs)
 - Build verification for all target platforms (compile check, not full build artifacts yet)
+- After workflows are created and passing: add `analyze` and `test` as required status checks in the GitHub branch rulesets for both `main` and `develop` (Settings > Rules)
 - Branch protection rules for `main`
 
 **Supabase local development (ADR-004):**
@@ -104,6 +105,7 @@ None — this is the starting point.
 - `melos bootstrap` succeeds
 - `melos run test` passes for all packages
 - Both apps launch on at least one platform each (e.g., Zip Captions on iOS simulator, Zip Broadcast on macOS)
+- CI workflows pass on a PR and `analyze` + `test` are added as required status checks in the `main` and `develop` branch rulesets
 - Supabase local stack starts and accepts connections
 - Riverpod is the sole state management solution — no remaining Provider code
 
