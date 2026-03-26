@@ -1,0 +1,73 @@
+# ============================================
+# Zip Captions Monorepo .gitignore
+# ============================================
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# ---------- IDE ----------
+.idea/
+.vscode/
+*.iml
+*.code-workspace
+
+# ---------- Secrets / Credentials ----------
+.env
+.env.*
+!.env.example
+.env.github
+*.pem
+*.key
+*.p12
+*.keystore
+
+# ---------- Dart / Flutter ----------
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+pubspec.lock
+# Keep pubspec.lock for apps, ignore for packages:
+# packages/zip_core/pubspec.lock  (uncomment if needed)
+
+# ---------- Code Generation ----------
+# Generated files ARE committed (freezed, riverpod_generator, json_serializable)
+# Do NOT add *.g.dart or *.freezed.dart here
+
+# ---------- Coverage ----------
+coverage/
+*.lcov
+
+# ---------- Build Artifacts ----------
+*.apk
+*.aab
+*.ipa
+*.app
+*.exe
+*.dmg
+*.AppImage
+*.snap
+*.flatpak
+*.msix
+
+# ---------- Supabase ----------
+packages/zip_supabase/.temp/
+packages/zip_supabase/.branches/
+
+# ---------- Node (for Deno/Edge Functions tooling) ----------
+node_modules/
+
+# ---------- Melos ----------
+# Melos generates some temp files
+.melos/
+
+# ---------- AI-DLC ----------
+# Generated workflow docs (state, audit logs, plans) — commit if you want them tracked
+aidlc-docs/
