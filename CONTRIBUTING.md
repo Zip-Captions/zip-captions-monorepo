@@ -8,68 +8,78 @@
 
 ## 1. Development Flow
 
-Every piece of work follows this path:
+Every piece of work begins with an AI-DLC inception session. Requirements come directly from the `docs/` directory — there is no separate story authoring step.
 
 ```
-Idea --> Story (Draft) --> Story (Ready) --> Tests Written --> Implemented --> PR Open --> Merged
+Intent / Roadmap Item --> AI-DLC Inception --> Approved Design --> Worktree + Construction --> PR --> Merged
 ```
 
 | Transition | Who | What happens |
 |---|---|---|
-| Idea --> Draft | Human + Agent | Collaboratively write the story using `docs/STORY_TEMPLATE.md` |
-| Draft --> Ready | **Human only** | Human reviews story, creates GitHub Issue with `status:ready` label |
-| Ready --> Tests Written | Agent (autonomous) | Agent claims story via script, writes failing tests, commits |
-| Tests Written --> Implemented | Agent (autonomous) | Agent writes code until tests pass |
-| Implemented --> PR Open | Agent (autonomous) | Agent opens PR, updates status to "In Review" via script |
-| PR Open --> Merged | **Human only** | Human reviews and merges, moves to Done |
+| Intent --> Inception | Human or Agent | State intent (`Using AI-DLC, ...`) or ask agent to determine next feature; agent guides through requirements and design — human approves each phase gate |
+| Inception --> Approved Design | **Human only** | Human approves the final inception stage (workflow plan, application design, units) |
+| Approved Design --> Worktree | Agent | Agent creates an isolated git worktree and feature branch for the unit |
+| Worktree --> Tests Written | Agent | Agent runs AI-DLC Construction Phase, gets human approval on code generation plan, writes failing tests, commits |
+| Tests Written --> Implemented | Agent (autonomous) | Agent implements until all tests pass |
+| Implemented --> PR Open | Agent | Agent opens PR from the worktree branch targeting `develop` |
+| PR Open --> Merged | **Human only** | Human reviews and merges; worktree cleaned up after merge |
 
-**Agents operate autonomously between the two human gates.** Once a story is Ready, an agent can take it to a PR without waiting — unless it encounters a decision that changes the acceptance criteria or a boundary defined in `AGENTS.md`.
+**AI-DLC Inception is a collaborative phase** — the agent proposes, the human approves at each stage gate. **Construction is largely autonomous** once the code generation plan is approved, subject to the stop conditions in Section 5.
 
 ---
 
-## 2. Task Tracking (GitHub Projects)
+## 2. Git Worktrees
 
-GitHub Projects is the single source of truth for task state. It is branch-independent — all agents and humans see the same live view regardless of which branch they are on.
+Each unit of work is developed in an isolated git worktree. This keeps the main workspace clean and allows parallel work on multiple units without interference.
 
-### Board Columns
+### Creating a Worktree
 
-| Column | Meaning | Who moves items here |
-|---|---|---|
-| Backlog | Story exists, not yet approved | Human |
-| Ready | Approved, available for agents | Human |
-| In Progress | Claimed by an agent | Agent (via `claim-story.sh`) |
-| Tests Written | Failing tests committed | Agent (via `update-status.sh`) |
-| In Review | PR open | Agent (via `update-status.sh`) |
-| Done | PR merged | Human |
-
-### Agent Workflow Scripts
-
-Agents interact with GitHub Projects via wrapper scripts in `scripts/`. These scripts use a scoped PAT that only allows issue and project updates — no code push, no admin access. See `scripts/README.md` for setup.
+After AI-DLC inception is approved, create a worktree from the monorepo root:
 
 ```bash
-./scripts/list-available.sh              # Find stories ready for work
-./scripts/claim-story.sh P0-US-001       # Claim and start working
-./scripts/update-status.sh P0-US-001 "Tests Written"   # Update progress
-./scripts/update-status.sh P0-US-001 "In Review"        # PR opened
+git worktree add ../zip-captions-<feature-name> -b feature/<feature-name>
 ```
 
-### Labels
+This creates a sibling directory containing a full, independent working copy on a fresh branch.
 
-Status (used by the scripts):
-- `status:ready`, `status:in-progress`, `status:tests-written`, `status:in-review`
+### Working in a Worktree
 
-Phase:
-- `phase:0`, `phase:1`, `phase:2`, `phase:3`, `phase:4`, `phase:5`, `phase:6`, `phase:7`, `phase:8`
+```bash
+cd ../zip-captions-<feature-name>
+melos bootstrap               # Install dependencies in the worktree
+# Run the AI-DLC construction phase here
+melos run test                # Tests, analysis, and generation all work normally
+melos run analyze
+```
 
-Package:
-- `pkg:zip-core`, `pkg:zip-captions`, `pkg:zip-broadcast`, `pkg:zip-supabase`
+### Completing a Worktree
 
-Type:
-- `type:story`, `type:spike`, `type:bug`
+Open the PR from the feature branch targeting `develop`, then after it merges:
 
-### Dependencies
+```bash
+git worktree remove ../zip-captions-<feature-name>
+git branch -d feature/<feature-name>
+```
 
-A story can be started if all its dependencies are **fully defined** (status Ready or beyond). Dependencies do NOT need to be implemented — mock their interfaces based on their defined acceptance criteria.
+### Listing Active Worktrees
+
+```bash
+git worktree list
+```
+
+### Naming Convention
+
+| Branch type | Pattern |
+|---|---|
+| Feature | `feature/<description>` |
+| Spike | `spike/<description>` |
+| Bug fix | `fix/<description>` |
+
+Worktree directory: `../zip-captions-<description>` (sibling to the monorepo root)
+
+### Dependencies Between Units
+
+A unit can begin construction if all its dependencies are **fully defined** — their interfaces documented in the inception artifacts. Dependencies do not need to be implemented first; mock their interfaces based on the approved design.
 
 ---
 
@@ -123,18 +133,22 @@ Melos uses Conventional Commits for automated versioning and changelogs.
 
 ## 5. Story Lifecycle
 
+AI-DLC inception phase gates are the primary points where the agent pauses for human approval — requirements, user stories, workflow plan, application design, and the code generation plan each require an explicit approval before the agent proceeds.
+
+Within the Construction Phase, agents should also stop and ask when:
+
 ### When Agents Should Stop and Ask
 
 - An acceptance criterion contradicts a spec doc or seems untestable
 - Implementation requires changing a contract defined in "Boundaries" in AGENTS.md
 - A dependency story's interface is unclear or undefined
-- The story scope is too large for a single PR (suggest splitting)
+- The feature scope is too large for a single PR (raise during AI-DLC inception — the Units Generation stage will split it)
 - A technical decision with multiple valid approaches needs human input
 - The work touches security-critical code (see AGENTS.md, Security-Critical Code section)
 
 ### When Agents Should NOT Stop
 
-- Choosing between implementation approaches that don't affect external contracts
+- Choosing between implementation approaches that do not affect external contracts
 - Adding internal helper functions or utilities
 - Refactoring existing code (as long as existing tests pass)
 - Fixing minor test failures they understand

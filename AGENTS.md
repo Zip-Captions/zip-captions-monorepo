@@ -12,7 +12,6 @@ Read these docs before making changes to any component:
 - `CONTRIBUTING.md` — Development workflow: branching, task tracking, code review
 - `docs/TDD.md` — Test-driven development process (mandatory for all code changes)
 - `docs/TEST_SETUP.md` — Test infrastructure: how to write and run tests per package
-- `docs/STORY_TEMPLATE.md` — Template for creating user stories
 
 Detailed specifications (read the relevant sections, not all of them):
 
@@ -111,50 +110,83 @@ Out of scope for Phase 0:
 
 ## Task Discovery and Workflow
 
-Agents discover and manage work via GitHub Projects using the wrapper scripts in `scripts/`.
+All development work is initiated through the AI-DLC workflow. Requirements are derived directly from the project's roadmap and user persona documents — there is no separate story authoring step.
 
-### Finding Work
+### Determining What to Build
 
-```bash
-./scripts/list-available.sh
+To let the agent identify the next feature to build:
+
+```
+Using AI-DLC, determine the next feature to build for Zip Captions
 ```
 
-### Claiming a Story
+The agent will read the `docs/` directory — personas, ADRs, roadmap, and technical specification — to understand the project's phases, deliverables, user needs, and architectural constraints, then inspect `packages/` to determine what is already implemented. It will identify the highest-priority unimplemented deliverable in the current phase whose dependencies are met, and present a recommendation for human approval before proceeding to inception.
 
-```bash
-./scripts/claim-story.sh P0-US-001
+To build a specific known feature:
+
+```
+Using AI-DLC, [describe what you want to build]
 ```
 
-### Updating Status
+### AI-DLC Phases
+
+**Inception Phase** — determines WHAT to build and WHY. Each stage requires explicit human approval before proceeding. Artifacts land in `aidlc-docs/inception/`.
+
+- Workspace Detection (always) — scans the codebase, checks for a prior session to resume
+- Requirements Analysis (always) — draws from the `docs/` directory (personas, ADRs, roadmap, technical specification) as the source of truth; no separate story format required
+- User Stories (conditional) — AI-DLC generates these when the work warrants it
+- Workflow Planning (always) — determines which construction stages are needed
+- Application Design (conditional) — defines new components and their interfaces
+- Units Generation (conditional) — decomposes work into parallel units of work
+
+**Construction Phase** — determines HOW to build it, executed per unit. Each stage requires explicit human approval.
+
+- Functional Design, NFR Requirements, NFR Design, Infrastructure Design (conditional)
+- Code Generation (always) — Part 1: implementation plan with test list (requires approval before writing code); Part 2: write failing tests first, then implement
+
+**Operations Phase** — deployment and monitoring (future).
+
+### Git Worktrees
+
+Each unit of work is developed in an isolated git worktree so construction does not interfere with the main workspace or other in-progress units.
 
 ```bash
-./scripts/update-status.sh P0-US-001 "Tests Written"
-./scripts/update-status.sh P0-US-001 "In Review"
+# After inception approval, create a worktree for the unit:
+git worktree add ../zip-captions-<feature-name> -b feature/<feature-name>
+
+# Work in the worktree — all melos commands work normally there
+cd ../zip-captions-<feature-name>
+
+# After PR is merged, clean up:
+git worktree remove ../zip-captions-<feature-name>
+git branch -d feature/<feature-name>
+
+# List active worktrees:
+git worktree list
 ```
 
 ### Workflow
 
-1. Run `./scripts/list-available.sh` to find work
-2. Pick the top-priority story in your package scope
-3. Run `./scripts/claim-story.sh <story-id>` to claim it
-4. Create your feature branch: `git checkout -b feature/<story-id>-short-name`
-5. Read the story file in `stories/` and the linked spec docs
-6. Write failing tests per the acceptance criteria
-7. Run `./scripts/update-status.sh <story-id> "Tests Written"`
-8. Implement until tests pass
-9. Run all tests: `melos run test`
-10. Run analysis: `melos run analyze`
-11. Open a PR targeting `develop`
-12. Run `./scripts/update-status.sh <story-id> "In Review"`
+1. State intent or request a recommendation:
+   - `Using AI-DLC, determine the next feature to build for Zip Captions`
+   - `Using AI-DLC, [specific feature description]`
+2. Complete the Inception Phase — answer AI-DLC's structured questions and approve each stage
+3. Create a worktree for the approved unit: `git worktree add ../zip-captions-<name> -b feature/<name>`
+4. In the worktree, run AI-DLC Construction Phase — review and approve the code generation plan (Part 1)
+5. Write failing tests per acceptance criteria: `test(<pkg>): add failing tests for <feature-name>`
+6. Implement until all tests pass
+7. Run tests: `melos run test`
+8. Run analysis: `melos run analyze`
+9. Open PR targeting `develop`
+10. After PR merges, clean up the worktree
 
 ### Rules
 
-- Only pick up stories with `status:ready` label
-- Never work on a story assigned to someone else
-- One story per feature branch, one PR per story
-- If blocked, stop and document the blocker as a comment on the GitHub issue
-- Do not set a story to "Ready" or "Done" — those transitions are human-only
-- Do not modify files outside the assigned package without explicit story scope
+- Always run AI-DLC inception before writing code — do not start implementation without completing requirements and design stages and receiving human approval at each gate
+- Write failing tests before implementing (within AI-DLC's Code Generation stage, Part 2)
+- One unit of work per worktree, one worktree per PR
+- If blocked, stop and document the blocker — do not work around it
+- Do not modify files outside the assigned package without explicit feature scope
 - Do not add dependencies not on the approved list (see `docs/04-technical-specification.md` Section 6) without human approval
 - Do not modify security-critical code without human review of the approach BEFORE implementation
 - Do not modify any spec document in `docs/`

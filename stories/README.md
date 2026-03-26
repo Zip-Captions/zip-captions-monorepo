@@ -1,14 +1,7 @@
 # Stories
 
-User stories organized by phase. Create subdirectories for each phase:
+Optional archive of feature definitions.
 
-```
-stories/
-  phase-0/
-    P0-US-001-monorepo-scaffold.md
-    P0-US-002-riverpod-setup.md
-  phase-1/
-    P1-US-001-stt-engine-interface.md
-```
+Feature requirements and acceptance criteria are generated during AI-DLC Inception Phase sessions and stored in `aidlc-docs/inception/` (gitignored by default). If you want a permanent record of a feature definition committed to the repo, copy the relevant inception artifacts here.
 
-Use `docs/STORY_TEMPLATE.md` to create new stories. Each story should have a corresponding GitHub Issue with the story ID in the title prefix.
+No particular format is required — the AI-DLC inception artifacts are the source of truth.

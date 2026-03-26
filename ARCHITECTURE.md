@@ -169,19 +169,21 @@ zip-captions-monorepo/
     04-technical-specification.md
     TDD.md
     TEST_SETUP.md
-    STORY_TEMPLATE.md
-  scripts/                     # Agent workflow scripts
-  stories/                     # User stories by phase
+  scripts/                     # Utility scripts (worktree helpers, etc.)
+  stories/                     # Optional archive of feature definitions
   test-fixtures/               # Shared test data
-  ai-dlc/                      # Agentic dev template (git submodule)
+  ai-dlc/                      # AI-DLC workflow (git submodule)
+  .aidlc-rule-details/         # Symlink to ai-dlc rule details (used by agents)
+  .clinerules/                 # AI-DLC rules for Roo Code / Cline
+  aidlc-docs/                  # AI-DLC generated artifacts (gitignored by default)
   .github/
     pull_request_template.md
     workflows/                 # CI/CD
   AGENTS.md                    # Root agent instructions
   ARCHITECTURE.md              # This file
   CONTRIBUTING.md              # Development workflow
-  CLAUDE.md                    # Pointer to AGENTS.md
-  GEMINI.md                    # Pointer to AGENTS.md
+  CLAUDE.md                    # Agent instructions for Claude Code
+  GEMINI.md                    # Agent instructions pointer
   melos.yaml                   # Monorepo configuration
   README.md
 ```

@@ -1,46 +1,23 @@
-# GitHub Project Scripts
+# Scripts
 
-Wrapper scripts for agents to interact with the GitHub Projects board. These scripts provide a controlled interface — agents use these instead of raw `gh` CLI commands.
+Utility scripts for development workflow tasks.
 
-## Prerequisites
+## Git Worktree Helpers
 
-### 1. GitHub CLI
-
-Install the GitHub CLI: https://cli.github.com/
-
-### 2. Fine-Grained Personal Access Token
-
-See `docs/GITHUB_SETUP.md` Section 5 for detailed PAT creation instructions.
-
-### 3. Environment Setup
-
-Create a `.env.github` file in the repo root (this file is gitignored):
+Each unit of work runs in an isolated git worktree. See `CONTRIBUTING.md` Section 2 for the full worktree workflow.
 
 ```bash
-GITHUB_PROJECT_TOKEN=github_pat_xxxxxxxxxxxx
-GITHUB_REPO_OWNER=jptrsn
-GITHUB_REPO_NAME=zip-captions-monorepo
-GITHUB_PROJECT_NUMBER=1
+# Create a worktree for a new feature (run from monorepo root):
+git worktree add ../zip-captions-<feature-name> -b feature/<feature-name>
+
+# List all active worktrees:
+git worktree list
+
+# Remove a worktree after its PR has merged:
+git worktree remove ../zip-captions-<feature-name>
+git branch -d feature/<feature-name>
 ```
 
-The scripts source this file automatically. Never commit it.
+## Adding Scripts
 
-### Security Notes
-
-- The PAT intentionally has NO contents/push access. Agents push code via their normal git credentials, which are governed by branch protection rules.
-- Even if an agent reads the token value, it cannot push code, change repo settings, or perform destructive actions through it.
-- Branch protection on `main` and `develop` is your primary defense against unauthorized code changes.
-
-## Available Scripts
-
-| Script | Purpose | Usage |
-|--------|---------|-------|
-| `list-available.sh` | Show stories ready for work | `./scripts/list-available.sh` |
-| `claim-story.sh` | Assign a story and move to In Progress | `./scripts/claim-story.sh P0-US-001` |
-| `update-status.sh` | Move a story to a new status column | `./scripts/update-status.sh P0-US-001 "Tests Written"` |
-
-## Valid Statuses
-
-Agent-settable: "In Progress", "Tests Written", "In Review"
-
-Human-only: "Ready", "Done"
+Place any project-specific automation scripts here. Follow the naming convention `<verb>-<noun>.sh` (e.g., `check-coverage.sh`, `seed-fixtures.sh`).

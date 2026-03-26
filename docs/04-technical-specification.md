@@ -335,23 +335,33 @@ These are hard rules. Violations are blocking — no exceptions, no workarounds.
 
 ## 10. Agent Development Rules
 
-### Before Starting Work
-1. Read `AGENTS.md` (root and package-level)
-2. Read the linked story/issue
-3. Read relevant ADRs referenced by the story
-4. Read this document (you're reading it now)
-5. Check `BACKLOG.md` or GitHub Projects board for task status
+### Starting Work
+
+All development work begins with an AI-DLC inception session. Do not write code before the inception phase is complete and all stages are human-approved.
+
+```
+Using AI-DLC, [describe what you want to build]
+```
+
+### Before Writing Code
+1. Complete the AI-DLC Inception Phase — requirements and design approved at each gate
+2. Read `AGENTS.md` (root and package-level)
+3. Read the inception artifacts in `aidlc-docs/inception/` for the approved feature
+4. Read relevant `docs/` files referenced by the feature
+5. Read this document (you're reading it now)
 
 ### Autonomy Boundaries
 Agents may:
+- Run AI-DLC inception phases and ask the structured questions AI-DLC generates
 - Pick up stories with status "Ready"
-- Write failing tests per story acceptance criteria
+- Write failing tests per story acceptance criteria (as Part 2 of AI-DLC Code Generation)
 - Implement code to make tests pass
 - Run lints, tests, and coverage checks
 - Open PRs with completed checklist
 - Create new files within the assigned package
 
 Agents may NOT:
+- Begin writing code before AI-DLC inception is complete and the code generation plan is approved
 - Approve or merge PRs
 - Modify files outside the assigned package without explicit story scope
 - Add dependencies not on the approved list without human approval

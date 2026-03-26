@@ -86,15 +86,14 @@ None — this is the starting point.
 **Agentic development framework:**
 - Integrate `ai-dlc` (aidlc-workflows) as a git submodule
 - Configure AGENTS.md, CLAUDE.md, GEMINI.md for the monorepo and per-package
-- Set up story templates, backlog structure, and PR template per ai-dlc conventions
-- Establish agent autonomy boundaries and human gate points (story approval, PR review)
+- Configure `.clinerules/` and `.aidlc-rule-details/` for Roo Code / Cline support
+- Establish agent autonomy boundaries and human gate points (inception phase approval, PR review)
 
 **Task coordination:**
-- Set up GitHub Projects board for the monorepo
-- Define columns/workflow: Backlog → Ready → In Progress → In Review → Done
-- Label taxonomy: per-phase, per-package, per-persona, spike vs. story
-- Enable GitHub Issues as the task tracking layer — agents and developers pick up issues from the board
-- Document the workflow for multi-developer coordination (who picks up what, how to avoid conflicts, how agents discover available work)
+- Git worktrees as the unit-of-work isolation mechanism — one worktree per feature, one PR per worktree
+- AI-DLC inception as the single source of feature requirements (derived from roadmap and user personas)
+- `Using AI-DLC, determine the next feature to build` as the standard entry point for discovering work
+- Document the workflow for multi-developer coordination: each developer or agent runs inception independently, parallel worktrees avoid conflicts
 
 ### Research Spikes (complete during or before Phase 0)
 - **Spike 0.1:** Confirm Flutter desktop builds work on macOS, Windows, and Linux for both app shells. Identify and document any platform-specific setup requirements.

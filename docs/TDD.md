@@ -18,9 +18,9 @@ User Story --> Acceptance Criteria --> Tests --> Implementation --> Tests Pass -
 
 ## 2. The Cycle
 
-### Step 1: Define the Story
+### Step 1: Define the Feature
 
-Write a user story using `docs/STORY_TEMPLATE.md`. The story must include acceptance criteria (AC-1, AC-2, etc.) and a test coverage mapping that links each AC to a specific test file.
+Run an AI-DLC inception session (`Using AI-DLC, ...`). The requirements and acceptance criteria are derived from the `docs/` directory and documented in `aidlc-docs/inception/`. The code generation plan (Part 1 of Construction) defines the test list before any code is written.
 
 ### Step 2: Write Failing Tests
 
@@ -48,15 +48,17 @@ Open a PR with: story reference, test files, implementation, updated story statu
 
 ### Building a Feature
 
-1. Confirm a user story exists and is Ready (check via `./scripts/list-available.sh`)
-2. Claim the story (`./scripts/claim-story.sh <story-id>`)
-3. Write tests first, referencing acceptance criteria in test descriptions
-4. Implement the feature
-5. Run tests: `melos run test`
-6. Run analysis: `melos run analyze`
-7. If any file uses `freezed`, `riverpod_generator`, or `json_serializable`, run code generation first: `melos run generate`
-8. Update status (`./scripts/update-status.sh <story-id> "Tests Written"`, then "In Review" when PR opens)
-9. Reference the story ID in commits and PR description
+TDD is executed within AI-DLC's Construction Phase, Code Generation stage. Before writing any tests or code, the Inception Phase must be complete and the code generation plan (Part 1) must be approved.
+
+1. Run AI-DLC inception: `Using AI-DLC, [feature description]` — approve each stage through to the code generation plan
+2. Create a git worktree for the unit: `git worktree add ../zip-captions-<name> -b feature/<name>`
+3. In the worktree, write failing tests first, referencing acceptance criteria in test descriptions
+4. Commit the failing tests: `test(<pkg>): add failing tests for <feature-name>`
+5. Implement the minimum code to make tests pass — nothing beyond the acceptance criteria
+6. If any file uses `freezed`, `riverpod_generator`, or `json_serializable`, run: `melos run generate`
+7. Run tests: `melos run test`
+8. Run analysis: `melos run analyze`
+9. Open PR targeting `develop`; reference the feature description and inception artifacts in the PR description
 
 ### Fixing a Bug
 
