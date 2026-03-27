@@ -33,9 +33,9 @@ build/
 .flutter-plugins
 .flutter-plugins-dependencies
 *.iml
-pubspec.lock
-# Keep pubspec.lock for apps, ignore for packages:
-# packages/zip_core/pubspec.lock  (uncomment if needed)
+# pubspec.lock is committed for app packages and root (FR-03.5 / NFR-03.2)
+# Dart library packages do not commit their lock files (Dart library convention)
+packages/zip_core/pubspec.lock
 
 # ---------- Code Generation ----------
 # Generated files ARE committed (freezed, riverpod_generator, json_serializable)

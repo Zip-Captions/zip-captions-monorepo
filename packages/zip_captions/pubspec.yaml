@@ -1,0 +1,23 @@
+name: zip_captions
+description: Zip Captions — personal real-time speech-to-text captioning app.
+publish_to: none
+version: 0.1.0
+
+resolution: workspace
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+  flutter: '>=3.38.0'
+
+# Runtime dependencies added in Unit 3 (zip_core, riverpod, etc.)
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^10.0.0
+
+flutter:
+  uses-material-design: true

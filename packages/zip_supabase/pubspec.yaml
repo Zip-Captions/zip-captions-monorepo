@@ -1,0 +1,12 @@
+name: zip_supabase
+description: Supabase infrastructure for Zip Captions — Docker Compose, migrations, and RLS policies. No Dart source.
+publish_to: none
+version: 0.1.0
+
+resolution: workspace
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+# No dependencies — this package contains infrastructure configuration only.
+# Dart source and dependencies are added if a repository layer is introduced (Phase 3+).
