@@ -68,6 +68,9 @@ node_modules/
 # Melos generates some temp files
 .melos/
 
+# ---------- Git Worktrees ----------
+.worktrees/
+
 # ---------- AI-DLC ----------
 # Generated workflow docs (state, audit logs, plans) — commit if you want them tracked
 aidlc-docs/
