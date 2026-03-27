@@ -28,7 +28,7 @@ Zip Captions will not depend on any single distribution platform. The project wi
 ## Persona 1: Personal User ("Alex")
 
 ### Who They Are
-Alex is a deaf or hard-of-hearing individual who uses Zip Captions in everyday life. They may also be a hearing person who wants to provide captions for a deaf or HoH family member, friend, or colleague. Alex is not necessarily technical — they need the app to work immediately with minimal setup.
+Alex is a d/Deaf or hard-of-hearing individual who uses Zip Captions in everyday life. They may also be a hearing person who wants to provide captions for a d/Deaf or HoH family member, friend, or colleague. Alex is not necessarily technical — they need the app to work immediately with minimal setup.
 
 ### Primary Goal
 See real-time text of what people around them are saying, on their own device, with zero friction.
@@ -50,6 +50,7 @@ Alex is meeting a friend at a coffee shop. They place their phone on the table, 
 - Noise filtering / voice activity detection
 - Low latency (< 1 second from utterance to text)
 - Works offline using the device's native speech recognition
+- Accessible typeface 
 - Screen stays awake during captioning
 
 #### S1.2 — Family Dinner Table
@@ -78,6 +79,7 @@ Alex's hearing parent places the phone facing their deaf child at the table. The
 - Screen orientation lock or "kiosk mode" (prevent accidental navigation)
 - Large, readable text with customizable size
 - Auto-scroll behavior that doesn't require interaction from the reader
+- Large print with text broken into easily readable chunks
 
 #### S1.5 — Cross-Language Conversation
 Alex is a teacher meeting with parents who are not proficient in the same language. They place the phone between them and enable conversation translation mode. The teacher speaks English; the parent speaks Spanish. Each sees the other's words translated into their language on screen, enabling a back-and-forth conversation despite the language barrier.
@@ -131,10 +133,11 @@ Capture speech and deliver captions to one or more output targets: an OBS browse
 ### Scenarios
 
 #### S2.1 — Solo Streamer with OBS
-Jordan streams on Twitch 3x/week. They want captions in their stream for accessibility. They connect Zip Captions to OBS via the OBS WebSocket protocol or add a browser source. Captions appear as an overlay on the stream.
+Jordan streams on Twitch 3x/week. They want captions in their stream for accessibility. They connect Zip Captions to a Live Streaming tool, such as OBS via the OBS WebSocket protocol or add a browser source. Captions appear as an overlay on the stream.
 
 **Key requirements:**
 - OBS WebSocket integration (send captions as closed captions)
+- VMix Support
 - Browser source output (transparent background, customizable styling)
 - Low CPU/memory footprint (running alongside a game + OBS + Discord)
 - Ability to pause/resume captioning without stopping the stream
@@ -166,6 +169,7 @@ Jordan visits a venue, configures the captioning system for an upcoming event, s
 
 **Key requirements:**
 - Named configuration profiles (saveable, selectable by a non-technical operator)
+- Configurable rooms and spaces which allow different speaker to present with captions without setup
 - Minimal-interaction "operator mode" (prominent start/stop, status indicators, no access to settings)
 - Remote status monitoring (is captioning active? errors? audio levels?)
 - This is a premium feature — professional tooling, not core accessibility
@@ -222,13 +226,13 @@ Community members with capable hardware could volunteer processing time on a sch
 ## Persona 3: Student / Attendee ("Sam")
 
 ### Who They Are
-Sam is a deaf or hard-of-hearing student, meeting participant, or conference attendee who needs to follow along with what's being said. Sam may be in-person or remote. They are a *consumer* of captions, not a producer — someone else (a broadcaster, teacher, or event organizer) may be generating the captions, or Sam may be captioning for themselves.
+Sam is a d/Deaf or hard-of-hearing student, meeting participant, or conference attendee who needs to follow along with what's being said. Sam may be in-person or remote. They are a *consumer* of captions, not a producer — someone else (a broadcaster, teacher, or event organizer) may be generating the captions, or Sam may be captioning for themselves.
 
 ### Primary Goal
 Read captions in real-time, either self-generated from their own device's microphone or received from a nearby broadcaster's caption stream.
 
 ### Environment & Constraints
-- **Devices:** Smartphone, tablet, or laptop
+- **Devices:** Smartphone, tablet, or laptop. Sam may have a remote microphone.
 - **Connectivity:** May or may not have internet; must still be able to discover and connect to local broadcast sessions
 - **Audio conditions:** Sam is not controlling the audio environment — the speaker may be far away, there may be echo, the room may be noisy
 - **Attention split:** Sam is also taking notes, watching a presentation, or looking at the speaker — captions need to be glanceable
@@ -250,7 +254,7 @@ Sam is in a large lecture hall. The professor uses a microphone but Sam is far f
 Sam arrives at a conference. The conference has configured multiple captioning sessions (one per room/track). Sam opens the Zip Captions app, which discovers available broadcast sessions in the vicinity — no internet connection required, no join code needed. The app presents a list of named sessions (e.g., "Main Stage," "Room 201 — Panel Discussion"). Sam taps one and begins receiving live captions.
 
 **Key requirements:**
-- Local session discovery via BLE advertising — the limited range is a feature, not a limitation, as it surfaces only the most proximal sessions (the ones Sam is physically near)
+- Local session discovery via BLE advertising (Auracast?) — the limited range is a feature, not a limitation, as it surfaces only the most proximal sessions (the ones Sam is physically near)
 - Once discovered, caption data delivery may use BLE, local Wi-Fi, or internet depending on what's available — BLE handles discovery, the transport layer is separate
 - Device does not need to be on the same Wi-Fi network as the broadcaster (but being on the same LAN is an optimization for higher-bandwidth delivery)
 - No account required to view a broadcast
@@ -346,6 +350,7 @@ These requirements apply regardless of persona and must be considered in every f
 - Best-effort concurrent speech handling (capture as much as possible, even if accuracy drops)
 - No speaker identification by default (premium feature if technically feasible)
 - Clear UX indication when the system is struggling with audio conditions
+- Clear communication of English/French English/Spanish models which support bilingual communication
 
 ### STT Engine Strategy
 - **Default: Platform-native offline API** — Apple Speech Recognition on iOS/macOS, Google on-device speech on Android. This is the zero-configuration, works-out-of-the-box option for non-technical users who want the best possible quality without configuring anything.
