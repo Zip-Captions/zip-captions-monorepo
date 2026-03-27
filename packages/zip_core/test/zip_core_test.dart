@@ -2,7 +2,7 @@
 import 'package:test/test.dart';
 
 void main() {
-  test('zip_core package is importable', () {
+  test('smoke test — replaced in Unit 2', () {
     expect(true, isTrue);
   });
 }

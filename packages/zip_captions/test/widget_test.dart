@@ -2,7 +2,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('zip_captions app stub is instantiable', (tester) async {
+  testWidgets('smoke test — replaced in Unit 3', (tester) async {
     expect(true, isTrue);
   });
 }
