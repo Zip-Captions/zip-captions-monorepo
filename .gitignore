@@ -72,5 +72,5 @@ node_modules/
 .worktrees/
 
 # ---------- AI-DLC ----------
-# Generated workflow docs (state, audit logs, plans) — commit if you want them tracked
-aidlc-docs/
+# Working docs (inception, construction, audit) are tracked in VCS
+# aidlc-docs/ — formerly gitignored, now committed for design traceability
