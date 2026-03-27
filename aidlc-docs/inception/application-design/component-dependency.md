@@ -172,10 +172,12 @@ zipCaptionsSettingsProvider.build()
 SharedPreferences.getInstance()
   |
   v
-Read 'zip_captions.scroll_direction', 'zip_captions.text_size', ...
+Read 'zip_captions.scroll_direction', 'zip_captions.captionTextSize', ...
   |
   v
-Return AppSettings(scrollDirection: ..., textSize: ..., ...)
+Return AppSettings(scrollDirection: ..., captionTextSize: ..., ...)
+  # Note: inception-phase names (textSize, fontFamily, contrastMode) superseded;
+  # see component-methods.md supersession note
   |
   v
 Widgets watching zipCaptionsSettingsProvider rebuild with persisted settings

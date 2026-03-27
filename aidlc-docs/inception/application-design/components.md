@@ -53,7 +53,7 @@
 #### `AppSettings`
 - **File**: `lib/src/models/app_settings.dart`
 - **Type**: `@freezed` data class
-- **Responsibility**: Immutable value object for shared display settings. Fields: `scrollDirection`, `textSize`, `fontFamily`, `contrastMode`, `maxVisibleLines`.
+- **Responsibility**: Immutable value object for shared display settings. Fields: `scrollDirection`, `textSize`, `fontFamily`, `contrastMode`, `maxVisibleLines`. *(Inception-phase names; `textSize`→`captionTextSize`, `fontFamily`→`captionFont`, `contrastMode`→`themeModeSetting` per construction-phase functional design — see `component-methods.md` supersession note.)*
 - **Visibility**: Exported
 
 #### `RecordingState`

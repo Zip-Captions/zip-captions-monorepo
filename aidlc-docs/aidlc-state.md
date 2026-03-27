@@ -4,7 +4,7 @@
 - **Project Name**: Zip Captions v2
 - **Project Type**: Documentation-Brownfield / Code-Greenfield
 - **Start Date**: 2026-03-26T00:00:00Z
-- **Current Stage**: CONSTRUCTION - Unit 2: zip_core Library — NFR Requirements IN PROGRESS
+- **Current Stage**: CONSTRUCTION - Unit 2: zip_core Library — NFR Requirements COMPLETE; NFR Design next
 
 ## Workspace State
 - **Existing Source Code**: Unit 1 merged (PR #2); monorepo scaffold in place on develop
@@ -37,7 +37,7 @@
 
 ### CONSTRUCTION PHASE
 - [x] Unit 1: Monorepo Scaffold — MERGED (PR #2, commit d6c9cd1)
-- [ ] Unit 2: zip_core Library — Functional Design COMPLETE; NFR Requirements + NFR Design + Code Generation
+- [ ] Unit 2: zip_core Library — Functional Design COMPLETE; NFR Requirements COMPLETE; NFR Design + Code Generation
 - [ ] Unit 3: App Shells — Code Generation
 - [ ] Unit 4: Supabase Local Dev — NFR Requirements + Infrastructure Design + Code Generation
 - [ ] Unit 5: CI/CD Pipeline — NFR Requirements + Infrastructure Design + Code Generation
