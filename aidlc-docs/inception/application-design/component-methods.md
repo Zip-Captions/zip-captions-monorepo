@@ -35,13 +35,15 @@ See `aidlc-docs/construction/zip-core/functional-design/domain-entities.md` (App
 
 Concrete subclasses in each app are annotated with `@riverpod`. This abstract base provides the shared implementation.
 
+> **Superseded**: Three setter signatures below were updated in construction-phase functional design (see `construction/zip-core/functional-design/domain-entities.md` AppSettings section): `setTextSize` -> `setCaptionTextSize`, `setFontFamily` -> `setCaptionFont`, `setContrastMode` -> `setThemeModeSetting`. Updated signatures shown below.
+
 | Method / Property | Signature | Purpose |
 |---|---|---|
 | `build` | `AppSettings build()` | Loads persisted settings; returns `AppSettings.defaults()` on first run |
 | `setScrollDirection` | `Future<void> setScrollDirection(ScrollDirection direction)` | Updates and persists scroll direction |
-| `setTextSize` | `Future<void> setTextSize(double size)` | Updates and persists caption text size |
-| `setFontFamily` | `Future<void> setFontFamily(String family)` | Updates and persists selected font family |
-| `setContrastMode` | `Future<void> setContrastMode(ContrastMode mode)` | Updates and persists contrast mode |
+| `setCaptionTextSize` | `Future<void> setCaptionTextSize(CaptionTextSize size)` | Updates and persists caption text size (superseded `setTextSize(double)`) |
+| `setCaptionFont` | `Future<void> setCaptionFont(CaptionFont font)` | Updates and persists selected caption font (superseded `setFontFamily(String)`) |
+| `setThemeModeSetting` | `Future<void> setThemeModeSetting(ThemeModeSetting mode)` | Updates and persists theme mode (superseded `setContrastMode(ContrastMode)`) |
 | `setMaxVisibleLines` | `Future<void> setMaxVisibleLines(int lines)` | Updates max visible caption lines (0 = unlimited) |
 | `reset` | `Future<void> reset()` | Resets all settings to defaults |
 
@@ -75,12 +77,19 @@ Phase 0: stub transitions only (no STT wiring). Phase 1 completes the implementa
 
 ### `AppSettings` (freezed)
 
+**Supersession note**: The following inception-phase field names in `AppSettings` were replaced during construction-phase functional design:
+- `textSize` (double) -> `captionTextSize` (`CaptionTextSize` enum) — superseded by `domain-entities.md` CaptionTextSize enum
+- `fontFamily` (String) -> `captionFont` (`CaptionFont` enum) — superseded by `domain-entities.md` CaptionFont enum
+- `contrastMode` (`ContrastMode`) -> `themeModeSetting` (`ThemeModeSetting` enum) — superseded by `domain-entities.md` ThemeModeSetting enum
+
+See `aidlc-docs/construction/zip-core/functional-design/domain-entities.md` (AppSettings section) for the authoritative field definitions.
+
 | Field | Type | Default | Purpose |
 |---|---|---|---|
 | `scrollDirection` | `ScrollDirection` | `bottomToTop` | Caption text flow direction |
-| `textSize` | `double` | `24.0` | Caption font size in logical pixels |
-| `fontFamily` | `String` | `'default'` | Font family key; `'default'` uses system font |
-| `contrastMode` | `ContrastMode` | `ContrastMode.standard` | Caption contrast level |
+| `captionTextSize` | `CaptionTextSize` | `md` | Caption text size tier mapped to Material 3 TextTheme (superseded `textSize`) |
+| `captionFont` | `CaptionFont` | `atkinsonHyperlegible` | Caption font selection (superseded `fontFamily`) |
+| `themeModeSetting` | `ThemeModeSetting` | `system` | Theme mode: system, dark, or light (superseded `contrastMode`) |
 | `maxVisibleLines` | `int` | `0` | Max caption lines (0 = unlimited) |
 
 Factory: `AppSettings.defaults()` returns the above defaults.
