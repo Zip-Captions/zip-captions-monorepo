@@ -1,0 +1,15 @@
+name: zip_core
+description: Shared Dart library for Zip Captions — STT abstraction, providers, models, and settings.
+publish_to: none
+version: 0.1.0
+
+resolution: workspace
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+# Runtime dependencies added in Unit 2 (riverpod, freezed, shared_preferences, etc.)
+
+dev_dependencies:
+  test: ^1.25.0
+  very_good_analysis: ^10.0.0

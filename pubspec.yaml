@@ -1,0 +1,15 @@
+name: zip_captions_workspace
+publish_to: none
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+# Pub Workspace — all packages share a single pub cache resolution
+workspace:
+  - packages/zip_core
+  - packages/zip_captions
+  - packages/zip_broadcast
+  - packages/zip_supabase
+
+dev_dependencies:
+  melos: ^7.5.0
