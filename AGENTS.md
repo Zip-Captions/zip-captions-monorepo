@@ -128,6 +128,10 @@ To build a specific known feature:
 Using AI-DLC, [describe what you want to build]
 ```
 
+### Project-Specific AI-DLC Rules
+
+The standard AI-DLC rule details are in `.aidlc-rule-details/` (symlinked to the `ai-dlc` submodule). Project-specific rule additions and overrides live in `aidlc-project-rules/`. When loading a stage, check `aidlc-project-rules/` first — if a rule file exists there, use it instead of (or in addition to) the submodule version.
+
 ### AI-DLC Phases
 
 **Inception Phase** — determines WHAT to build and WHY. Each stage requires explicit human approval before proceeding. Artifacts land in `aidlc-docs/inception/`.
@@ -143,6 +147,8 @@ Using AI-DLC, [describe what you want to build]
 
 - Functional Design, NFR Requirements, NFR Design, Infrastructure Design (conditional)
 - Code Generation (always) — Part 1: implementation plan with test list (requires approval before writing code); Part 2: write failing tests first, then implement
+- Build and Test (always, after all units complete)
+- Documentation Refinement (always, after Build and Test) — cleans up working documents in `aidlc-docs/`, preserves design rationale, propagates design changes and supplemental resources back into `docs/`. See `aidlc-project-rules/construction/documentation-refinement.md`
 
 **Operations Phase** — deployment and monitoring (future).
 
@@ -177,8 +183,9 @@ git worktree list
 6. Implement until all tests pass
 7. Run tests: `melos run test`
 8. Run analysis: `melos run analyze`
-9. Open PR targeting `develop`
-10. After PR merges, clean up the worktree
+9. Run Documentation Refinement — clean up `aidlc-docs/` working documents into lasting reference material, propagate design changes to `docs/`
+10. Open PR targeting `develop` (include refined `aidlc-docs/` in the commit)
+11. After PR merges, clean up the worktree
 
 ### Rules
 
@@ -189,5 +196,5 @@ git worktree list
 - Do not modify files outside the assigned package without explicit feature scope
 - Do not add dependencies not on the approved list (see `docs/04-technical-specification.md` Section 6) without human approval
 - Do not modify security-critical code without human review of the approach BEFORE implementation
-- Do not modify any spec document in `docs/`
+- Do not modify any spec document in `docs/` except during the Documentation Refinement stage, which requires explicit per-change approval
 - Do not bypass linting rules with `// ignore` comments (except generated files)
