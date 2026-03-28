@@ -18,8 +18,14 @@ reviews:
         NEVER contain Flutter UI code (no material.dart imports except in
         theme/). Verify package boundaries: apps depend on zip_core, never the
         reverse, and apps never import from each other. All providers use
-        riverpod_generator. State classes use freezed. Imports must be package
-        imports (package:zip_core/...), never relative.
+        riverpod_generator (hand-written NotifierProvider is acceptable when
+        the build() method is inherited from an abstract base class — see
+        docs/RIVERPOD_CONVENTIONS.md). Data/value classes use freezed;
+        state-machine classes may use Dart 3 sealed classes instead.
+        Relative exports in barrel files (models.dart, providers.dart, etc.)
+        are correct Dart style; the package-import-only rule applies to
+        import statements between implementation files, not to export
+        directives within barrel files in the same directory.
     - path: "packages/zip_captions/**"
       instructions: >
         Zip Captions is the personal/consumer app targeting iOS, Android, macOS,
