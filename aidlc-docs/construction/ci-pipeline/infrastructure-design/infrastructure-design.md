@@ -33,7 +33,7 @@ Two GitHub Actions workflows for a Melos-managed Flutter/Dart monorepo. All jobs
 | Activate Melos | `dart pub global activate melos` | Install Melos CLI |
 | Bootstrap | `melos bootstrap` | Resolve all package dependencies |
 | Analyze | `melos run analyze` | Lint all packages |
-| Test | `melos run test` (with `--coverage`) | Run all package tests, collect coverage |
+| Test | `melos run test:coverage --no-select` | Run all package tests, collect coverage |
 | Upload coverage | `actions/upload-artifact@v7.0.0` | Store lcov files as build artifact |
 | Pub outdated | `dart pub outdated` | Report outdated dependencies (informational) |
 
@@ -105,19 +105,23 @@ CI runs `melos bootstrap` which invokes `dart pub get` for each package. Lock fi
 
 ---
 
-## Melos Test Command
+## Melos Test Scripts
 
-The `test` script is defined under the `melos:` key in the root `pubspec.yaml` (Melos 7.x convention):
+Defined under the `melos:` key in the root `pubspec.yaml` (Melos 7.x convention):
 
 ```yaml
 test:
-  run: flutter test --coverage
-  exec:
-    concurrency: 1
+  run: melos exec --fail-fast -- flutter test
+  description: Run all tests across packages that have a test directory
   packageFilters:
-    flutter: true
     dirExists: test
+
+test:coverage:
+  run: melos exec --fail-fast -- flutter test --coverage
+  description: Run all tests with coverage collection (used by CI)
 ```
+
+CI uses `melos run test:coverage --no-select` (the `--no-select` flag prevents interactive package selection prompts).
 
 ---
 
@@ -133,7 +137,7 @@ test:
 
 | Rule | Status | Implementation |
 |---|---|---|
-| SECURITY-10 (Supply Chain) | Compliant | Pinned Flutter SDK, pinned action versions (patch-level), lock file check |
+| SECURITY-10 (Supply Chain) | Compliant | Pinned Flutter SDK, pinned action versions (patch-level), lock files committed to version control |
 | SECURITY-13 (Pipeline Access) | Compliant | Branch protection rules documented for main/develop; CI triggers scoped to PRs and protected branches only |
 
 ---
