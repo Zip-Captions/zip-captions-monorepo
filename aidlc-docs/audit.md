@@ -423,3 +423,21 @@
 - aidlc-docs/construction/build-and-test/build-and-test-summary.md
 
 ---
+
+## Documentation Refinement Stage
+**Timestamp**: 2026-03-28T00:00:00Z
+**Artifacts Preserved**: 19 design documents cleaned and retained across inception and construction
+**Artifacts Removed**:
+- 16 plan/scaffold files (3 inception plans, 13 construction plans, 1 requirement-verification-questions)
+- 6 NFR requirement files merged into design docs (ci-pipeline, zip-core, zip-supabase nfr-requirements/ directories)
+- 4 empty directories (zip-captions, zip-broadcast, inception/plans, construction/plans)
+**Project Docs Updated**:
+- docs/04-technical-specification.md: added `shared_preferences` to approved deps, clarified freezed vs sealed class usage, documented hand-written NotifierProvider exception (v0.1 → v0.2)
+**Design Doc Updates**:
+- CI pipeline infrastructure-design.md: updated action versions to match shipped code (checkout v6.0.2, cache v5.0.4, upload-artifact v7.0.0, setup-java v5.2.0, flutter-action v2.23.0), Flutter SDK 3.38.7, merged tech stack and NFR content
+- zip-core nfr-design-patterns.md: consolidated NFR requirements, tech stack decisions, PBT properties, security assessment, and dependency approvals into single design reference
+- zip-supabase infrastructure-design.md: merged tech stack decisions and NFR compliance into design doc
+**Created**: aidlc-docs/README.md (table of contents for all preserved artifacts)
+**Status**: Complete
+
+---

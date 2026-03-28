@@ -1,4 +1,47 @@
-# NFR Design Patterns — Unit 2: zip_core Library
+# NFR Design — Unit 2: zip_core Library
+
+## Testing Stack
+
+| Tool | Role | Version Strategy |
+|---|---|---|
+| `dart test` / `flutter test` | Test runner | Pinned via Flutter SDK version |
+| `glados` | Property-based testing framework | Caret syntax (`^x.y.z`) in dev_dependencies |
+| `mocktail` | Mocking library | Caret syntax in dev_dependencies |
+| `SharedPreferences.setMockInitialValues()` | SharedPreferences test seeding | Built into `shared_preferences` package |
+| `ProviderContainer` | Riverpod provider unit testing | Built into `flutter_riverpod` |
+
+### Test Organization
+
+```
+packages/zip_core/test/
+  models/
+    app_settings_test.dart           # Example-based: defaults, copyWith, equality
+    recording_state_test.dart        # Example-based: sealed class pattern matching
+    speech_locale_test.dart          # Example-based: languageCode extraction, equality
+  providers/
+    locale_provider_test.dart        # Example-based: set/get, device fallback
+    settings_notifier_test.dart      # Example-based: load, save, reset, corrupt recovery
+    recording_state_notifier_test.dart  # Example-based: specific transitions, invalid ops
+  theme/
+    app_theme_test.dart              # Example-based: theme data not null, contrast checks
+  pbt/
+    app_settings_roundtrip_test.dart     # PBT: serialize/deserialize round-trip
+    settings_recovery_test.dart          # PBT: per-field recovery with random corruption
+    recording_state_machine_test.dart    # PBT: stateful model-based testing
+    locale_roundtrip_test.dart           # PBT: locale persistence round-trip
+    speech_locale_properties_test.dart   # PBT: languageCode invariant, equality
+    theme_contrast_test.dart             # PBT: WCAG AAA contrast for all color pairs
+```
+
+### Provider Test Strategy
+
+**Unit 2 (zip_core)**: `ProviderContainer`-based unit tests — create per test, seed with `SharedPreferences.setMockInitialValues()`, assert state changes. PBT tests use `glados` with `ProviderContainer`.
+
+**Unit 3+ (app packages)**: `ProviderScope` override-based widget tests — wrap widgets in `ProviderScope(overrides: [...])` with mock notifiers.
+
+**Complementary testing (PBT-10)**: Example-based tests pin specific known scenarios; PBT tests verify general invariants across generated inputs. When PBT discovers a failure, the shrunk case is added as a permanent example-based regression test.
+
+---
 
 ## Pattern 1: Composed PBT Generators (glados)
 
@@ -23,28 +66,14 @@ Arbitrary<int> (maxVisibleLines)  — constrained range [0, 100]
 Arbitrary<AppSettings>            — composed via Glados.combine
 ```
 
-### Implementation Sketch
+### Testable Properties
 
-```dart
-// Individual enum generators — reusable across test suites
-final arbitraryScrollDirection = Arbitrary.oneOf(ScrollDirection.values);
-final arbitraryCaptionTextSize = Arbitrary.oneOf(CaptionTextSize.values);
-final arbitraryCaptionFont = Arbitrary.oneOf(CaptionFont.values);
-final arbitraryThemeModeSetting = Arbitrary.oneOf(ThemeModeSetting.values);
-
-// Composed AppSettings generator
-// Uses Glados.combine to build from individual generators
-// maxVisibleLines: 0 = unlimited, positive int = capped lines
-```
-
-### Test Suites Using This Pattern
-
-| Test file | Generator(s) used | Property tested |
-|---|---|---|
-| `test/pbt/app_settings_roundtrip_test.dart` | `Arbitrary<AppSettings>` | Save to SharedPreferences and reload produces equal `AppSettings` |
-| `test/pbt/settings_recovery_test.dart` | Individual enum generators + corruption generator | Per-field recovery with random corruption patterns |
-| `test/pbt/locale_roundtrip_test.dart` | `Arbitrary<Locale>` (language codes) | Locale persistence round-trip |
-| `test/pbt/speech_locale_properties_test.dart` | `Arbitrary<String>` (localeId patterns) | `languageCode` invariant, equality symmetry |
+| Property | PBT Category | Component | Description |
+|---|---|---|---|
+| Settings round-trip | PBT-02 Round-trip | AppSettings + BaseSettingsNotifier | For any valid `AppSettings`, saving to SharedPreferences and reloading produces an equal `AppSettings` |
+| Defaults validity | PBT-03 Invariant | AppSettings | `AppSettings.defaults()` produces values within all defined ranges/enum sets |
+| Per-field recovery | PBT-03 Invariant | BaseSettingsNotifier | When any subset of SharedPreferences keys contains corrupt data, the loaded `AppSettings` still has valid values for every field |
+| Reset idempotence | PBT-04 Idempotence | BaseSettingsNotifier | `reset()` called twice produces the same state as calling it once |
 
 ---
 
@@ -77,32 +106,13 @@ ModelState applyCommand(ModelState current, Command cmd) {
 }
 ```
 
-### Generator
+### Testable Properties
 
-```dart
-// Generate command sequences of variable length
-Arbitrary<List<Command>> arbitraryCommandSequence =
-    Arbitrary.list(Arbitrary.oneOf(Command.values), minLength: 0, maxLength: 50);
-```
-
-### Test Structure
-
-For each generated command sequence:
-1. Create fresh `ProviderContainer` with `RecordingStateNotifier`
-2. Initialize model state to `idle`
-3. For each command in the sequence:
-   a. Apply command to the real notifier
-   b. Apply command to the pure-function model
-   c. Assert real state matches model state
-4. On failure, glados shrinks to the minimal failing sequence
-
-### Properties Verified
-
-| Property | Assertion |
-|---|---|
-| Model equivalence | Real notifier state == model state after every command |
-| Invalid transition no-op | State unchanged when command is invalid for current state |
-| Transition determinism | Same command from same state always produces the same next state |
+| Property | PBT Category | Description |
+|---|---|---|
+| Stateful model equivalence | PBT-06 Stateful | Random command sequences applied to both real notifier and model produce identical state at each step |
+| Invalid transition no-op | PBT-03 Invariant | Any action called from an invalid state leaves the state unchanged |
+| Transition determinism | PBT-03 Invariant | The same action from the same state always produces the same next state |
 
 ---
 
@@ -141,28 +151,9 @@ double contrastRatio(Color foreground, Color background) {
 }
 ```
 
-### Enumerated Pairs
+### Verified Color Pairs
 
-Tests verify exactly the 16 pairs from `nfr-requirements.md` NFR-U2-05 — 8 dark, 8 light. Each pair is extracted from the `ColorScheme` produced by `AppTheme.dark()` and `AppTheme.light()` respectively.
-
-### Test Organization
-
-File: `test/pbt/theme_contrast_test.dart` (named PBT for organizational consistency, but these are exhaustive enumeration tests since the color pairs are finite and known).
-
-```dart
-group('Dark theme WCAG AAA contrast', () {
-  final dark = AppTheme.dark().colorScheme;
-  test('onSurface on surface >= 7:1', () { ... });
-  test('onSurface on surfaceContainerLowest >= 7:1', () { ... });
-  // ... 8 pairs total
-});
-
-group('Light theme WCAG AAA contrast', () {
-  final light = AppTheme.light().colorScheme;
-  test('onSurface on surface >= 7:1', () { ... });
-  // ... 8 pairs total
-});
-```
+Tests verify exactly 16 pairs — 8 dark, 8 light — extracted from `AppTheme.dark()` and `AppTheme.light()` `ColorScheme` instances. See `business-logic-model.md` for full color token tables.
 
 ---
 
@@ -178,33 +169,16 @@ Use `SharedPreferences.setMockInitialValues()` with generated corrupt data maps.
 
 ### Corruption Categories
 
-| Category | Example | Expected recovery |
+| Category | Example | Expected Recovery |
 |---|---|---|
 | Missing key | Key not present in map | Default value for that field |
 | Wrong type | `scrollDirection` stored as `int` instead of `String` | Default value |
 | Unrecognized enum | `scrollDirection` = `'diagonal'` | Default value |
 | Valid value | `scrollDirection` = `'topToBottom'` | Loaded value preserved |
 
-### Generator
-
-```dart
-enum FieldState { valid, missing, wrongType, unrecognizedEnum }
-
-// For each of the 5 AppSettings fields, independently generate a FieldState
-// Then build the mock initial values map accordingly:
-// - valid: write the correct serialized value
-// - missing: omit the key
-// - wrongType: write an int where String expected, or vice versa
-// - unrecognizedEnum: write a plausible but invalid enum name string
-```
-
 ### Key Property
 
-For any combination of per-field corruption states, the loaded `AppSettings`:
-- Has valid values for every field (never null, never out of range)
-- Preserves the loaded value for fields with `valid` state
-- Uses `AppSettings.defaults()` value for fields with any corruption state
-- No exceptions thrown during load
+For any combination of per-field corruption states, the loaded `AppSettings` has valid values for every field (never null, never out of range), preserves loaded values for valid fields, uses defaults for corrupt fields, and throws no exceptions during load.
 
 ---
 
@@ -214,13 +188,86 @@ For any combination of per-field corruption states, the loaded `AppSettings`:
 
 `LocaleProvider` must persist and reload locales correctly, and always return a valid `Locale` regardless of SharedPreferences state.
 
-### Pattern
-
-PBT generates random language codes and verifies the round-trip property. Separately, generates corrupt/missing SharedPreferences states and verifies the fallback chain always produces a non-null `Locale`.
-
 ### Properties
 
 | Property | Generator | Assertion |
 |---|---|---|
 | Round-trip | Random BCP-47 language codes | `setLocale(locale)` then fresh `build()` returns same locale |
 | Fallback validity | Random SharedPreferences states (missing, corrupt, empty) | `build()` always returns non-null `Locale` |
+
+### SpeechLocale Properties
+
+| Property | PBT Category | Description |
+|---|---|---|
+| languageCode extraction | PBT-03 Invariant | For any non-empty `localeId`, `languageCode` returns a non-empty string |
+| Equality symmetry | PBT-03 Invariant | `SpeechLocale(a) == SpeechLocale(b)` if and only if `a.toLowerCase() == b.toLowerCase()` |
+
+---
+
+## Accessibility — WCAG AAA Contrast (Hard NFR)
+
+**Requirement**: `AppTheme` must produce `ColorScheme` values where all text-on-surface color combinations achieve a minimum **7:1 contrast ratio** (WCAG AAA).
+
+**Light theme adjustment**: The design spec's `primary` (#427EB5, luminance ~0.19) is a mid-tone that cannot achieve 7:1 with any text color. Darkened to `#1A5A8C` for AAA compliance. Standard Material error red also fails AAA on light surfaces; set to `#A8191F` (~7.2:1).
+
+**Typography constraint**: Minimum font weight 500 for text smaller than 14px (from design spec). Enforced by `AppTheme`'s `TextTheme` definition.
+
+---
+
+## Dependency Approvals
+
+### Approved (new for Unit 2)
+
+| Package | Purpose | Justification |
+|---|---|---|
+| `shared_preferences` | Settings and locale persistence | First-party Flutter plugin (Flutter Favorite). Cross-platform key-value store. |
+
+### Bundled Font Assets (no package dependency)
+
+8 v1 caption fonts bundled as `.ttf` files in app packages (zip_captions, zip_broadcast), not in zip_core. zip_core defines the `CaptionFont` enum with font family name mappings. All fonts sourced from Google Fonts under OFL license. No `google_fonts` runtime dependency — offline-first.
+
+### Existing Approved Dependencies
+
+| Package | Used For |
+|---|---|
+| `flutter_riverpod` / `riverpod_generator` | State management, provider code generation |
+| `freezed` / `freezed_annotation` | Immutable data classes (AppSettings, SpeechLocale) |
+| `mocktail` | Test mocking |
+| `very_good_analysis` | Linting |
+
+### Dev Dependencies
+
+| Package | Purpose |
+|---|---|
+| `glados` | PBT framework (PBT-09) |
+| `build_runner` | Code generation for riverpod_generator and freezed |
+
+---
+
+## Security Assessment
+
+### Applicable Rules
+
+| Rule | Status | Assessment |
+|---|---|---|
+| SECURITY-03 (Application Logging) | Compliant | Transcript logging prohibition established (SR-01, SR-02, SR-03). State transitions and operational metrics may be logged at debug level. |
+| SECURITY-09 (Hardening) | Compliant | No credentials or secrets in zip_core. SharedPreferences stores user preferences only. |
+| SECURITY-10 (Supply Chain) | Compliant | All dependencies from pub.dev (official registry). Lock files committed. `glados` is dev-only. Bundled .ttf fonts sourced from Google Fonts (OFL licensed). |
+| SECURITY-15 (Exception Handling) | Compliant | BaseSettingsNotifier uses per-field recovery with fail-safe defaults (BR-05). RecordingStateNotifier uses severity-based error handling. Invalid state transitions silently ignored. |
+
+### N/A Rules
+
+SECURITY-01, -02, -04, -05, -06, -07, -08, -11, -12, -13, -14 are not applicable to zip_core in Phase 0 (no network, no auth, no API endpoints, no deployment).
+
+---
+
+## Key Decisions Log
+
+| Decision | Choice | Rationale |
+|---|---|---|
+| PBT framework | `glados` | Custom generators, shrinking, seed reproducibility, dart test integration |
+| Font loading | Bundled .ttf assets | Offline-first; no runtime network dependency; predictable |
+| Settings persistence | `shared_preferences` | First-party Flutter plugin; cross-platform; simple key-value; PoC precedent |
+| Provider testing | `ProviderContainer` (unit) + `ProviderScope` (widget) | Clean separation: library tests logic, apps test integration |
+| Contrast target | WCAG AAA (7:1) hard NFR | Design spec mandates it; accessibility is a core product value |
+| Test separation | `test/` (example-based) + `test/pbt/` (property-based) | Clear distinction per PBT-10; easy to run selectively |

@@ -4,6 +4,14 @@
 
 Local-only Docker Compose stack providing the full Supabase platform for development. No cloud deployment. All ports bound to `127.0.0.1`. No real secrets committed.
 
+## Tech Stack
+
+| Tool | Decision | Rationale |
+|---|---|---|
+| Docker Compose v2 | Container orchestration | Standard for local dev stacks; Supabase official template uses Docker Compose |
+| PostgreSQL 15.x | Database (bundled with Supabase image) | Supabase bundles specific Postgres with required extensions (pg_graphql, pg_net, pgsodium) |
+| `.env` + `.env.example` | Environment configuration | Standard Docker Compose secrets pattern; `.env` gitignored, `.env.example` committed |
+
 ---
 
 ## Service Topology
@@ -22,9 +30,11 @@ Local-only Docker Compose stack providing the full Supabase platform for develop
 | Meta | `supabase-meta` | `supabase/postgres-meta:v0.95.2` | Database metadata API (used by Studio) |
 | Edge Functions | `supabase-edge-functions` | `supabase/edge-runtime:v1.71.2` | Deno-based Edge Functions runtime |
 
-### Excluded Services (not needed for local Phase 0 dev)
+All images pinned to specific version tags (SECURITY-10). No `:latest` tags.
 
-| Service | Reason for Exclusion |
+### Excluded Services
+
+| Service | Reason |
 |---|---|
 | imgproxy | No image processing needed |
 | Logflare/Analytics | Log analytics overkill for local dev |
@@ -71,9 +81,9 @@ supabase-edge-functions
 
 ---
 
-## Port Mapping (NFR-U4-05)
+## Port Mapping
 
-All ports bound to `127.0.0.1` per NFR-U4-03.
+All ports bound to `127.0.0.1` to prevent LAN exposure (SECURITY-01 local TLS exception).
 
 | Service | Host Port | Container Port | Access URL |
 |---|---|---|---|
@@ -81,25 +91,17 @@ All ports bound to `127.0.0.1` per NFR-U4-03.
 | Postgres | `127.0.0.1:54322` | `5432` | `postgresql://postgres:${POSTGRES_PASSWORD}@localhost:54322/postgres` |
 | Studio | `127.0.0.1:54323` | `3000` | `http://localhost:54323` |
 
-Internal-only ports (not exposed to host):
-- GoTrue: 9999
-- PostgREST: 3000
-- Realtime: 4000
-- Storage: 5000
-- Meta: 8080
-- Edge Runtime: 9000
+Internal-only ports (not exposed to host): GoTrue 9999, PostgREST 3000, Realtime 4000, Storage 5000, Meta 8080, Edge Runtime 9000.
 
 ---
 
-## Volume Configuration (NFR-U4-04)
+## Volume Configuration
 
 | Volume Name | Mount Point | Purpose |
 |---|---|---|
 | `supabase_db_data` | `/var/lib/postgresql/data` | Postgres data persistence |
 
-- Named volume survives `docker compose down`
-- Explicit destruction: `docker compose down -v`
-- No other services require persistent volumes for local dev
+Named volume survives `docker compose down`. Explicit destruction: `docker compose down -v`.
 
 ---
 
@@ -114,7 +116,7 @@ Only variables required by the included services. Grouped by section with descri
 | Variable | Default | Description |
 |---|---|---|
 | `POSTGRES_PASSWORD` | `your-super-secret-and-long-postgres-password` | Postgres superuser password |
-| `JWT_SECRET` | `your-super-secret-jwt-token-with-at-least-32-characters-long` | JWT signing secret (min 32 chars) |
+| `JWT_SECRET` | `super-secret-jwt-token-with-at-least-32-characters-long` | JWT signing secret (min 32 chars) |
 | `ANON_KEY` | *(Supabase demo JWT)* | Public anonymous API key |
 | `SERVICE_ROLE_KEY` | *(Supabase demo JWT)* | Service role key (bypasses RLS) |
 | `DASHBOARD_USERNAME` | `supabase` | Studio login username |
@@ -160,27 +162,25 @@ Only variables required by the included services. Grouped by section with descri
 
 Supabase CLI configuration at `packages/zip_supabase/supabase/config.toml`:
 - Project ID: `zip-captions-local`
-- API port: 54321
-- DB port: 54322
-- Studio port: 54323
+- API port: 54321, DB port: 54322, Studio port: 54323
 - Matches Docker Compose port mapping
 
 ### Initial Migration
 
 `packages/zip_supabase/migrations/20260326000000_initial.sql`:
 - Empty schema (no application tables for Phase 0)
-- Enables `pgcrypto` and `uuid-ossp` extensions (commonly needed)
+- Enables `pgcrypto` and `uuid-ossp` extensions
 - Sets `app.settings.jwt_secret` placeholder
-- Documents that application tables will be added in Phase 1+
+- All future tables must have RLS enabled and policies defined
 
 ---
 
 ## Security Compliance
 
-| NFR | Implementation |
-|---|---|
-| NFR-U4-01 (No Secrets) | `.env` gitignored; `.env.example` has placeholder values only |
-| NFR-U4-02 (Pinned Images) | All 9 services use specific version tags (see table above) |
-| NFR-U4-03 (Local TLS Exception) | All ports bound to `127.0.0.1`; documented in README |
-| NFR-U4-04 (Persistent Volumes) | Named volume `supabase_db_data` for Postgres |
-| NFR-U4-05 (Standard Ports) | 54321 (API), 54322 (Postgres), 54323 (Studio) |
+| NFR | Rule | Status | Implementation |
+|---|---|---|---|
+| NFR-U4-01 | SECURITY-09, -12 | Compliant | `.env` gitignored; `.env.example` has placeholder values only; no real secrets committed |
+| NFR-U4-02 | SECURITY-10 | Compliant | All 9 services use pinned version tags (see service table above) |
+| NFR-U4-03 | SECURITY-01 | Exception documented | All ports bound to `127.0.0.1`; local-only traffic; no TLS needed |
+| NFR-U4-04 | — | Compliant | Named volume `supabase_db_data` for Postgres persistence |
+| NFR-U4-05 | — | Compliant | Standard ports: 54321 (API), 54322 (Postgres), 54323 (Studio) |
