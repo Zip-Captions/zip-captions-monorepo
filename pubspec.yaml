@@ -13,3 +13,32 @@ workspace:
 
 dev_dependencies:
   melos: ^7.5.0
+
+melos:
+  packages:
+    - packages/**
+
+  scripts:
+    bootstrap:
+      run: melos exec -- dart pub get
+      description: Bootstrap all packages in the monorepo
+
+    test:
+      run: melos exec --fail-fast -- flutter test
+      description: Run all tests across packages that have a test directory
+      packageFilters:
+        dirExists: test
+
+    test:coverage:
+      run: melos exec --fail-fast -- flutter test --coverage
+      description: Run all tests with coverage collection (used by CI)
+      packageFilters:
+        dirExists: test
+
+    analyze:
+      run: melos exec --fail-fast -- dart analyze --fatal-infos
+      description: Run static analysis on all packages
+
+    format:
+      run: melos exec -- dart format .
+      description: Format all Dart source files

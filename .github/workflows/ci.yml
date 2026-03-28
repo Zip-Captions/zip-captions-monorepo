@@ -1,0 +1,81 @@
+# Zip Captions — CI: Analyze, Test, Coverage
+# Triggers on PRs (all branches) and pushes to main/develop.
+# All action versions pinned to specific patches (SECURITY-10).
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: "3.38.7"
+
+jobs:
+  ci:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.3.1
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2.23.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Restore pub-cache
+        uses: actions/cache@v4.3.0
+        with:
+          path: ~/.pub-cache
+          key: pub-cache-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-cache-${{ runner.os }}-
+
+      - name: Activate Melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap packages
+        run: melos bootstrap
+
+      - name: Analyze
+        run: melos run analyze
+
+      - name: Test with coverage
+        run: melos run test:coverage --no-select
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: coverage-reports
+          path: |
+            packages/*/coverage/lcov.info
+          retention-days: 14
+
+      - name: Check outdated dependencies
+        if: always()
+        run: |
+          echo "::group::zip_core"
+          cd packages/zip_core && dart pub outdated || true
+          cd ../..
+          echo "::endgroup::"
+          echo "::group::zip_captions"
+          cd packages/zip_captions && dart pub outdated || true
+          cd ../..
+          echo "::endgroup::"
+          echo "::group::zip_broadcast"
+          cd packages/zip_broadcast && dart pub outdated || true
+          cd ../..
+          echo "::endgroup::"
