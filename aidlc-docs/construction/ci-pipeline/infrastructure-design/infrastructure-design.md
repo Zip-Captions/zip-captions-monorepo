@@ -87,9 +87,9 @@ env:
   FLUTTER_VERSION: "3.38.7"
 ```
 
-### Lock File Verification
+### Lock File Handling
 
-CI runs `dart pub get --enforce-lockfile` (via Melos bootstrap) for each package. Fails the build if lock file would change, forcing developers to commit updated lock files.
+CI runs `melos bootstrap` which invokes `dart pub get` for each package. Lock files (`pubspec.lock`) are committed to version control. The `--enforce-lockfile` flag is not currently enabled; adding it is a future hardening step.
 
 ---
 
