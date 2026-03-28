@@ -17,8 +17,9 @@ CREATE EXTENSION IF NOT EXISTS "pgjwt" SCHEMA "extensions";
 -- This uses the local-dev default from .env.example.
 -- Production environments use proper secrets via environment variables.
 ALTER DATABASE postgres
-  SET "app.settings.jwt_secret" TO 'your-super-secret-jwt-token-with-at-least-32-characters-long';
+  SET "app.settings.jwt_secret" TO 'super-secret-jwt-token-with-at-least-32-characters-long';
 
--- Enable Row Level Security on all future tables by default.
--- Individual tables will define their own RLS policies in Phase 1+.
--- (No tables exist yet — this is a reminder for future migrations.)
+-- NOTE: All future tables MUST have RLS enabled and policies defined.
+-- PostgreSQL does not enable RLS by default; each table migration must include:
+--   ALTER TABLE <table_name> ENABLE ROW LEVEL SECURITY;
+-- See coding guidelines: "Do not create tables without RLS policies"
