@@ -11,6 +11,10 @@ reviews:
   auto_review:
     enabled: true
     drafts: false
+    ignore:
+      - "ai-dlc/**"
+      - "aidlc-project-rules/**"
+      - ".aidlc-rule-details/**"
   path_instructions:
     - path: "packages/zip_core/**"
       instructions: >
