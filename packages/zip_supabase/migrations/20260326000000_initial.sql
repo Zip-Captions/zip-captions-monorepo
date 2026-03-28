@@ -22,4 +22,4 @@ ALTER DATABASE postgres
 -- NOTE: All future tables MUST have RLS enabled and policies defined.
 -- PostgreSQL does not enable RLS by default; each table migration must include:
 --   ALTER TABLE <table_name> ENABLE ROW LEVEL SECURITY;
--- See coding guidelines: "Do not create tables without RLS policies"
+-- See coding guidelines: "Do not create tables without RLS policies" 5f8e837 (feat(phase0): Supabase local dev stack — Unit 4)
