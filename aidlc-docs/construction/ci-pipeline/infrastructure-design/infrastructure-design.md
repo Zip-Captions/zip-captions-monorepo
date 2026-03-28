@@ -55,12 +55,16 @@ Single-job approach chosen over parallel jobs: simpler, avoids duplicate Flutter
 | Setup Java | `actions/setup-java@v5.2.0` | Install JDK for Android build |
 | Setup Flutter | `subosito/flutter-action@v2.23.0` | Install pinned Flutter SDK |
 | Restore pub-cache | `actions/cache@v5.0.4` | Cache pub dependencies |
-| Bootstrap | `melos bootstrap` | Resolve dependencies |
+| Get dependencies | `flutter pub get` | Resolve dependencies for `zip_captions` |
 | Build APK | `flutter build apk --debug` | Verify Android build compiles |
 
 **Runner**: `ubuntu-latest` (Android SDK available via `setup-java`)
 
-**Scope**: `zip_captions` only (per unit-of-work scope). Additional platform build jobs (macOS, Windows, Linux) added in Unit 6.
+**Scope**: `zip_captions` only. Build jobs use `flutter pub get` with `working-directory` instead of `melos bootstrap` since each job builds a single package.
+
+### Additional platform jobs (Unit 6)
+
+`build-verify.yml` also includes `build-ios`, `build-macos`, `build-linux`, and `build-windows` jobs targeting `zip_captions`. Each follows the same pattern (checkout, setup Flutter, pub get, build) with platform-specific runners and build commands.
 
 ---
 
@@ -128,7 +132,7 @@ CI uses `melos run test:coverage --no-select` (the `--no-select` flag prevents i
 ## Secrets and Permissions
 
 - No secrets required (no deployment, no external services)
-- Default `GITHUB_TOKEN` permissions sufficient (read-only for checkout)
+- No explicit `permissions:` block set in workflows; relies on repository/org default `GITHUB_TOKEN` permissions. Consider adding explicit `permissions: { contents: read }` as a hardening step.
 - No write permissions needed (no PR comments, no deployments)
 
 ---
@@ -138,7 +142,7 @@ CI uses `melos run test:coverage --no-select` (the `--no-select` flag prevents i
 | Rule | Status | Implementation |
 |---|---|---|
 | SECURITY-10 (Supply Chain) | Compliant | Pinned Flutter SDK, pinned action versions (patch-level), lock files committed to version control |
-| SECURITY-13 (Pipeline Access) | Compliant | Branch protection rules documented for main/develop; CI triggers scoped to PRs and protected branches only |
+| SECURITY-13 (Pipeline Access) | Compliant | Branch protection rules documented for main/develop; `ci.yml` triggers on PRs (all branches) and push to main/develop; `build-verify.yml` triggers on PRs to main/develop only |
 
 ---
 
@@ -147,4 +151,4 @@ CI uses `melos run test:coverage --no-select` (the `--no-select` flag prevents i
 | Workflow | Trigger | Runner | Jobs |
 |---|---|---|---|
 | `ci.yml` | PR (all branches), push to main/develop | `ubuntu-latest` | analyze, test, pub outdated |
-| `build-verify.yml` | PR to main/develop | `ubuntu-latest` | Android APK debug build (zip_captions), plus macOS/Windows/Linux builds (Unit 6) |
+| `build-verify.yml` | PR to main/develop | `ubuntu-latest`, `macos-latest`, `windows-latest` | Android, iOS, macOS, Linux, Windows builds (zip_captions) |
