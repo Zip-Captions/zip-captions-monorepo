@@ -147,11 +147,24 @@
 | `onSurface` (#DAE3F0) | `surfaceContainerHigh` (#222B34) | >= 7:1 |
 | `onSurface` (#DAE3F0) | `surfaceContainerHighest` (#2D3640) | >= 7:1 |
 | `onPrimary` (#003355) | `primary` (#9ACBFF) | >= 7:1 |
-| `onSecondaryContainer` (#B0B9C6) | `secondaryContainer` (#414A54) | >= 7:1 |
+| `onSecondaryContainer` (#E0E8F2) | `secondaryContainer` (#414A54) | >= 7:1 |
 | `inverseOnSurface` (#28313B) | `inverseSurface` (#DAE3F0) | >= 7:1 |
 | `error` (#FFB4AB) | `surface` (#0B141D) | >= 7:1 |
 
-**Color pairs to verify (light theme)**: Derived from the light theme spec; pairs to be enumerated during Code Generation once the full light `ColorScheme` is defined.
+**Color pairs to verify (light theme)**:
+
+| Text token | Surface token | Expected ratio |
+|---|---|---|
+| `onSurface` (#0B141D) | `surface` (#FAFCFF) | >= 7:1 |
+| `onSurface` (#0B141D) | `surfaceContainerLowest` (#FFFFFF) | >= 7:1 |
+| `onSurface` (#0B141D) | `surfaceContainerHigh` (#EEF2F8) | >= 7:1 |
+| `onSurface` (#0B141D) | `surfaceContainerHighest` (#E4EAF2) | >= 7:1 |
+| `onPrimary` (#FFFFFF) | `primary` (#1A5A8C) | >= 7:1 |
+| `onSecondaryContainer` (#0B141D) | `secondaryContainer` (#DAE3F0) | >= 7:1 |
+| `inverseOnSurface` (#DAE3F0) | `inverseSurface` (#0B141D) | >= 7:1 |
+| `error` (#A8191F) | `surface` (#FAFCFF) | >= 7:1 |
+
+**Note**: Light theme `primary` darkened from design spec seed `#427EB5` to `#1A5A8C` for AAA compliance (original is mid-tone, ~0.19 luminance, cannot achieve 7:1 with any text color). `error` set to `#A8191F` (standard Material error red fails AAA on light surfaces). See `business-logic-model.md` Light Theme section for full derivation.
 
 **Typography constraint**: Minimum font weight 500 for text smaller than 14px (from design spec). Enforced by `AppTheme`'s `TextTheme` definition.
 

@@ -1,22 +1,19 @@
-// Minimal app stub — replaced in Unit 3.
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zip_captions/src/app.dart';
+import 'package:zip_core/zip_core.dart';
 
-void main() {
-  runApp(const _App());
-}
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
 
-class _App extends StatelessWidget {
-  const _App();
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'Zip Captions',
-      home: Scaffold(
-        body: Center(
-          child: Text('Zip Captions'),
-        ),
-      ),
-    );
-  }
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const ZipCaptionsApp(),
+    ),
+  );
 }

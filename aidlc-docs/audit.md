@@ -199,3 +199,227 @@
 **Context**: NFR Requirements artifacts complete. Presenting for approval.
 
 ---
+
+## CONSTRUCTION - Unit 2: NFR Requirements (Approved)
+**Timestamp**: 2026-03-27T00:08:00Z
+**User Input**: "continue to next stage"
+**AI Response**: NFR Requirements approved. Proceeding to NFR Design.
+**Context**: NFR Requirements stage complete. Next: NFR Design.
+
+---
+
+## CONSTRUCTION - Unit 2: NFR Design (Questions)
+**Timestamp**: 2026-03-27T00:09:00Z
+**User Input**: (questions created)
+**AI Response**: Created zip-core-nfr-design-plan.md with 4 questions covering glados generator composition, state machine model-based testing, WCAG AAA contrast verification strategy, and SharedPreferences mock strategy.
+**Context**: NFR Design Step 2 -- collecting user input.
+
+---
+
+## CONSTRUCTION - Unit 2: NFR Design (Answers Received + Light Theme Expansion)
+**Timestamp**: 2026-03-27T00:10:00Z
+**User Input**: Q1:A (composed per-field generators), Q2:B (variable-length command sequences 0-50), Q3:X (enumerate light theme pairs first, consistent approach), Q4:A (SharedPreferences.setMockInitialValues)
+**AI Response**: Q3 required backtracking to NFR Requirements. Light theme spec had only 4 seed tokens vs dark theme's 13 Material 3 tokens. Expanded light theme ColorScheme in business-logic-model.md (14 tokens). Key adjustments: primary darkened from spec #427EB5 to #1A5A8C (mid-tone cannot achieve AAA with any text color), error set to #A8191F (standard Material red fails AAA on light surfaces). Enumerated 8 light theme contrast pairs in nfr-requirements.md NFR-U2-05. Generated nfr-design-patterns.md (5 patterns) and logical-components.md (4 logical components + test file map).
+**Context**: NFR Design artifacts complete. Presenting for approval.
+
+---
+
+## CONSTRUCTION - Unit 2: NFR Design (Approved)
+**Timestamp**: 2026-03-27T00:11:00Z
+**User Input**: "approve and continue"
+**AI Response**: NFR Design approved. Proceeding to Code Generation.
+**Context**: NFR Design stage complete. Next: Code Generation (Part 1: implementation plan with test list).
+
+---
+
+## CONSTRUCTION - Unit 2: Code Generation Part 1 (Plan Created)
+**Timestamp**: 2026-03-27T00:12:00Z
+**User Input**: (automatic — plan generated after NFR Design approval)
+**AI Response**: Created zip-core-code-generation-plan.md with 25 steps. Feature-based file organization (models/, providers/, stt/, theme/). TDD approach: test helpers and tests written before/alongside implementation. 13 FR/NFR requirements traced. 6 PBT test files, 6 example-based test files, 4 test helper modules. L10n scaffold with 10 ARB files (1 English source + 9 v1 imports). Riverpod conventions doc (FR-02.4).
+**Context**: Code Generation Part 1 complete. Awaiting approval before Part 2 (generation).
+
+---
+
+## CONSTRUCTION - Unit 2: Code Generation Part 2 (Generation Complete)
+**Timestamp**: 2026-03-27T01:30:00Z
+**User Input**: "approve and continue" (approved plan, proceed to Part 2)
+**AI Response**: Executed all 25 steps of the code generation plan. Results:
+- **Production code**: 5 models (enums.dart, app_settings.dart, speech_locale.dart, recording_error.dart, pause_event.dart, recording_state.dart), 1 abstract interface (stt_engine.dart), 6 providers (base_settings_notifier.dart, locale_provider.dart, speech_locale_provider.dart, locale_info_provider.dart, recording_state_notifier.dart, stt_engine_provider.dart), 1 theme (app_theme.dart), barrel exports, generated .freezed.dart and .g.dart files
+- **Test code**: 81 tests all passing — 17 model/theme tests, 34 provider tests, 25 PBT tests (5 PBT suites × 100 inputs each + 5 deterministic PBT tests), 16 WCAG AAA contrast tests (8 dark + 8 light)
+- **Test infrastructure**: 4 helper modules (generators.dart, recording_state_model.dart, contrast_utils.dart, prefs_helpers.dart)
+- **l10n scaffold**: l10n.yaml + 10 ARB files (English source + 9 non-English stubs tagged machine-generated). V1 translation import deferred — source files not available in repo.
+- **Documentation**: docs/RIVERPOD_CONVENTIONS.md (FR-02.4)
+- **Verification**: dart analyze zero errors/warnings (info only), no provider dependency, glados in dev deps, placeholder test removed
+- **Fixes during generation**: glados version (^1.2.1→^1.1.7), inverseOnSurface naming, dark theme onSecondaryContainer AAA adjustment (#B0B9C6→#E0E8F2), Color API deprecation (.red→.r), pubspec sorting, library directive, SharedPreferences corruption model fix for int fields
+**Context**: Code Generation COMPLETE. All 25 plan steps checked. Ready for approval.
+
+---
+
+## CONSTRUCTION - Unit 2: Code Generation Approval
+**Timestamp**: 2026-03-27T02:00:00Z
+**User Input**: "accept and continue"
+**AI Response**: Code Generation stage accepted. Per core-workflow.md, Build and Test is a cross-unit stage that executes after ALL units complete Code Generation. Unit 2 construction is complete through Code Generation. Next per execution plan: Unit 3 (App Shells) construction begins with Functional Design.
+**Context**: Unit 2 Code Generation accepted. Proceeding to Unit 3.
+
+---
+
+## CONSTRUCTION - Unit 3: Code Generation Part 1 (Plan Created)
+**Timestamp**: 2026-03-27T02:10:00Z
+**User Input**: (automatic — plan generated; Unit 3 skips all design stages per unit-of-work.md)
+**AI Response**: Created app-shells-code-generation-plan.md with 12 steps. Both zip_captions and zip_broadcast: ProviderScope + MaterialApp with AppTheme, ConsumerWidget HomeScreen, app-specific SettingsNotifier (BaseSettingsNotifier subclass), app-specific l10n ARBs, widget tests. 7 FR/NFR requirements traced.
+**Context**: Code Generation Part 1 complete. Awaiting approval before Part 2 (generation).
+
+---
+
+## CONSTRUCTION - Unit 3: Code Generation Part 1 Approval
+**Timestamp**: 2026-03-27T02:15:00Z
+**User Input**: "approve and proceed"
+**AI Response**: Plan approved. Proceeding to Code Generation Part 2 (generation).
+**Context**: Executing 12-step plan for both app shells.
+
+---
+
+## CONSTRUCTION - Unit 3: Code Generation Part 2 (Generation Complete)
+**Timestamp**: 2026-03-27T02:30:00Z
+**User Input**: "approve and proceed"
+**AI Response**: Executed all 12 steps. Results:
+- **zip_captions**: main.dart with ProviderScope + SharedPreferences override, ZipCaptionsApp (ConsumerWidget + MaterialApp + AppTheme), HomeScreen, ZipCaptionsSettingsNotifier (hand-written NotifierProvider, keyPrefix 'zip_captions'), app-specific l10n scaffold, 3 widget tests passing
+- **zip_broadcast**: identical structure — ZipBroadcastApp, ZipBroadcastSettingsNotifier (keyPrefix 'zip_broadcast'), 3 widget tests passing
+- **Fix**: BaseSettingsNotifier subclasses cannot use @riverpod annotation (riverpod_generator requires build method in annotated class). Used hand-written NotifierProvider instead, consistent with RIVERPOD_CONVENTIONS.md exception for abstract base patterns.
+- **Verification**: dart analyze zero errors/warnings (info only), 6 total widget tests passing, no provider dependency, zip_core consumed via path dependency
+**Context**: Code Generation COMPLETE. Awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 3: Code Generation Approval
+**Timestamp**: 2026-03-27T02:35:00Z
+**User Input**: "approve"
+**AI Response**: Unit 3 Code Generation accepted. Proceeding to Unit 4 (Supabase Local Dev).
+**Context**: Unit 3 complete. Unit 4 stages: NFR Requirements → Infrastructure Design → Code Generation.
+
+---
+
+## CONSTRUCTION - Unit 4: NFR Requirements (Questions + Answers)
+**Timestamp**: 2026-03-27T02:40:00Z
+**User Input**: Q1:A (latest stable Supabase release), Q2:A (standard ports), Q3:A (document local-only TLS exception), Q4:A (persistent named volumes)
+**AI Response**: No ambiguities. Generated nfr-requirements.md (5 NFRs: no secrets, pinned images, TLS exception, persistent volumes, standard ports) and tech-stack-decisions.md (Docker Compose v2, Supabase self-hosted, .env pattern, PostgreSQL 15.x).
+**Context**: NFR Requirements COMPLETE. Next: Infrastructure Design.
+
+---
+
+## CONSTRUCTION - Unit 4: NFR Requirements Approval
+**Timestamp**: 2026-03-27T03:00:00Z
+**User Input**: "approve and continue"
+**AI Response**: NFR Requirements approved. Proceeding to Infrastructure Design stage.
+**Context**: Unit 4 NFR Requirements stage approved.
+
+---
+
+## CONSTRUCTION - Unit 4: Infrastructure Design (Questions + Answers)
+**Timestamp**: 2026-03-27T03:10:00Z
+**User Input**: Q1:A (raw Docker Compose), Q2:A (health checks with dependency ordering), Q3:A (include Edge Functions runtime), Q4:A (include Studio)
+**AI Response**: Generated infrastructure-design.md (9 services with pinned image tags, dependency graph, health checks, port mapping, env vars) and deployment-architecture.md (local-only architecture diagram, developer workflow, request flow, file structure).
+**Context**: Infrastructure Design artifacts generated. Awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 4: Infrastructure Design Approval
+**Timestamp**: 2026-03-27T03:30:00Z
+**User Input**: "approve and continue"
+**AI Response**: Infrastructure Design approved. Proceeding to Code Generation stage.
+**Context**: Unit 4 Infrastructure Design stage approved. Next: Code Generation.
+
+---
+
+## CONSTRUCTION - Unit 4: Code Generation Plan Approval
+**Timestamp**: 2026-03-27T03:45:00Z
+**User Input**: "approve"
+**AI Response**: Code Generation plan approved. Proceeding to generation.
+**Context**: 9-step plan for infrastructure files. No Dart code, no tests.
+
+---
+
+## CONSTRUCTION - Unit 4: Code Generation Approval
+**Timestamp**: 2026-03-27T04:00:00Z
+**User Input**: "approve and continue"
+**AI Response**: Code Generation approved. Unit 4 complete. Proceeding to Unit 5: CI/CD Pipeline.
+**Context**: Unit 4 all stages complete. Generated: docker-compose.yml (9 services), kong.yml, .env.example, config.toml, initial migration, README. All NFR checks passed.
+
+---
+
+## CONSTRUCTION - Unit 5: NFR Requirements (Questions + Answers)
+**Timestamp**: 2026-03-27T04:15:00Z
+**User Input**: Q1:A (latest stable Flutter SDK), Q2:C (skip iOS builds in CI — local only in Spike 0.1), Q3:B (dart pub outdated only), Q4:A (PRs + main/develop triggers only)
+**AI Response**: Generated nfr-requirements.md (7 NFRs: pinned actions, pinned Flutter SDK, lock file check, branch protection docs, pub outdated, trigger scope, Android-only build verify) and tech-stack-decisions.md (GitHub Actions, ubuntu-latest, subosito/flutter-action, Melos orchestration, pub-cache caching).
+**Context**: NFR Requirements artifacts generated. Awaiting approval. Next: Infrastructure Design.
+
+---
+
+## CONSTRUCTION - Unit 5: NFR Requirements Approval
+**Timestamp**: 2026-03-27T04:30:00Z
+**User Input**: "continue"
+**AI Response**: NFR Requirements approved. Proceeding to Infrastructure Design stage.
+**Context**: Unit 5 NFR Requirements stage approved.
+
+---
+
+## CONSTRUCTION - Unit 5: Infrastructure Design (Questions + Answers)
+**Timestamp**: 2026-03-27T04:45:00Z
+**User Input**: Q1:A (global activate melos), Q2:A (collect coverage as artifact), Q3:A (concurrency groups, cancel in-progress)
+**AI Response**: Generated infrastructure-design.md (single-job ci.yml with sequential steps, build-verify.yml for Android APK, pub-cache caching, pinned action versions) and deployment-architecture.md (trigger flow, branch protection setup for main/develop).
+**Context**: Infrastructure Design artifacts generated. Awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 5: Infrastructure Design Approval
+**Timestamp**: 2026-03-27T05:00:00Z
+**User Input**: "approve and continue"
+**AI Response**: Infrastructure Design approved. Proceeding to Code Generation stage.
+**Context**: Unit 5 Infrastructure Design stage approved. Next: Code Generation.
+
+---
+
+## CONSTRUCTION - Unit 5: Code Generation Plan Approval
+**Timestamp**: 2026-03-27T05:15:00Z
+**User Input**: "approve and continue"
+**AI Response**: Code Generation plan approved. Proceeding to generation.
+**Context**: 7-step plan for CI workflow files. Flutter 3.38.7 pinned.
+
+---
+
+## CONSTRUCTION - Unit 5: Code Generation Approval
+**Timestamp**: 2026-03-27T05:45:00Z
+**User Input**: "approve and continue"
+**AI Response**: Code Generation approved. Unit 5 complete. Proceeding to Unit 6: Spike 0.1.
+**Context**: Unit 5 all stages complete. Generated: ci.yml, pubspec.yaml melos scripts, BRANCH_PROTECTION.md. build-verify.yml deferred (no android/ scaffolding). Local validation: 81 tests pass with coverage, analyze correctly catches issues. Melos 7.x discovery: scripts must be in pubspec.yaml.
+
+---
+
+## CONSTRUCTION - Unit 6: Code Generation Plan Approval
+**Timestamp**: 2026-03-27T06:00:00Z
+**User Input**: "approve and continue"
+**AI Response**: Code Generation plan approved. Proceeding to generation.
+**Context**: 7-step plan. Scaffold platforms, macOS build locally, build-verify.yml with platform matrix via GitHub Actions, PLATFORM_SETUP.md.
+
+---
+
+## CONSTRUCTION - Unit 6: Code Generation Approval
+**Timestamp**: 2026-03-27T06:30:00Z
+**User Input**: "approve and proceed"
+**AI Response**: Code Generation approved. Unit 6 complete. All 6 units done. Proceeding to Build and Test.
+**Context**: Unit 6 complete. macOS builds pass for both apps. Platform scaffolding + build-verify.yml + PLATFORM_SETUP.md generated. All 6 construction units now complete — entering cross-unit Build and Test.
+
+---
+
+## Build and Test Stage
+**Timestamp**: 2026-03-27T07:00:00Z
+**Build Status**: Success
+**Test Status**: Pass (87/87)
+**Static Analysis**: Pass (0 issues across 4 packages)
+**Issues Resolved**: 12 lint issues fixed (6 public_member_api_docs, 2 avoid_equals_and_hash_code_on_mutable_classes, 2 avoid_catches_without_on_clauses, 1 use_setters_to_change_properties, 1 avoid_redundant_argument_values) + Melos 7.x script location fix + interactive prompt fix
+**Files Generated**:
+- aidlc-docs/construction/build-and-test/build-instructions.md
+- aidlc-docs/construction/build-and-test/unit-test-instructions.md
+- aidlc-docs/construction/build-and-test/build-and-test-summary.md
+
+---
