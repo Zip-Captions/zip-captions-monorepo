@@ -262,7 +262,7 @@ Color tokens (from design spec):
 | `primary` | `#9ACBFF` | Primary actions, focus indicators (AAA-compliant on dark) |
 | `onPrimary` | `#003355` | Text on primary surfaces |
 | `secondaryContainer` | `#414A54` | Secondary buttons |
-| `onSecondaryContainer` | `#B0B9C6` | Text on secondary containers |
+| `onSecondaryContainer` | `#E0E8F2` | Text on secondary containers (lightened from spec #B0B9C6 for AAA) |
 | `onSurface` | `#DAE3F0` | Primary text on surfaces (7:1 target) |
 | `outline` | `#8B919A` | High-contrast edge for floating elements |
 | `outlineVariant` | `#41474F` | Ghost borders (20% opacity max) |
@@ -276,14 +276,28 @@ Design rules: No gradients. No 1px borders for sectioning (tonal layering only).
 
 ### Light Theme — Monolith Editorial
 
-Color tokens (from design spec):
+**Design spec seed tokens**: `primary: #427EB5`, `secondary: #DAE3F0`, `tertiary: #FFFFFF`, `neutral: #0B141D`.
 
-| Token | Hex | Usage |
-|---|---|---|
-| `primary` | `#427EB5` | Primary actions, branding |
-| `secondary` | `#DAE3F0` | Secondary UI elements |
-| `tertiary` | `#FFFFFF` | Highlights, badges |
-| `neutral` | `#0B141D` | Backgrounds, surfaces |
+**AAA adjustment**: The spec's `primary` (#427EB5, relative luminance ~0.19) is a mid-tone that cannot achieve 7:1 contrast with any text color. Darkened to `#1A5A8C` (luminance ~0.094) for AAA compliance with white `onPrimary`. The original `#427EB5` is preserved as a reference color but is not used in the `ColorScheme`. Similarly, standard Material error red fails AAA on light surfaces; `error` is set to `#A8191F` (~7.2:1 on light surfaces).
+
+Color tokens (full Material 3 ColorScheme):
+
+| Token | Hex | Usage | Derivation |
+|---|---|---|---|
+| `surface` | `#FAFCFF` | Primary canvas | Near-white with slight blue tint from palette |
+| `surfaceContainerLowest` | `#FFFFFF` | Inset areas | Spec tertiary (pure white) |
+| `surfaceContainerHigh` | `#EEF2F8` | Cards, interactive modules | Midpoint between white and secondary |
+| `surfaceContainerHighest` | `#E4EAF2` | Elevated cards, input fields | Slightly darker tint |
+| `primary` | `#1A5A8C` | Primary actions, focus indicators | Darkened from spec #427EB5 for AAA |
+| `onPrimary` | `#FFFFFF` | Text on primary surfaces | White on darkened primary |
+| `secondaryContainer` | `#DAE3F0` | Secondary surfaces | Spec secondary (direct) |
+| `onSecondaryContainer` | `#0B141D` | Text on secondary containers | Spec neutral |
+| `onSurface` | `#0B141D` | Primary text on surfaces (7:1+ target) | Spec neutral |
+| `outline` | `#6B7380` | High-contrast edge for floating elements | Medium grey from palette |
+| `outlineVariant` | `#C4CAD4` | Ghost borders | Light grey from palette |
+| `error` | `#A8191F` | Error states | Darkened for AAA on light surfaces |
+| `inverseSurface` | `#0B141D` | Tooltip/overlay background | Spec neutral |
+| `inverseOnSurface` | `#DAE3F0` | Tooltip/overlay text | Spec secondary |
 
 Shape: Subtle roundedness (small border radius). Spacing: Normal density.
 

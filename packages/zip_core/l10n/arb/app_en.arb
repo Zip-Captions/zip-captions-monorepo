@@ -1,0 +1,79 @@
+{
+  "@@locale": "en",
+  "appTitle": "Zip Captions",
+  "@appTitle": {
+    "description": "The application title shown in the app bar and system"
+  },
+  "appTitleBroadcast": "Zip Broadcast",
+  "@appTitleBroadcast": {
+    "description": "The broadcast application title"
+  },
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Title for the settings screen"
+  },
+  "settingsScrollDirection": "Scroll Direction",
+  "@settingsScrollDirection": {
+    "description": "Label for the scroll direction setting"
+  },
+  "settingsScrollBottomToTop": "Bottom to Top",
+  "@settingsScrollBottomToTop": {
+    "description": "Bottom to top scroll direction option"
+  },
+  "settingsScrollTopToBottom": "Top to Bottom",
+  "@settingsScrollTopToBottom": {
+    "description": "Top to bottom scroll direction option"
+  },
+  "settingsCaptionSize": "Caption Size",
+  "@settingsCaptionSize": {
+    "description": "Label for caption text size setting"
+  },
+  "settingsCaptionFont": "Caption Font",
+  "@settingsCaptionFont": {
+    "description": "Label for caption font setting"
+  },
+  "settingsTheme": "Theme",
+  "@settingsTheme": {
+    "description": "Label for theme mode setting"
+  },
+  "themeSystem": "System",
+  "@themeSystem": {
+    "description": "System theme option"
+  },
+  "themeLight": "Light",
+  "@themeLight": {
+    "description": "Light theme option"
+  },
+  "themeDark": "Dark",
+  "@themeDark": {
+    "description": "Dark theme option"
+  },
+  "settingsLanguage": "Language",
+  "@settingsLanguage": {
+    "description": "Label for language/locale setting"
+  },
+  "settingsReset": "Reset to Defaults",
+  "@settingsReset": {
+    "description": "Button label to reset all settings"
+  },
+  "recordStart": "Start",
+  "@recordStart": {
+    "description": "Button label to start recording/captioning"
+  },
+  "recordStop": "Stop",
+  "@recordStop": {
+    "description": "Button label to stop recording/captioning"
+  },
+  "recordPause": "Pause",
+  "@recordPause": {
+    "description": "Button label to pause recording"
+  },
+  "recordResume": "Resume",
+  "@recordResume": {
+    "description": "Button label to resume recording"
+  },
+  "placeholderCaption": "Tap Start to begin captioning",
+  "@placeholderCaption": {
+    "description": "Placeholder text shown before captioning starts"
+  }
+}

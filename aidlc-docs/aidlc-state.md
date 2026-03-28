@@ -4,7 +4,7 @@
 - **Project Name**: Zip Captions v2
 - **Project Type**: Documentation-Brownfield / Code-Greenfield
 - **Start Date**: 2026-03-26T00:00:00Z
-- **Current Stage**: CONSTRUCTION - Unit 2: zip_core Library — NFR Requirements IN PROGRESS
+- **Current Stage**: OPERATIONS
 
 ## Workspace State
 - **Existing Source Code**: Unit 1 merged (PR #2); monorepo scaffold in place on develop
@@ -37,12 +37,12 @@
 
 ### CONSTRUCTION PHASE
 - [x] Unit 1: Monorepo Scaffold — MERGED (PR #2, commit d6c9cd1)
-- [ ] Unit 2: zip_core Library — Functional Design COMPLETE; NFR Requirements + NFR Design + Code Generation
-- [ ] Unit 3: App Shells — Code Generation
-- [ ] Unit 4: Supabase Local Dev — NFR Requirements + Infrastructure Design + Code Generation
-- [ ] Unit 5: CI/CD Pipeline — NFR Requirements + Infrastructure Design + Code Generation
-- [ ] Unit 6: Spike 0.1 — Code Generation
-- [ ] Build and Test — EXECUTE
+- [x] Unit 2: zip_core Library — COMPLETE (Functional Design, NFR Requirements, NFR Design, Code Generation all done; 81 tests passing)
+- [x] Unit 3: App Shells — COMPLETE (Code Generation done; 6 widget tests passing)
+- [x] Unit 4: Supabase Local Dev — COMPLETE (NFR Requirements, Infrastructure Design, Code Generation all done)
+- [x] Unit 5: CI/CD Pipeline — COMPLETE (NFR Requirements, Infrastructure Design, Code Generation all done)
+- [x] Unit 6: Spike 0.1 — COMPLETE (platform scaffolding, macOS builds pass, build-verify.yml, PLATFORM_SETUP.md)
+- [x] Build and Test — COMPLETE (87 tests pass, 0 analyze issues, docs generated)
 
 ### OPERATIONS PHASE
 - [ ] Operations — PLACEHOLDER
