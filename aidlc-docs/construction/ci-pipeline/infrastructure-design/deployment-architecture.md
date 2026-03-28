@@ -81,7 +81,7 @@ Report status check ✓/✗
 
 ## Branch Protection Setup
 
-Documentation will be generated for configuring these rules in GitHub Settings → Branches:
+Configure in GitHub Settings → Branches:
 
 ### `main` branch
 
@@ -113,7 +113,7 @@ Documentation will be generated for configuring these rules in GitHub Settings �
 .github/
 └── workflows/
     ├── ci.yml              # Analyze + test + coverage + pub outdated
-    └── build-verify.yml    # Android APK debug build
+    └── build-verify.yml    # Platform build verification (Android, macOS, Windows, Linux)
 ```
 
 ## Future Phases
