@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+reviews:
+  high_level_summary: true
+  high_level_summary_placeholder: "@coderabbit summary"
+  high_level_summary_in_walkthrough: false
+  request_changes_workflow: true
+  collapse_walkthrough: false
+  poem: false
+  review_status: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "packages/zip_core/**"
+      instructions: >
+        zip_core is a pure Dart shared library consumed by both apps. It must
+        NEVER contain Flutter UI code (no material.dart imports except in
+        theme/). Verify package boundaries: apps depend on zip_core, never the
+        reverse, and apps never import from each other. All providers use
+        riverpod_generator. State classes use freezed. Imports must be package
+        imports (package:zip_core/...), never relative.
+    - path: "packages/zip_captions/**"
+      instructions: >
+        Zip Captions is the personal/consumer app targeting iOS, Android, macOS,
+        Windows, Linux, and web. It must not import from zip_broadcast. Verify
+        that any new providers are registered via riverpod_generator or have a
+        documented exception (see docs/RIVERPOD_CONVENTIONS.md).
+    - path: "packages/zip_broadcast/**"
+      instructions: >
+        Zip Broadcast is the broadcaster/professional app targeting macOS,
+        Windows, Linux, and web only (no iOS/Android). It must not import from
+        zip_captions. Same provider conventions as zip_captions.
+    - path: "packages/zip_supabase/**"
+      instructions: >
+        Infrastructure-only package. Contains Docker Compose, migrations, Edge
+        Functions, and Supabase config. No Dart code. Verify: all images are
+        pinned to exact versions (no :latest), ports bind to 127.0.0.1 only,
+        .env.example has no real secrets, all tables in migrations have RLS
+        policies.
+    - path: "**/*.dart"
+      instructions: >
+        Dart code must pass very_good_analysis with zero warnings. Check for:
+        transcript content in logs/analytics/error reports (absolute security
+        violation), missing doc comments on public APIs, bare catch clauses
+        without documented ignore directives, and new dependencies that are not
+        listed in the approved tech stack.
+    - path: ".github/workflows/**"
+      instructions: >
+        CI/CD workflows. Verify: all actions are pinned to exact versions
+        (e.g. actions/checkout@v4.3.1, not @v4 or @main), Flutter version is
+        pinned, no secrets are hardcoded, concurrency groups are set with
+        cancel-in-progress.
+    - path: "aidlc-docs/**"
+      instructions: >
+        AI-DLC process artifacts (design docs, plans, audit log, state
+        tracking). These are workflow documentation, not application code.
+        Review for completeness and consistency with the implementation, but
+        do not flag style issues. Never contains application source code.
+  tools:
+    github-checks:
+      enabled: true
+    shellcheck:
+      enabled: true
+chat:
+  auto_reply: true
