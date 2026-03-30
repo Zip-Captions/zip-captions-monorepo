@@ -753,6 +753,14 @@
 
 ---
 
+## CONSTRUCTION - Spike 1.2: System Audio Capture Feasibility (Complete)
+**Timestamp**: 2026-03-30T03:00:00Z
+**User Input**: "Let's do spike 1.2"
+**AI Response**: Spike 1.2 complete. System audio capture is feasible on all three platforms. Custom Flutter plugin (`zip_audio_capture`) needed with per-platform native implementations: Core Audio taps (macOS 14.2+), WASAPI loopback (Windows), PulseAudio monitor sources (Linux). No existing Flutter package meets requirements.
+**Context**: Spike 1.2 — COMPLETE. Report at `aidlc-docs/construction/spikes/spike-1.2-report.md`. Unblocks Unit 6 (Zip Broadcast).
+
+---
+
 ## CONSTRUCTION - Unit 1: Core Abstractions — Code Generation Part 2 (Complete)
 **Timestamp**: 2026-03-30T02:00:00Z
 **AI Response**: Code Generation Part 2 complete. All 45 steps executed.

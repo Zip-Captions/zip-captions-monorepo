@@ -64,7 +64,7 @@
 
 ### CONSTRUCTION PHASE
 - [x] Spike 1.1: Windows/Linux STT Survey — COMPLETE; Sherpa-ONNX recommended primary, Whisper.cpp secondary
-- [ ] Spike 1.2: System Audio Capture Feasibility
+- [x] Spike 1.2: System Audio Capture Feasibility — COMPLETE; custom plugin needed, Core Audio taps (macOS), WASAPI loopback (Windows), PulseAudio monitors (Linux)
 - [x] Spike 1.3: STT Integration PoC — COMPLETE; Sherpa-ONNX confirmed viable, OnlineRecognizer API maps to SttEngine contract
 - [x] Unit 1: Core Abstractions (S-01, S-03) — FD, NFR-R, NFR-D, CG — COMPLETE (156 tests passing, 0 errors)
 - [ ] Unit 2: Platform STT + Audio (S-02, S-06) — FD, NFR-R, NFR-D, CG
