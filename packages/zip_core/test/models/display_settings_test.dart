@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zip_core/src/models/app_settings.dart';
+import 'package:zip_core/src/models/display_settings.dart';
 import 'package:zip_core/src/models/enums.dart';
 
 void main() {
-  group('AppSettings', () {
+  group('DisplaySettings', () {
     test('defaults returns canonical default values (BR-04)', () {
-      final defaults = AppSettings.defaults();
+      final defaults = DisplaySettings.defaults();
 
       expect(defaults.scrollDirection, ScrollDirection.bottomToTop);
       expect(defaults.captionTextSize, CaptionTextSize.md);
@@ -15,7 +15,7 @@ void main() {
     });
 
     test('copyWith creates a new instance with updated fields', () {
-      final defaults = AppSettings.defaults();
+      final defaults = DisplaySettings.defaults();
       final updated = defaults.copyWith(
         scrollDirection: ScrollDirection.topToBottom,
         captionTextSize: CaptionTextSize.xl,
@@ -30,8 +30,8 @@ void main() {
     });
 
     test('equality compares all fields', () {
-      final a = AppSettings.defaults();
-      final b = AppSettings.defaults();
+      final a = DisplaySettings.defaults();
+      final b = DisplaySettings.defaults();
       final c = a.copyWith(captionFont: CaptionFont.poppins);
 
       expect(a, equals(b));
@@ -39,7 +39,7 @@ void main() {
     });
 
     test('defaults factory always returns equivalent instances', () {
-      expect(AppSettings.defaults(), equals(AppSettings.defaults()));
+      expect(DisplaySettings.defaults(), equals(DisplaySettings.defaults()));
     });
   });
 }

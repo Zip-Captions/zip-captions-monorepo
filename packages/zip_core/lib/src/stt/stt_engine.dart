@@ -1,52 +1,59 @@
-import 'package:zip_core/src/models/recording_error.dart';
 import 'package:zip_core/src/models/speech_locale.dart';
+import 'package:zip_core/src/models/stt_result.dart';
 
 /// Abstract interface for speech-to-text engines.
 ///
-/// Phase 0 defines the contract only; no concrete implementation.
+/// Phase 1 defines the full contract with metadata properties and a
+/// unified [SttResult] callback. Concrete implementations are in Unit 2
+/// ([PlatformSttEngine], [SherpaOnnxSttEngine]).
 ///
-/// **Security constraint**: Callbacks in [startListening] receive transcript
-/// text. The `SttEngine` implementation and all code handling these callbacks
-/// must never log, emit, or surface transcript text content. Only state
-/// transitions and error messages may appear in logs.
+/// **Security constraint (SECURITY-03)**: The [onResult] callback in
+/// [startListening] delivers transcript text. Implementations and all code
+/// handling this callback must never log, emit, or surface transcript text
+/// content. Only state transitions and error messages may appear in logs.
 abstract interface class SttEngine {
+  /// Unique engine identifier (e.g., 'platform', 'sherpa-onnx').
+  String get engineId;
+
+  /// Human-readable engine name for UI display.
+  String get displayName;
+
+  /// Whether the engine requires internet connectivity.
+  bool get requiresNetwork;
+
+  /// Whether the engine requires a model download before use.
+  bool get requiresDownload;
+
   /// Request permissions and prepare the engine.
   Future<bool> initialize();
 
   /// Check if the engine can run on the current device/platform.
   Future<bool> isAvailable();
 
-  /// Begin an STT session with callbacks for results and errors.
+  /// Locales this engine supports.
+  Future<List<SpeechLocale>> supportedLocales();
+
+  /// Begin an STT session.
   ///
-  /// [localeId] optionally specifies the recognition locale. If null, the
-  /// engine uses its default locale.
+  /// [localeId] specifies the recognition locale (BCP-47).
+  /// [onResult] receives all recognition results (interim and final).
   ///
-  /// [onInterimResult] receives partial recognition text as it becomes
-  /// available. [onFinalResult] receives finalized recognition text for a
-  /// completed utterance. [onError] receives errors with severity to
-  /// determine state machine impact.
-  ///
-  /// **Security**: [onInterimResult] and [onFinalResult] deliver transcript
-  /// content that must never be logged.
+  /// **Security (SECURITY-03)**: [onResult] delivers transcript content
+  /// that must never be logged.
   Future<bool> startListening({
-    required void Function(String text) onInterimResult,
-    required void Function(String text) onFinalResult,
-    required void Function(RecordingError error) onError,
-    String? localeId,
+    required String localeId,
+    required void Function(SttResult result) onResult,
   });
 
   /// End the current STT session.
   Future<void> stopListening();
 
-  /// Pause recognition.
+  /// Pause recognition (transparent stop/restart if not natively supported).
   Future<bool> pause();
 
   /// Resume recognition.
   Future<bool> resume();
 
-  /// List supported STT locales.
-  Future<List<SpeechLocale>> getAvailableLocales();
-
-  /// Release resources.
+  /// Release all resources.
   void dispose();
 }

@@ -128,6 +128,16 @@ To build a specific known feature:
 Using AI-DLC, [describe what you want to build]
 ```
 
+### Keeping AI-DLC Up to Date
+
+Before starting an inception session, ensure the `ai-dlc` submodule is current:
+
+```bash
+git submodule update --remote ai-dlc
+```
+
+If the pointer changed, commit it: `git commit -am "chore: update ai-dlc submodule to latest"`
+
 ### Project-Specific AI-DLC Rules
 
 The standard AI-DLC rule details are in `.aidlc-rule-details/` (symlinked to the `ai-dlc` submodule). Project-specific rule additions and overrides live in `aidlc-project-rules/`. When loading a stage, check `aidlc-project-rules/` first — if a rule file exists there, use it instead of (or in addition to) the submodule version.

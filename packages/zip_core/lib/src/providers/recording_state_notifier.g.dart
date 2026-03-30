@@ -7,11 +7,12 @@ part of 'recording_state_notifier.dart';
 // **************************************************************************
 
 String _$recordingStateNotifierHash() =>
-    r'46e4cf41ae5c975405c06c5266140847f243312a';
+    r'99f0a89bf6cda06110834e4d4a412777889771f6';
 
 /// Recording state machine (BR-01, BR-02, BR-03).
 ///
-/// Phase 0: stub transitions only (no STT wiring).
+/// Phase 1: generates session IDs, publishes [SessionStateEvent]s to the
+/// [CaptionBus], and handles STT results via [handleSttResult].
 ///
 /// Invalid transitions are silently ignored (no exception, no error).
 /// This prevents UI race conditions (e.g., user double-taps a button).

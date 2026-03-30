@@ -1,6 +1,10 @@
 export 'base_settings_notifier.dart';
+export 'caption_bus_provider.dart';
+export 'caption_output_target_registry_provider.dart';
 export 'locale_info_provider.dart';
 export 'locale_provider.dart';
 export 'recording_state_notifier.dart';
 export 'speech_locale_provider.dart';
 export 'stt_engine_provider.dart';
+export 'stt_engine_registry_provider.dart';
+export 'transcript_settings_provider.dart';

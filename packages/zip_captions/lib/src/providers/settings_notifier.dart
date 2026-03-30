@@ -5,13 +5,13 @@ import 'package:zip_core/zip_core.dart';
 ///
 /// Uses key prefix `zip_captions` to isolate settings
 /// in SharedPreferences from other apps in the monorepo.
-class ZipCaptionsSettingsNotifier extends BaseSettingsNotifier {
+class DisplaySettingsNotifier extends BaseSettingsNotifier {
   @override
   String get keyPrefix => 'zip_captions';
 }
 
-/// Provider for Zip Captions app settings.
-final zipCaptionsSettingsProvider =
-    NotifierProvider<ZipCaptionsSettingsNotifier, AppSettings>(
-  ZipCaptionsSettingsNotifier.new,
+/// Provider for Zip Captions display settings.
+final displaySettingsProvider =
+    NotifierProvider<DisplaySettingsNotifier, DisplaySettings>(
+  DisplaySettingsNotifier.new,
 );

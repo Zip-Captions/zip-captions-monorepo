@@ -11,7 +11,7 @@ String _$localeInfoHash() => r'ef882a5268b0c45e4230cb2e9cb48d32247454ab';
 /// Exposes the list of locales available for speech recognition.
 ///
 /// Phase 0: returns an empty list (no STT engine to query).
-/// Phase 1: queries SttEngine.getAvailableLocales().
+/// Unit 2: queries active SttEngine.supportedLocales() via SttEngineProvider.
 ///
 /// Copied from [localeInfo].
 @ProviderFor(localeInfo)

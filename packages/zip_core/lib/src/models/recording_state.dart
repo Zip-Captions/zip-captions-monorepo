@@ -1,22 +1,44 @@
 /// Represents the recording state machine.
 ///
 /// Four states; no error state (errors are handled separately via
-/// `RecordingError`). Phase 0: all variants are field-less. Phase 1 extends
-/// `recording` and `stopped` with segment data and pause history.
+/// `RecordingError`). Phase 1 adds [ActiveSessionState] mixin with
+/// `sessionId` and `currentSegment` to non-idle variants.
 sealed class RecordingState {
   const RecordingState();
 
   /// No active session. Initial state.
   const factory RecordingState.idle() = IdleState;
 
-  /// Actively capturing speech. Phase 1 adds `currentSegment`.
-  const factory RecordingState.recording() = RecordingActiveState;
+  /// Actively capturing speech.
+  const factory RecordingState.recording({
+    required String sessionId,
+    String currentSegment,
+  }) = RecordingActiveState;
 
   /// Session paused; user is intentionally omitting audio.
-  const factory RecordingState.paused() = PausedState;
+  const factory RecordingState.paused({
+    required String sessionId,
+    String currentSegment,
+  }) = PausedState;
 
-  /// Session ended. Phase 1 adds `segments` and `pauseEvents`.
-  const factory RecordingState.stopped() = StoppedState;
+  /// Session ended.
+  const factory RecordingState.stopped({
+    required String sessionId,
+    String currentSegment,
+  }) = StoppedState;
+}
+
+/// Mixin providing session fields for active (non-idle) recording states.
+///
+/// Consumers can check `if (state is ActiveSessionState)` to access
+/// [sessionId] and [currentSegment] without knowing the specific variant.
+mixin ActiveSessionState {
+  /// UUID v4 generated when transitioning from idle to recording.
+  String get sessionId;
+
+  /// Accumulated interim text for the current recognition segment.
+  /// Cleared when a final result is committed.
+  String get currentSegment;
 }
 
 /// {@macro recording_state.idle}
@@ -26,19 +48,43 @@ class IdleState extends RecordingState {
 }
 
 /// {@macro recording_state.recording}
-class RecordingActiveState extends RecordingState {
+class RecordingActiveState extends RecordingState with ActiveSessionState {
   /// Creates a recording active state.
-  const RecordingActiveState();
+  const RecordingActiveState({
+    required this.sessionId,
+    this.currentSegment = '',
+  });
+
+  @override
+  final String sessionId;
+  @override
+  final String currentSegment;
 }
 
 /// {@macro recording_state.paused}
-class PausedState extends RecordingState {
+class PausedState extends RecordingState with ActiveSessionState {
   /// Creates a paused recording state.
-  const PausedState();
+  const PausedState({
+    required this.sessionId,
+    this.currentSegment = '',
+  });
+
+  @override
+  final String sessionId;
+  @override
+  final String currentSegment;
 }
 
 /// {@macro recording_state.stopped}
-class StoppedState extends RecordingState {
+class StoppedState extends RecordingState with ActiveSessionState {
   /// Creates a stopped recording state.
-  const StoppedState();
+  const StoppedState({
+    required this.sessionId,
+    this.currentSegment = '',
+  });
+
+  @override
+  final String sessionId;
+  @override
+  final String currentSegment;
 }

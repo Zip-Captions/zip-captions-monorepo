@@ -9,30 +9,29 @@ void main() {
     });
 
     test('recording creates a RecordingActiveState', () {
-      const state = RecordingState.recording();
+      const state = RecordingState.recording(sessionId: 'abc');
       expect(state, isA<RecordingActiveState>());
     });
 
     test('paused creates a PausedState', () {
-      const state = RecordingState.paused();
+      const state = RecordingState.paused(sessionId: 'abc');
       expect(state, isA<PausedState>());
     });
 
     test('stopped creates a StoppedState', () {
-      const state = RecordingState.stopped();
+      const state = RecordingState.stopped(sessionId: 'abc');
       expect(state, isA<StoppedState>());
     });
 
     test('pattern matching covers all variants', () {
       const states = <RecordingState>[
         RecordingState.idle(),
-        RecordingState.recording(),
-        RecordingState.paused(),
-        RecordingState.stopped(),
+        RecordingState.recording(sessionId: 'test'),
+        RecordingState.paused(sessionId: 'test'),
+        RecordingState.stopped(sessionId: 'test'),
       ];
 
       for (final state in states) {
-        // Exhaustive switch — compiler enforces all variants handled.
         final label = switch (state) {
           IdleState() => 'idle',
           RecordingActiveState() => 'recording',
@@ -41,6 +40,49 @@ void main() {
         };
         expect(label, isNotEmpty);
       }
+    });
+  });
+
+  group('ActiveSessionState mixin', () {
+    test('RecordingActiveState implements ActiveSessionState', () {
+      const state = RecordingState.recording(sessionId: 'session-1');
+      expect(state, isA<ActiveSessionState>());
+      expect((state as ActiveSessionState).sessionId, 'session-1');
+    });
+
+    test('PausedState implements ActiveSessionState', () {
+      const state = RecordingState.paused(sessionId: 'session-2');
+      expect(state, isA<ActiveSessionState>());
+      expect((state as ActiveSessionState).sessionId, 'session-2');
+    });
+
+    test('StoppedState implements ActiveSessionState', () {
+      const state = RecordingState.stopped(sessionId: 'session-3');
+      expect(state, isA<ActiveSessionState>());
+      expect((state as ActiveSessionState).sessionId, 'session-3');
+    });
+
+    test('IdleState does not implement ActiveSessionState', () {
+      const state = RecordingState.idle();
+      expect(state, isNot(isA<ActiveSessionState>()));
+    });
+
+    test('currentSegment defaults to empty string', () {
+      const state = RecordingState.recording(sessionId: 's');
+      expect((state as RecordingActiveState).currentSegment, isEmpty);
+    });
+
+    test('currentSegment can be set', () {
+      const state = RecordingState.recording(
+        sessionId: 's',
+        currentSegment: 'hello world',
+      );
+      expect((state as RecordingActiveState).currentSegment, 'hello world');
+    });
+
+    test('can access sessionId via concrete type', () {
+      const state = RecordingState.recording(sessionId: 'via-mixin');
+      expect((state as RecordingActiveState).sessionId, 'via-mixin');
     });
   });
 }

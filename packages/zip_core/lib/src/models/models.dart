@@ -1,6 +1,9 @@
-export 'app_settings.dart';
+export 'audio_input_config.dart';
+export 'caption_event.dart';
+export 'display_settings.dart';
 export 'enums.dart';
 export 'pause_event.dart';
 export 'recording_error.dart';
 export 'recording_state.dart';
 export 'speech_locale.dart';
+export 'stt_result.dart';
