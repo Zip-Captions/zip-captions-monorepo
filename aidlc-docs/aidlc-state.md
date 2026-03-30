@@ -5,7 +5,7 @@
 - **Project Type**: Documentation-Brownfield / Code-Brownfield
 - **Phase 0 Start Date**: 2026-03-26T00:00:00Z
 - **Phase 1 Start Date**: 2026-03-28T00:00:00Z
-- **Current Stage**: CONSTRUCTION - Unit 1: Core Abstractions (Phase 1)
+- **Current Stage**: CONSTRUCTION - Ready for Unit 2: Platform STT + Audio (Phase 1)
 
 ## Workspace State
 - **Existing Source Code**: Yes — Phase 0 scaffold complete (zip_core models/providers/theme, app shells, Supabase stack, CI/CD)
