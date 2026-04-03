@@ -788,3 +788,19 @@
 **Context**: Unit 1 NFR Design — COMPLETE. Moving to Code Generation.
 
 ---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — Session Resume
+**Timestamp**: 2026-03-31T00:00:00Z
+**User Input**: "Using ai-dlc, I want to continue with the current phase of work, defined in aidlc-docs/construction/implementation/audio-capture-plan.md"
+**AI Response**: Session resumed. Loaded aidlc-state.md (Unit 2: Platform STT + Audio is next). Loaded spike reports (1.1, 1.2, 1.3), Unit 1 code summary, phase1-unit-of-work.md, phase1-unit-of-work-story-map.md, component methods, stories S-02 and S-06. audio-capture-plan.md noted (generic pre-AI-DLC document; AI-DLC functional design proceeds from unit-of-work and spike artifacts). Extensions: Security Baseline (enabled), Property-Based Testing (enabled). Proceeding to Functional Design for Unit 2.
+**Context**: Unit 2 Functional Design — starting.
+
+---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — Functional Design (Approval)
+**Timestamp**: 2026-03-31T12:00:00Z
+**User Input**: "approve and continue"
+**AI Response**: Functional Design approved. Three artifacts complete: domain-entities.md (AudioDevice, SherpaModelCatalogResponse, SherpaModelCatalogEntry, SherpaModelInfo, SherpaModelDownloadProgress, WakeLockSettings, RecordingError factories including permissionDenied/permissionPermanentlyDenied/engineRequiresModelDownload/engineInitFailed/engineStartFailed/localeNotSupported), business-logic-model.md (AudioDeviceService, WakeLockService, SttSessionManager, PlatformSttEngine, SherpaOnnxSttEngine, SherpaModelManager, SherpaModelCatalogNotifier with stale-while-revalidate, RecordingStateNotifier updates, locale resolution chain, AudioInputSettingsProvider shell, full provider map), business-rules.md (BR-U2-01..43 covering engine selection, permission re-trigger flow, locale fallback, wake lock, model download, catalog API contract with aggressive caching policy). Proceeding to NFR Requirements.
+**Context**: Unit 2 Functional Design — COMPLETE. Moving to NFR Requirements.
+
+---
