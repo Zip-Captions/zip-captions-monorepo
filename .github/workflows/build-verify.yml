@@ -11,6 +11,12 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - "packages/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - "melos.yaml"
+      - ".github/workflows/build-verify.yml"
 
 concurrency:
   group: build-${{ github.ref }}

@@ -8,20 +8,22 @@ reviews:
   collapse_walkthrough: false
   poem: false
   review_status: true
+  path_filters:
+    - "!ai-dlc/**"
+    - "!aidlc-docs/**"
+    - "!aidlc-project-rules/**"
+    - "!.aidlc-rule-details/**"
+    - "!**/Flutter/*.xcconfig"
+    - "!**/Flutter/GeneratedPluginRegistrant.*"
+    - "!**/flutter/generated_plugin_registrant.*"
+    - "!**/flutter/generated_plugins.cmake"
+    - "!**/Podfile"
+    - "!pubspec.lock"
+    - "!**/*.g.dart"
+    - "!**/*.freezed.dart"
   auto_review:
     enabled: true
     drafts: false
-    ignore:
-      - "ai-dlc/**"
-      - "aidlc-docs/**"
-      - "aidlc-project-rules/**"
-      - ".aidlc-rule-details/**"
-      - "**/Flutter/*.xcconfig"
-      - "**/Flutter/GeneratedPluginRegistrant.*"
-      - "**/flutter/generated_plugin_registrant.*"
-      - "**/flutter/generated_plugins.cmake"
-      - "**/Podfile"
-      - "pubspec.lock"
   path_instructions:
     - path: "packages/zip_core/**"
       instructions: >
