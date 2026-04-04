@@ -8,13 +8,22 @@ reviews:
   collapse_walkthrough: false
   poem: false
   review_status: true
+  path_filters:
+    - "!ai-dlc/**"
+    - "!aidlc-docs/**"
+    - "!aidlc-project-rules/**"
+    - "!.aidlc-rule-details/**"
+    - "!**/Flutter/*.xcconfig"
+    - "!**/Flutter/GeneratedPluginRegistrant.*"
+    - "!**/flutter/generated_plugin_registrant.*"
+    - "!**/flutter/generated_plugins.cmake"
+    - "!**/Podfile"
+    - "!pubspec.lock"
+    - "!**/*.g.dart"
+    - "!**/*.freezed.dart"
   auto_review:
     enabled: true
     drafts: false
-    ignore:
-      - "ai-dlc/**"
-      - "aidlc-project-rules/**"
-      - ".aidlc-rule-details/**"
   path_instructions:
     - path: "packages/zip_core/**"
       instructions: >
@@ -61,12 +70,6 @@ reviews:
         (e.g. actions/checkout@v4.3.1, not @v4 or @main), Flutter version is
         pinned, no secrets are hardcoded, concurrency groups are set with
         cancel-in-progress.
-    - path: "aidlc-docs/**"
-      instructions: >
-        AI-DLC process artifacts (design docs, plans, audit log, state
-        tracking). These are workflow documentation, not application code.
-        Review for completeness and consistency with the implementation, but
-        do not flag style issues. Never contains application source code.
   tools:
     github-checks:
       enabled: true
