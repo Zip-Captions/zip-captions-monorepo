@@ -22,6 +22,8 @@ reviews:
       - "**/flutter/generated_plugins.cmake"
       - "**/Podfile"
       - "pubspec.lock"
+      - "**/*.g.dart"
+      - "**/*.freezed.dart"
   path_instructions:
     - path: "packages/zip_core/**"
       instructions: >
