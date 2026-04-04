@@ -23,11 +23,17 @@ void main() {
       expect(state, isA<StoppedState>());
     });
 
+    test('reconnecting creates a ReconnectingState', () {
+      const state = RecordingState.reconnecting(sessionId: 'abc');
+      expect(state, isA<ReconnectingState>());
+    });
+
     test('pattern matching covers all variants', () {
       const states = <RecordingState>[
         RecordingState.idle(),
         RecordingState.recording(sessionId: 'test'),
         RecordingState.paused(sessionId: 'test'),
+        RecordingState.reconnecting(sessionId: 'test'),
         RecordingState.stopped(sessionId: 'test'),
       ];
 
@@ -36,6 +42,7 @@ void main() {
           IdleState() => 'idle',
           RecordingActiveState() => 'recording',
           PausedState() => 'paused',
+          ReconnectingState() => 'reconnecting',
           StoppedState() => 'stopped',
         };
         expect(label, isNotEmpty);
@@ -60,6 +67,20 @@ void main() {
       const state = RecordingState.stopped(sessionId: 'session-3');
       expect(state, isA<ActiveSessionState>());
       expect((state as ActiveSessionState).sessionId, 'session-3');
+    });
+
+    test('ReconnectingState implements ActiveSessionState', () {
+      const state = RecordingState.reconnecting(sessionId: 'session-r');
+      expect(state, isA<ActiveSessionState>());
+      expect((state as ActiveSessionState).sessionId, 'session-r');
+    });
+
+    test('ReconnectingState preserves currentSegment', () {
+      const state = RecordingState.reconnecting(
+        sessionId: 's',
+        currentSegment: 'partial text',
+      );
+      expect((state as ReconnectingState).currentSegment, 'partial text');
     });
 
     test('IdleState does not implement ActiveSessionState', () {

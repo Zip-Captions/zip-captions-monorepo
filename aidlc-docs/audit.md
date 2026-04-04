@@ -804,3 +804,60 @@
 **Context**: Unit 2 Functional Design — COMPLETE. Moving to NFR Requirements.
 
 ---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — NFR Requirements (Questions + Answers)
+**Timestamp**: 2026-04-02T00:00:00Z
+**User Input**: Q1:A (record package), Q2:B (dio), Q3:A (.tar.bz2 with archive package), Q4:A (≤500ms latency), Q5:B (warn >100MB), Q6:C (resume if CDN supports, fallback restart), Q7:B (one auto-restart attempt), Q8:A (no cert pinning), Q9:B (no background captioning — consent constraint), Q10:C (static JSON on CDN), Q11:B (pre-recorded PCM fixtures), Q12:B (mock SpeechToText + mock OnlineRecognizer bindings)
+**AI Response**: All 12 answers received, no contradictions. Generated nfr-requirements.md (7 NFR groups: performance, reliability, security, usability, testing, maintainability, availability; 20 requirements total).
+**Context**: Unit 2 NFR Requirements — artifacts generated, awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — NFR Requirements (Approval)
+**Timestamp**: 2026-04-02T01:00:00Z
+**User Input**: "approve and continue" (from previous session)
+**AI Response**: NFR Requirements approved. Proceeding to NFR Design stage.
+**Context**: Unit 2 NFR Requirements — COMPLETE. Moving to NFR Design.
+
+---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — NFR Design (Questions + Answers)
+**Timestamp**: 2026-04-03T00:00:00Z
+**User Input**: Q1:A (minimal OnlineRecognizerAdapter — 6 pass-through methods), Q2:B (new RecordingState.reconnecting variant), Q3:B (file-based catalog cache), Q4:A (http_mock_adapter), Q5:A (abstract WakeLockService interface — wakelock_plus uses static API, cannot inject), Q6:B (PBT for domain types + state machine extensions)
+**AI Response**: All 6 answers received. Q5 changed from initial B to A after investigating wakelock_plus API (entirely static methods — cannot inject an instance). Generated 2 artifacts: nfr-design-patterns.md (11 patterns: engine crash recovery with reconnecting state, OnlineRecognizerAdapter seam, PlatformSttEngine SpeechToText injection, dio download resume with Range headers, stale-while-revalidate CatalogCache file-based, SHA-256 archive integrity, large download confirmation gate, WakeLockService abstract interface, permission handler mock, PBT generators + state machine extensions, logging extension), logical-components.md (runtime component map, 10 test infrastructure components, dependency summary, extension compliance).
+**Context**: Unit 2 NFR Design — artifacts generated, awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — NFR Design (Approval)
+**Timestamp**: 2026-04-03T01:00:00Z
+**User Input**: "approve and continue"
+**AI Response**: NFR Design approved. Proceeding to Code Generation stage.
+**Context**: Unit 2 NFR Design — COMPLETE. Moving to Code Generation.
+
+---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — Code Generation Part 1 (Plan)
+**Timestamp**: 2026-04-03T02:00:00Z
+**User Input**: (automatic — plan creation)
+**AI Response**: Created code generation plan with 74 steps across 13 phases (A-M). Covers: 9 new runtime deps + 1 dev dep, 6 freezed models, RecordingState.reconnecting variant, RecordingErrorFactories, 3 abstract interfaces (AudioDeviceService, WakeLockService, OnlineRecognizerAdapter), 5 service implementations (WakelockPlusService, SherpaOnlineRecognizerAdapter, CatalogCache, SherpaModelManager, SttSessionManager), 2 STT engines (PlatformSttEngine, SherpaOnnxSttEngine), 13 new/updated providers, zip_broadcast shell, 6 test mocks + fixtures + PBT generators, 17 example-based test files, 5 PBT test files, build/analyze/test.
+**Context**: Unit 2 Code Generation Part 1 — plan created, awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — Code Generation Part 1 (Approval)
+**Timestamp**: 2026-04-03T02:30:00Z
+**User Input**: "approve and continue"
+**AI Response**: Code generation plan approved. Beginning Part 2 (Generation).
+**Context**: Unit 2 Code Generation Part 1 — COMPLETE. Starting Part 2.
+
+---
+
+## Documentation Refinement — Unit 2: Platform STT + Audio
+**Timestamp**: 2026-04-04T00:00:00Z
+**Artifacts Preserved**: 7 design documents cleaned and retained (functional-design: domain-entities, business-rules, business-logic-model; nfr-design: logical-components, nfr-design-patterns; nfr-requirements: nfr-requirements, tech-stack-decisions); code-summary preserved as-is
+**Artifacts Removed**: 5 plan/scaffold files (platform-stt-audio-functional-design-plan.md, platform-stt-audio-nfr-requirements-plan.md, platform-stt-audio-nfr-design-plan.md, platform-stt-audio-code-generation-plan.md, construction/implementation/audio-capture-plan.md)
+**Project Docs Updated**: aidlc-docs/README.md — added Phase 1 inception and construction sections (spikes, Unit 1, Unit 2); updated last refinement date to 2026-04-04
+**Status**: Complete
+
+---

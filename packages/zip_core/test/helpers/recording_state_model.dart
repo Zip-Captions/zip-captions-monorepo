@@ -7,10 +7,19 @@
 // Phase 1: tracks sessionId consistency across transitions.
 
 /// Simplified state representation for the model.
-enum ModelState { idle, recording, paused, stopped }
+enum ModelState { idle, recording, paused, reconnecting, stopped }
 
 /// Commands that can be applied to the state machine.
-enum Command { start, pause, resume, stop, clearSession }
+enum Command {
+  start,
+  pause,
+  resume,
+  stop,
+  clearSession,
+  engineError,
+  reconnectSuccess,
+  reconnectFailure,
+}
 
 /// Result of applying a command: the new state and the sessionId.
 class ModelResult {
@@ -30,6 +39,13 @@ ModelState applyCommand(ModelState current, Command cmd) {
     (ModelState.recording, Command.stop) => ModelState.stopped,
     (ModelState.paused, Command.stop) => ModelState.stopped,
     (ModelState.stopped, Command.clearSession) => ModelState.idle,
+    // REL-U2.1: engine error triggers reconnecting from active states.
+    (ModelState.recording, Command.engineError) => ModelState.reconnecting,
+    (ModelState.paused, Command.engineError) => ModelState.reconnecting,
+    // Reconnecting outcomes.
+    (ModelState.reconnecting, Command.reconnectSuccess) =>
+      ModelState.recording,
+    (ModelState.reconnecting, Command.reconnectFailure) => ModelState.stopped,
     _ => current,
   };
 }

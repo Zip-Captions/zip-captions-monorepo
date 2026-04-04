@@ -21,6 +21,12 @@ sealed class RecordingState {
     String currentSegment,
   }) = PausedState;
 
+  /// Engine crashed; attempting one automatic restart (REL-U2.1).
+  const factory RecordingState.reconnecting({
+    required String sessionId,
+    String currentSegment,
+  }) = ReconnectingState;
+
   /// Session ended.
   const factory RecordingState.stopped({
     required String sessionId,
@@ -65,6 +71,20 @@ class RecordingActiveState extends RecordingState with ActiveSessionState {
 class PausedState extends RecordingState with ActiveSessionState {
   /// Creates a paused recording state.
   const PausedState({
+    required this.sessionId,
+    this.currentSegment = '',
+  });
+
+  @override
+  final String sessionId;
+  @override
+  final String currentSegment;
+}
+
+/// {@macro recording_state.reconnecting}
+class ReconnectingState extends RecordingState with ActiveSessionState {
+  /// Creates a reconnecting state.
+  const ReconnectingState({
     required this.sessionId,
     this.currentSegment = '',
   });

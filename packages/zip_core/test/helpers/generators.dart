@@ -4,11 +4,16 @@
 // Imported by PBT test files.
 
 import 'package:glados/glados.dart';
+import 'package:zip_core/src/models/audio_device.dart';
 import 'package:zip_core/src/models/caption_event.dart';
 import 'package:zip_core/src/models/display_settings.dart';
 import 'package:zip_core/src/models/enums.dart';
 import 'package:zip_core/src/models/recording_state.dart';
+import 'package:zip_core/src/models/sherpa_model_catalog.dart';
+import 'package:zip_core/src/models/sherpa_model_download_progress.dart';
+import 'package:zip_core/src/models/sherpa_model_info.dart';
 import 'package:zip_core/src/models/stt_result.dart';
+import 'package:zip_core/src/models/wake_lock_settings.dart';
 
 import 'prefs_helpers.dart';
 import 'recording_state_model.dart';
@@ -127,3 +132,70 @@ final Generator<RegistryOp> arbitraryRegistryOp =
 
 final Generator<List<RegistryOp>> arbitraryRegistryOps =
     any.listWithLengthInRange(0, 30, arbitraryRegistryOp);
+
+// --- Unit 2 domain generators ---
+
+/// Generates [AudioDevice] instances with varied IDs and names.
+final Generator<AudioDevice> arbitraryAudioDevice = any.combine3(
+  any.letterOrDigits,
+  any.letterOrDigits,
+  any.bool,
+  (id, name, isDefault) => AudioDevice(
+    deviceId: id.isEmpty ? 'dev-0' : id,
+    name: name.isEmpty ? 'Device' : name,
+    isDefault: isDefault,
+  ),
+);
+
+/// Generates [WakeLockSettings] with all boolean combinations.
+final Generator<WakeLockSettings> arbitraryWakeLockSettings = any.combine2(
+  any.bool,
+  any.bool,
+  (enabled, releaseOnPause) => WakeLockSettings(
+    enabled: enabled,
+    releaseOnPause: releaseOnPause,
+  ),
+);
+
+/// Generates [SherpaModelCatalogEntry] instances.
+final Generator<SherpaModelCatalogEntry> arbitrarySherpaModelCatalogEntry =
+    any.combine4(
+  any.letterOrDigits,
+  arbitraryLocaleId,
+  any.intInRange(1000, 500000000),
+  any.letterOrDigits,
+  (modelId, locale, sizeBytes, checksum) => SherpaModelCatalogEntry(
+    modelId: modelId.isEmpty ? 'model-0' : modelId,
+    displayName: 'Model $modelId',
+    primaryLocaleId: locale,
+    downloadSizeBytes: sizeBytes,
+    downloadUrl: 'https://example.com/$modelId.tar.bz2',
+    sha256Checksum: checksum.isEmpty ? 'abc123' : checksum,
+  ),
+);
+
+/// Generates [SherpaModelInfo] instances.
+final Generator<SherpaModelInfo> arbitrarySherpaModelInfo = any.combine2(
+  arbitrarySherpaModelCatalogEntry,
+  any.bool,
+  (entry, isDownloaded) => SherpaModelInfo(
+    catalogEntry: entry,
+    isDownloaded: isDownloaded,
+    localPath: isDownloaded ? '/models/${entry.modelId}' : null,
+  ),
+);
+
+/// Generates [SherpaModelDownloadProgress] instances with valid invariants.
+final Generator<SherpaModelDownloadProgress>
+    arbitrarySherpaModelDownloadProgress = any.combine2(
+  any.letterOrDigits,
+  any.intInRange(1, 500000000),
+  (modelId, totalBytes) {
+    final downloaded = totalBytes ~/ 2;
+    return SherpaModelDownloadProgress(
+      modelId: modelId.isEmpty ? 'model-0' : modelId,
+      downloadedBytes: downloaded,
+      totalBytes: totalBytes,
+    );
+  },
+);

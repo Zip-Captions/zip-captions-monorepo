@@ -67,7 +67,7 @@
 - [x] Spike 1.2: System Audio Capture Feasibility — COMPLETE; custom plugin needed, Core Audio taps (macOS), WASAPI loopback (Windows), PulseAudio monitors (Linux)
 - [x] Spike 1.3: STT Integration PoC — COMPLETE; Sherpa-ONNX confirmed viable, OnlineRecognizer API maps to SttEngine contract
 - [x] Unit 1: Core Abstractions (S-01, S-03) — FD, NFR-R, NFR-D, CG — COMPLETE (156 tests passing, 0 errors)
-- [ ] Unit 2: Platform STT + Audio (S-02, S-06) — **FD ✓**, **NFR-R ✓**, NFR-D, CG
+- [x] Unit 2: Platform STT + Audio (S-02, S-06) — FD, NFR-R, NFR-D, CG — COMPLETE (247 tests passing, 0 errors)
 - [ ] Unit 3: Output Targets (S-04, S-05, S-07, S-08) — FD, NFR-R, NFR-D, ID, CG
 - [ ] Unit 4: UI Prototypes (Proto-01..09) — CG + human gate
 - [ ] Unit 5: Zip Captions App (S-09) — FD, NFR-R, NFR-D, CG

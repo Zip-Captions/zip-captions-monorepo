@@ -1,9 +1,16 @@
+export 'audio_device.dart';
 export 'audio_input_config.dart';
 export 'caption_event.dart';
 export 'display_settings.dart';
 export 'enums.dart';
 export 'pause_event.dart';
 export 'recording_error.dart';
+export 'recording_error_factories.dart';
 export 'recording_state.dart';
+export 'sherpa_model_catalog.dart';
+export 'sherpa_model_catalog_state.dart';
+export 'sherpa_model_download_progress.dart';
+export 'sherpa_model_info.dart';
 export 'speech_locale.dart';
 export 'stt_result.dart';
+export 'wake_lock_settings.dart';
