@@ -17,7 +17,7 @@ reviews:
     - "!**/Flutter/GeneratedPluginRegistrant.*"
     - "!**/flutter/generated_plugin_registrant.*"
     - "!**/flutter/generated_plugins.cmake"
-    - "!**/Podfile"
+    - "!**/Podfile.lock"
     - "!pubspec.lock"
     - "!**/*.g.dart"
     - "!**/*.freezed.dart"
