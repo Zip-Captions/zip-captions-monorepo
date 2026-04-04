@@ -219,14 +219,14 @@ git worktree list
 7. Run tests: `melos run test`
 8. Run analysis: `melos run analyze`
 9. Run Documentation Refinement — clean up `aidlc-docs/` working documents into lasting reference material, propagate design changes to `docs/`
-10. Open PR targeting `develop` (include refined `aidlc-docs/` in the commit)
+10. **Open PR targeting `develop` immediately after Documentation Refinement — do not start the next unit until the PR is open.** Include refined `aidlc-docs/` in the commit.
 11. After PR merges, clean up the worktree
 
 ### Rules
 
 - Always run AI-DLC inception before writing code — do not start implementation without completing requirements and design stages and receiving human approval at each gate
 - Write failing tests before implementing (within AI-DLC's Code Generation stage, Part 2)
-- One unit of work per worktree, one worktree per PR
+- One unit of work per worktree, one worktree per PR — open the PR before starting the next unit
 - If blocked, stop and document the blocker — do not work around it
 - Do not modify files outside the assigned package without explicit feature scope
 - Do not add dependencies not on the approved list (see `docs/04-technical-specification.md` Section 6) without human approval
