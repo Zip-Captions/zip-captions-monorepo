@@ -94,6 +94,14 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
 
     final listenOk = await _sessionManager.startListening();
     if (!listenOk) {
+      _lastError = RecordingErrorFactories.engineInitFailed(
+        message: 'Engine failed to start listening',
+      );
+      try {
+        await _sessionManager.stop();
+      } on Object catch (e) {
+        _log.warning('Error during cleanup after startListening failure: $e');
+      }
       _log.warning('Engine failed to start listening');
       return;
     }

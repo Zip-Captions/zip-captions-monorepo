@@ -42,10 +42,11 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      // Before async resolves, supportedLocales is empty → fallback to en-US.
-      // After resolving, it would return fr-FR.
+      // Wait for the async provider to resolve.
+      await container.read(localeInfoProvider.future);
+
       final result = container.read(resolvedLocaleIdProvider);
-      expect(result, anyOf('en-US', 'fr-FR'));
+      expect(result, 'fr-FR');
     });
 
     test('returns exact match when activeLocaleId matches', () async {

@@ -44,8 +44,13 @@ class CaptionOutputTargetRegistry {
   void remove(CaptionOutputTarget target) {
     if (_targets.remove(target)) {
       _log.info('Target removed: ${target.targetId}');
-      target.dispose();
-      _ensureUnsubscribedIfEmpty();
+      try {
+        target.dispose();
+      } on Object catch (e) {
+        _log.severe('Error disposing target ${target.targetId}: $e');
+      } finally {
+        _ensureUnsubscribedIfEmpty();
+      }
     }
   }
 
@@ -59,7 +64,11 @@ class CaptionOutputTargetRegistry {
     unawaited(_busSubscription?.cancel());
     _busSubscription = null;
     for (final target in _targets.toList()) {
-      target.dispose();
+      try {
+        target.dispose();
+      } on Object catch (e) {
+        _log.severe('Error disposing target ${target.targetId}: $e');
+      }
     }
     _targets.clear();
   }
