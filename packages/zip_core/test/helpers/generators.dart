@@ -142,9 +142,11 @@ final Generator<CaptionEvent> arbitraryCaptionEvent = any.combine3(
 /// Operations that can be applied to SttEngineRegistry.
 enum RegistryOp { register, unregister, get }
 
+/// Returns a random [RegistryOp] value for property-based tests.
 final Generator<RegistryOp> arbitraryRegistryOp =
     any.choose(RegistryOp.values);
 
+/// Returns a random list of [RegistryOp] values with length 0–30.
 final Generator<List<RegistryOp>> arbitraryRegistryOps =
     any.listWithLengthInRange(0, 30, arbitraryRegistryOp);
 
@@ -179,14 +181,17 @@ final Generator<SherpaModelCatalogEntry> arbitrarySherpaModelCatalogEntry =
   arbitraryLocaleId,
   any.intInRange(1000, 500000000),
   any.letterOrDigits,
-  (modelId, locale, sizeBytes, checksum) => SherpaModelCatalogEntry(
-    modelId: modelId.isEmpty ? 'model-0' : modelId,
-    displayName: 'Model $modelId',
-    primaryLocaleId: locale,
-    downloadSizeBytes: sizeBytes,
-    downloadUrl: 'https://example.com/$modelId.tar.bz2',
-    sha256Checksum: checksum.isEmpty ? 'abc123' : checksum,
-  ),
+  (modelId, locale, sizeBytes, checksum) {
+    final normalizedModelId = modelId.isEmpty ? 'model-0' : modelId;
+    return SherpaModelCatalogEntry(
+      modelId: normalizedModelId,
+      displayName: 'Model $normalizedModelId',
+      primaryLocaleId: locale,
+      downloadSizeBytes: sizeBytes,
+      downloadUrl: 'https://example.com/$normalizedModelId.tar.bz2',
+      sha256Checksum: checksum.isEmpty ? '0' * 64 : checksum,
+    );
+  },
 );
 
 /// Generates [SherpaModelInfo] instances.
