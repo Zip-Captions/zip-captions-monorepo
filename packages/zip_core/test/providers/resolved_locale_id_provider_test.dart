@@ -78,9 +78,7 @@ void main() {
           container.read(activeLocaleIdNotifierProvider.notifier);
       await notifier.setLocaleId('de-DE');
 
-      // Allow async to settle.
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-
+      await container.read(localeInfoProvider.future);
       final result = container.read(resolvedLocaleIdProvider);
       expect(result, 'de-DE');
     });

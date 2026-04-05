@@ -94,9 +94,7 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
 
     final listenOk = await _sessionManager.startListening();
     if (!listenOk) {
-      _lastError = RecordingErrorFactories.engineInitFailed(
-        message: 'Engine failed to start listening',
-      );
+      _lastError = RecordingErrorFactories.engineStartFailed();
       try {
         await _sessionManager.stop();
       } on Object catch (e) {
@@ -142,6 +140,7 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
     _log.info('Session resumed');
     state = RecordingState.recording(
       sessionId: current.sessionId,
+      currentSegment: current.currentSegment,
     );
     _captionBus.publish(SessionStateEvent(state));
     await _wakeLockService.acquire();
