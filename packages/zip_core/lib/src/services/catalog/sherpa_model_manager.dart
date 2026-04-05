@@ -57,7 +57,7 @@ class SherpaModelManager {
     // No cache at all — must fetch.
     try {
       await _fetchCatalog();
-    } catch (e) {
+    } on Object catch (e) {
       _log.warning('Catalog fetch failed: ${e.runtimeType}');
       return [];
     }
@@ -212,9 +212,9 @@ class SherpaModelManager {
       CatalogConstants.catalogUrl,
       options: Options(
         headers: {
-          if (_cache.etag != null) 'If-None-Match': _cache.etag!,
+          if (_cache.etag != null) 'If-None-Match': _cache.etag,
           if (_cache.lastModified != null)
-            'If-Modified-Since': _cache.lastModified!,
+            'If-Modified-Since': _cache.lastModified,
         },
       ),
     );
@@ -240,7 +240,7 @@ class SherpaModelManager {
   Future<void> _revalidate() async {
     try {
       await _fetchCatalog();
-    } catch (e) {
+    } on Object catch (e) {
       _log.warning('Background revalidation failed: ${e.runtimeType}');
     }
   }
@@ -270,7 +270,18 @@ class SherpaModelManager {
     final archive = TarDecoder().decodeBytes(decompressed);
     for (final file in archive) {
       if (file.isFile) {
-        final outFile = File('${modelDir.path}/${file.name}');
+        // SEC-U2.3: Sanitize entry paths to prevent path traversal.
+        // Strip leading slashes and reject any path component that is '..'.
+        final parts = file.name
+            .replaceAll(r'\', '/')
+            .split('/')
+            .where((p) => p.isNotEmpty && p != '..')
+            .toList();
+        if (parts.isEmpty) continue;
+        final safePath = '${modelDir.path}/${parts.join('/')}';
+        // Verify the resolved path is still within modelDir.
+        if (!safePath.startsWith('${modelDir.path}/')) continue;
+        final outFile = File(safePath);
         await outFile.create(recursive: true);
         await outFile.writeAsBytes(file.content as List<int>);
       }
