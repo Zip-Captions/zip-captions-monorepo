@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:zip_core/src/models/app_settings.dart';
+import 'package:zip_core/src/models/display_settings.dart';
 import 'package:zip_core/src/models/enums.dart';
 import 'package:zip_core/src/providers/base_settings_notifier.dart';
 
@@ -15,7 +15,7 @@ class TestSettingsNotifier extends BaseSettingsNotifier {
 
 // Hand-written provider for the test notifier.
 final testSettingsProvider =
-    NotifierProvider<TestSettingsNotifier, AppSettings>(
+    NotifierProvider<TestSettingsNotifier, DisplaySettings>(
   TestSettingsNotifier.new,
 );
 
@@ -33,11 +33,11 @@ void main() {
       addTearDown(container.dispose);
 
       final settings = container.read(testSettingsProvider);
-      expect(settings, equals(AppSettings.defaults()));
+      expect(settings, equals(DisplaySettings.defaults()));
     });
 
     test('loads persisted values', () async {
-      const saved = AppSettings(
+      const saved = DisplaySettings(
         scrollDirection: ScrollDirection.topToBottom,
         captionTextSize: CaptionTextSize.xl,
         captionFont: CaptionFont.poppins,
@@ -66,11 +66,11 @@ void main() {
 
     test('recovers defaults for corrupt fields (BR-05)', () async {
       SharedPreferences.setMockInitialValues({
-        'test.scrollDirection': 'diagonal',
-        'test.captionTextSize': 42,
-        'test.captionFont': 'papyrus',
+        'test.display_settings.scrollDirection': 'diagonal',
+        'test.display_settings.captionTextSize': 42,
+        'test.display_settings.captionFont': 'papyrus',
         // themeModeSetting missing
-        'test.maxVisibleLines': 'not_a_number',
+        'test.display_settings.maxVisibleLines': 'not_a_number',
       });
       final prefs = await SharedPreferences.getInstance();
 
@@ -82,7 +82,7 @@ void main() {
       addTearDown(container.dispose);
 
       final settings = container.read(testSettingsProvider);
-      final defaults = AppSettings.defaults();
+      final defaults = DisplaySettings.defaults();
       expect(settings.scrollDirection, defaults.scrollDirection);
       expect(settings.captionTextSize, defaults.captionTextSize);
       expect(settings.captionFont, defaults.captionFont);
@@ -112,14 +112,14 @@ void main() {
         ScrollDirection.topToBottom,
       );
       expect(
-        prefs.getString('test.scrollDirection'),
+        prefs.getString('test.display_settings.scrollDirection'),
         'topToBottom',
       );
     });
 
     test('reset clears all keys and restores defaults', () async {
       SharedPreferences.setMockInitialValues(
-        validPrefsMap('test', const AppSettings(
+        validPrefsMap('test', const DisplaySettings(
           scrollDirection: ScrollDirection.topToBottom,
           captionTextSize: CaptionTextSize.xxl,
           captionFont: CaptionFont.cousine,
@@ -142,16 +142,19 @@ void main() {
 
       expect(
         container.read(testSettingsProvider),
-        equals(AppSettings.defaults()),
+        equals(DisplaySettings.defaults()),
       );
       // Keys should be removed
-      expect(prefs.getString('test.scrollDirection'), isNull);
+      expect(
+        prefs.getString('test.display_settings.scrollDirection'),
+        isNull,
+      );
     });
 
     test('key prefix isolates settings', () async {
       SharedPreferences.setMockInitialValues({
-        'test.scrollDirection': 'topToBottom',
-        'other.scrollDirection': 'bottomToTop',
+        'test.display_settings.scrollDirection': 'topToBottom',
+        'other.display_settings.scrollDirection': 'bottomToTop',
       });
       final prefs = await SharedPreferences.getInstance();
 

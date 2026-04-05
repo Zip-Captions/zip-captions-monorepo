@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'app_settings.dart';
+part of 'display_settings.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -16,26 +16,26 @@ final _privateConstructorUsedError = UnsupportedError(
 );
 
 /// @nodoc
-mixin _$AppSettings {
+mixin _$DisplaySettings {
   ScrollDirection get scrollDirection => throw _privateConstructorUsedError;
   CaptionTextSize get captionTextSize => throw _privateConstructorUsedError;
   CaptionFont get captionFont => throw _privateConstructorUsedError;
   ThemeModeSetting get themeModeSetting => throw _privateConstructorUsedError;
   int get maxVisibleLines => throw _privateConstructorUsedError;
 
-  /// Create a copy of AppSettings
+  /// Create a copy of DisplaySettings
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $AppSettingsCopyWith<AppSettings> get copyWith =>
+  $DisplaySettingsCopyWith<DisplaySettings> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $AppSettingsCopyWith<$Res> {
-  factory $AppSettingsCopyWith(
-    AppSettings value,
-    $Res Function(AppSettings) then,
-  ) = _$AppSettingsCopyWithImpl<$Res, AppSettings>;
+abstract class $DisplaySettingsCopyWith<$Res> {
+  factory $DisplaySettingsCopyWith(
+    DisplaySettings value,
+    $Res Function(DisplaySettings) then,
+  ) = _$DisplaySettingsCopyWithImpl<$Res, DisplaySettings>;
   @useResult
   $Res call({
     ScrollDirection scrollDirection,
@@ -47,16 +47,16 @@ abstract class $AppSettingsCopyWith<$Res> {
 }
 
 /// @nodoc
-class _$AppSettingsCopyWithImpl<$Res, $Val extends AppSettings>
-    implements $AppSettingsCopyWith<$Res> {
-  _$AppSettingsCopyWithImpl(this._value, this._then);
+class _$DisplaySettingsCopyWithImpl<$Res, $Val extends DisplaySettings>
+    implements $DisplaySettingsCopyWith<$Res> {
+  _$DisplaySettingsCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
   // ignore: unused_field
   final $Res Function($Val) _then;
 
-  /// Create a copy of AppSettings
+  /// Create a copy of DisplaySettings
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -96,12 +96,12 @@ class _$AppSettingsCopyWithImpl<$Res, $Val extends AppSettings>
 }
 
 /// @nodoc
-abstract class _$$AppSettingsImplCopyWith<$Res>
-    implements $AppSettingsCopyWith<$Res> {
-  factory _$$AppSettingsImplCopyWith(
-    _$AppSettingsImpl value,
-    $Res Function(_$AppSettingsImpl) then,
-  ) = __$$AppSettingsImplCopyWithImpl<$Res>;
+abstract class _$$DisplaySettingsImplCopyWith<$Res>
+    implements $DisplaySettingsCopyWith<$Res> {
+  factory _$$DisplaySettingsImplCopyWith(
+    _$DisplaySettingsImpl value,
+    $Res Function(_$DisplaySettingsImpl) then,
+  ) = __$$DisplaySettingsImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -114,15 +114,15 @@ abstract class _$$AppSettingsImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$AppSettingsImplCopyWithImpl<$Res>
-    extends _$AppSettingsCopyWithImpl<$Res, _$AppSettingsImpl>
-    implements _$$AppSettingsImplCopyWith<$Res> {
-  __$$AppSettingsImplCopyWithImpl(
-    _$AppSettingsImpl _value,
-    $Res Function(_$AppSettingsImpl) _then,
+class __$$DisplaySettingsImplCopyWithImpl<$Res>
+    extends _$DisplaySettingsCopyWithImpl<$Res, _$DisplaySettingsImpl>
+    implements _$$DisplaySettingsImplCopyWith<$Res> {
+  __$$DisplaySettingsImplCopyWithImpl(
+    _$DisplaySettingsImpl _value,
+    $Res Function(_$DisplaySettingsImpl) _then,
   ) : super(_value, _then);
 
-  /// Create a copy of AppSettings
+  /// Create a copy of DisplaySettings
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -134,7 +134,7 @@ class __$$AppSettingsImplCopyWithImpl<$Res>
     Object? maxVisibleLines = null,
   }) {
     return _then(
-      _$AppSettingsImpl(
+      _$DisplaySettingsImpl(
         scrollDirection: null == scrollDirection
             ? _value.scrollDirection
             : scrollDirection // ignore: cast_nullable_to_non_nullable
@@ -162,8 +162,8 @@ class __$$AppSettingsImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$AppSettingsImpl implements _AppSettings {
-  const _$AppSettingsImpl({
+class _$DisplaySettingsImpl implements _DisplaySettings {
+  const _$DisplaySettingsImpl({
     required this.scrollDirection,
     required this.captionTextSize,
     required this.captionFont,
@@ -184,14 +184,14 @@ class _$AppSettingsImpl implements _AppSettings {
 
   @override
   String toString() {
-    return 'AppSettings(scrollDirection: $scrollDirection, captionTextSize: $captionTextSize, captionFont: $captionFont, themeModeSetting: $themeModeSetting, maxVisibleLines: $maxVisibleLines)';
+    return 'DisplaySettings(scrollDirection: $scrollDirection, captionTextSize: $captionTextSize, captionFont: $captionFont, themeModeSetting: $themeModeSetting, maxVisibleLines: $maxVisibleLines)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AppSettingsImpl &&
+            other is _$DisplaySettingsImpl &&
             (identical(other.scrollDirection, scrollDirection) ||
                 other.scrollDirection == scrollDirection) &&
             (identical(other.captionTextSize, captionTextSize) ||
@@ -214,23 +214,26 @@ class _$AppSettingsImpl implements _AppSettings {
     maxVisibleLines,
   );
 
-  /// Create a copy of AppSettings
+  /// Create a copy of DisplaySettings
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
-  _$$AppSettingsImplCopyWith<_$AppSettingsImpl> get copyWith =>
-      __$$AppSettingsImplCopyWithImpl<_$AppSettingsImpl>(this, _$identity);
+  _$$DisplaySettingsImplCopyWith<_$DisplaySettingsImpl> get copyWith =>
+      __$$DisplaySettingsImplCopyWithImpl<_$DisplaySettingsImpl>(
+        this,
+        _$identity,
+      );
 }
 
-abstract class _AppSettings implements AppSettings {
-  const factory _AppSettings({
+abstract class _DisplaySettings implements DisplaySettings {
+  const factory _DisplaySettings({
     required final ScrollDirection scrollDirection,
     required final CaptionTextSize captionTextSize,
     required final CaptionFont captionFont,
     required final ThemeModeSetting themeModeSetting,
     required final int maxVisibleLines,
-  }) = _$AppSettingsImpl;
+  }) = _$DisplaySettingsImpl;
 
   @override
   ScrollDirection get scrollDirection;
@@ -243,10 +246,10 @@ abstract class _AppSettings implements AppSettings {
   @override
   int get maxVisibleLines;
 
-  /// Create a copy of AppSettings
+  /// Create a copy of DisplaySettings
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AppSettingsImplCopyWith<_$AppSettingsImpl> get copyWith =>
+  _$$DisplaySettingsImplCopyWith<_$DisplaySettingsImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

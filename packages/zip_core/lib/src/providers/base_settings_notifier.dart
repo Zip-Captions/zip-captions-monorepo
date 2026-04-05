@@ -1,9 +1,8 @@
-import 'dart:developer';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logging/logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:zip_core/src/models/app_settings.dart';
+import 'package:zip_core/src/models/display_settings.dart';
 import 'package:zip_core/src/models/enums.dart';
 
 part 'base_settings_notifier.g.dart';
@@ -26,23 +25,27 @@ SharedPreferences sharedPreferences(Ref ref) {
 /// Concrete subclasses in each app are annotated with `@riverpod`.
 /// This abstract base provides the shared persistence implementation.
 ///
-/// SharedPreferences key format: `{keyPrefix}.{fieldName}`
-abstract class BaseSettingsNotifier extends Notifier<AppSettings> {
+/// SharedPreferences key format: `{keyPrefix}.display_settings.{fieldName}`
+abstract class BaseSettingsNotifier extends Notifier<DisplaySettings> {
+  static final _log = Logger('zip_core.BaseSettingsNotifier');
+
   /// App-specific key prefix for SharedPreferences.
   ///
   /// Example: `'zip_captions'` or `'zip_broadcast'`.
   String get keyPrefix;
 
+  String get _fullPrefix => '$keyPrefix.display_settings';
+
   @override
-  AppSettings build() {
+  DisplaySettings build() {
     final prefs = ref.read(sharedPreferencesProvider);
     return _loadSettings(prefs);
   }
 
-  AppSettings _loadSettings(SharedPreferences prefs) {
-    final defaults = AppSettings.defaults();
+  DisplaySettings _loadSettings(SharedPreferences prefs) {
+    final defaults = DisplaySettings.defaults();
 
-    return AppSettings(
+    return DisplaySettings(
       scrollDirection: _loadEnum(
         prefs,
         'scrollDirection',
@@ -81,19 +84,14 @@ abstract class BaseSettingsNotifier extends Notifier<AppSettings> {
     List<T> values,
     T defaultValue,
   ) {
-    final key = '$keyPrefix.$fieldName';
+    final key = '$_fullPrefix.$fieldName';
     try {
       final stored = prefs.getString(key);
       if (stored == null) return defaultValue;
       return values.firstWhere(
         (v) => v.name == stored,
         orElse: () {
-          // SR-03: log field name and failure reason only
-          log(
-            'Failed to load $fieldName: unrecognized value',
-            level: 500,
-            name: 'BaseSettingsNotifier',
-          );
+          _log.warning('Failed to load $fieldName: unrecognized value');
           return defaultValue;
         },
       );
@@ -101,11 +99,7 @@ abstract class BaseSettingsNotifier extends Notifier<AppSettings> {
     // when stored value type doesn't match expected type.
     // ignore: avoid_catches_without_on_clauses
     } catch (e) {
-      log(
-        'Failed to load $fieldName: ${e.runtimeType}',
-        level: 500,
-        name: 'BaseSettingsNotifier',
-      );
+      _log.warning('Failed to load $fieldName: ${e.runtimeType}');
       return defaultValue;
     }
   }
@@ -115,18 +109,14 @@ abstract class BaseSettingsNotifier extends Notifier<AppSettings> {
     String fieldName,
     int defaultValue,
   ) {
-    final key = '$keyPrefix.$fieldName';
+    final key = '$_fullPrefix.$fieldName';
     try {
       return prefs.getInt(key) ?? defaultValue;
     // SharedPreferences can throw TypeError (extends Error, not Exception)
     // when stored value type doesn't match expected type.
     // ignore: avoid_catches_without_on_clauses
     } catch (e) {
-      log(
-        'Failed to load $fieldName: ${e.runtimeType}',
-        level: 500,
-        name: 'BaseSettingsNotifier',
-      );
+      _log.warning('Failed to load $fieldName: ${e.runtimeType}');
       return defaultValue;
     }
   }
@@ -137,7 +127,7 @@ abstract class BaseSettingsNotifier extends Notifier<AppSettings> {
   ) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(
-      '$keyPrefix.scrollDirection',
+      '$_fullPrefix.scrollDirection',
       direction.name,
     );
     state = state.copyWith(scrollDirection: direction);
@@ -147,7 +137,7 @@ abstract class BaseSettingsNotifier extends Notifier<AppSettings> {
   Future<void> setCaptionTextSize(CaptionTextSize size) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(
-      '$keyPrefix.captionTextSize',
+      '$_fullPrefix.captionTextSize',
       size.name,
     );
     state = state.copyWith(captionTextSize: size);
@@ -157,7 +147,7 @@ abstract class BaseSettingsNotifier extends Notifier<AppSettings> {
   Future<void> setCaptionFont(CaptionFont font) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(
-      '$keyPrefix.captionFont',
+      '$_fullPrefix.captionFont',
       font.name,
     );
     state = state.copyWith(captionFont: font);
@@ -169,7 +159,7 @@ abstract class BaseSettingsNotifier extends Notifier<AppSettings> {
   ) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(
-      '$keyPrefix.themeModeSetting',
+      '$_fullPrefix.themeModeSetting',
       mode.name,
     );
     state = state.copyWith(themeModeSetting: mode);
@@ -178,7 +168,7 @@ abstract class BaseSettingsNotifier extends Notifier<AppSettings> {
   /// Updates and persists the max visible lines.
   Future<void> setMaxVisibleLines(int lines) async {
     final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setInt('$keyPrefix.maxVisibleLines', lines);
+    await prefs.setInt('$_fullPrefix.maxVisibleLines', lines);
     state = state.copyWith(maxVisibleLines: lines);
   }
 
@@ -187,10 +177,10 @@ abstract class BaseSettingsNotifier extends Notifier<AppSettings> {
     final prefs = ref.read(sharedPreferencesProvider);
     final keys = prefs
         .getKeys()
-        .where((k) => k.startsWith('$keyPrefix.'));
+        .where((k) => k.startsWith('$_fullPrefix.'));
     for (final key in keys) {
       await prefs.remove(key);
     }
-    state = AppSettings.defaults();
+    state = DisplaySettings.defaults();
   }
 }

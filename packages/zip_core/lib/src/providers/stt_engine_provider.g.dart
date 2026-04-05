@@ -6,26 +6,28 @@ part of 'stt_engine_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$sttEngineNotifierHash() => r'34c6db6d0c5ed3434d8454b61b9f8fdab2d877e2';
+String _$sttEngineHash() => r'8e7c4f379b4eb6c9c421259836bcd52d800064c7';
 
-/// Provider for the active STT engine.
+/// Resolves the active [SttEngine] from the registry.
 ///
-/// Phase 0: throws [UnimplementedError].
-/// Phase 1: returns the platform-appropriate engine.
+/// Uses [activeEngineIdNotifierProvider] to pick the user-selected engine.
+/// Falls back to [SttEngineRegistry.defaultEngine] when no explicit selection
+/// exists. Returns `null` if no engines are registered.
 ///
-/// Copied from [SttEngineNotifier].
-@ProviderFor(SttEngineNotifier)
-final sttEngineNotifierProvider =
-    AsyncNotifierProvider<SttEngineNotifier, SttEngine>.internal(
-      SttEngineNotifier.new,
-      name: r'sttEngineNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$sttEngineNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+/// Copied from [sttEngine].
+@ProviderFor(sttEngine)
+final sttEngineProvider = Provider<SttEngine?>.internal(
+  sttEngine,
+  name: r'sttEngineProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$sttEngineHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
-typedef _$SttEngineNotifier = AsyncNotifier<SttEngine>;
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef SttEngineRef = ProviderRef<SttEngine?>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

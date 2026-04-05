@@ -83,7 +83,45 @@ A unit can begin construction if all its dependencies are **fully defined** — 
 
 ---
 
-## 3. Branching Strategy (Gitflow)
+## 3. Submodule Maintenance
+
+The `ai-dlc/` directory is a git submodule tracking [awslabs/aidlc-workflows](https://github.com/awslabs/aidlc-workflows). Keep it up to date so that AI-DLC rules and templates reflect the latest upstream changes.
+
+### Updating the Submodule
+
+From the monorepo root:
+
+```bash
+git submodule update --remote ai-dlc
+```
+
+If the submodule pointer changed, commit the update:
+
+```bash
+git add ai-dlc
+git commit -m "chore: update ai-dlc submodule to latest"
+```
+
+### When to Update
+
+- **Before starting a new AI-DLC inception session** — ensures you are working with the latest workflow rules
+- **After cloning or pulling** — run `git submodule update --init` to initialize or sync the submodule
+- **Periodically** — check for upstream updates at least once per development cycle
+
+### Troubleshooting
+
+If the submodule directory is empty after a clone:
+
+```bash
+git submodule init
+git submodule update
+```
+
+If you see a detached HEAD warning inside `ai-dlc/`, that is normal — submodules pin to a specific commit.
+
+---
+
+## 4. Branching Strategy (Gitflow)
 
 | Branch | Purpose | Created from | Merges into |
 |---|---|---|---|
@@ -112,7 +150,7 @@ git checkout -b feature/P0-US-001-short-name
 
 ---
 
-## 4. Commit Messages
+## 5. Commit Messages
 
 Agents must use Conventional Commits, scoped with the package name:
 
@@ -131,7 +169,7 @@ Melos uses Conventional Commits for automated versioning and changelogs.
 
 ---
 
-## 5. Story Lifecycle
+## 6. Story Lifecycle
 
 AI-DLC inception phase gates are the primary points where the agent pauses for human approval — requirements, user stories, workflow plan, application design, and the code generation plan each require an explicit approval before the agent proceeds.
 
@@ -155,7 +193,7 @@ Within the Construction Phase, agents should also stop and ask when:
 
 ---
 
-## 6. Code Review
+## 7. Code Review
 
 ### Automated Checks (CI)
 
@@ -183,7 +221,7 @@ Within the Construction Phase, agents should also stop and ask when:
 
 ---
 
-## 7. Integration Testing Strategy
+## 8. Integration Testing Strategy
 
 ### Tier 1: Contract Tests (Automated, No External Dependencies)
 

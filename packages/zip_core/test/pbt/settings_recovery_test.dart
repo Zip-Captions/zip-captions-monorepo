@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' hide addTearDown, expect, group, test;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:zip_core/src/models/app_settings.dart';
+import 'package:zip_core/src/models/display_settings.dart';
 import 'package:zip_core/src/providers/base_settings_notifier.dart';
 
 import '../helpers/generators.dart';
@@ -14,16 +14,16 @@ class _RecoveryNotifier extends BaseSettingsNotifier {
 }
 
 final _recoveryProvider =
-    NotifierProvider<_RecoveryNotifier, AppSettings>(
+    NotifierProvider<_RecoveryNotifier, DisplaySettings>(
   _RecoveryNotifier.new,
 );
 
 void main() {
   group('Settings recovery PBT (BR-05)', () {
-    // Generate a valid AppSettings + 5 independent FieldStates.
+    // Generate a valid DisplaySettings + 5 independent FieldStates.
     Glados(
       any.combine6(
-        arbitraryAppSettings,
+        arbitraryDisplaySettings,
         arbitraryFieldState,
         arbitraryFieldState,
         arbitraryFieldState,
@@ -66,7 +66,7 @@ void main() {
         addTearDown(container.dispose);
 
         final loaded = container.read(_recoveryProvider);
-        final defaults = AppSettings.defaults();
+        final defaults = DisplaySettings.defaults();
 
         // Each field: valid -> matches input, otherwise -> default.
         if (fieldStates['scrollDirection'] == FieldState.valid) {

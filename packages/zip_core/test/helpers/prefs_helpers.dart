@@ -1,17 +1,21 @@
-import 'package:zip_core/src/models/app_settings.dart';
+import 'package:zip_core/src/models/display_settings.dart';
 
 /// Corruption state for a single settings field (LC-04).
 enum FieldState { valid, missing, wrongType, unrecognizedEnum }
 
 /// Builds a complete, valid SharedPreferences mock values map from
-/// [settings] using [keyPrefix].
-Map<String, Object> validPrefsMap(String keyPrefix, AppSettings settings) {
+/// [settings] using [keyPrefix].display_settings prefix.
+Map<String, Object> validPrefsMap(
+  String keyPrefix,
+  DisplaySettings settings,
+) {
+  final prefix = '$keyPrefix.display_settings';
   return {
-    '$keyPrefix.scrollDirection': settings.scrollDirection.name,
-    '$keyPrefix.captionTextSize': settings.captionTextSize.name,
-    '$keyPrefix.captionFont': settings.captionFont.name,
-    '$keyPrefix.themeModeSetting': settings.themeModeSetting.name,
-    '$keyPrefix.maxVisibleLines': settings.maxVisibleLines,
+    '$prefix.scrollDirection': settings.scrollDirection.name,
+    '$prefix.captionTextSize': settings.captionTextSize.name,
+    '$prefix.captionFont': settings.captionFont.name,
+    '$prefix.themeModeSetting': settings.themeModeSetting.name,
+    '$prefix.maxVisibleLines': settings.maxVisibleLines,
   };
 }
 
@@ -23,12 +27,13 @@ Map<String, Object> validPrefsMap(String keyPrefix, AppSettings settings) {
 Map<String, Object> corruptPrefsMap(
   String keyPrefix,
   Map<String, FieldState> fieldStates,
-  AppSettings validSource,
+  DisplaySettings validSource,
 ) {
+  final prefix = '$keyPrefix.display_settings';
   final map = <String, Object>{};
 
   for (final entry in fieldStates.entries) {
-    final key = '$keyPrefix.${entry.key}';
+    final key = '$prefix.${entry.key}';
     switch (entry.value) {
       case FieldState.valid:
         map[key] = _validValue(entry.key, validSource);
@@ -44,7 +49,7 @@ Map<String, Object> corruptPrefsMap(
   return map;
 }
 
-Object _validValue(String fieldName, AppSettings settings) {
+Object _validValue(String fieldName, DisplaySettings settings) {
   return switch (fieldName) {
     'scrollDirection' => settings.scrollDirection.name,
     'captionTextSize' => settings.captionTextSize.name,
@@ -79,8 +84,8 @@ Object _unrecognizedValue(String fieldName) {
   };
 }
 
-/// All AppSettings field names for iteration in tests.
-const appSettingsFieldNames = [
+/// All DisplaySettings field names for iteration in tests.
+const displaySettingsFieldNames = [
   'scrollDirection',
   'captionTextSize',
   'captionFont',

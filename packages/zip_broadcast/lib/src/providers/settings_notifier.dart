@@ -5,13 +5,13 @@ import 'package:zip_core/zip_core.dart';
 ///
 /// Uses key prefix `zip_broadcast` to isolate settings
 /// in SharedPreferences from other apps in the monorepo.
-class ZipBroadcastSettingsNotifier extends BaseSettingsNotifier {
+class DisplaySettingsNotifier extends BaseSettingsNotifier {
   @override
   String get keyPrefix => 'zip_broadcast';
 }
 
-/// Provider for Zip Broadcast app settings.
-final zipBroadcastSettingsProvider =
-    NotifierProvider<ZipBroadcastSettingsNotifier, AppSettings>(
-  ZipBroadcastSettingsNotifier.new,
+/// Provider for Zip Broadcast display settings.
+final displaySettingsProvider =
+    NotifierProvider<DisplaySettingsNotifier, DisplaySettings>(
+  DisplaySettingsNotifier.new,
 );
