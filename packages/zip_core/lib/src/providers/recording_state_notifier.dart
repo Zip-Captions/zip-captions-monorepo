@@ -26,7 +26,7 @@ const _uuid = Uuid();
 ///
 /// Integrates [SttSessionManager] for engine lifecycle and [WakeLockService]
 /// to keep the screen on during captioning. Handles the one-attempt
-/// auto-restart recovery flow (REL-U2.1) via the [reconnecting] state.
+/// auto-restart recovery flow (REL-U2.1) via the `reconnecting` state.
 ///
 /// Invalid transitions are silently ignored (no exception, no error).
 /// This prevents UI race conditions (e.g., user double-taps a button).
@@ -73,6 +73,9 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
       return;
     }
 
+    // Explicit type required: inference widens to String? because localeId is
+    // String?, even though the ?? rhs is non-nullable String.
+    // ignore: omit_local_variable_types
     final String resolvedLocale =
         localeId ?? ref.read(resolvedLocaleIdProvider);
     final sessionId = _uuid.v4();
@@ -175,8 +178,8 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
 
   /// Handle an STT result from the active engine.
   ///
-  /// Updates [currentSegment] on the current state and publishes
-  /// an [SttResultEvent] to the bus.
+  /// Updates `currentSegment` on the current state and publishes
+  /// an `SttResultEvent` to the bus.
   ///
   /// **Security (SECURITY-03)**: Must never log result.text.
   void _handleSttResult(SttResult result) {
@@ -186,7 +189,6 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
     if (result.isFinal) {
       state = RecordingActiveState(
         sessionId: current.sessionId,
-        currentSegment: '',
       );
     } else {
       state = RecordingActiveState(
@@ -200,11 +202,11 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
 
   /// One-attempt auto-restart on engine error (REL-U2.1).
   ///
-  /// Transitions to [reconnecting], attempts restart, then either resumes
-  /// [recording] or transitions to [stopped] on failure.
+  /// Transitions to `reconnecting`, attempts restart, then either resumes
+  /// `recording` or transitions to `stopped` on failure.
   void _handleEngineError(RecordingError error) {
     final current = state;
-    final ActiveSessionState? active =
+    final active =
         current is ActiveSessionState ? current as ActiveSessionState : null;
     if (active == null) return;
 

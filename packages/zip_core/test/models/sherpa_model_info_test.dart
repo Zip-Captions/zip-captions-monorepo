@@ -14,10 +14,7 @@ void main() {
 
   group('SherpaModelInfo', () {
     test('creates with downloaded=false and null localPath', () {
-      const info = SherpaModelInfo(
-        catalogEntry: entry,
-        isDownloaded: false,
-      );
+      const info = SherpaModelInfo(catalogEntry: entry);
       expect(info.isDownloaded, isFalse);
       expect(info.localPath, isNull);
     });
@@ -33,8 +30,8 @@ void main() {
     });
 
     test('equality compares all fields', () {
-      const a = SherpaModelInfo(catalogEntry: entry, isDownloaded: false);
-      const b = SherpaModelInfo(catalogEntry: entry, isDownloaded: false);
+      const a = SherpaModelInfo(catalogEntry: entry);
+      const b = SherpaModelInfo(catalogEntry: entry);
       const c = SherpaModelInfo(catalogEntry: entry, isDownloaded: true);
 
       expect(a, equals(b));
@@ -42,7 +39,7 @@ void main() {
     });
 
     test('copyWith creates updated instance', () {
-      const info = SherpaModelInfo(catalogEntry: entry, isDownloaded: false);
+      const info = SherpaModelInfo(catalogEntry: entry);
       final updated = info.copyWith(
         isDownloaded: true,
         localPath: '/new/path',

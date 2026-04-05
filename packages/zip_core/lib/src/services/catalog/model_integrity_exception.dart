@@ -1,4 +1,5 @@
-/// Thrown when a downloaded model archive fails SHA-256 verification (REL-U2.4).
+/// Thrown when a downloaded model archive fails SHA-256 verification
+/// (REL-U2.4).
 class ModelIntegrityException implements Exception {
   /// Creates a [ModelIntegrityException].
   const ModelIntegrityException({

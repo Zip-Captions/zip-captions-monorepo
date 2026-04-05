@@ -6,7 +6,7 @@ part 'sherpa_model_info.g.dart';
 
 /// Merged view of catalog data and local filesystem state for a model.
 ///
-/// Produced by [SherpaModelManager] by combining a [SherpaModelCatalogEntry]
+/// Produced by `SherpaModelManager` by combining a [SherpaModelCatalogEntry]
 /// with the local download state.
 @freezed
 abstract class SherpaModelInfo with _$SherpaModelInfo {

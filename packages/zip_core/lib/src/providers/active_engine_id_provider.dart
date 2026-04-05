@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,7 +14,7 @@ class ActiveEngineIdNotifier extends _$ActiveEngineIdNotifier {
 
   @override
   String? build() {
-    _loadAsync();
+    unawaited(_loadAsync());
     return null;
   }
 

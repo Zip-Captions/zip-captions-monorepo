@@ -33,14 +33,13 @@ import '../helpers/recording_state_model.dart';
         onResult: any(named: 'onResult'),
         onError: any(named: 'onError'),
       )).thenAnswer((_) async => true);
-  when(() => mockSessionManager.startListening())
-      .thenAnswer((_) async => true);
-  when(() => mockSessionManager.pause()).thenAnswer((_) async => true);
-  when(() => mockSessionManager.resume()).thenAnswer((_) async => true);
-  when(() => mockSessionManager.stop()).thenAnswer((_) async {});
-  when(() => mockWakeLockService.acquire()).thenAnswer((_) async {});
-  when(() => mockWakeLockService.release()).thenAnswer((_) async {});
-  when(() => mockWakeLockService.onPause()).thenAnswer((_) async {});
+  when(mockSessionManager.startListening).thenAnswer((_) async => true);
+  when(mockSessionManager.pause).thenAnswer((_) async => true);
+  when(mockSessionManager.resume).thenAnswer((_) async => true);
+  when(mockSessionManager.stop).thenAnswer((_) async {});
+  when(mockWakeLockService.acquire).thenAnswer((_) async {});
+  when(mockWakeLockService.release).thenAnswer((_) async {});
+  when(mockWakeLockService.onPause).thenAnswer((_) async {});
   when(() => mockWakeLockService.settings)
       .thenReturn(const WakeLockSettings());
 

@@ -4,7 +4,7 @@ import 'package:zip_core/src/models/sherpa_model_info.dart';
 
 part 'sherpa_model_catalog_state.freezed.dart';
 
-/// State for [SherpaModelCatalogNotifier].
+/// State for `SherpaModelCatalogNotifier`.
 ///
 /// Holds the full model catalog, active download progress, and error/
 /// confirmation tracking.

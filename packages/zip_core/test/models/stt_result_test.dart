@@ -37,14 +37,14 @@ void main() {
       final a = SttResult(
         text: 'same',
         isFinal: true,
-        confidence: 1.0,
+        confidence: 1,
         timestamp: timestamp,
         sourceId: 'default',
       );
       final b = SttResult(
         text: 'same',
         isFinal: true,
-        confidence: 1.0,
+        confidence: 1,
         timestamp: timestamp,
         sourceId: 'default',
       );

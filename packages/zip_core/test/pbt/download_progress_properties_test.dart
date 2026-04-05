@@ -8,7 +8,10 @@ void main() {
     Glados(arbitrarySherpaModelDownloadProgress).test(
       'downloadedBytes <= totalBytes',
       (progress) {
-        expect(progress.downloadedBytes, lessThanOrEqualTo(progress.totalBytes));
+        expect(
+          progress.downloadedBytes,
+          lessThanOrEqualTo(progress.totalBytes),
+        );
       },
     );
 

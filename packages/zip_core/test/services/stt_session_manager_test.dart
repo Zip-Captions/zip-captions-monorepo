@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:permission_handler_platform_interface/permission_handler_platform_interface.dart';
 import 'package:zip_core/src/models/recording_error.dart';
 import 'package:zip_core/src/models/stt_result.dart';
@@ -109,9 +108,7 @@ void main() {
     });
 
     group('full lifecycle', () {
-      setUp(() {
-        stubPermissionGranted();
-      });
+      setUp(stubPermissionGranted);
 
       test('initialize → startListening → pause → resume → stop', () async {
         await manager.initialize(

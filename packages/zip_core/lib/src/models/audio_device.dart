@@ -5,7 +5,7 @@ part 'audio_device.g.dart';
 
 /// Represents an audio input device available on the current platform.
 ///
-/// Obtained from [AudioDeviceService.listInputDevices].
+/// Obtained from `AudioDeviceService.listInputDevices`.
 @freezed
 abstract class AudioDevice with _$AudioDevice {
   /// Creates an [AudioDevice].

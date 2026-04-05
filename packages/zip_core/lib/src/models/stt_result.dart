@@ -26,11 +26,11 @@ abstract class SttResult with _$SttResult {
     /// When the utterance was recognized (UTC).
     required DateTime timestamp,
 
-    /// Optional speaker tag for future diarization.
-    String? speakerTag,
-
     /// Identifies the input source for multi-input disambiguation.
     /// Single-input apps use 'default'.
     required String sourceId,
+
+    /// Optional speaker tag for future diarization.
+    String? speakerTag,
   }) = _SttResult;
 }

@@ -32,7 +32,7 @@ void main() {
 
     test('copyWith creates a new instance with updated fields', () {
       const device =
-          AudioDevice(deviceId: 'mic-1', name: 'Mic 1', isDefault: false);
+          AudioDevice(deviceId: 'mic-1', name: 'Mic 1');
       final updated = device.copyWith(isDefault: true);
 
       expect(updated.deviceId, 'mic-1');

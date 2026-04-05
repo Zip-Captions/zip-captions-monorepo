@@ -4,7 +4,7 @@ import 'package:zip_core/src/models/audio_device.dart';
 /// and directing input to a user-selected device.
 ///
 /// Platform implementations are provided per-target and registered
-/// at app startup via [audioDeviceServiceProvider].
+/// at app startup via `audioDeviceServiceProvider`.
 abstract interface class AudioDeviceService {
   /// Returns all available audio input devices on the current platform.
   ///

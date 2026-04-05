@@ -8,7 +8,7 @@ import 'package:zip_core/src/stt/adapters/online_recognizer_adapter.dart';
 ///
 /// Coverage excluded — pure pass-through with no logic (TEST-U2.6).
 class SherpaOnlineRecognizerAdapter implements OnlineRecognizerAdapter {
-  /// Creates a [SherpaOnlineRecognizerAdapter] wrapping [recognizer].
+  /// Creates a [SherpaOnlineRecognizerAdapter] wrapping `recognizer`.
   SherpaOnlineRecognizerAdapter(this._recognizer);
 
   final sherpa.OnlineRecognizer _recognizer;

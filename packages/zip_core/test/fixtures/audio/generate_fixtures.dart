@@ -1,4 +1,6 @@
+// Prints are intentional output for this standalone generator script.
 // ignore_for_file: avoid_print
+
 /// Generates PCM16 audio fixture files for STT engine tests.
 ///
 /// Run: `dart test/fixtures/audio/generate_fixtures.dart`
@@ -6,6 +8,8 @@
 /// Produces:
 /// - silence_16k.pcm — 1 second of silence at 16 kHz, 16-bit mono LE
 /// - tone_440hz_16k.pcm — 1 second of 440 Hz sine at 16 kHz, 16-bit mono LE
+library;
+
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';

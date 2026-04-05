@@ -3,8 +3,8 @@ import 'dart:typed_data';
 /// Test seam for sherpa_onnx OnlineRecognizer (TEST-U2.2, Q1=A).
 ///
 /// A thin abstract interface mirroring only the `OnlineRecognizer` methods
-/// used by [SherpaOnnxSttEngine]. The production implementation
-/// ([SherpaOnlineRecognizerAdapter]) delegates to the real native class.
+/// used by `SherpaOnnxSttEngine`. The production implementation
+/// (`SherpaOnlineRecognizerAdapter`) delegates to the real native class.
 ///
 /// Coverage excluded — pure pass-through with no logic.
 abstract interface class OnlineRecognizerAdapter {

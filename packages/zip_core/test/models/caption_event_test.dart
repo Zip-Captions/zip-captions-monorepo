@@ -9,7 +9,7 @@ void main() {
       final result = SttResult(
         text: 'hello',
         isFinal: true,
-        confidence: 1.0,
+        confidence: 1,
         timestamp: DateTime.utc(2026),
         sourceId: 'default',
       );

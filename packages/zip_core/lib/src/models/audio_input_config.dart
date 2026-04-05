@@ -29,14 +29,14 @@ abstract class AudioInputConfig with _$AudioInputConfig {
     /// Unique identifier for this input.
     required String inputId,
 
-    /// Platform audio device identifier (null = default mic).
-    String? sourceDeviceId,
-
     /// User-assigned label (e.g., "Teacher", "Student Mic").
     required String speakerLabel,
 
     /// Color/indicator for rendering this source's captions.
     required AudioInputVisualStyle visualStyle,
+
+    /// Platform audio device identifier (null = default mic).
+    String? sourceDeviceId,
 
     /// Whether this input is currently capturing.
     @Default(true) bool isActive,

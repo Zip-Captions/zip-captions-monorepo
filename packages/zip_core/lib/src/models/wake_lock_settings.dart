@@ -5,7 +5,7 @@ part 'wake_lock_settings.g.dart';
 
 /// User preferences for screen wake lock during captioning sessions.
 ///
-/// Backed by SharedPreferences via [WakeLockSettingsProvider].
+/// Backed by SharedPreferences via `WakeLockSettingsProvider`.
 @freezed
 abstract class WakeLockSettings with _$WakeLockSettings {
   /// Creates [WakeLockSettings].

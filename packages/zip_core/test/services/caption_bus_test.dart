@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zip_core/src/models/caption_event.dart';
 import 'package:zip_core/src/models/recording_state.dart';
@@ -17,11 +15,11 @@ void main() {
     bus.dispose();
   });
 
-  SttResultEvent _makeResultEvent([String text = 'test']) => SttResultEvent(
+  SttResultEvent makeResultEvent([String text = 'test']) => SttResultEvent(
         SttResult(
           text: text,
           isFinal: false,
-          confidence: 1.0,
+          confidence: 1,
           timestamp: DateTime.utc(2026),
           sourceId: 'default',
         ),
@@ -32,7 +30,7 @@ void main() {
       final events = <CaptionEvent>[];
       bus.stream.listen(events.add);
 
-      bus.publish(_makeResultEvent());
+      bus.publish(makeResultEvent());
       await Future<void>.delayed(Duration.zero);
 
       expect(events, hasLength(1));
@@ -45,7 +43,7 @@ void main() {
       bus.stream.listen(events1.add);
       bus.stream.listen(events2.add);
 
-      bus.publish(_makeResultEvent());
+      bus.publish(makeResultEvent());
       await Future<void>.delayed(Duration.zero);
 
       expect(events1, hasLength(1));
@@ -56,8 +54,9 @@ void main() {
       final events = <CaptionEvent>[];
       bus.stream.listen(events.add);
 
-      bus.dispose();
-      bus.publish(_makeResultEvent());
+      bus
+        ..dispose()
+        ..publish(makeResultEvent());
       await Future<void>.delayed(Duration.zero);
 
       expect(events, isEmpty);
@@ -81,9 +80,10 @@ void main() {
       final events = <CaptionEvent>[];
       bus.stream.listen(events.add);
 
-      bus.publish(_makeResultEvent('first'));
-      bus.publish(_makeResultEvent('second'));
-      bus.publish(_makeResultEvent('third'));
+      bus
+        ..publish(makeResultEvent('first'))
+        ..publish(makeResultEvent('second'))
+        ..publish(makeResultEvent('third'));
       await Future<void>.delayed(Duration.zero);
 
       expect(events, hasLength(3));

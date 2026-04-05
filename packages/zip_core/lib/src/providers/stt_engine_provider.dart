@@ -9,7 +9,7 @@ part 'stt_engine_provider.g.dart';
 /// Resolves the active [SttEngine] from the registry.
 ///
 /// Uses [activeEngineIdNotifierProvider] to pick the user-selected engine.
-/// Falls back to [SttEngineRegistry.defaultEngine] when no explicit selection
+/// Falls back to `SttEngineRegistry.defaultEngine` when no explicit selection
 /// exists. Returns `null` if no engines are registered.
 @Riverpod(keepAlive: true)
 SttEngine? sttEngine(Ref ref) {

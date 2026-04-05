@@ -31,8 +31,9 @@ void main() {
     test('defaultEngine returns first registered engine', () {
       final first = MockSttEngine(engineId: 'first');
       final second = MockSttEngine(engineId: 'second');
-      registry.register(first);
-      registry.register(second);
+      registry
+        ..register(first)
+        ..register(second);
 
       expect(registry.defaultEngine, same(first));
     });
@@ -42,8 +43,9 @@ void main() {
       final replacement =
           MockSttEngine(engineId: 'dup', displayName: 'Replacement');
 
-      registry.register(original);
-      registry.register(replacement);
+      registry
+        ..register(original)
+        ..register(replacement);
 
       expect(registry.listAvailable(), hasLength(1));
       expect(registry.getEngine('dup'), same(replacement));
@@ -51,8 +53,9 @@ void main() {
 
     test('unregister removes an engine', () {
       final engine = MockSttEngine(engineId: 'rem');
-      registry.register(engine);
-      registry.unregister('rem');
+      registry
+        ..register(engine)
+        ..unregister('rem');
 
       expect(registry.listAvailable(), isEmpty);
       expect(registry.getEngine('rem'), isNull);
@@ -74,17 +77,18 @@ void main() {
     test('defaultEngine updates when first engine is removed', () {
       final first = MockSttEngine(engineId: 'first');
       final second = MockSttEngine(engineId: 'second');
-      registry.register(first);
-      registry.register(second);
-
-      registry.unregister('first');
+      registry
+        ..register(first)
+        ..register(second)
+        ..unregister('first');
       expect(registry.defaultEngine, same(second));
     });
 
     test('defaultEngine is null after all removed', () {
       final engine = MockSttEngine(engineId: 'only');
-      registry.register(engine);
-      registry.unregister('only');
+      registry
+        ..register(engine)
+        ..unregister('only');
 
       expect(registry.defaultEngine, isNull);
     });

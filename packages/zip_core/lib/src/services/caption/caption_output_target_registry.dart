@@ -5,7 +5,7 @@ import 'package:zip_core/src/models/caption_event.dart';
 import 'package:zip_core/src/services/caption/caption_bus.dart';
 import 'package:zip_core/src/services/caption/caption_output_target.dart';
 
-/// Manages registered output targets and fans out [CaptionBus] events
+/// Manages registered output targets and fans out `CaptionBus` events
 /// to each target with error isolation.
 ///
 /// Uses lazy subscription (Q5=B): subscribes to the bus stream only when
@@ -14,7 +14,7 @@ import 'package:zip_core/src/services/caption/caption_output_target.dart';
 /// Uses fire-and-forget error isolation (Q2=A): a thrown exception in
 /// one target does not affect other targets.
 class CaptionOutputTargetRegistry {
-  /// Creates a registry that fans out events from [bus].
+  /// Creates a registry that fans out events from `bus`.
   CaptionOutputTargetRegistry(this._bus);
 
   static final _log =
@@ -56,7 +56,7 @@ class CaptionOutputTargetRegistry {
   /// Unsubscribe from bus, dispose all targets, clear the set.
   void dispose() {
     _disposed = true;
-    _busSubscription?.cancel();
+    unawaited(_busSubscription?.cancel());
     _busSubscription = null;
     for (final target in _targets) {
       target.dispose();
@@ -70,7 +70,7 @@ class CaptionOutputTargetRegistry {
 
   void _ensureUnsubscribedIfEmpty() {
     if (_targets.isEmpty) {
-      _busSubscription?.cancel();
+      unawaited(_busSubscription?.cancel());
       _busSubscription = null;
     }
   }
@@ -79,7 +79,7 @@ class CaptionOutputTargetRegistry {
     for (final target in _targets) {
       try {
         target.onCaptionEvent(event);
-      } catch (e, st) {
+      } on Object catch (e, st) {
         // SECURITY-03: Log targetId and error type only, never event content.
         _log.severe(
           'Target ${target.targetId} error: ${e.runtimeType}',

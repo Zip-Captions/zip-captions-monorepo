@@ -27,7 +27,6 @@ void main() {
               downloadUrl: 'https://x.com/m.tar.bz2',
               sha256Checksum: 'sha',
             ),
-            isDownloaded: false,
           ),
         ],
       );

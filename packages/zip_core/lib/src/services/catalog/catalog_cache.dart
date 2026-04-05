@@ -9,7 +9,7 @@ import 'package:zip_core/src/models/sherpa_model_catalog.dart';
 /// Stores the raw JSON response and metadata (cachedAt, etag, lastModified)
 /// in `_storageDir/catalog_cache.json` and `_storageDir/catalog_cache_meta.json`.
 class CatalogCache {
-  /// Creates a [CatalogCache] backed by files in [storageDir].
+  /// Creates a `CatalogCache` backed by files in `storageDir`.
   CatalogCache(this._storageDir);
 
   final Directory _storageDir;
@@ -72,8 +72,8 @@ class CatalogCache {
     );
     await _metaFile.writeAsString(jsonEncode({
       'cachedAt': DateTime.now().toIso8601String(),
-      if (etag != null) 'etag': etag,
-      if (lastModified != null) 'lastModified': lastModified,
+      'etag': ?etag,
+      'lastModified': ?lastModified,
     }));
   }
 

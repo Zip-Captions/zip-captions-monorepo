@@ -7,13 +7,12 @@ import 'package:zip_core/src/services/catalog/sherpa_model_manager.dart';
 
 void main() {
   late Dio dio;
-  late DioAdapter dioAdapter;
   late Directory tempDir;
   late SherpaModelManager manager;
 
   setUp(() async {
     dio = Dio();
-    dioAdapter = DioAdapter(dio: dio);
+    DioAdapter(dio: dio); // intercept HTTP to prevent real network calls
     tempDir = await Directory.systemTemp.createTemp('sherpa_test_');
     manager = SherpaModelManager(dio: dio, storageDir: tempDir);
   });

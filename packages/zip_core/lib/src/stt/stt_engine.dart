@@ -5,10 +5,10 @@ import 'package:zip_core/src/models/stt_result.dart';
 ///
 /// Phase 1 defines the full contract with metadata properties and a
 /// unified [SttResult] callback. Concrete implementations are in Unit 2
-/// ([PlatformSttEngine], [SherpaOnnxSttEngine]).
+/// (`PlatformSttEngine`, `SherpaOnnxSttEngine`).
 ///
-/// **Security constraint (SECURITY-03)**: The [onResult] callback in
-/// [startListening] delivers transcript text. Implementations and all code
+/// **Security constraint (SECURITY-03)**: The `onResult` callback in
+/// `startListening` delivers transcript text. Implementations and all code
 /// handling this callback must never log, emit, or surface transcript text
 /// content. Only state transitions and error messages may appear in logs.
 abstract interface class SttEngine {

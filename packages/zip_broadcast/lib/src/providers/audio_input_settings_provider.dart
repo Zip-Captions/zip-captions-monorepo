@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -18,7 +19,7 @@ class AudioInputSettingsNotifier extends _$AudioInputSettingsNotifier {
 
   @override
   List<AudioDevice> build() {
-    _loadAsync();
+    unawaited(_loadAsync());
     return const [
       AudioDevice(deviceId: 'default', name: 'System Default', isDefault: true),
     ];

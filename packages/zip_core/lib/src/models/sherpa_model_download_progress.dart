@@ -5,7 +5,7 @@ part 'sherpa_model_download_progress.g.dart';
 
 /// In-progress download state for a Sherpa-ONNX model archive.
 ///
-/// Emitted by [SherpaModelManager.downloadModel] as a stream of progress
+/// Emitted by `SherpaModelManager.downloadModel` as a stream of progress
 /// events.
 @freezed
 abstract class SherpaModelDownloadProgress

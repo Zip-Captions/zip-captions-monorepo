@@ -22,15 +22,12 @@ void main() {
         final targets = List.generate(
           targetCount,
           (i) => CollectingTarget(targetId: 'target-$i'),
-        );
-        for (final t in targets) {
-          registry.add(t);
-        }
+        )..forEach(registry.add);
 
         final event = SttResultEvent(SttResult(
           text: 'test',
           isFinal: false,
-          confidence: 1.0,
+          confidence: 1,
           timestamp: DateTime.utc(2026),
           sourceId: 'default',
         ));
@@ -66,14 +63,12 @@ void main() {
 
         // Add throwing first, then healthy — worst case ordering
         registry.add(throwingTarget);
-        for (final t in healthyTargets) {
-          registry.add(t);
-        }
+        healthyTargets.forEach(registry.add);
 
         final event = SttResultEvent(SttResult(
           text: 'test',
           isFinal: false,
-          confidence: 1.0,
+          confidence: 1,
           timestamp: DateTime.utc(2026),
           sourceId: 'default',
         ));
@@ -109,16 +104,14 @@ void main() {
         (i) => SttResultEvent(SttResult(
           text: 'word $i',
           isFinal: false,
-          confidence: 1.0,
+          confidence: 1,
           timestamp: DateTime.utc(2026),
           sourceId: 'test',
         )),
       );
 
       final sw = Stopwatch()..start();
-      for (final event in events) {
-        bus.publish(event);
-      }
+      events.forEach(bus.publish);
       await Future<void>.delayed(Duration.zero);
       sw.stop();
 
