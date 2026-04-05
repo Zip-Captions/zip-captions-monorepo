@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' hide addTearDown, expect, group, test;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:zip_core/src/models/app_settings.dart';
+import 'package:zip_core/src/models/display_settings.dart';
 import 'package:zip_core/src/providers/base_settings_notifier.dart';
 
 import '../helpers/generators.dart';
@@ -14,14 +14,14 @@ class _RoundTripNotifier extends BaseSettingsNotifier {
 }
 
 final _roundTripProvider =
-    NotifierProvider<_RoundTripNotifier, AppSettings>(
+    NotifierProvider<_RoundTripNotifier, DisplaySettings>(
   _RoundTripNotifier.new,
 );
 
 void main() {
-  group('AppSettings round-trip PBT', () {
-    Glados(arbitraryAppSettings).test(
-      'save then reload produces equal AppSettings',
+  group('DisplaySettings round-trip PBT', () {
+    Glados(arbitraryDisplaySettings).test(
+      'save then reload produces equal DisplaySettings',
       (settings) async {
         // Save: build a valid prefs map from the generated settings.
         SharedPreferences.setMockInitialValues(

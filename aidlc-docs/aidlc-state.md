@@ -2,15 +2,16 @@
 
 ## Project Information
 - **Project Name**: Zip Captions v2
-- **Project Type**: Documentation-Brownfield / Code-Greenfield
-- **Start Date**: 2026-03-26T00:00:00Z
-- **Current Stage**: COMPLETE (Phase 0)
+- **Project Type**: Documentation-Brownfield / Code-Brownfield
+- **Phase 0 Start Date**: 2026-03-26T00:00:00Z
+- **Phase 1 Start Date**: 2026-03-28T00:00:00Z
+- **Current Stage**: CONSTRUCTION - Ready for Unit 2: Platform STT + Audio (Phase 1)
 
 ## Workspace State
-- **Existing Source Code**: Unit 1 merged (PR #2); monorepo scaffold in place on develop
-- **Existing Documentation**: Yes (docs/, AGENTS.md, ARCHITECTURE.md, CONTRIBUTING.md, stories/)
-- **Reverse Engineering Needed**: No (no source code; project docs are the source of truth)
-- **Workspace Root**: <workspace-root>
+- **Existing Source Code**: Yes — Phase 0 scaffold complete (zip_core models/providers/theme, app shells, Supabase stack, CI/CD)
+- **Existing Documentation**: Yes (docs/, AGENTS.md, ARCHITECTURE.md, CONTRIBUTING.md, aidlc-docs/)
+- **Reverse Engineering Needed**: No (codebase built by AI-DLC in Phase 0; design artifacts in aidlc-docs/)
+- **Workspace Root**: /Users/oblivious/Documents/zip-captions-monorepo
 
 ## Code Location Rules
 - **Application Code**: Workspace root (NEVER in aidlc-docs/)
@@ -47,3 +48,31 @@
 
 ### OPERATIONS PHASE
 - [x] Operations — SKIPPED (Phase 0 is infrastructure scaffolding; no deployment or production operations)
+
+---
+
+## Phase 1: Core Captioning
+
+### INCEPTION PHASE
+- [x] Workspace Detection — Brownfield; Phase 0 scaffold exists; no reverse engineering needed
+- [ ] Reverse Engineering — SKIPPED (codebase built by AI-DLC; design artifacts current)
+- [x] Requirements Analysis — COMPLETE; phase1-requirements.md generated (11 FRs, 5 NFR groups, 3 spikes; 4 revisions)
+- [x] User Stories — COMPLETE; 10 feature stories, 9 prototype stories, 6 milestones; 4 revisions
+- [x] Workflow Planning — COMPLETE; 7 construction units + 3 spikes
+- [x] Application Design — COMPLETE; 22 new components, 8 modified, 7 service layers; DisplaySettings rename
+- [x] Units Generation — COMPLETE; 3 spikes + 7 units; all stories assigned; relaxed spike sequencing
+
+### CONSTRUCTION PHASE
+- [x] Spike 1.1: Windows/Linux STT Survey — COMPLETE; Sherpa-ONNX recommended primary, Whisper.cpp secondary
+- [x] Spike 1.2: System Audio Capture Feasibility — COMPLETE; custom plugin needed, Core Audio taps (macOS), WASAPI loopback (Windows), PulseAudio monitors (Linux)
+- [x] Spike 1.3: STT Integration PoC — COMPLETE; Sherpa-ONNX confirmed viable, OnlineRecognizer API maps to SttEngine contract
+- [x] Unit 1: Core Abstractions (S-01, S-03) — FD, NFR-R, NFR-D, CG — COMPLETE (156 tests passing, 0 errors)
+- [x] Unit 2: Platform STT + Audio (S-02, S-06) — FD, NFR-R, NFR-D, CG — COMPLETE (247 tests passing, 0 errors)
+- [ ] Unit 3: Output Targets (S-04, S-05, S-07, S-08) — FD, NFR-R, NFR-D, ID, CG
+- [ ] Unit 4: UI Prototypes (Proto-01..09) — CG + human gate
+- [ ] Unit 5: Zip Captions App (S-09) — FD, NFR-R, NFR-D, CG
+- [ ] Unit 6: Zip Broadcast App (S-10) — FD, NFR-R, NFR-D, ID, CG
+- [ ] Unit 7: Integration Milestones — Build and Test + Doc Refinement
+
+### OPERATIONS PHASE
+*(placeholder)*

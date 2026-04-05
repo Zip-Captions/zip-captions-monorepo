@@ -448,3 +448,416 @@
 **Status**: Phase 0 AI-DLC workflow complete
 
 ---
+
+## Phase 1: Core Captioning — Workflow Initiation
+**Timestamp**: 2026-03-28T02:00:00Z
+**User Input**: "let's start phase 1 if we're ready"
+**AI Response**: Started Phase 1 AI-DLC workflow. Displayed welcome message. Loaded common rules (content-validation, question-format-guide, session-continuity, process-overview). No extension opt-in files found; Security Baseline and Property-Based Testing carried forward from Phase 0 (enabled). Proceeding with Workspace Detection.
+**Context**: Phase 1 inception initiated for Core Captioning scope.
+
+---
+
+## INCEPTION - Workspace Detection (Phase 1)
+**Timestamp**: 2026-03-28T02:00:01Z
+**User Input**: (none — automatic stage)
+**AI Response**: Scanned workspace. Brownfield: Phase 0 scaffold complete (zip_core with models/providers/theme/87 tests, app shells, Supabase stack, CI/CD pipeline). No reverse engineering artifacts but not needed — codebase built by AI-DLC with design artifacts in aidlc-docs/. Updated aidlc-state.md for Phase 1 tracking. Proceeding to Requirements Analysis.
+**Context**: Workspace Detection complete. Next: Requirements Analysis.
+
+---
+
+## INCEPTION - Requirements Analysis (Phase 1): Questions Created
+**Timestamp**: 2026-03-28T02:01:00Z
+**User Input**: (none — automatic from Workspace Detection)
+**AI Response**: Created phase1-requirement-verification-questions.md with 12 questions covering: scope boundaries (OBS/BLE timing), spike strategy, STT package selection, output targets, transcript storage, audio capture scope, platform priority, wake lock behavior, state architecture, pause semantics, web target.
+**Context**: Requirements Analysis Step 6 — awaiting user answers.
+
+---
+
+## INCEPTION - Requirements Analysis (Phase 1): Answers Received
+**Timestamp**: 2026-03-28T02:02:00Z
+**User Input**: "done"
+**AI Response**: Read all 12 answers. No contradictions detected. Key decisions: Q1:A (OBS+browser source in Phase 1, independent of broadcast viewing — docs update needed), Q2:A (defer BLE to Phase 5), Q3:A (spikes before construction), Q4:A (speech_to_text package), Q5:C (all 4 output targets), Q6:A (SQLite — new transcript search story needed), Q7:C (full system audio investigation), Q8:A (iOS+Android+macOS first), Q9:C (wake lock release on pause as user setting), Q10:A (separate TranscriptProvider — independent error states), Q11:A (transparent pause fallback — semantic distinction from stop), Q12:B (web best-effort). Generated phase1-requirements.md with 10 FRs, 5 NFR groups, 3 research spikes, 2 doc update items.
+**Context**: Requirements Analysis complete. Presenting for approval.
+
+---
+
+## INCEPTION - Requirements Analysis (Phase 1): Change Request 1
+**Timestamp**: 2026-03-28T02:03:00Z
+**User Input**: "Phase 1 needs to include a design prototype and review stage as well for all UI"
+**AI Response**: Added FR-11 (UI Design Prototypes) with 5 sub-requirements. All UI screens for both apps require design prototypes reviewed and approved before implementation. Prototype gate covers: home, recording, settings, session history, transcript viewer (Zip Captions); home, recording, settings, audio source selection (Zip Broadcast). Must demonstrate light/dark themes, text customization, responsive layout.
+**Context**: Requirements revision 1. Re-presenting for approval.
+
+---
+
+## INCEPTION - Requirements Analysis (Phase 1): Prototype Format Clarification
+**Timestamp**: 2026-03-28T02:04:00Z
+**User Input**: "how will the agent present the ui prototype?" / "yes, html prototypes are fine"
+**AI Response**: Updated FR-11.5 to specify HTML/CSS prototype format (standalone files, browser-viewable, theme toggle). Added FR-11.6 specifying prototype file location in aidlc-docs/construction/{unit-name}/prototypes/.
+**Context**: Requirements revision 2.
+
+---
+
+## INCEPTION - Requirements Analysis (Phase 1): Spike 1.1 Rewrite
+**Timestamp**: 2026-03-28T02:05:00Z
+**User Input**: "Research spike 1.1 predetermines the solution rather than indicating that research into the most performant solution would be warranted. Do not predetermine a solution in a research spike, include information as options only"
+**AI Response**: Rewrote Spike 1.1 to survey all viable options (platform-native APIs, on-device models like Whisper.cpp/Vosk/Sherpa-ONNX, third-party packages) with a comparison matrix. No predetermined solution — recommendation follows from evaluation.
+**Context**: Requirements revision 3.
+
+---
+
+## INCEPTION - Requirements Analysis (Phase 1): Spike 1.3 Rewrite
+**Timestamp**: 2026-03-28T02:06:00Z
+**User Input**: "Spike 1.3 needs to reflect a dive into the solution from spike 1.1 rather than whisper.cpp"
+**AI Response**: Rewrote Spike 1.3 to depend on Spike 1.1's recommendation. Now a PoC integration of whatever engine Spike 1.1 selects, validating SttEngine interface compatibility, accuracy, latency, and resource usage.
+**Context**: Requirements revision 4.
+
+---
+
+## INCEPTION - Requirements Analysis (Phase 1): FTS5 Clarification
+**Timestamp**: 2026-03-28T02:07:00Z
+**User Input**: User asked about postgres-like vector search for transcripts. After discussion of sqlite-vec vs FTS5 options: "Let's keep it constrained to the FTS5 approach"
+**AI Response**: Updated FR-5.3 to specify SQLite FTS5 with BM25 ranking for transcript search.
+**Context**: Requirements revision 5.
+
+---
+
+## INCEPTION - Requirements Analysis (Phase 1): Approved
+**Timestamp**: 2026-03-28T02:08:00Z
+**User Input**: "approve and continue"
+**AI Response**: Requirements approved after 5 revisions. Proceeding to User Stories assessment.
+**Context**: Requirements Analysis stage complete. Next: User Stories.
+
+---
+
+## INCEPTION - User Stories (Phase 1): Assessment
+**Timestamp**: 2026-03-28T02:09:00Z
+**User Input**: (none — automatic assessment)
+**AI Response**: Assessment: EXECUTE. High Priority criteria met: new user features, multi-persona system (Alex/Jordan/Sam), complex business logic, user experience changes. Created user-stories-assessment.md and story-generation-plan.md with 6 questions.
+**Context**: User Stories Part 1 (Planning) — awaiting answers.
+
+---
+
+## INCEPTION - User Stories (Phase 1): Answers Received
+**Timestamp**: 2026-03-28T02:10:00Z
+**User Input**: "done"
+**AI Response**: Read all 6 answers. No contradictions. Q1:B (feature-based), Q2:A (coarse ~11 stories), Q3:C (both capability + scenario milestones), Q4:A (Given/When/Then all stories), Q5:A (spikes separate), Q6:A (separate prototype stories per screen, blocking).
+**Context**: Plan analysis complete. Presenting for approval.
+
+---
+
+## INCEPTION - User Stories (Phase 1): Plan Approved
+**Timestamp**: 2026-03-28T02:11:00Z
+**User Input**: "approve and continue"
+**AI Response**: Story generation plan approved. Proceeding to Part 2 (Generation).
+**Context**: Executing 12-step story generation plan.
+
+---
+
+## INCEPTION - User Stories (Phase 1): Generation Complete
+**Timestamp**: 2026-03-28T02:15:00Z
+**User Input**: "proceed"
+**AI Response**: Executed all 12 steps. Generated stories.md (10 feature stories + 9 prototype stories + 6 scenario milestones) and personas.md (Phase 1 persona coverage map). Feature stories: S-01 (STT Interface), S-02 (Platform STT), S-03 (Caption Bus), S-04 (Rendering), S-05 (Transcripts), S-06 (Audio Capture), S-07 (OBS), S-08 (Browser Source), S-09 (Zip Captions UI), S-10 (Zip Broadcast UI). Prototypes: Proto-01 through Proto-09 (one per screen, blocking implementation). Milestones: M-S1.1, M-S1.2, M-S1.3, M-S2.1, M-S2.2, M-S3.1. Traceability matrix and dependency graph included. INVEST compliance verified.
+**Context**: User Stories Part 2 (Generation) complete. Presenting for approval.
+
+---
+
+## INCEPTION - User Stories (Phase 1): Change Request 1
+**Timestamp**: 2026-03-29T00:01:00Z
+**User Input**: "the user stories need to incorporate the user enabling transcript capture as an optional setting - a user may or may not want to retain a record of the session, and they should be able to adjust the settings accordingly."
+**AI Response**: Updated S-05 (transcript capture conditional on setting), S-09 (settings includes transcript toggle, stop behavior depends on setting), S-10 (settings includes transcript toggle).
+**Context**: Revision 1.
+
+---
+
+## INCEPTION - User Stories (Phase 1): Change Request 2
+**Timestamp**: 2026-03-29T00:02:00Z
+**User Input**: "When a user is using zip broadcast, they may want to use multiple input sources, each with its own associated speaker. The application should support multiple active inputs, and they should be able to be configured to render visually distinct results on screen."
+**AI Response**: Updated S-01 (SttResult source identifier), S-03 (multi-source bus), S-04 (per-source visual distinction), S-06 (multiple simultaneous inputs with speaker labels and styles), S-10 (multi-input configuration UI), Proto-07 (multi-source rendering), Proto-09 (renamed to Audio Source Configuration with multi-input interface), M-S2.2 (multi-input classroom scenario).
+**Context**: Revision 2.
+
+---
+
+## INCEPTION - User Stories (Phase 1): Change Request 3
+**Timestamp**: 2026-03-29T00:03:00Z
+**User Input**: "for story S-08, we need to ensure that most recent two lines of text are visible in the browser source, and they do not move position as the text changes, so that the browser source URL can be easily used with a fixed viewport where the captions are rendered."
+**AI Response**: Updated S-08 with fixed-position two-line rendering for browser source viewport.
+**Context**: Revision 3.
+
+---
+
+## INCEPTION - User Stories (Phase 1): Change Request 4
+**Timestamp**: 2026-03-29T00:04:00Z
+**User Input**: "In M-S2.2, Jordan should be able to overlay the captions onto an arbitrary screen, either as the browser source (for when there are no visuals that are required to be displayed in the classroom on the big screen), or as an overlay on top of an arbitrary screen that's shown on the projector (a mirror of the computer's screen, attached as a second display, or laid over a specific application such as a browser tab showing text, audio, or video)."
+**AI Response**: Updated M-S2.2 with two display modes (standalone browser source and transparent overlay). Added caption overlay capability to S-10 and Proto-07. Overlay features: always-on-top, click-through, target display selection, configurable position. Flagged distinction from S3.5 premium overlay (personal use) vs broadcaster overlay (audience accessibility).
+**Context**: Revision 4.
+
+---
+
+## INCEPTION - User Stories (Phase 1): Approved
+**Timestamp**: 2026-03-29T00:05:00Z
+**User Input**: "approve and continue"
+**AI Response**: User Stories approved after 4 revisions. Proceeding to Workflow Planning.
+**Context**: User Stories stage complete. Next: Workflow Planning.
+
+---
+
+## INCEPTION - Workflow Planning (Phase 1)
+**Timestamp**: 2026-03-29T00:06:00Z
+**User Input**: (automatic from User Stories approval)
+**AI Response**: Generated phase1-execution-plan.md. Risk: Medium-High. 7 construction units + 3 pre-construction spikes. Inception remaining: Application Design + Units Generation. Construction per-unit: FD/NFR-R/NFR-D conditional, Infrastructure Design for browser source and overlay, Code Gen always. Parallelization: Units 2+3 after Unit 1; Units 5+6 after prototypes. Integration milestones as final verification.
+**Context**: Workflow Planning complete. Presenting for approval.
+
+---
+
+## INCEPTION - Workflow Planning (Phase 1): Approved
+**Timestamp**: 2026-03-29T00:07:00Z
+**User Input**: "approve and continue"
+**AI Response**: Workflow Planning approved. Proceeding to Application Design.
+**Context**: Workflow Planning stage complete. Next: Application Design.
+
+---
+
+## INCEPTION - Application Design (Phase 1): Questions Created
+**Timestamp**: 2026-03-29T00:08:00Z
+**User Input**: (automatic from Workflow Planning approval)
+**AI Response**: Created application-design-plan.md with 9 design steps + 6 mandatory artifacts + 9 questions covering: CaptionBus implementation pattern, output target lifecycle, SQLite package selection, browser source HTTP server, caption overlay window management, multi-input audio model, output target package location, OBS WebSocket package, settings architecture extension.
+**Context**: Application Design Step 4 — awaiting user answers.
+
+---
+
+## INCEPTION - Application Design (Phase 1): Answers Received
+**Timestamp**: 2026-03-29T01:00:00Z
+**User Input**: Q1:B (standalone service class), Q2:B (registry-managed), Q3:B (drift ORM), Q4:A (shelf), Q5:C (spike-dependent), Q6:A (list-based provider), Q7:B (interface + shared in zip_core, broadcast-only in zip_broadcast), Q8:B (web_socket_channel + custom protocol), Q9:B (separate providers per concern — rename AppSettings to something descriptive of its category)
+**AI Response**: All answers clear and unambiguous. User requested AppSettings be renamed to reflect its actual scope. User selected "DisplaySettings" after considering DisplaySettings/AppearanceSettings/UiSettings options. Generated 4 design artifacts: phase1-components.md, phase1-component-methods.md, phase1-services.md, phase1-component-dependency.md, and consolidated phase1-application-design.md.
+**Context**: Application Design artifacts generated. Presenting for approval.
+
+---
+
+## INCEPTION - Application Design (Phase 1): Approved
+**Timestamp**: 2026-03-29T01:30:00Z
+**User Input**: "approve and continue"
+**AI Response**: Application Design approved. Proceeding to Units Generation.
+**Context**: Application Design stage complete. Next: Units Generation.
+
+---
+
+## INCEPTION - Units Generation (Phase 1): Questions Created
+**Timestamp**: 2026-03-29T01:35:00Z
+**User Input**: (automatic from Application Design approval)
+**AI Response**: Created unit-of-work-plan.md with 8 decomposition steps + 5 mandatory artifacts + 4 questions covering: DisplaySettings rename timing, transcript storage unit assignment, app UI construction stage depth, spike sequencing strictness.
+**Context**: Units Generation Part 1 (Planning) — awaiting user answers.
+
+---
+
+## INCEPTION - Units Generation (Phase 1): Answers Received
+**Timestamp**: 2026-03-29T02:00:00Z
+**User Input**: Q1:A (rename in Unit 1), Q2:B (all transcript components in Unit 3), Q3:C (full stages for app UI units), Q4:B (relaxed — Spike 1.2 parallel with Unit 1). User asked about Q3 rationale; confirmed full stages are appropriate for app-level performance and accessibility requirements.
+**AI Response**: All answers clear. Generated 3 unit artifacts: phase1-unit-of-work.md (3 spikes + 7 units with components, construction stages, acceptance criteria), phase1-unit-of-work-dependency.md (dependency graph, matrix, parallelization opportunities, critical path), phase1-unit-of-work-story-map.md (10/10 feature stories, 9/9 prototypes, 6/6 milestones, 3/3 spikes — all assigned, no gaps).
+**Context**: Units Generation artifacts complete. Presenting for approval.
+
+---
+
+## INCEPTION - Units Generation (Phase 1): Approved
+**Timestamp**: 2026-03-29T02:15:00Z
+**User Input**: "approve and continue" (user also added "Prioritize real-time capabilities with offline functionality" to Spike 1.1 scope)
+**AI Response**: Units Generation approved. INCEPTION PHASE COMPLETE. Proceeding to CONSTRUCTION PHASE.
+**Context**: All inception stages complete. Phase 1 construction begins with pre-construction research spikes.
+
+---
+
+## CONSTRUCTION - Spike 1.1: Windows/Linux STT Survey
+**Timestamp**: 2026-03-29T02:30:00Z
+**User Input**: "proceed"
+**AI Response**: Researched all viable STT options for Windows and Linux. Evaluated: platform-native APIs (SAPI 5, WinRT SpeechRecognition, Azure Speech SDK — Windows only; no Linux native API), on-device models (Sherpa-ONNX, Whisper.cpp, Vosk, Coqui/DeepSpeech, PocketSphinx, Silero), Flutter packages (speech_to_text, sherpa_onnx, vosk_flutter, whisper_dart). Produced comparison matrix with weighted scoring. **Recommendation: Sherpa-ONNX as primary** (official Flutter package for Windows+Linux, native streaming, low latency, small models, Apache 2.0). Whisper.cpp as secondary high-accuracy option. speech_to_text/WinRT as zero-download Windows fallback. Spike 1.3 should focus on Sherpa-ONNX integration (not Whisper.cpp).
+**Context**: Spike 1.1 complete. Report at aidlc-docs/construction/spikes/spike-1.1-report.md.
+
+---
+
+## CONSTRUCTION - Spike 1.1: Whisper.cpp Turbo/Distil Update
+**Timestamp**: 2026-03-29T03:00:00Z
+**User Input**: "Research Large-v3-Turbo and Distil-Whisper models in regards to whisper.cpp and update the spike doc with any relevant changes"
+**AI Response**: Researched Large-v3-Turbo (809M params, 1.6GB GGML, ~6x faster than large-v3, 99 languages, near large-v2 accuracy) and Distil-Whisper (756M params, 6.3x faster, primarily English-only, provisional whisper.cpp support). Updated spike-1.1-report.md: added "Whisper Model Variants" subsection, revised comparison matrix (latency and model size rows), added Whisper.cpp (turbo) scoring at 80 (up from 72), updated secondary recommendation to emphasize turbo model. Turbo significantly improves Whisper.cpp viability but Sherpa-ONNX remains the primary recommendation.
+**Context**: Spike 1.1 report updated with turbo/distil findings.
+
+---
+
+## CONSTRUCTION - Spike 1.3: STT Integration PoC
+**Timestamp**: 2026-03-29T03:30:00Z
+**User Input**: "I had another agent create spike 1.3, I want you to review the work and extend it with your own information"
+**AI Response**: Reviewed other agent's draft — found it inadequate (generic implementation plan, no actual PoC findings, inaccurate details like "Coordinate with ML team" and "isolated memory regions"). Completely rewrote the report with actual research: evaluated `sherpa_onnx` Flutter package (pub.dev, platforms, FFI-based), documented OnlineRecognizer streaming API (acceptWaveform → decode → getResult → isEndpoint → reset), mapped all 11 SttEngine interface methods to sherpa_onnx API, confirmed native pause/resume support, documented available streaming Zipformer models (20-180MB int8), defined implementation architecture, assessed risks. **Verdict: Sherpa-ONNX confirmed viable for implementing SherpaOnnxSttEngine.**
+**Context**: Spike 1.3 complete. Report at aidlc-docs/construction/spikes/spike-1.3-report.md.
+
+---
+
+## CONSTRUCTION - Unit 1: Core Abstractions — Functional Design (Questions)
+**Timestamp**: 2026-03-29T04:00:00Z
+**User Input**: (automatic — proceeding from Spike 1.3 completion)
+**AI Response**: Created functional design plan at aidlc-docs/construction/plans/core-abstractions-functional-design-plan.md with 16 plan steps and 7 questions covering: SttEngine callback migration (Q1), CaptionOutputTargetRegistry error isolation (Q2), RecordingState field extension approach (Q3), SttEngineProvider Unit 1 behavior (Q4), registry subscription timing (Q5), DisplaySettings key prefix rename (Q6), supportedLocales signature (Q7).
+**Context**: Unit 1 Functional Design — question creation.
+
+---
+
+## CONSTRUCTION - Unit 1: Core Abstractions — Functional Design (Answers)
+**Timestamp**: 2026-03-29T04:15:00Z
+**User Input**: Q1:A, Q2:A, Q3:B, Q4:C, Q5:B, Q6:A, Q7:B. User asked for tradeoff analysis on Q2 and Q7 before answering.
+**AI Response**: All 7 answers received, no contradictions detected. Generated 3 functional design artifacts: domain-entities.md (SttResult, CaptionEvent, AudioInputConfig, AudioInputVisualStyle, RecordingState update, DisplaySettings rename), business-logic-model.md (SttEngine interface delta, SttEngineRegistry, CaptionBus, CaptionOutputTarget, CaptionOutputTargetRegistry, RecordingStateNotifier update, provider layer, TranscriptSettingsProvider), business-rules.md (14 business rules, 2 security rules, PBT testable properties per component, extension compliance summary).
+**Context**: Unit 1 Functional Design — artifacts generated, awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 1: Core Abstractions — Functional Design (Approval)
+**Timestamp**: 2026-03-29T04:30:00Z
+**User Input**: "approve and continue"
+**AI Response**: Functional Design approved. Proceeding to NFR Requirements stage.
+**Context**: Unit 1 Functional Design — COMPLETE. Moving to NFR Requirements.
+
+---
+
+## CONSTRUCTION - Unit 1: Core Abstractions — NFR Requirements (Questions + Answers)
+**Timestamp**: 2026-03-29T04:45:00Z
+**User Input**: Q1:A (20 events/sec throughput), Q2:A (glados PBT), Q3:A (uuid package), Q4:B (logging package)
+**AI Response**: Created NFR requirements plan with 4 questions. All answered, no contradictions. Generated 2 artifacts: nfr-requirements.md (5 NFR groups: performance, reliability, security, testing, maintainability; 11 requirements total), tech-stack-decisions.md (3 new dependencies: uuid, logging, glados; logger naming convention; migration plan for dart:developer to logging).
+**Context**: Unit 1 NFR Requirements — artifacts generated, awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 1: Core Abstractions — NFR Requirements (Approval)
+**Timestamp**: 2026-03-29T05:00:00Z
+**User Input**: "proceed"
+**AI Response**: NFR Requirements approved. Proceeding to NFR Design stage.
+**Context**: Unit 1 NFR Requirements — COMPLETE. Moving to NFR Design.
+
+---
+
+## CONSTRUCTION - Unit 1: Core Abstractions — NFR Design (Questions + Answers)
+**Timestamp**: 2026-03-30T00:00:00Z
+**User Input**: Q1:A (shared generators file), Q2:C (default brief async delay ~100ms)
+**AI Response**: Created NFR design plan with 2 questions. All answered, no contradictions. Generated 2 artifacts: nfr-design-patterns.md (5 patterns: glados PBT with ArbitraryT generators, MockSttEngine with 100ms default async delay and emitResult trigger, logging pattern with Logger per component, bus throughput sanity test, error isolation test with CollectingTarget/ThrowingTarget helpers), logical-components.md (test infrastructure map, runtime component diagram, dependency summary).
+**Context**: Unit 1 NFR Design — artifacts generated, awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 1: Core Abstractions — NFR Design (Approval)
+**Timestamp**: 2026-03-30T00:30:00Z
+**User Input**: "approve and continue"
+**AI Response**: NFR Design approved. Proceeding to Code Generation.
+**Context**: Unit 1 NFR Design — COMPLETE.
+
+---
+
+## CONSTRUCTION - Unit 1: Core Abstractions — Code Generation Part 1 (Plan)
+**Timestamp**: 2026-03-30T00:45:00Z
+**User Input**: (automatic — plan creation)
+**AI Response**: Created code generation plan with 45 steps across 11 phases (A-K). Covers: dependency additions, DisplaySettings rename, new models (SttResult, AudioInputConfig, CaptionEvent), SttEngine interface update, new services (SttEngineRegistry, CaptionBus, CaptionOutputTarget, CaptionOutputTargetRegistry), RecordingState/Notifier updates, new providers, test helpers (MockSttEngine, test targets), 8 example-based test files, 6 PBT test files, build/analyze/test verification.
+**Context**: Unit 1 Code Generation Part 1 — plan created, awaiting approval.
+
+---
+
+## CONSTRUCTION - Spike 1.2: System Audio Capture Feasibility (Complete)
+**Timestamp**: 2026-03-30T03:00:00Z
+**User Input**: "Let's do spike 1.2"
+**AI Response**: Spike 1.2 complete. System audio capture is feasible on all three platforms. Custom Flutter plugin (`zip_audio_capture`) needed with per-platform native implementations: Core Audio taps (macOS 14.2+), WASAPI loopback (Windows), PulseAudio monitor sources (Linux). No existing Flutter package meets requirements.
+**Context**: Spike 1.2 — COMPLETE. Report at `aidlc-docs/construction/spikes/spike-1.2-report.md`. Unblocks Unit 6 (Zip Broadcast).
+
+---
+
+## CONSTRUCTION - Unit 1: Core Abstractions — Code Generation Part 2 (Complete)
+**Timestamp**: 2026-03-30T02:00:00Z
+**AI Response**: Code Generation Part 2 complete. All 45 steps executed.
+**Context**: Unit 1 Code Generation — COMPLETE.
+- 26 files generated by build_runner (freezed + riverpod)
+- 0 analyzer errors across all 3 packages (57 infos in zip_core, style only)
+- 156 tests passing (unit + PBT)
+- New: 3 models, 4 services, 4 providers, 2 test helpers, 8 unit test files, 4 PBT test files
+- Modified: RecordingState (ActiveSessionState mixin), RecordingStateNotifier (CaptionBus, sessionId, handleSttResult), SttEngine (Phase 1 interface)
+
+---
+
+## CONSTRUCTION - Unit 1: Core Abstractions — Code Generation Part 1 (Approval)
+**Timestamp**: 2026-03-30T01:00:00Z
+**User Input**: "approve and continue"
+**AI Response**: Code generation plan approved. Beginning Part 2 (Generation).
+**Context**: Unit 1 Code Generation Part 1 — COMPLETE. Starting Part 2.
+
+---
+
+## CONSTRUCTION - Unit 1: Core Abstractions — NFR Design (Approval)
+**Timestamp**: 2026-03-30T00:15:00Z
+**User Input**: "approve and continue"
+**AI Response**: NFR Design approved. Proceeding to Code Generation stage.
+**Context**: Unit 1 NFR Design — COMPLETE. Moving to Code Generation.
+
+---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — Session Resume
+**Timestamp**: 2026-03-31T00:00:00Z
+**User Input**: "Using ai-dlc, I want to continue with the current phase of work, defined in aidlc-docs/construction/implementation/audio-capture-plan.md"
+**AI Response**: Session resumed. Loaded aidlc-state.md (Unit 2: Platform STT + Audio is next). Loaded spike reports (1.1, 1.2, 1.3), Unit 1 code summary, phase1-unit-of-work.md, phase1-unit-of-work-story-map.md, component methods, stories S-02 and S-06. audio-capture-plan.md noted (generic pre-AI-DLC document; AI-DLC functional design proceeds from unit-of-work and spike artifacts). Extensions: Security Baseline (enabled), Property-Based Testing (enabled). Proceeding to Functional Design for Unit 2.
+**Context**: Unit 2 Functional Design — starting.
+
+---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — Functional Design (Approval)
+**Timestamp**: 2026-03-31T12:00:00Z
+**User Input**: "approve and continue"
+**AI Response**: Functional Design approved. Three artifacts complete: domain-entities.md (AudioDevice, SherpaModelCatalogResponse, SherpaModelCatalogEntry, SherpaModelInfo, SherpaModelDownloadProgress, WakeLockSettings, RecordingError factories including permissionDenied/permissionPermanentlyDenied/engineRequiresModelDownload/engineInitFailed/engineStartFailed/localeNotSupported), business-logic-model.md (AudioDeviceService, WakeLockService, SttSessionManager, PlatformSttEngine, SherpaOnnxSttEngine, SherpaModelManager, SherpaModelCatalogNotifier with stale-while-revalidate, RecordingStateNotifier updates, locale resolution chain, AudioInputSettingsProvider shell, full provider map), business-rules.md (BR-U2-01..43 covering engine selection, permission re-trigger flow, locale fallback, wake lock, model download, catalog API contract with aggressive caching policy). Proceeding to NFR Requirements.
+**Context**: Unit 2 Functional Design — COMPLETE. Moving to NFR Requirements.
+
+---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — NFR Requirements (Questions + Answers)
+**Timestamp**: 2026-04-02T00:00:00Z
+**User Input**: Q1:A (record package), Q2:B (dio), Q3:A (.tar.bz2 with archive package), Q4:A (≤500ms latency), Q5:B (warn >100MB), Q6:C (resume if CDN supports, fallback restart), Q7:B (one auto-restart attempt), Q8:A (no cert pinning), Q9:B (no background captioning — consent constraint), Q10:C (static JSON on CDN), Q11:B (pre-recorded PCM fixtures), Q12:B (mock SpeechToText + mock OnlineRecognizer bindings)
+**AI Response**: All 12 answers received, no contradictions. Generated nfr-requirements.md (7 NFR groups: performance, reliability, security, usability, testing, maintainability, availability; 20 requirements total).
+**Context**: Unit 2 NFR Requirements — artifacts generated, awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — NFR Requirements (Approval)
+**Timestamp**: 2026-04-02T01:00:00Z
+**User Input**: "approve and continue" (from previous session)
+**AI Response**: NFR Requirements approved. Proceeding to NFR Design stage.
+**Context**: Unit 2 NFR Requirements — COMPLETE. Moving to NFR Design.
+
+---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — NFR Design (Questions + Answers)
+**Timestamp**: 2026-04-03T00:00:00Z
+**User Input**: Q1:A (minimal OnlineRecognizerAdapter — 6 pass-through methods), Q2:B (new RecordingState.reconnecting variant), Q3:B (file-based catalog cache), Q4:A (http_mock_adapter), Q5:A (abstract WakeLockService interface — wakelock_plus uses static API, cannot inject), Q6:B (PBT for domain types + state machine extensions)
+**AI Response**: All 6 answers received. Q5 changed from initial B to A after investigating wakelock_plus API (entirely static methods — cannot inject an instance). Generated 2 artifacts: nfr-design-patterns.md (11 patterns: engine crash recovery with reconnecting state, OnlineRecognizerAdapter seam, PlatformSttEngine SpeechToText injection, dio download resume with Range headers, stale-while-revalidate CatalogCache file-based, SHA-256 archive integrity, large download confirmation gate, WakeLockService abstract interface, permission handler mock, PBT generators + state machine extensions, logging extension), logical-components.md (runtime component map, 10 test infrastructure components, dependency summary, extension compliance).
+**Context**: Unit 2 NFR Design — artifacts generated, awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — NFR Design (Approval)
+**Timestamp**: 2026-04-03T01:00:00Z
+**User Input**: "approve and continue"
+**AI Response**: NFR Design approved. Proceeding to Code Generation stage.
+**Context**: Unit 2 NFR Design — COMPLETE. Moving to Code Generation.
+
+---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — Code Generation Part 1 (Plan)
+**Timestamp**: 2026-04-03T02:00:00Z
+**User Input**: (automatic — plan creation)
+**AI Response**: Created code generation plan with 74 steps across 13 phases (A-M). Covers: 9 new runtime deps + 1 dev dep, 6 freezed models, RecordingState.reconnecting variant, RecordingErrorFactories, 3 abstract interfaces (AudioDeviceService, WakeLockService, OnlineRecognizerAdapter), 5 service implementations (WakelockPlusService, SherpaOnlineRecognizerAdapter, CatalogCache, SherpaModelManager, SttSessionManager), 2 STT engines (PlatformSttEngine, SherpaOnnxSttEngine), 13 new/updated providers, zip_broadcast shell, 6 test mocks + fixtures + PBT generators, 17 example-based test files, 5 PBT test files, build/analyze/test.
+**Context**: Unit 2 Code Generation Part 1 — plan created, awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 2: Platform STT + Audio — Code Generation Part 1 (Approval)
+**Timestamp**: 2026-04-03T02:30:00Z
+**User Input**: "approve and continue"
+**AI Response**: Code generation plan approved. Beginning Part 2 (Generation).
+**Context**: Unit 2 Code Generation Part 1 — COMPLETE. Starting Part 2.
+
+---
+
+## Documentation Refinement — Unit 2: Platform STT + Audio
+**Timestamp**: 2026-04-04T00:00:00Z
+**Artifacts Preserved**: 7 design documents cleaned and retained (functional-design: domain-entities, business-rules, business-logic-model; nfr-design: logical-components, nfr-design-patterns; nfr-requirements: nfr-requirements, tech-stack-decisions); code-summary preserved as-is
+**Artifacts Removed**: 5 plan/scaffold files (platform-stt-audio-functional-design-plan.md, platform-stt-audio-nfr-requirements-plan.md, platform-stt-audio-nfr-design-plan.md, platform-stt-audio-code-generation-plan.md, construction/implementation/audio-capture-plan.md)
+**Project Docs Updated**: aidlc-docs/README.md — added Phase 1 inception and construction sections (spikes, Unit 1, Unit 2); updated last refinement date to 2026-04-04
+**Status**: Complete
+
+---
