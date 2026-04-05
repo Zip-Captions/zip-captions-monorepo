@@ -1,5 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zip_core/src/providers/base_settings_notifier.dart';
 
 part 'active_locale_id_provider.g.dart';
 
@@ -13,26 +13,18 @@ class ActiveLocaleIdNotifier extends _$ActiveLocaleIdNotifier {
 
   @override
   String? build() {
-    _loadAsync();
-    return null;
+    final prefs = ref.read(sharedPreferencesProvider);
+    return prefs.getString(_key);
   }
 
   /// Sets and persists the active locale ID.
   Future<void> setLocaleId(String? localeId) async {
     state = localeId;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = ref.read(sharedPreferencesProvider);
     if (localeId != null) {
       await prefs.setString(_key, localeId);
     } else {
       await prefs.remove(_key);
-    }
-  }
-
-  Future<void> _loadAsync() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getString(_key);
-    if (stored != null) {
-      state = stored;
     }
   }
 }

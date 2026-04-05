@@ -7,17 +7,6 @@ import 'package:zip_core/src/providers/transcript_settings_provider.dart';
 void main() {
   late ProviderContainer container;
 
-  ProviderContainer createContainer([Map<String, Object> prefs = const {}]) {
-    SharedPreferences.setMockInitialValues(prefs);
-    return ProviderContainer(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(
-          SharedPreferencesAsync() as SharedPreferences,
-        ),
-      ],
-    );
-  }
-
   group('TranscriptSettingsNotifier', () {
     test('defaults to true (capture enabled)', () async {
       SharedPreferences.setMockInitialValues({});
@@ -60,7 +49,7 @@ void main() {
       addTearDown(container.dispose);
 
       final n = container.read(transcriptSettingsNotifierProvider.notifier);
-      await n.setCaptureEnabled(false);
+      await n.setCaptureEnabled(enabled: false);
 
       expect(
         container.read(transcriptSettingsNotifierProvider),
@@ -81,10 +70,10 @@ void main() {
 
       final n = container.read(transcriptSettingsNotifierProvider.notifier);
 
-      await n.setCaptureEnabled(false);
+      await n.setCaptureEnabled(enabled: false);
       expect(container.read(transcriptSettingsNotifierProvider), isFalse);
 
-      await n.setCaptureEnabled(true);
+      await n.setCaptureEnabled(enabled: true);
       expect(container.read(transcriptSettingsNotifierProvider), isTrue);
     });
   });

@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_core/src/models/wake_lock_settings.dart';
+import 'package:zip_core/src/providers/base_settings_notifier.dart';
 
 part 'wake_lock_settings_provider.g.dart';
 
@@ -13,26 +13,22 @@ class WakeLockSettingsNotifier extends _$WakeLockSettingsNotifier {
 
   @override
   WakeLockSettings build() {
-    return _load() ?? const WakeLockSettings();
+    final prefs = ref.read(sharedPreferencesProvider);
+    final stored = prefs.getString(_key);
+    if (stored == null) return const WakeLockSettings();
+    try {
+      return WakeLockSettings.fromJson(
+        jsonDecode(stored) as Map<String, dynamic>,
+      );
+    } on Object {
+      return const WakeLockSettings();
+    }
   }
 
   /// Updates and persists the wake lock settings.
   Future<void> update(WakeLockSettings settings) async {
     state = settings;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_key, jsonEncode(settings.toJson()));
-  }
-
-  WakeLockSettings? _load() {
-    // Synchronous load from cache — SharedPreferences must be
-    // pre-initialized by the app before this provider is read.
-    try {
-      final prefs = SharedPreferences.getInstance();
-      // ignore: invalid_use_of_visible_for_testing_member
-      if (prefs is! Future) return null;
-      return null;
-    } on Object {
-      return null;
-    }
   }
 }

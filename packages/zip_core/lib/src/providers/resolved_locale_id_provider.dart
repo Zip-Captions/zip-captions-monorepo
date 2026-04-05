@@ -8,10 +8,11 @@ part 'resolved_locale_id_provider.g.dart';
 /// Resolves the best locale ID to use for the active STT engine.
 ///
 /// Implements the fallback chain from the FD:
-/// 1. Exact match for [activeLocaleId] in supported locales
+/// 1. Exact match for the active locale ID in supported locales
 /// 2. Language-only match (e.g., 'en' prefix)
-/// 3. First supported locale
-/// 4. 'en-US' as ultimate fallback
+/// 3. First supported locale (when no explicit selection)
+/// 4. `activeLocaleId` passed through — the engine or `SttSessionManager`
+///    surfaces a `localeNotSupported` error if it cannot handle it
 @Riverpod(keepAlive: true)
 String resolvedLocaleId(Ref ref) {
   final activeLocaleId = ref.watch(activeLocaleIdNotifierProvider);

@@ -18,7 +18,7 @@ class TranscriptSettingsNotifier extends _$TranscriptSettingsNotifier {
   }
 
   /// Toggle transcript capture on or off.
-  Future<void> setCaptureEnabled(bool enabled) async {
+  Future<void> setCaptureEnabled({required bool enabled}) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setBool(_key, enabled);
     state = enabled;

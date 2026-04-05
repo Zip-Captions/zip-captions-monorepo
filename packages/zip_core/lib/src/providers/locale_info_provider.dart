@@ -7,7 +7,7 @@ part 'locale_info_provider.g.dart';
 
 /// Exposes the list of locales available for speech recognition.
 ///
-/// Queries the active [SttEngine]'s `supportedLocales()`. Returns an empty
+/// Queries the active `SttEngine`'s `supportedLocales()`. Returns an empty
 /// list when no engine is available.
 @riverpod
 Future<List<SpeechLocale>> localeInfo(Ref ref) async {
