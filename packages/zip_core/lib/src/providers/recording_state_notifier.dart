@@ -245,8 +245,10 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
     );
     _captionBus.publish(SessionStateEvent(state));
 
-    unawaited(
-      _sessionManager.handleEngineError(error).then((recovered) {
+    unawaited(() async {
+      try {
+        final recovered =
+            await _sessionManager.handleEngineError(error);
         // Guard: if the user stopped or cleared the session while recovery
         // was in progress, do not overwrite the new state.
         if (state is! ReconnectingState) return;
@@ -263,7 +265,13 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
           _captionBus.publish(SessionStateEvent(state));
           unawaited(_wakeLockService.release());
         }
-      }),
-    );
+      } on Object catch (e) {
+        _log.severe('Unexpected error during recovery: ${e.runtimeType}');
+        if (state is! ReconnectingState) return;
+        state = RecordingState.stopped(sessionId: active.sessionId);
+        _captionBus.publish(SessionStateEvent(state));
+        unawaited(_wakeLockService.release());
+      }
+    }());
   }
 }

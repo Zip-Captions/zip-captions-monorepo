@@ -83,6 +83,37 @@ void main() {
       expect(result, 'de-DE');
     });
 
+    test('falls back to language-only match when exact locale is unavailable',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          localeInfoProvider.overrideWith(
+            (_) async => const [
+              SpeechLocale(
+                localeId: 'en-US',
+                displayName: 'English (US)',
+              ),
+              SpeechLocale(
+                localeId: 'de-DE',
+                displayName: 'German',
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(activeLocaleIdNotifierProvider.notifier)
+          .setLocaleId('en-AU');
+      await container.read(localeInfoProvider.future);
+
+      expect(container.read(resolvedLocaleIdProvider), 'en-US');
+    });
+
     test('returns activeLocaleId when supportedLocales is empty', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
