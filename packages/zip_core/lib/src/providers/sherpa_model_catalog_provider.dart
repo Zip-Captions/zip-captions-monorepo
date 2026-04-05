@@ -8,7 +8,6 @@ import 'package:zip_core/src/models/sherpa_model_download_progress.dart';
 import 'package:zip_core/src/providers/sherpa_model_manager_provider.dart';
 import 'package:zip_core/src/providers/stt_engine_registry_provider.dart';
 import 'package:zip_core/src/services/catalog/sherpa_model_manager.dart';
-import 'package:zip_core/src/stt/engines/sherpa_onnx_stt_engine.dart';
 
 part 'sherpa_model_catalog_provider.g.dart';
 
@@ -27,19 +26,33 @@ class SherpaModelCatalogNotifier extends _$SherpaModelCatalogNotifier {
 
   @override
   SherpaModelCatalogState build() {
-    // Manager is async — schedule catalog load.
-    ref.listen(sherpaModelManagerProvider, (_, next) {
-      next.whenData((manager) {
-        _manager = manager;
-        unawaited(() async {
-          try {
-            await _loadCatalog();
-          } on Object catch (e, st) {
-            _log.warning('Failed to load catalog on manager ready', e, st);
-          }
-        }());
-      });
-    });
+    // Manager is async — load catalog as soon as it resolves.
+    // fireImmediately: true ensures the catalog loads even when the manager
+    // is already resolved before this notifier is created.
+    ref
+      ..onDispose(() {
+        for (final entry in _activeSubscriptions.entries) {
+          unawaited(entry.value.cancel());
+          _manager?.cancelDownload(entry.key);
+        }
+        _activeSubscriptions.clear();
+      })
+      ..listen(
+        sherpaModelManagerProvider,
+        (_, next) {
+          next.whenData((manager) {
+            _manager = manager;
+            unawaited(() async {
+              try {
+                await _loadCatalog();
+              } on Object catch (e, st) {
+                _log.warning('Failed to load catalog on manager ready', e, st);
+              }
+            }());
+          });
+        },
+        fireImmediately: true,
+      );
     return const SherpaModelCatalogState();
   }
 
@@ -61,7 +74,10 @@ class SherpaModelCatalogNotifier extends _$SherpaModelCatalogNotifier {
   }
 
   /// Confirms a pending large download.
+  ///
+  /// No-op if [modelId] does not match the current pending confirmation.
   void confirmDownload(String modelId) {
+    if (state.pendingConfirmationModelId != modelId) return;
     state = state.copyWith(pendingConfirmationModelId: null);
     _beginDownload(modelId);
   }
@@ -73,7 +89,7 @@ class SherpaModelCatalogNotifier extends _$SherpaModelCatalogNotifier {
 
   /// Cancels an in-progress download.
   void cancelDownload(String modelId) {
-    _activeSubscriptions[modelId]?.cancel();
+    unawaited(_activeSubscriptions[modelId]?.cancel());
     _activeSubscriptions.remove(modelId);
     _manager?.cancelDownload(modelId);
     final downloads = Map.of(state.activeDownloads)..remove(modelId);
@@ -104,9 +120,15 @@ class SherpaModelCatalogNotifier extends _$SherpaModelCatalogNotifier {
     state = state.copyWith(models: models);
   }
 
+  /// Begins an active download and tracks the subscription.
+  ///
+  /// Engine registration on first download is handled at app startup;
+  /// this notifier tracks download state only.
   void _beginDownload(String modelId) {
     if (_manager == null) return;
 
+    // The subscription is tracked in _activeSubscriptions — not a leak.
+    // ignore: cancel_subscriptions
     final subscription = _manager!.downloadModel(modelId).listen(
       (progress) {
         final downloads = Map.of(state.activeDownloads);
@@ -120,12 +142,6 @@ class SherpaModelCatalogNotifier extends _$SherpaModelCatalogNotifier {
           activeDownloads: downloads,
           lastFailedDownloadId: null,
         );
-
-        // Register engine on first download (BR-U2-36).
-        if (_manager!.downloadedModels.length == 1) {
-          _registerSherpaEngine();
-        }
-
         unawaited(refresh());
       },
       onError: (Object error) {
@@ -140,16 +156,5 @@ class SherpaModelCatalogNotifier extends _$SherpaModelCatalogNotifier {
     );
 
     _activeSubscriptions[modelId] = subscription;
-  }
-
-  void _registerSherpaEngine() {
-    if (_manager == null) return;
-    final registry = ref.read(sttEngineRegistryProvider);
-    if (registry.getEngine('sherpa-onnx') != null) return;
-
-    // Engine registration requires AudioDeviceService — imported at
-    // app level. Here we create a minimal engine for registration.
-    // The full engine with proper dependencies is wired at app startup.
-    _log.info('First model downloaded — registering sherpa-onnx engine');
   }
 }
