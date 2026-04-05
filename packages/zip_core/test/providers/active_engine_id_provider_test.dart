@@ -2,15 +2,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_core/src/providers/active_engine_id_provider.dart';
+import 'package:zip_core/src/providers/base_settings_notifier.dart';
 
 void main() {
   group('ActiveEngineIdNotifier', () {
-    setUp(() {
+    test('initial state is null', () async {
       SharedPreferences.setMockInitialValues({});
-    });
-
-    test('initial state is null', () {
-      final container = ProviderContainer();
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
       addTearDown(container.dispose);
 
       final state = container.read(activeEngineIdNotifierProvider);
@@ -18,7 +19,11 @@ void main() {
     });
 
     test('setEngineId updates state', () async {
-      final container = ProviderContainer();
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
       addTearDown(container.dispose);
 
       final notifier =
@@ -31,7 +36,11 @@ void main() {
     });
 
     test('setEngineId(null) clears state', () async {
-      final container = ProviderContainer();
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
       addTearDown(container.dispose);
 
       final notifier =
@@ -42,14 +51,17 @@ void main() {
     });
 
     test('persists to SharedPreferences', () async {
-      final container = ProviderContainer();
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
       addTearDown(container.dispose);
 
       final notifier =
           container.read(activeEngineIdNotifierProvider.notifier);
       await notifier.setEngineId('platform');
 
-      final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('stt.activeEngineId'), 'platform');
     });
 
@@ -57,18 +69,13 @@ void main() {
       SharedPreferences.setMockInitialValues({
         'stt.activeEngineId': 'sherpa-onnx',
       });
-
-      final container = ProviderContainer();
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
       addTearDown(container.dispose);
 
-      // Force the provider to build and load async.
-      container.read(activeEngineIdNotifierProvider);
-      // Wait for async load.
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-      expect(
-        container.read(activeEngineIdNotifierProvider),
-        'sherpa-onnx',
-      );
+      expect(container.read(activeEngineIdNotifierProvider), 'sherpa-onnx');
     });
   });
 }
