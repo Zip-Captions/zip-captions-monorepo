@@ -95,7 +95,7 @@ final Generator<String> arbitraryLocaleId = any.choose([
 final Generator<SttResult> arbitrarySttResult = any.combine5(
   any.letterOrDigits, // text
   any.bool, // isFinal
-  any.doubleInRange(0.0, 1.0), // confidence
+  any.doubleInRange(0, 1), // confidence
   any.choose(['default', 'mic-1', 'mic-2', 'system-audio']), // sourceId
   any.choose([null, 'Speaker A', 'Speaker B']), // speakerTag
   (text, isFinal, confidence, sourceId, speakerTag) => SttResult(
@@ -110,16 +110,31 @@ final Generator<SttResult> arbitrarySttResult = any.combine5(
 
 // --- CaptionEvent generator ---
 
+/// Generates random [RecordingState] instances across all five variants.
+final Generator<RecordingState> arbitraryRecordingState = any.combine3(
+  any.intInRange(0, 5),
+  any.letterOrDigits,
+  any.letterOrDigits,
+  (variant, sessionId, segment) {
+    final sid = sessionId.isEmpty ? 'test-session' : sessionId;
+    return switch (variant) {
+      0 => const RecordingState.idle(),
+      1 => RecordingState.recording(sessionId: sid, currentSegment: segment),
+      2 => RecordingState.paused(sessionId: sid, currentSegment: segment),
+      3 => RecordingState.reconnecting(sessionId: sid, currentSegment: segment),
+      _ => RecordingState.stopped(sessionId: sid, currentSegment: segment),
+    };
+  },
+);
+
 /// Generates random CaptionEvent instances (either SttResultEvent or
-/// SessionStateEvent).
-final Generator<CaptionEvent> arbitraryCaptionEvent = any.combine2(
+/// SessionStateEvent with a varied [RecordingState]).
+final Generator<CaptionEvent> arbitraryCaptionEvent = any.combine3(
   any.bool,
   arbitrarySttResult,
-  (useResult, result) => useResult
-      ? SttResultEvent(result)
-      : SessionStateEvent(
-          const RecordingState.recording(sessionId: 'test-session'),
-        ),
+  arbitraryRecordingState,
+  (useResult, result, state) =>
+      useResult ? SttResultEvent(result) : SessionStateEvent(state),
 );
 
 // --- Registry operation generators ---
@@ -186,16 +201,17 @@ final Generator<SherpaModelInfo> arbitrarySherpaModelInfo = any.combine2(
 );
 
 /// Generates [SherpaModelDownloadProgress] instances with valid invariants.
+///
+/// `downloadedBytes` is varied across 0%, partial, and 100% to cover all
+/// progress edge cases.
 final Generator<SherpaModelDownloadProgress>
-    arbitrarySherpaModelDownloadProgress = any.combine2(
+    arbitrarySherpaModelDownloadProgress = any.combine3(
   any.letterOrDigits,
   any.intInRange(1, 500000000),
-  (modelId, totalBytes) {
-    final downloaded = totalBytes ~/ 2;
-    return SherpaModelDownloadProgress(
-      modelId: modelId.isEmpty ? 'model-0' : modelId,
-      downloadedBytes: downloaded,
-      totalBytes: totalBytes,
-    );
-  },
+  any.doubleInRange(0, 1),
+  (modelId, totalBytes, fraction) => SherpaModelDownloadProgress(
+    modelId: modelId.isEmpty ? 'model-0' : modelId,
+    downloadedBytes: (totalBytes * fraction).round(),
+    totalBytes: totalBytes,
+  ),
 );

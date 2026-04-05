@@ -31,7 +31,13 @@ class SherpaModelCatalogNotifier extends _$SherpaModelCatalogNotifier {
     ref.listen(sherpaModelManagerProvider, (_, next) {
       next.whenData((manager) {
         _manager = manager;
-        unawaited(_loadCatalog());
+        unawaited(() async {
+          try {
+            await _loadCatalog();
+          } on Object catch (e, st) {
+            _log.warning('Failed to load catalog on manager ready', e, st);
+          }
+        }());
       });
     });
     return const SherpaModelCatalogState();

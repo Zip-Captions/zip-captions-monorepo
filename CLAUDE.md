@@ -9,5 +9,5 @@ This project uses a two-model strategy to balance quality and cost:
 - **Opus** — use for Inception phase (Requirements through Application Design)
 - **Sonnet** — use for Construction phase (Functional Design onward)
 
-At the start of each session, state which phase you are in, and which model the user should be using, as well as which one they are currently using. At the transition from Inception to Construction, remind the human to switch the model to Sonnet
+At the start of each session, state which phase you are in and which model the user should be using. At the transition from Inception to Construction, remind the human to switch the model to Sonnet
 before proceeding.

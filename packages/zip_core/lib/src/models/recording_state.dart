@@ -1,6 +1,6 @@
 /// Represents the recording state machine.
 ///
-/// Four states; no error state (errors are handled separately via
+/// Five states; no error state (errors are handled separately via
 /// `RecordingError`). Phase 1 adds [ActiveSessionState] mixin with
 /// `sessionId` and `currentSegment` to non-idle variants.
 sealed class RecordingState {

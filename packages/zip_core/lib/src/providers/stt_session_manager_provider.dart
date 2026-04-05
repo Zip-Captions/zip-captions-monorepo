@@ -8,7 +8,9 @@ part 'stt_session_manager_provider.g.dart';
 /// Provides the singleton [SttSessionManager].
 @Riverpod(keepAlive: true)
 SttSessionManager sttSessionManager(Ref ref) {
-  return SttSessionManager(
+  final manager = SttSessionManager(
     registry: ref.read(sttEngineRegistryProvider),
   );
+  ref.onDispose(manager.dispose);
+  return manager;
 }
