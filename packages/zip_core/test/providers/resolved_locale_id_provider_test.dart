@@ -3,18 +3,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_core/src/models/speech_locale.dart';
 import 'package:zip_core/src/providers/active_locale_id_provider.dart';
+import 'package:zip_core/src/providers/base_settings_notifier.dart';
 import 'package:zip_core/src/providers/locale_info_provider.dart';
 import 'package:zip_core/src/providers/resolved_locale_id_provider.dart';
 
 void main() {
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
-  });
-
   group('resolvedLocaleIdProvider', () {
-    test('returns en-US when no engine and no selection', () {
+    test('returns en-US when no engine and no selection', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
           localeInfoProvider.overrideWith((_) async => const <SpeechLocale>[]),
         ],
       );
@@ -23,9 +23,12 @@ void main() {
       expect(container.read(resolvedLocaleIdProvider), 'en-US');
     });
 
-    test('returns first supported locale when no explicit selection', () {
+    test('returns first supported locale when no explicit selection', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
           localeInfoProvider.overrideWith(
             (_) async => const [
               SpeechLocale(
@@ -46,8 +49,11 @@ void main() {
     });
 
     test('returns exact match when activeLocaleId matches', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
           localeInfoProvider.overrideWith(
             (_) async => const [
               SpeechLocale(
@@ -79,8 +85,11 @@ void main() {
     });
 
     test('returns activeLocaleId when supportedLocales is empty', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
           localeInfoProvider.overrideWith((_) async => const <SpeechLocale>[]),
         ],
       );

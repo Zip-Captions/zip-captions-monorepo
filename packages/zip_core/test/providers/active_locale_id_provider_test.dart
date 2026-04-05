@@ -2,15 +2,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_core/src/providers/active_locale_id_provider.dart';
+import 'package:zip_core/src/providers/base_settings_notifier.dart';
 
 void main() {
   group('ActiveLocaleIdNotifier', () {
-    setUp(() {
+    test('initial state is null', () async {
       SharedPreferences.setMockInitialValues({});
-    });
-
-    test('initial state is null', () {
-      final container = ProviderContainer();
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
       addTearDown(container.dispose);
 
       final state = container.read(activeLocaleIdNotifierProvider);
@@ -18,7 +19,11 @@ void main() {
     });
 
     test('setLocaleId updates state', () async {
-      final container = ProviderContainer();
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
       addTearDown(container.dispose);
 
       final notifier =
@@ -28,7 +33,11 @@ void main() {
     });
 
     test('setLocaleId(null) clears state', () async {
-      final container = ProviderContainer();
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
       addTearDown(container.dispose);
 
       final notifier =
@@ -39,14 +48,17 @@ void main() {
     });
 
     test('persists to SharedPreferences', () async {
-      final container = ProviderContainer();
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
       addTearDown(container.dispose);
 
       final notifier =
           container.read(activeLocaleIdNotifierProvider.notifier);
       await notifier.setLocaleId('ja-JP');
 
-      final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('stt.activeLocaleId'), 'ja-JP');
     });
 
@@ -54,12 +66,12 @@ void main() {
       SharedPreferences.setMockInitialValues({
         'stt.activeLocaleId': 'de-DE',
       });
-
-      final container = ProviderContainer();
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
       addTearDown(container.dispose);
 
-      container.read(activeLocaleIdNotifierProvider);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(container.read(activeLocaleIdNotifierProvider), 'de-DE');
     });
   });
