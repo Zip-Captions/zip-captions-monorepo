@@ -47,7 +47,8 @@ class CaptionOutputTargetRegistry {
       try {
         target.dispose();
       } on Object catch (e) {
-        _log.severe('Error disposing target ${target.targetId}: $e');
+        // SECURITY-03: log runtimeType only — exception text may contain transcript content.
+        _log.severe('Error disposing target ${target.targetId}: ${e.runtimeType}');
       } finally {
         _ensureUnsubscribedIfEmpty();
       }
@@ -67,7 +68,8 @@ class CaptionOutputTargetRegistry {
       try {
         target.dispose();
       } on Object catch (e) {
-        _log.severe('Error disposing target ${target.targetId}: $e');
+        // SECURITY-03: log runtimeType only — exception text may contain transcript content.
+        _log.severe('Error disposing target ${target.targetId}: ${e.runtimeType}');
       }
     }
     _targets.clear();
