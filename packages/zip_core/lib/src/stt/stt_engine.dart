@@ -38,6 +38,13 @@ abstract interface class SttEngine {
   /// [localeId] specifies the recognition locale (BCP-47).
   /// [onResult] receives all recognition results (interim and final).
   ///
+  /// Returns `true` if the session started successfully.
+  /// Returns `false` for recoverable startup failures — e.g., unsupported
+  /// [localeId], transient permissions missing, or engine busy. A `false`
+  /// result means the session did not begin but is safe to retry.
+  /// Throws only for programming or irrecoverable errors (e.g., invalid
+  /// arguments or fatal internal state).
+  ///
   /// **Security (SECURITY-03)**: [onResult] delivers transcript content
   /// that must never be logged.
   Future<bool> startListening({

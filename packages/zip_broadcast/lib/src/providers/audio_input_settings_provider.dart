@@ -16,23 +16,28 @@ part 'audio_input_settings_provider.g.dart';
 @Riverpod(keepAlive: true)
 class AudioInputSettingsNotifier extends _$AudioInputSettingsNotifier {
   static const _key = 'zip_broadcast.audioInputDevices';
+  static const _defaultDevices = [
+    AudioDevice(deviceId: 'default', name: 'System Default', isDefault: true),
+  ];
+
+  Future<void>? _loadFuture;
 
   @override
   List<AudioDevice> build() {
-    unawaited(_loadAsync());
-    return const [
-      AudioDevice(deviceId: 'default', name: 'System Default', isDefault: true),
-    ];
+    _loadFuture = _loadAsync();
+    return _defaultDevices;
   }
 
   /// Replaces the full list of configured audio input devices.
   Future<void> setDevices(List<AudioDevice> devices) async {
+    await _loadFuture;
     state = devices;
     await _persist(devices);
   }
 
   /// Adds a device to the configuration list.
   Future<void> addDevice(AudioDevice device) async {
+    await _loadFuture;
     final updated = [...state, device];
     state = updated;
     await _persist(updated);
@@ -40,6 +45,7 @@ class AudioInputSettingsNotifier extends _$AudioInputSettingsNotifier {
 
   /// Removes a device by its [deviceId].
   Future<void> removeDevice(String deviceId) async {
+    await _loadFuture;
     final updated = state.where((d) => d.deviceId != deviceId).toList();
     state = updated;
     await _persist(updated);
@@ -47,21 +53,22 @@ class AudioInputSettingsNotifier extends _$AudioInputSettingsNotifier {
 
   /// Resets to the default single system-default microphone.
   Future<void> resetToDefault() async {
-    const defaults = [
-      AudioDevice(deviceId: 'default', name: 'System Default', isDefault: true),
-    ];
-    state = defaults;
-    await _persist(defaults);
+    await _loadFuture;
+    state = _defaultDevices;
+    await _persist(_defaultDevices);
   }
 
   Future<void> _loadAsync() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_key);
-    if (stored != null) {
+    if (stored == null) return;
+    try {
       final list = (jsonDecode(stored) as List<dynamic>)
           .map((e) => AudioDevice.fromJson(e as Map<String, dynamic>))
           .toList();
       state = list;
+    } on Object {
+      // Malformed storage — fall back to defaults already set in build().
     }
   }
 

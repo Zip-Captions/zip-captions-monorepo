@@ -58,7 +58,7 @@ class CaptionOutputTargetRegistry {
     _disposed = true;
     unawaited(_busSubscription?.cancel());
     _busSubscription = null;
-    for (final target in _targets) {
+    for (final target in _targets.toList()) {
       target.dispose();
     }
     _targets.clear();
@@ -76,16 +76,14 @@ class CaptionOutputTargetRegistry {
   }
 
   void _onBusEvent(CaptionEvent event) {
-    for (final target in _targets) {
+    for (final target in _targets.toList()) {
       try {
         target.onCaptionEvent(event);
-      } on Object catch (e, st) {
+      } on Object catch (e, _) {
         // SECURITY-03: Log targetId and error type only, never event content.
-        _log.severe(
-          'Target ${target.targetId} error: ${e.runtimeType}',
-          e,
-          st,
-        );
+        // Do not pass the error object or stack trace — they may contain
+        // transcript text.
+        _log.severe('Target ${target.targetId} error: ${e.runtimeType}');
       }
     }
   }

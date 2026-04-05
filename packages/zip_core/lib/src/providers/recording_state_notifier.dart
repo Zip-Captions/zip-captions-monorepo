@@ -139,7 +139,7 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
     await _wakeLockService.acquire();
   }
 
-  /// Transitions recording|paused -> stopped.
+  /// Transitions recording|paused|reconnecting -> stopped.
   ///
   /// Stops the STT engine and releases the wake lock.
   Future<void> stop() async {
@@ -148,6 +148,8 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
     if (current is RecordingActiveState) {
       sessionId = current.sessionId;
     } else if (current is PausedState) {
+      sessionId = current.sessionId;
+    } else if (current is ReconnectingState) {
       sessionId = current.sessionId;
     } else {
       return;
@@ -204,11 +206,19 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
   ///
   /// Transitions to `reconnecting`, attempts restart, then either resumes
   /// `recording` or transitions to `stopped` on failure.
+  ///
+  /// Only acts when in [RecordingActiveState] or [ReconnectingState].
+  /// Engine errors during pause or after a user-initiated stop are ignored.
   void _handleEngineError(RecordingError error) {
     final current = state;
-    final active =
-        current is ActiveSessionState ? current as ActiveSessionState : null;
-    if (active == null) return;
+    final ActiveSessionState active;
+    if (current is RecordingActiveState) {
+      active = current;
+    } else if (current is ReconnectingState) {
+      active = current;
+    } else {
+      return;
+    }
 
     _lastError = error;
 
@@ -230,6 +240,9 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
 
     unawaited(
       _sessionManager.handleEngineError(error).then((recovered) {
+        // Guard: if the user stopped or cleared the session while recovery
+        // was in progress, do not overwrite the new state.
+        if (state is! ReconnectingState) return;
         if (recovered) {
           _log.info('Engine restart succeeded');
           _lastError = null;

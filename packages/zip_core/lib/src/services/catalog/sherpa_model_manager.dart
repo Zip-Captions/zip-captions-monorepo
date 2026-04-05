@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:archive/archive.dart';
+import 'package:archive/archive_io.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:logging/logging.dart';
@@ -85,7 +85,7 @@ class SherpaModelManager {
       return;
     }
 
-    final partialFile = File('${_storageDir.path}/$modelId.partial');
+    final partialFile = File('${_storageDir.path}/${_safeStorageKey(modelId)}.partial');
     final existingBytes =
         partialFile.existsSync() ? partialFile.lengthSync() : 0;
 
@@ -121,16 +121,19 @@ class SherpaModelManager {
       );
       var receivedBytes = isResume ? existingBytes : 0;
 
-      await for (final chunk in response.data!.stream) {
-        sink.add(chunk);
-        receivedBytes += chunk.length;
-        yield SherpaModelDownloadProgress(
-          modelId: modelId,
-          downloadedBytes: receivedBytes,
-          totalBytes: totalBytes,
-        );
+      try {
+        await for (final chunk in response.data!.stream) {
+          sink.add(chunk);
+          receivedBytes += chunk.length;
+          yield SherpaModelDownloadProgress(
+            modelId: modelId,
+            downloadedBytes: receivedBytes,
+            totalBytes: totalBytes,
+          );
+        }
+      } finally {
+        await sink.close();
       }
-      await sink.close();
 
       // Verify integrity and extract (REL-U2.4).
       await _verifyAndExtract(modelId, partialFile, entry.sha256Checksum);
@@ -147,12 +150,13 @@ class SherpaModelManager {
 
   /// Deletes the extracted model directory for [modelId].
   Future<void> deleteModel(String modelId) async {
-    final modelDir = Directory('${_storageDir.path}/$modelId');
+    final safeKey = _safeStorageKey(modelId);
+    final modelDir = Directory('${_storageDir.path}/$safeKey');
     if (modelDir.existsSync()) {
       await modelDir.delete(recursive: true);
     }
     // Also clean up any partial file.
-    final partialFile = File('${_storageDir.path}/$modelId.partial');
+    final partialFile = File('${_storageDir.path}/$safeKey.partial');
     if (partialFile.existsSync()) {
       await partialFile.delete();
     }
@@ -161,27 +165,27 @@ class SherpaModelManager {
   /// Selects the best downloaded model for a BCP-47 locale.
   ///
   /// Exact locale match > language-only match > null.
+  ///
+  /// Locale comparison is case-insensitive and treats `_` and `-` as
+  /// equivalent separators (e.g., `en-US`, `en_US`, and `EN-us` all match).
   SherpaModelInfo? bestModelForLocale(String localeId) {
     final downloaded = downloadedModels;
     if (downloaded.isEmpty) return null;
 
-    // Exact match.
+    String normalize(String id) => id.replaceAll('_', '-').toLowerCase();
+
+    final normalizedInput = normalize(localeId);
+
+    // Exact match (case-insensitive, underscore/hyphen normalized).
     final exact = downloaded.where(
-      (m) => m.catalogEntry.primaryLocaleId == localeId,
+      (m) => normalize(m.catalogEntry.primaryLocaleId) == normalizedInput,
     );
     if (exact.isNotEmpty) return exact.first;
 
     // Language-only match (e.g., 'en' matches 'en-US').
-    final lang = localeId.split('-').first.split('_').first.toLowerCase();
+    final lang = normalizedInput.split('-').first;
     final langMatch = downloaded.where(
-      (m) =>
-          m.catalogEntry.primaryLocaleId
-              .split('-')
-              .first
-              .split('_')
-              .first
-              .toLowerCase() ==
-          lang,
+      (m) => normalize(m.catalogEntry.primaryLocaleId).split('-').first == lang,
     );
     if (langMatch.isNotEmpty) return langMatch.first;
 
@@ -190,11 +194,18 @@ class SherpaModelManager {
 
   /// Returns the local filesystem path for [modelId] if downloaded.
   String? modelLocalPath(String modelId) {
-    final dir = Directory('${_storageDir.path}/$modelId');
+    final dir = Directory('${_storageDir.path}/${_safeStorageKey(modelId)}');
     return dir.existsSync() ? dir.path : null;
   }
 
   // --- Private helpers ---
+
+  /// Returns a filesystem-safe storage key derived from [modelId].
+  ///
+  /// Strips any character outside `[a-zA-Z0-9_-]` so that a malicious catalog
+  /// entry cannot escape [_storageDir] via path traversal in modelId.
+  static String _safeStorageKey(String modelId) =>
+      modelId.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
 
   List<SherpaModelInfo> _buildModelInfoList() {
     return _catalog.map((entry) {
@@ -250,8 +261,8 @@ class SherpaModelManager {
     File archiveFile,
     String expectedSha256,
   ) async {
-    final bytes = await archiveFile.readAsBytes();
-    final digest = sha256.convert(bytes);
+    // Stream-hash: avoids loading the entire archive into memory for hashing.
+    final digest = await sha256.bind(archiveFile.openRead()).first;
 
     if (digest.toString() != expectedSha256) {
       await archiveFile.delete();
@@ -262,32 +273,54 @@ class SherpaModelManager {
       );
     }
 
-    // Extract .tar.bz2 to _storageDir/{modelId}/.
-    final modelDir = Directory('${_storageDir.path}/$modelId');
-    await modelDir.create(recursive: true);
+    // Extract to a temp dir first; atomically rename to final on success.
+    final safeKey = _safeStorageKey(modelId);
+    final finalModelDir = Directory('${_storageDir.path}/$safeKey');
+    final tempModelDir = Directory('${_storageDir.path}/$safeKey.tmp');
 
-    final decompressed = BZip2Decoder().decodeBytes(bytes);
-    final archive = TarDecoder().decodeBytes(decompressed);
-    for (final file in archive) {
-      if (file.isFile) {
-        // SEC-U2.3: Sanitize entry paths to prevent path traversal.
-        // Strip leading slashes and reject any path component that is '..'.
-        final parts = file.name
-            .replaceAll(r'\', '/')
-            .split('/')
-            .where((p) => p.isNotEmpty && p != '..')
-            .toList();
-        if (parts.isEmpty) continue;
-        final safePath = '${modelDir.path}/${parts.join('/')}';
-        // Verify the resolved path is still within modelDir.
-        if (!safePath.startsWith('${modelDir.path}/')) continue;
-        final outFile = File(safePath);
-        await outFile.create(recursive: true);
-        await outFile.writeAsBytes(file.content as List<int>);
+    try {
+      await tempModelDir.create(recursive: true);
+
+      // Use InputFileStream so the compressed file is read in chunks rather
+      // than loaded all at once via readAsBytes().
+      final inputStream = InputFileStream(archiveFile.path);
+      final decompressed = BZip2Decoder().decodeBuffer(inputStream);
+      await inputStream.close();
+      final archive = TarDecoder().decodeBytes(decompressed);
+
+      for (final file in archive) {
+        if (file.isFile) {
+          // SEC-U2.3: Sanitize entry paths to prevent path traversal.
+          // Strip leading slashes and reject any path component that is '..'.
+          final parts = file.name
+              .replaceAll(r'\', '/')
+              .split('/')
+              .where((p) => p.isNotEmpty && p != '..')
+              .toList();
+          if (parts.isEmpty) continue;
+          final safePath = '${tempModelDir.path}/${parts.join('/')}';
+          // Verify the resolved path is still within tempModelDir.
+          if (!safePath.startsWith('${tempModelDir.path}/')) continue;
+          final outFile = File(safePath);
+          await outFile.create(recursive: true);
+          await outFile.writeAsBytes(file.content as List<int>);
+        }
+      }
+
+      // Atomically promote temp dir to final location.
+      if (finalModelDir.existsSync()) {
+        await finalModelDir.delete(recursive: true);
+      }
+      await tempModelDir.rename(finalModelDir.path);
+    } catch (_) {
+      if (tempModelDir.existsSync()) {
+        await tempModelDir.delete(recursive: true);
+      }
+      rethrow;
+    } finally {
+      if (archiveFile.existsSync()) {
+        await archiveFile.delete();
       }
     }
-
-    // Clean up the archive file.
-    await archiveFile.delete();
   }
 }
