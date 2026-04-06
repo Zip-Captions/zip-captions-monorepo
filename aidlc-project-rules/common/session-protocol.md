@@ -51,7 +51,8 @@ Before reading any source file or `docs/` document to understand a component:
 1. Check whether `~/Documents/ai-dlc-vault/_vault_index.md` has been read this session.
    If not, read it now using the `obsidian-mcp` `read_note` tool.
 2. Find and read the vault note for the relevant package or file using `search_notes`
-   or `read_note`.
+   (keyword search), `search_by_tag` (e.g. `dart`, `directory`, `documentation`),
+   or `read_note` (direct path lookup).
 3. Only open the source file directly when making changes or when the vault note
    does not answer the specific question.
 
