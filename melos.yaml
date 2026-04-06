@@ -1,0 +1,23 @@
+name: zip_captions_workspace
+
+packages:
+  - packages/**
+
+scripts:
+  bootstrap:
+    run: melos exec -- dart pub get
+    description: Bootstrap all packages in the monorepo
+
+  test:
+    run: melos exec --fail-fast -- flutter test
+    description: Run all tests across packages that have a test directory
+    packageFilters:
+      dirExists: test
+
+  analyze:
+    run: melos exec --fail-fast -- dart analyze --fatal-infos
+    description: Run static analysis on all packages
+
+  format:
+    run: melos exec -- dart format .
+    description: Format all Dart source files

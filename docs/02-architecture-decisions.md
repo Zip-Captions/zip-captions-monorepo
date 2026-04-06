@@ -218,20 +218,41 @@ The v1 had a hard switch between `web` and `azure` engines. The v2 needs a clean
 Define an **STT Engine interface** in `zip_core` that all engine implementations must satisfy. Engine selection is a runtime configuration choice stored in user settings (and per-profile for broadcasters).
 
 ```
-abstract class SttEngine {
+abstract interface class SttEngine {
   String get engineId;
   String get displayName;
   bool get requiresNetwork;
   bool get requiresDownload;  // For on-device models that need initial download
-  
+
+  /// Check if the engine can run on the current device/platform.
   Future<bool> isAvailable();
-  Future<void> initialize({String? localeId});
-  Stream<SttResult> startListening({required String localeId});
+
+  /// Request permissions and prepare the engine. Returns false on failure.
+  Future<bool> initialize();
+
+  /// Locales this engine supports.
+  Future<List<SpeechLocale>> supportedLocales();
+
+  /// Begin an STT session. [onResult] receives all recognition results.
+  /// Returns false if the session could not be started.
+  /// Security (SECURITY-03): [onResult] delivers transcript text — never log it.
+  Future<bool> startListening({
+    required String localeId,
+    required void Function(SttResult result) onResult,
+  });
+
+  /// End the current STT session.
   Future<void> stopListening();
-  Future<void> pause();
-  Future<void> resume();
-  Future<List<SpeechLocale>> getAvailableLocales();
-  Future<void> dispose();
+
+  /// Pause recognition. Returns false if pause is not supported or fails.
+  /// Engines without native pause implement transparent stop+restart.
+  Future<bool> pause();
+
+  /// Resume a paused session. Returns false on failure.
+  Future<bool> resume();
+
+  /// Release all resources. Synchronous.
+  void dispose();
 }
 
 class SttResult {
@@ -242,6 +263,13 @@ class SttResult {
   final String? speakerTag;  // Future: for diarization
 }
 ```
+
+**Interface evolution (Phase 1, Unit 2)**:
+- `initialize()` — changed from `Future<void>` to `Future<bool>` (returns success); locale moved to `startListening`
+- `startListening` — changed from `Stream<SttResult>` to `Future<bool>` with `onResult` callback; the callback pattern avoids stream lifecycle complexity across engine implementations
+- `pause()` / `resume()` — changed from `Future<void>` to `Future<bool>` (allow engines to signal unsupported/failed)
+- `dispose()` — changed from `Future<void>` to `void` (synchronous; no async teardown needed)
+- `getAvailableLocales()` — renamed to `supportedLocales()` for consistency with Dart naming conventions
 
 ### Engine Registration
 Engines register themselves at app startup. Each app (Zip Captions, Zip Broadcast) can register different engine sets:

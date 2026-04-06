@@ -1,0 +1,5 @@
+arb-dir: l10n/arb
+template-arb-file: app_en.arb
+output-localization-file: zip_captions_localizations.dart
+output-class: ZipCaptionsLocalizations
+synthetic-package: true

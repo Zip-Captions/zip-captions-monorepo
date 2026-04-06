@@ -1,0 +1,59 @@
+# Zip Captions — Supabase CLI Configuration
+# This file configures the Supabase CLI for local development.
+# Port numbers match docker-compose.yml.
+
+[project]
+id = "zip-captions-local"
+
+[api]
+enabled = true
+# Port mapped via Kong in docker-compose.yml
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+# Port exposed to host in docker-compose.yml
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+# Port exposed to host in docker-compose.yml
+port = 54323
+
+[auth]
+enabled = true
+# Local development: auto-confirm emails, no external providers
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = false
+enable_confirmations = false
+
+[auth.external.apple]
+enabled = false
+
+[auth.external.azure]
+enabled = false
+
+[auth.external.google]
+enabled = false
+
+[auth.external.github]
+enabled = false
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[edge_runtime]
+enabled = true
+verify_jwt = false
+
+[analytics]
+enabled = false

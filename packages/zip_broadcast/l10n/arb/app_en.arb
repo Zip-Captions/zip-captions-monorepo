@@ -1,0 +1,11 @@
+{
+  "@@locale": "en",
+  "appName": "Zip Broadcast",
+  "@appName": {
+    "description": "The app name displayed in the app bar"
+  },
+  "homePlaceholder": "Tap Start to begin captioning",
+  "@homePlaceholder": {
+    "description": "Placeholder text on the home screen before captioning starts"
+  }
+}

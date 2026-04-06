@@ -1,0 +1,50 @@
+name: zip_captions_workspace
+publish_to: none
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+# Pub Workspace — all packages share a single pub cache resolution
+workspace:
+  - packages/zip_core
+  - packages/zip_captions
+  - packages/zip_broadcast
+  - packages/zip_supabase
+
+dependency_overrides:
+  # record_platform_interface 1.5.0 added {bool request=true} to hasPermission,
+  # breaking record_linux 0.7.2 (which is constrained to <1.0.0 by record 5.x).
+  # Pin to 1.4.0 until record upgrades its linux platform package.
+  record_platform_interface: 1.2.0
+
+dev_dependencies:
+  melos: ^7.5.0
+
+melos:
+  packages:
+    - packages/**
+
+  scripts:
+    bootstrap:
+      run: melos exec -- dart pub get
+      description: Bootstrap all packages in the monorepo
+
+    test:
+      run: melos exec --fail-fast -- flutter test
+      description: Run all tests across packages that have a test directory
+      packageFilters:
+        dirExists: test
+
+    test:coverage:
+      run: melos exec --fail-fast -- flutter test --coverage
+      description: Run all tests with coverage collection (used by CI)
+      packageFilters:
+        dirExists: test
+
+    analyze:
+      run: melos exec --fail-fast -- dart analyze --fatal-infos
+      description: Run static analysis on all packages
+
+    format:
+      run: melos exec -- dart format .
+      description: Format all Dart source files

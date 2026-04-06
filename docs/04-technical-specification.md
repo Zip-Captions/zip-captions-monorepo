@@ -1,6 +1,6 @@
 # Zip Captions v2 — Technical Specification
 
-> **Version:** 0.1 | **Updated:** 2026-03-26
+> **Version:** 0.2 | **Updated:** 2026-03-28
 > **Repo:** `zip-captions-monorepo`
 
 ---
@@ -59,7 +59,7 @@ lib/
 ## 2. Riverpod Patterns
 
 ### Code Generation
-All providers use `riverpod_generator`. No hand-written `Provider`, `StateNotifierProvider`, etc.
+All providers use `riverpod_generator`. No hand-written `Provider`, `StateNotifierProvider`, etc. **Exception:** hand-written `NotifierProvider` is acceptable when `build()` is inherited from an abstract base class (e.g., the `BaseSettingsNotifier` pattern — see `docs/RIVERPOD_CONVENTIONS.md`).
 
 ```dart
 // CORRECT — generated
@@ -86,15 +86,25 @@ Default. All providers auto-dispose unless explicitly kept alive with `@Riverpod
 - Active STT sessions (disposed explicitly on stop)
 
 ### State Modeling
-Use `freezed` for state classes with multiple states:
+Use **freezed** for immutable data/value classes (settings, locale models, error objects). Use **Dart 3 sealed classes** for state machines where pattern matching on state variants drives control flow.
 
 ```dart
+// Data class — use freezed (copyWith, equality, JSON)
 @freezed
-class SttState with _$SttState {
-  const factory SttState.idle() = _Idle;
-  const factory SttState.listening({required String localeId}) = _Listening;
-  const factory SttState.paused() = _Paused;
-  const factory SttState.error(String message) = _Error;
+class AppSettings with _$AppSettings {
+  const factory AppSettings({
+    required ScrollDirection scrollDirection,
+    required CaptionTextSize captionTextSize,
+  }) = _AppSettings;
+}
+
+// State machine — use sealed class (pattern matching, no copyWith needed)
+sealed class RecordingState {
+  const RecordingState();
+  const factory RecordingState.idle() = RecordingIdle;
+  const factory RecordingState.recording() = RecordingActive;
+  const factory RecordingState.paused() = RecordingPaused;
+  const factory RecordingState.stopped() = RecordingStopped;
 }
 ```
 
@@ -250,6 +260,7 @@ These are pre-approved and do not need per-use justification:
 | `flutter_webrtc` | WebRTC transport |
 | `flutter_blue_plus` | BLE discovery |
 | `speech_to_text` | Platform STT (if used) |
+| `shared_preferences` | Settings and locale persistence |
 | `mocktail` | Test mocking |
 | `very_good_analysis` | Linting |
 | `build_runner` | Code generation |
@@ -436,3 +447,4 @@ Backend. Contains:
 | Date | Version | Changes |
 |------|---------|---------|
 | 2026-03-26 | 0.1 | Initial draft. |
+| 2026-03-28 | 0.2 | Post-Phase 0 refinement: added `shared_preferences` to approved deps, clarified freezed vs sealed class usage, documented hand-written NotifierProvider exception. |

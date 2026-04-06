@@ -51,6 +51,48 @@ packages/
 
 ---
 
+## Getting Started
+
+### Prerequisites
+
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) — see `docs/PLATFORM_SETUP.md` for the pinned version
+- [Melos](https://melos.invertase.dev) — monorepo tooling for Dart/Flutter
+
+```bash
+dart pub global activate melos
+```
+
+### Bootstrap
+
+Clone the repository and initialise all packages in one step:
+
+```bash
+git clone --recurse-submodules <repo-url>
+cd zip-captions-monorepo
+melos bootstrap
+```
+
+If you cloned without `--recurse-submodules`, initialise the `ai-dlc` submodule manually:
+
+```bash
+git submodule update --init
+```
+
+### Common Commands
+
+```bash
+melos run bootstrap   # Re-run pub get on all packages
+melos run test        # Run all tests
+melos run analyze     # Run dart analyze on all packages
+melos run format      # Format all Dart source files
+```
+
+### Local Supabase
+
+See `packages/zip_supabase/README.md` for instructions on starting the local Supabase stack with Docker Compose.
+
+---
+
 ## Development
 
 This project uses the [AI-DLC](https://github.com/awslabs/aidlc-workflows) agentic development workflow. Features are derived directly from the project's roadmap and user persona documents through a structured inception process before any code is written.

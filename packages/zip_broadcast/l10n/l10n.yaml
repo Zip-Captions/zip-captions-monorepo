@@ -1,0 +1,5 @@
+arb-dir: l10n/arb
+template-arb-file: app_en.arb
+output-localization-file: zip_broadcast_localizations.dart
+output-class: ZipBroadcastLocalizations
+synthetic-package: true
