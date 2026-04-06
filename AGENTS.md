@@ -128,6 +128,10 @@ To build a specific known feature:
 Using AI-DLC, [describe what you want to build]
 ```
 
+### Project-Specific AI-DLC Rules
+
+The standard AI-DLC rule details are in `.aidlc-rule-details/` (symlinked to the `ai-dlc` submodule). Project-specific rule additions and overrides live in `aidlc-project-rules/`. When loading a stage, check `aidlc-project-rules/` first — if a rule file exists there, use it instead of (or in addition to) the submodule version. This applies to both stage rule files and common rule files: before loading any file from `.aidlc-rule-details/common/`, check `aidlc-project-rules/common/` for a project override.
+
 ### AI-DLC Phases
 
 **Inception Phase** — determines WHAT to build and WHY. Each stage requires explicit human approval before proceeding. Artifacts land in `aidlc-docs/inception/`.
