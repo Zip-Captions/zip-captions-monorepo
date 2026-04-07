@@ -877,3 +877,11 @@
 **Context**: Unit 3 NFR Design — COMPLETE. Next stage: Implementation Design (ID), then Code Generation.
 
 ---
+
+## Implementation Design + Code Generation Planning — Unit 3: Output Targets
+**Timestamp**: 2026-04-07T00:00:00Z
+**User Input**: "let's do it" (proceed with ID + CG plan in token-efficient mode; CG execution to be delegated to local Ollama instance)
+**AI Response**: ID treated as complete (logical-components.md serves as implementation design artifact). Produced CG plan at aidlc-docs/construction/plans/output-targets-code-generation-plan.md — 21 steps covering 9 RC + 6 TI elements across zip_core and zip_broadcast. aidlc-state.md updated.
+**Context**: Unit 3 ID — COMPLETE. Unit 3 CG — PLAN COMPLETE, execution pending (Ollama).
+
+---
