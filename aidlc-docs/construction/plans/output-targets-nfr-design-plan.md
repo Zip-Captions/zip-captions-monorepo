@@ -43,7 +43,7 @@ pure Dart only.
   `stream.transform(_debounceTransformer(50ms))`. Internal mutation logic stays simple; the
   coalescing is in the delivery layer. Requires a custom `StreamTransformer` implementation.
 
-[Answer]:
+[Answer]: A
 
 ---
 
@@ -67,7 +67,7 @@ so the full recovery path requires a test-specific hook or a real file.
   effects: given a `RepositoryEvent.corruption` emission, the UI receives the notification and
   the repository returns a fresh empty state. Treat the SQLite path itself as an acceptance test.
 
-[Answer]:
+[Answer]: C
 
 ---
 
@@ -89,7 +89,7 @@ closed, OBS tab changed), its slot must be freed. In `shelf`, the response body 
   `onCancel` decrements the counter and removes the entry from the set. Cleanest from a
   lifecycle standpoint; relies on shelf closing the stream when the connection drops.
 
-[Answer]:
+[Answer]: B
 
 ---
 

@@ -861,3 +861,19 @@
 **Status**: Complete
 
 ---
+
+## CONSTRUCTION - Unit 3: Output Targets — NFR Design (Questions + Answers)
+**Timestamp**: 2026-04-06T00:00:00Z
+**User Input**: NFR-DQ1:A (Timer at call site — cancel + restart Timer(50ms) on each onCaptionEvent(); state updated synchronously, trailing emission only; no rxdart), NFR-DQ2:C (skip unit testing PRAGMA + file-rename path; unit-test only downstream notification/state effects; treat SQLite path as acceptance test), NFR-DQ3:B (StreamController<List<int>> per client; catch SocketException on write errors via onError; close controller and decrement counter on error or onDone)
+**AI Response**: All 3 answers received. Generated 2 artifacts: nfr-design-patterns.md (11 patterns: timer-based debounce OnScreenCaptionTarget, FTS5 query via drift, SSE client cap + disconnect detection, UUID token auth + localhost bypass, database corruption recovery PRAGMA→rename→fresh, immediate segment persistence via merge window, DesktopWindowService abstraction + MockDesktopWindowService, fake_async timer tests merge window + OBS backoff, BrowserSourceServer test pattern shelf test client, PBT generators new domain types, logging pattern extension zip_broadcast logger names); logical-components.md (9 runtime components across zip_core and zip_broadcast, 6 test infrastructure elements, test file map, provider dependency map).
+**Context**: Unit 3 NFR Design — artifacts generated, awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 3: Output Targets — NFR Design (Approval)
+**Timestamp**: 2026-04-07T00:00:00Z
+**User Input**: "approve"
+**AI Response**: NFR Design approved. Updated aidlc-state.md to mark NFR-D complete for Unit 3.
+**Context**: Unit 3 NFR Design — COMPLETE. Next stage: Implementation Design (ID), then Code Generation.
+
+---
