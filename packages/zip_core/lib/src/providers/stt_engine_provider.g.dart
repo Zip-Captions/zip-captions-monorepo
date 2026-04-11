@@ -11,7 +11,7 @@ String _$sttEngineHash() => r'8e7c4f379b4eb6c9c421259836bcd52d800064c7';
 /// Resolves the active [SttEngine] from the registry.
 ///
 /// Uses [activeEngineIdNotifierProvider] to pick the user-selected engine.
-/// Falls back to [SttEngineRegistry.defaultEngine] when no explicit selection
+/// Falls back to `SttEngineRegistry.defaultEngine` when no explicit selection
 /// exists. Returns `null` if no engines are registered.
 ///
 /// Copied from [sttEngine].

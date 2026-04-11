@@ -7,7 +7,7 @@ part of 'active_locale_id_provider.dart';
 // **************************************************************************
 
 String _$activeLocaleIdNotifierHash() =>
-    r'7f4c53575bc7ce70dfe00cfb8ff2a3b3531418d1';
+    r'383e1ec3f8c74b9af7dcc1896c74e8fdd0c6f9c5';
 
 /// User-selected locale ID for speech recognition, persisted in
 /// SharedPreferences.

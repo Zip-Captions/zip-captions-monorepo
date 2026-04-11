@@ -13,6 +13,9 @@ import 'package:zip_core/src/models/sherpa_model_catalog.dart';
 import 'package:zip_core/src/models/sherpa_model_download_progress.dart';
 import 'package:zip_core/src/models/sherpa_model_info.dart';
 import 'package:zip_core/src/models/stt_result.dart';
+import 'package:zip_core/src/models/transcript_search_result.dart';
+import 'package:zip_core/src/models/transcript_segment.dart';
+import 'package:zip_core/src/models/transcript_session.dart';
 import 'package:zip_core/src/models/wake_lock_settings.dart';
 
 import 'prefs_helpers.dart';
@@ -218,5 +221,61 @@ final Generator<SherpaModelDownloadProgress>
     modelId: modelId.isEmpty ? 'model-0' : modelId,
     downloadedBytes: (totalBytes * fraction).round(),
     totalBytes: totalBytes,
+  ),
+);
+
+// --- Unit 3 domain generators ---
+
+/// Generates [TranscriptSession] instances with valid invariants.
+final Generator<TranscriptSession> arbitraryTranscriptSession = any.combine5(
+  any.letterOrDigits,
+  any.intInRange(0, 100000000),
+  any.choose([null, 'Short title', 'A longer session title']),
+  any.intInRange(0, 3600000),
+  any.intInRange(0, 10000),
+  (id, epochMs, title, durationMs, segmentCount) => TranscriptSession(
+    sessionId: id.isEmpty ? 'ses-0' : id,
+    date: DateTime.fromMillisecondsSinceEpoch(epochMs, isUtc: true),
+    durationMs: durationMs,
+    segmentCount: segmentCount,
+    title: title,
+  ),
+);
+
+/// Generates [TranscriptSegment] instances with `endTimeMs >= startTimeMs`.
+final Generator<TranscriptSegment> arbitraryTranscriptSegment = any.combine5(
+  any.letterOrDigits,
+  any.letterOrDigits,
+  any.choose(['default', 'mic-1', 'mic-2', 'system-audio']),
+  any.intInRange(0, 3600000),
+  any.intInRange(0, 10000),
+  (segId, sessionId, sourceId, startMs, durationMs) => TranscriptSegment(
+    segmentId: segId.isEmpty ? 'seg-0' : segId,
+    sessionId: sessionId.isEmpty ? 'ses-0' : sessionId,
+    text: segId.isEmpty ? 'fallback text' : segId,
+    sourceId: sourceId,
+    startTimeMs: startMs,
+    endTimeMs: startMs + durationMs,
+  ),
+);
+
+/// Generates a list of 2–5 non-empty word strings for merge-window PBTs.
+final Generator<List<String>> arbitraryNonEmptyWordList =
+    any.listWithLengthInRange(
+  2,
+  6,
+  any.choose(['hello', 'world', 'foo', 'bar', 'baz', 'qux', 'dart', 'test']),
+);
+
+/// Generates [TranscriptSearchResult] with 1–3 non-empty snippets.
+final Generator<TranscriptSearchResult> arbitraryTranscriptSearchResult =
+    any.combine3(
+  arbitraryTranscriptSession,
+  any.intInRange(1, 4),
+  any.doubleInRange(-10, 0),
+  (session, snippetCount, score) => TranscriptSearchResult(
+    session: session,
+    snippets: List.generate(snippetCount, (i) => '[match] snippet $i'),
+    relevanceScore: score,
   ),
 );

@@ -7,7 +7,7 @@ part of 'active_engine_id_provider.dart';
 // **************************************************************************
 
 String _$activeEngineIdNotifierHash() =>
-    r'7e3fe44f795e302611153088bcf15587e1955603';
+    r'9d60c97830869875eee1f6c625f76e6e7fe5fac4';
 
 /// User-selected STT engine ID, persisted in SharedPreferences.
 ///

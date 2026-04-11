@@ -6,7 +6,7 @@ part of 'stt_session_manager_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$sttSessionManagerHash() => r'b69a3c418a83dc1efc67a79d049c0775133eafc3';
+String _$sttSessionManagerHash() => r'45b1fa5448308ed31da3cbd72153ea9e963e30c2';
 
 /// Provides the singleton [SttSessionManager].
 ///

@@ -30,12 +30,12 @@ mixin _$SttResult {
   /// When the utterance was recognized (UTC).
   DateTime get timestamp => throw _privateConstructorUsedError;
 
-  /// Optional speaker tag for future diarization.
-  String? get speakerTag => throw _privateConstructorUsedError;
-
   /// Identifies the input source for multi-input disambiguation.
   /// Single-input apps use 'default'.
   String get sourceId => throw _privateConstructorUsedError;
+
+  /// Optional speaker tag for future diarization.
+  String? get speakerTag => throw _privateConstructorUsedError;
 
   /// Create a copy of SttResult
   /// with the given fields replaced by the non-null parameter values.
@@ -54,8 +54,8 @@ abstract class $SttResultCopyWith<$Res> {
     bool isFinal,
     double confidence,
     DateTime timestamp,
-    String? speakerTag,
     String sourceId,
+    String? speakerTag,
   });
 }
 
@@ -78,8 +78,8 @@ class _$SttResultCopyWithImpl<$Res, $Val extends SttResult>
     Object? isFinal = null,
     Object? confidence = null,
     Object? timestamp = null,
-    Object? speakerTag = freezed,
     Object? sourceId = null,
+    Object? speakerTag = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -99,14 +99,14 @@ class _$SttResultCopyWithImpl<$Res, $Val extends SttResult>
                 ? _value.timestamp
                 : timestamp // ignore: cast_nullable_to_non_nullable
                       as DateTime,
-            speakerTag: freezed == speakerTag
-                ? _value.speakerTag
-                : speakerTag // ignore: cast_nullable_to_non_nullable
-                      as String?,
             sourceId: null == sourceId
                 ? _value.sourceId
                 : sourceId // ignore: cast_nullable_to_non_nullable
                       as String,
+            speakerTag: freezed == speakerTag
+                ? _value.speakerTag
+                : speakerTag // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -127,8 +127,8 @@ abstract class _$$SttResultImplCopyWith<$Res>
     bool isFinal,
     double confidence,
     DateTime timestamp,
-    String? speakerTag,
     String sourceId,
+    String? speakerTag,
   });
 }
 
@@ -150,8 +150,8 @@ class __$$SttResultImplCopyWithImpl<$Res>
     Object? isFinal = null,
     Object? confidence = null,
     Object? timestamp = null,
-    Object? speakerTag = freezed,
     Object? sourceId = null,
+    Object? speakerTag = freezed,
   }) {
     return _then(
       _$SttResultImpl(
@@ -171,14 +171,14 @@ class __$$SttResultImplCopyWithImpl<$Res>
             ? _value.timestamp
             : timestamp // ignore: cast_nullable_to_non_nullable
                   as DateTime,
-        speakerTag: freezed == speakerTag
-            ? _value.speakerTag
-            : speakerTag // ignore: cast_nullable_to_non_nullable
-                  as String?,
         sourceId: null == sourceId
             ? _value.sourceId
             : sourceId // ignore: cast_nullable_to_non_nullable
                   as String,
+        speakerTag: freezed == speakerTag
+            ? _value.speakerTag
+            : speakerTag // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -192,8 +192,8 @@ class _$SttResultImpl implements _SttResult {
     required this.isFinal,
     required this.confidence,
     required this.timestamp,
-    this.speakerTag,
     required this.sourceId,
+    this.speakerTag,
   });
 
   /// Recognized speech text.
@@ -213,18 +213,18 @@ class _$SttResultImpl implements _SttResult {
   @override
   final DateTime timestamp;
 
-  /// Optional speaker tag for future diarization.
-  @override
-  final String? speakerTag;
-
   /// Identifies the input source for multi-input disambiguation.
   /// Single-input apps use 'default'.
   @override
   final String sourceId;
 
+  /// Optional speaker tag for future diarization.
+  @override
+  final String? speakerTag;
+
   @override
   String toString() {
-    return 'SttResult(text: $text, isFinal: $isFinal, confidence: $confidence, timestamp: $timestamp, speakerTag: $speakerTag, sourceId: $sourceId)';
+    return 'SttResult(text: $text, isFinal: $isFinal, confidence: $confidence, timestamp: $timestamp, sourceId: $sourceId, speakerTag: $speakerTag)';
   }
 
   @override
@@ -238,10 +238,10 @@ class _$SttResultImpl implements _SttResult {
                 other.confidence == confidence) &&
             (identical(other.timestamp, timestamp) ||
                 other.timestamp == timestamp) &&
-            (identical(other.speakerTag, speakerTag) ||
-                other.speakerTag == speakerTag) &&
             (identical(other.sourceId, sourceId) ||
-                other.sourceId == sourceId));
+                other.sourceId == sourceId) &&
+            (identical(other.speakerTag, speakerTag) ||
+                other.speakerTag == speakerTag));
   }
 
   @override
@@ -251,8 +251,8 @@ class _$SttResultImpl implements _SttResult {
     isFinal,
     confidence,
     timestamp,
-    speakerTag,
     sourceId,
+    speakerTag,
   );
 
   /// Create a copy of SttResult
@@ -270,8 +270,8 @@ abstract class _SttResult implements SttResult {
     required final bool isFinal,
     required final double confidence,
     required final DateTime timestamp,
-    final String? speakerTag,
     required final String sourceId,
+    final String? speakerTag,
   }) = _$SttResultImpl;
 
   /// Recognized speech text.
@@ -291,14 +291,14 @@ abstract class _SttResult implements SttResult {
   @override
   DateTime get timestamp;
 
-  /// Optional speaker tag for future diarization.
-  @override
-  String? get speakerTag;
-
   /// Identifies the input source for multi-input disambiguation.
   /// Single-input apps use 'default'.
   @override
   String get sourceId;
+
+  /// Optional speaker tag for future diarization.
+  @override
+  String? get speakerTag;
 
   /// Create a copy of SttResult
   /// with the given fields replaced by the non-null parameter values.

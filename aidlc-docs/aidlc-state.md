@@ -5,7 +5,7 @@
 - **Project Type**: Documentation-Brownfield / Code-Brownfield
 - **Phase 0 Start Date**: 2026-03-26T00:00:00Z
 - **Phase 1 Start Date**: 2026-03-28T00:00:00Z
-- **Current Stage**: CONSTRUCTION - Ready for Unit 2: Platform STT + Audio (Phase 1)
+- **Current Stage**: CONSTRUCTION - Unit 3 complete; ready for Unit 4: UI Prototypes (Phase 1)
 
 ## Workspace State
 - **Existing Source Code**: Yes — Phase 0 scaffold complete (zip_core models/providers/theme, app shells, Supabase stack, CI/CD)
@@ -68,7 +68,7 @@
 - [x] Spike 1.3: STT Integration PoC — COMPLETE; Sherpa-ONNX confirmed viable, OnlineRecognizer API maps to SttEngine contract
 - [x] Unit 1: Core Abstractions (S-01, S-03) — FD, NFR-R, NFR-D, CG — COMPLETE (156 tests passing, 0 errors)
 - [x] Unit 2: Platform STT + Audio (S-02, S-06) — FD, NFR-R, NFR-D, CG — COMPLETE (247 tests passing, 0 errors)
-- [ ] Unit 3: Output Targets (S-04, S-05, S-07, S-08) — FD, NFR-R, NFR-D, ID complete; CG pending (plan: output-targets-code-generation-plan.md)
+- [x] Unit 3: Output Targets (S-04, S-05, S-07, S-08) — FD, NFR-R, NFR-D, ID, CG — COMPLETE (all 21 CG steps done; 0 errors, 0 warnings; 7 pre-existing implementation_imports infos)
 - [ ] Unit 4: UI Prototypes (Proto-01..09) — CG + human gate
 - [ ] Unit 5: Zip Captions App (S-09) — FD, NFR-R, NFR-D, CG
 - [ ] Unit 6: Zip Broadcast App (S-10) — FD, NFR-R, NFR-D, ID, CG

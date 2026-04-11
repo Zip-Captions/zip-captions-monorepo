@@ -885,3 +885,16 @@
 **Context**: Unit 3 ID — COMPLETE. Unit 3 CG — PLAN COMPLETE, execution pending (Ollama).
 
 ---
+
+## CONSTRUCTION - Unit 3: Output Targets — Code Generation (All 21 Steps)
+**Timestamp**: 2026-04-11T00:00:00Z
+**User Input**: "proceed" (autonomous execution through all 21 steps)
+**AI Response**: Executed all 21 CG steps. Key artifacts produced:
+- zip_core: OnScreenCaptionTarget, TranscriptWriterTarget, TranscriptRepository (drift), barrel updates, all Unit 3 models exported
+- zip_broadcast: ObsWebSocketTarget (exponential backoff), BrowserSourceServer (shelf SSE), BrowserSourceTarget, CaptionOverlayTarget (desktop_multi_window), ObsSettingsNotifier, OutputTargetSettingsNotifier, barrel (zip_broadcast.dart)
+- Tests: 6 test files across zip_core and zip_broadcast; glados/mocktail/flutter_test conflict resolved via hide directives
+- Lint cleanup: 0 errors, 0 warnings; 7 pre-existing implementation_imports infos remain (pre-Unit-3)
+- Notable API discoveries: ObsWebSocket cannot be subclassed (tests cover timer paths only); DesktopMultiWindow.createWindow() returns WindowController not int; OverlayConfig has no toJson() (manual JSON encoding added)
+**Context**: Unit 3 Code Generation — COMPLETE. aidlc-state.md updated. Next: Unit 4 (UI Prototypes).
+
+---

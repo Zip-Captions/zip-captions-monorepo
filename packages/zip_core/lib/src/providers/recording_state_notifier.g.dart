@@ -7,13 +7,13 @@ part of 'recording_state_notifier.dart';
 // **************************************************************************
 
 String _$recordingStateNotifierHash() =>
-    r'257accbd2c9cfb010bd9a569f3d4863b938c0ab5';
+    r'9efce044966655032db61aacc440b3d2751fcfc8';
 
 /// Recording state machine (BR-01, BR-02, BR-03).
 ///
 /// Integrates [SttSessionManager] for engine lifecycle and [WakeLockService]
 /// to keep the screen on during captioning. Handles the one-attempt
-/// auto-restart recovery flow (REL-U2.1) via the [reconnecting] state.
+/// auto-restart recovery flow (REL-U2.1) via the `reconnecting` state.
 ///
 /// Invalid transitions are silently ignored (no exception, no error).
 /// This prevents UI race conditions (e.g., user double-taps a button).
