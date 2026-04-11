@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proto-01: Home — Zip Captions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --surface: #FAFCFF;
+      --surface-low: #FFFFFF;
+      --surface-high: #EEF2F8;
+      --surface-highest: #E4EAF2;
+      --primary: #1A5A8C;
+      --on-primary: #FFFFFF;
+      --secondary-container: #DAE3F0;
+      --on-secondary-container: #0B141D;
+      --on-surface: #0B141D;
+      --on-surface-var: #6B7380;
+      --outline: #6B7380;
+      --outline-var: #C4CAD4;
+      --error: #A8191F;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
+    }
+    [data-theme="dark"] {
+      --surface: #0B141D;
+      --surface-low: #060F18;
+      --surface-high: #222B34;
+      --surface-highest: #2D3640;
+      --primary: #9ACBFF;
+      --on-primary: #003355;
+      --secondary-container: #414A54;
+      --on-secondary-container: #E0E8F2;
+      --on-surface: #DAE3F0;
+      --on-surface-var: #8B919A;
+      --outline: #8B919A;
+      --outline-var: #41474F;
+      --error: #FFB4AB;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--surface);
+      color: var(--on-surface);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Layout shell ── */
+    .shell {
+      width: 100%;
+      max-width: 420px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    @media (min-width: 768px) {
+      .shell { box-shadow: 0 0 0 1px var(--outline-var), 0 8px 32px rgba(0,0,0,.12); }
+    }
+
+    /* ── Top App Bar ── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      padding: 0 4px 0 16px;
+      height: 64px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--outline-var);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .top-bar .title {
+      flex: 1;
+      font-size: 22px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+    .icon-btn {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--on-surface);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      transition: background 0.15s;
+    }
+    .icon-btn:hover { background: var(--surface-high); }
+
+    /* ── Main Content ── */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      gap: 32px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+    }
+    .hero-icon {
+      width: 80px; height: 80px;
+      border-radius: var(--r-xl);
+      background: var(--secondary-container);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px;
+    }
+    .hero-title {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .hero-sub {
+      font-size: 15px;
+      color: var(--on-surface-var);
+    }
+
+    /* ── Start Button ── */
+    .btn-start {
+      width: 100%;
+      max-width: 320px;
+      padding: 18px 32px;
+      border-radius: var(--r-xl);
+      border: none;
+      background: var(--primary);
+      color: var(--on-primary);
+      font-family: inherit;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: opacity 0.15s, transform 0.1s;
+      box-shadow: 0 2px 8px rgba(26,90,140,.25);
+    }
+    .btn-start:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-start:active { transform: translateY(0); }
+    [data-theme="dark"] .btn-start { box-shadow: 0 2px 8px rgba(154,203,255,.15); }
+
+    /* ── Status Card ── */
+    .status-card {
+      width: 100%;
+      background: var(--surface-high);
+      border-radius: var(--r-lg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+    .status-label { color: var(--on-surface-var); font-weight: 500; }
+    .status-value { color: var(--on-surface); font-weight: 500; }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--on-surface-var);
+      display: inline-block;
+      margin-right: 6px;
+    }
+    .status-dot.ready { background: #2E7D32; }
+    [data-theme="dark"] .status-dot.ready { background: #81C784; }
+
+    /* ── Divider ── */
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: var(--outline-var);
+    }
+
+    /* ── History Quick Link ── */
+    .history-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--outline-var);
+      background: transparent;
+      color: var(--on-surface);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+      text-align: left;
+    }
+    .history-link:hover { background: var(--surface-high); }
+    .history-link .hl-icon { font-size: 20px; }
+    .history-link .hl-label { flex: 1; }
+    .history-link .hl-count {
+      font-size: 13px;
+      color: var(--on-surface-var);
+      background: var(--surface-highest);
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+
+    /* ── Bottom Nav ── */
+    .bottom-nav {
+      display: flex;
+      border-top: 1px solid var(--outline-var);
+      background: var(--surface);
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 8px 0 12px;
+      border: none;
+      background: transparent;
+      color: var(--on-surface-var);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      position: relative;
+      transition: color 0.15s;
+    }
+    .nav-item.active { color: var(--primary); }
+    .nav-item .nav-icon { font-size: 22px; }
+    .nav-indicator {
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 64px; height: 3px;
+      border-radius: 0 0 3px 3px;
+      background: var(--primary);
+      opacity: 0;
+    }
+    .nav-item.active .nav-indicator { opacity: 1; }
+
+    /* ── Desktop hint ── */
+    .desktop-hint {
+      display: none;
+      position: fixed;
+      bottom: 16px; right: 16px;
+      background: var(--surface-highest);
+      color: var(--on-surface-var);
+      font-size: 12px;
+      padding: 8px 12px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--outline-var);
+    }
+    @media (min-width: 768px) { .desktop-hint { display: block; } }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- Top App Bar -->
+  <header class="top-bar">
+    <span class="title">Zip Captions</span>
+    <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle light/dark theme">
+      <span id="theme-icon">🌙</span>
+    </button>
+    <button class="icon-btn" title="Settings" aria-label="Settings">⚙️</button>
+  </header>
+
+  <!-- Main Content -->
+  <main class="content">
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-icon">🎤</div>
+      <h1 class="hero-title">Zip Captions</h1>
+      <p class="hero-sub">Real-time speech-to-text captioning</p>
+    </div>
+
+    <!-- Start Button -->
+    <button class="btn-start" onclick="this.textContent='Starting…'" aria-label="Start captioning">
+      <span>▶</span>
+      <span>Start Captioning</span>
+    </button>
+
+    <!-- Status Card -->
+    <div class="status-card">
+      <div class="status-row">
+        <span class="status-label">STT Engine</span>
+        <span class="status-value"><span class="status-dot ready"></span>Platform (Apple)</span>
+      </div>
+      <div class="divider"></div>
+      <div class="status-row">
+        <span class="status-label">Language</span>
+        <span class="status-value">English (US)</span>
+      </div>
+      <div class="divider"></div>
+      <div class="status-row">
+        <span class="status-label">Wake Lock</span>
+        <span class="status-value">On during captioning</span>
+      </div>
+    </div>
+
+    <!-- History Link -->
+    <button class="history-link" aria-label="Session history — 12 transcripts">
+      <span class="hl-icon">📋</span>
+      <span class="hl-label">Session History</span>
+      <span class="hl-count">12 transcripts</span>
+      <span>›</span>
+    </button>
+
+  </main>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" aria-label="Home, current screen">
+      <div class="nav-indicator"></div>
+      <span class="nav-icon">🏠</span>
+      <span>Home</span>
+    </button>
+    <button class="nav-item" aria-label="History">
+      <div class="nav-indicator"></div>
+      <span class="nav-icon">📋</span>
+      <span>History</span>
+    </button>
+    <button class="nav-item" aria-label="Settings">
+      <div class="nav-indicator"></div>
+      <span class="nav-icon">⚙️</span>
+      <span>Settings</span>
+    </button>
+  </nav>
+
+</div>
+
+<p class="desktop-hint">Proto-01 · Zip Captions Home · resize to ≤480px for mobile view</p>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? '' : 'dark');
+    document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
+  }
+</script>
+
+</body>
+</html>

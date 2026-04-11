@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proto-08: Settings — Zip Broadcast</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --surface: #FAFCFF;
+      --surface-low: #FFFFFF;
+      --surface-high: #EEF2F8;
+      --surface-highest: #E4EAF2;
+      --primary: #1A5A8C;
+      --on-primary: #FFFFFF;
+      --secondary-container: #DAE3F0;
+      --on-secondary-container: #0B141D;
+      --on-surface: #0B141D;
+      --on-surface-var: #6B7380;
+      --outline: #6B7380;
+      --outline-var: #C4CAD4;
+      --error: #A8191F;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
+    }
+    [data-theme="dark"] {
+      --surface: #0B141D;
+      --surface-low: #060F18;
+      --surface-high: #222B34;
+      --surface-highest: #2D3640;
+      --primary: #9ACBFF;
+      --on-primary: #003355;
+      --secondary-container: #414A54;
+      --on-secondary-container: #E0E8F2;
+      --on-surface: #DAE3F0;
+      --on-surface-var: #8B919A;
+      --outline: #8B919A;
+      --outline-var: #41474F;
+      --error: #FFB4AB;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--surface);
+      color: var(--on-surface);
+      min-height: 100vh;
+    }
+
+    /* ── Desktop layout ── */
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    @media (min-width: 768px) {
+      .app-layout { box-shadow: 0 0 0 1px var(--outline-var); }
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--surface-high);
+      border-right: 1px solid var(--outline-var);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 0 16px;
+    }
+    @media (max-width: 600px) { .sidebar { display: none; } }
+    .sidebar-brand {
+      padding: 0 20px 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .brand-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .brand-name { font-size: 15px; font-weight: 600; }
+    .nav-section { padding: 0 8px; flex: 1; }
+    .nav-section-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--on-surface-var);
+      padding: 12px 12px 4px;
+    }
+    .nav-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px;
+      border-radius: var(--r-md);
+      border: none; background: transparent;
+      color: var(--on-surface-var);
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      cursor: pointer; width: 100%; text-align: left;
+      transition: background 0.12s, color 0.12s;
+    }
+    .nav-link:hover { background: var(--surface-highest); color: var(--on-surface); }
+    .nav-link.active { background: var(--secondary-container); color: var(--on-secondary-container); }
+    .sidebar-footer {
+      padding: 0 8px;
+      border-top: 1px solid var(--outline-var);
+      padding-top: 12px; margin-top: 12px;
+    }
+
+    /* ── Main ── */
+    .main {
+      flex: 1; display: flex; flex-direction: column; min-width: 0;
+    }
+    .top-bar {
+      display: flex; align-items: center;
+      padding: 0 20px; height: 60px;
+      border-bottom: 1px solid var(--outline-var);
+      gap: 12px; background: var(--surface);
+    }
+    .top-bar-title { flex: 1; font-size: 18px; font-weight: 600; }
+    .icon-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      transition: background 0.15s;
+    }
+    .icon-btn:hover { background: var(--surface-high); }
+
+    /* ── Two-column settings layout ── */
+    .settings-layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    .settings-nav {
+      width: 200px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--outline-var);
+      padding: 12px 8px;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    @media (max-width: 700px) { .settings-nav { display: none; } }
+    .snav-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 12px;
+      border-radius: var(--r-md);
+      border: none; background: transparent;
+      color: var(--on-surface-var);
+      font-family: inherit; font-size: 13px; font-weight: 500;
+      cursor: pointer; width: 100%; text-align: left;
+      transition: background 0.12s;
+    }
+    .snav-item:hover { background: var(--surface-high); color: var(--on-surface); }
+    .snav-item.active { background: var(--secondary-container); color: var(--on-secondary-container); }
+
+    .settings-content {
+      flex: 1; overflow-y: auto; padding-bottom: 32px;
+    }
+
+    /* ── Setting Groups ── */
+    .section-header {
+      padding: 20px 20px 6px;
+      font-size: 13px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--primary);
+    }
+
+    .setting-row {
+      display: flex; align-items: center;
+      padding: 14px 20px; gap: 12px;
+      border-bottom: 1px solid var(--outline-var);
+      background: var(--surface-low);
+      transition: background 0.12s; cursor: pointer;
+    }
+    .setting-row:hover { background: var(--surface-high); }
+    .setting-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--r-md);
+      background: var(--secondary-container);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .setting-info { flex: 1; min-width: 0; }
+    .setting-label { font-size: 15px; font-weight: 500; }
+    .setting-value { font-size: 13px; color: var(--on-surface-var); margin-top: 1px; }
+    .setting-chevron { color: var(--outline); font-size: 16px; }
+
+    .toggle-row {
+      display: flex; align-items: center;
+      padding: 14px 20px; gap: 12px;
+      border-bottom: 1px solid var(--outline-var);
+      background: var(--surface-low);
+    }
+    .toggle-info { flex: 1; }
+    .toggle-label { font-size: 15px; font-weight: 500; }
+    .toggle-sub { font-size: 13px; color: var(--on-surface-var); margin-top: 1px; }
+    .toggle {
+      width: 52px; height: 30px;
+      border-radius: 15px;
+      background: var(--outline-var);
+      border: none; cursor: pointer;
+      position: relative; transition: background 0.2s; flex-shrink: 0;
+    }
+    .toggle.on { background: var(--primary); }
+    .toggle::after {
+      content: '';
+      position: absolute; top: 3px; left: 3px;
+      width: 24px; height: 24px;
+      border-radius: 50%; background: white;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,.2);
+    }
+    .toggle.on::after { transform: translateX(22px); }
+
+    /* OBS Connection Fields */
+    .obs-fields {
+      padding: 12px 20px 4px;
+      background: var(--surface-low);
+      border-bottom: 1px solid var(--outline-var);
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .field-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .field-label { font-size: 13px; font-weight: 500; color: var(--on-surface-var); width: 72px; flex-shrink: 0; }
+    .field-input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: var(--r-md);
+      border: 1.5px solid var(--outline-var);
+      background: var(--surface-high);
+      color: var(--on-surface);
+      font-family: inherit; font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field-input:focus { border-color: var(--primary); background: var(--surface-low); }
+    .btn-test {
+      padding: 8px 16px;
+      border-radius: var(--r-xl);
+      border: 1.5px solid var(--outline-var);
+      background: transparent;
+      color: var(--on-surface);
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      margin: 0 20px 12px;
+      width: calc(100% - 40px);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background 0.12s;
+    }
+    .btn-test:hover { background: var(--surface-high); }
+
+    /* Output target toggles */
+    .target-toggle-row {
+      display: flex; align-items: center;
+      padding: 12px 20px; gap: 12px;
+      border-bottom: 1px solid var(--outline-var);
+      background: var(--surface-low);
+    }
+    .target-icon-wrap {
+      width: 36px; height: 36px;
+      border-radius: var(--r-md);
+      background: var(--secondary-container);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .target-info { flex: 1; }
+    .target-name { font-size: 15px; font-weight: 500; }
+    .target-sub { font-size: 12px; color: var(--on-surface-var); margin-top: 1px; }
+    .small-toggle {
+      width: 44px; height: 26px;
+      border-radius: 13px;
+      background: var(--outline-var);
+      border: none; cursor: pointer;
+      position: relative; transition: background 0.2s; flex-shrink: 0;
+    }
+    .small-toggle.on { background: var(--primary); }
+    .small-toggle::after {
+      content: '';
+      position: absolute; top: 3px; left: 3px;
+      width: 20px; height: 20px;
+      border-radius: 50%; background: white;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .small-toggle.on::after { transform: translateX(18px); }
+
+    /* Chip rows */
+    .chip-row {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--outline-var);
+      background: var(--surface-low);
+    }
+    .chip-row-label { font-size: 13px; font-weight: 500; color: var(--on-surface-var); margin-bottom: 10px; }
+    .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--outline-var);
+      background: transparent;
+      color: var(--on-surface);
+      font-family: inherit; font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: all 0.12s;
+    }
+    .chip.active { background: var(--secondary-container); border-color: var(--primary); color: var(--on-secondary-container); }
+
+    .desktop-hint {
+      display: none;
+      position: fixed; bottom: 16px; right: 16px;
+      background: var(--surface-highest);
+      color: var(--on-surface-var);
+      font-size: 12px; padding: 8px 12px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--outline-var);
+    }
+    @media (min-width: 768px) { .desktop-hint { display: block; } }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">📡</div>
+      <div><div class="brand-name">Zip Broadcast</div></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Captioning</div>
+      <button class="nav-link">🏠 Home</button>
+      <button class="nav-link">🎙 Recording</button>
+      <button class="nav-link">📋 History</button>
+      <div class="nav-section-label" style="margin-top:8px">Configure</div>
+      <button class="nav-link active">⚙️ Settings</button>
+      <button class="nav-link">🎤 Audio Inputs</button>
+      <button class="nav-link">📺 Output Targets</button>
+    </div>
+    <div class="sidebar-footer">
+      <button class="nav-link" onclick="toggleTheme()">
+        <span id="theme-icon-side">🌙</span> <span id="theme-label">Dark Mode</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <header class="top-bar">
+      <span class="top-bar-title">Settings</span>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+        <span id="theme-icon">🌙</span>
+      </button>
+    </header>
+
+    <div class="settings-layout">
+
+      <!-- Settings Nav -->
+      <nav class="settings-nav">
+        <button class="snav-item active" onclick="setSection('stt',this)">🧠 Speech</button>
+        <button class="snav-item" onclick="setSection('appearance',this)">🎨 Appearance</button>
+        <button class="snav-item" onclick="setSection('obs',this)">🎮 OBS</button>
+        <button class="snav-item" onclick="setSection('targets',this)">📺 Targets</button>
+        <button class="snav-item" onclick="setSection('audio',this)">🎤 Audio</button>
+        <button class="snav-item" onclick="setSection('transcripts',this)">📝 Transcripts</button>
+      </nav>
+
+      <!-- Settings Content -->
+      <div class="settings-content">
+
+        <!-- ── Speech section ── -->
+        <div id="sec-stt">
+          <div class="section-header">Speech Recognition</div>
+          <div class="setting-row">
+            <div class="setting-icon">🧠</div>
+            <div class="setting-info">
+              <div class="setting-label">STT Engine</div>
+              <div class="setting-value">Platform (Apple Speech)</div>
+            </div>
+            <span class="setting-chevron">›</span>
+          </div>
+          <div class="setting-row">
+            <div class="setting-icon">🌐</div>
+            <div class="setting-info">
+              <div class="setting-label">Language / Locale</div>
+              <div class="setting-value">English (United States)</div>
+            </div>
+            <span class="setting-chevron">›</span>
+          </div>
+        </div>
+
+        <!-- ── Appearance section ── -->
+        <div id="sec-appearance">
+          <div class="section-header">Text Appearance</div>
+          <div class="chip-row">
+            <div class="chip-row-label">Text Size</div>
+            <div class="chip-group" id="size-group">
+              <button class="chip" onclick="setChip('size-group',this)">Small</button>
+              <button class="chip active" onclick="setChip('size-group',this)">Medium</button>
+              <button class="chip" onclick="setChip('size-group',this)">Large</button>
+              <button class="chip" onclick="setChip('size-group',this)">X-Large</button>
+            </div>
+          </div>
+          <div class="chip-row">
+            <div class="chip-row-label">Font</div>
+            <div class="chip-group" id="font-group">
+              <button class="chip active" onclick="setChip('font-group',this)">Inter</button>
+              <button class="chip" onclick="setChip('font-group',this)">Serif</button>
+              <button class="chip" onclick="setChip('font-group',this)">Monospace</button>
+            </div>
+          </div>
+          <div class="chip-row">
+            <div class="chip-row-label">Scroll Direction</div>
+            <div class="chip-group" id="scroll-group">
+              <button class="chip active" onclick="setChip('scroll-group',this)">↑ Bottom to top</button>
+              <button class="chip" onclick="setChip('scroll-group',this)">↓ Top to bottom</button>
+            </div>
+          </div>
+          <div class="toggle-row">
+            <div class="setting-icon">🎨</div>
+            <div class="toggle-info" style="margin-left:12px">
+              <div class="toggle-label">Dark Theme</div>
+              <div class="toggle-sub">Use dark background</div>
+            </div>
+            <button class="toggle" id="theme-toggle" onclick="toggleThemeRow(this)"></button>
+          </div>
+        </div>
+
+        <!-- ── OBS section ── -->
+        <div id="sec-obs">
+          <div class="section-header">OBS WebSocket</div>
+          <div class="toggle-row">
+            <div class="setting-icon">🎮</div>
+            <div class="toggle-info" style="margin-left:12px">
+              <div class="toggle-label">Enable OBS Output</div>
+              <div class="toggle-sub">Send captions to OBS via WebSocket</div>
+            </div>
+            <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="obs-fields">
+            <div class="field-row">
+              <span class="field-label">Host</span>
+              <input class="field-input" type="text" value="localhost" placeholder="Host or IP">
+            </div>
+            <div class="field-row">
+              <span class="field-label">Port</span>
+              <input class="field-input" type="number" value="4455" placeholder="Port">
+            </div>
+            <div class="field-row">
+              <span class="field-label">Password</span>
+              <input class="field-input" type="password" value="••••••••" placeholder="Password (optional)">
+            </div>
+          </div>
+          <button class="btn-test">🔌 Test Connection</button>
+        </div>
+
+        <!-- ── Targets section ── -->
+        <div id="sec-targets">
+          <div class="section-header">Output Targets</div>
+          <div class="target-toggle-row">
+            <div class="target-icon-wrap">🖥️</div>
+            <div class="target-info">
+              <div class="target-name">On-Screen Captions</div>
+              <div class="target-sub">Display captions in app window</div>
+            </div>
+            <button class="small-toggle on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="target-toggle-row">
+            <div class="target-icon-wrap">🎮</div>
+            <div class="target-info">
+              <div class="target-name">OBS WebSocket</div>
+              <div class="target-sub">Send closed captions to OBS</div>
+            </div>
+            <button class="small-toggle on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="target-toggle-row">
+            <div class="target-icon-wrap">🌐</div>
+            <div class="target-info">
+              <div class="target-name">Browser Source</div>
+              <div class="target-sub">Serve caption overlay page</div>
+            </div>
+            <button class="small-toggle on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="target-toggle-row">
+            <div class="target-icon-wrap">📺</div>
+            <div class="target-info">
+              <div class="target-name">Caption Overlay</div>
+              <div class="target-sub">Always-on-top overlay window</div>
+            </div>
+            <button class="small-toggle" onclick="this.classList.toggle('on')"></button>
+          </div>
+        </div>
+
+        <!-- ── Audio section ── -->
+        <div id="sec-audio">
+          <div class="section-header">Audio Source</div>
+          <div class="setting-row">
+            <div class="setting-icon">🎤</div>
+            <div class="setting-info">
+              <div class="setting-label">Configure Audio Inputs</div>
+              <div class="setting-value">2 inputs active · Built-in, USB MV7+</div>
+            </div>
+            <span class="setting-chevron">›</span>
+          </div>
+        </div>
+
+        <!-- ── Transcripts section ── -->
+        <div id="sec-transcripts">
+          <div class="section-header">Transcripts</div>
+          <div class="toggle-row">
+            <div class="setting-icon">📝</div>
+            <div class="toggle-info" style="margin-left:12px">
+              <div class="toggle-label">Save Transcripts</div>
+              <div class="toggle-sub">Automatically save sessions to history</div>
+            </div>
+            <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="section-header">Behavior</div>
+          <div class="toggle-row">
+            <div class="setting-icon">🔆</div>
+            <div class="toggle-info" style="margin-left:12px">
+              <div class="toggle-label">Keep Screen On</div>
+              <div class="toggle-sub">While captioning is active</div>
+            </div>
+            <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+          </div>
+        </div>
+
+      </div><!-- end settings-content -->
+    </div><!-- end settings-layout -->
+  </div><!-- end main -->
+</div><!-- end layout -->
+
+<p class="desktop-hint">Proto-08 · Zip Broadcast Settings · click section nav on left · all controls interactive</p>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? '' : 'dark');
+    const icon = isDark ? '🌙' : '☀️';
+    document.getElementById('theme-icon').textContent = icon;
+    if (document.getElementById('theme-icon-side'))
+      document.getElementById('theme-icon-side').textContent = icon;
+    const lbl = document.getElementById('theme-label');
+    if (lbl) lbl.textContent = isDark ? 'Dark Mode' : 'Light Mode';
+    const tt = document.getElementById('theme-toggle');
+    if (tt) tt.classList.toggle('on', !isDark);
+  }
+
+  function toggleThemeRow(toggle) {
+    toggle.classList.toggle('on');
+    const isDark = toggle.classList.contains('on');
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : '');
+    document.getElementById('theme-icon').textContent = isDark ? '☀️' : '🌙';
+    if (document.getElementById('theme-icon-side'))
+      document.getElementById('theme-icon-side').textContent = isDark ? '☀️' : '🌙';
+  }
+
+  function setChip(groupId, el) {
+    document.querySelectorAll('#' + groupId + ' .chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  const sections = ['stt','appearance','obs','targets','audio','transcripts'];
+  function setSection(id, el) {
+    sections.forEach(s => {
+      document.getElementById('sec-' + s).style.display = (s === id) ? '' : 'none';
+    });
+    document.querySelectorAll('.snav-item').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+  // Start with all visible
+</script>
+
+</body>
+</html>

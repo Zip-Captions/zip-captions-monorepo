@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proto-02: Recording — Zip Captions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --surface: #FAFCFF;
+      --surface-low: #FFFFFF;
+      --surface-high: #EEF2F8;
+      --surface-highest: #E4EAF2;
+      --primary: #1A5A8C;
+      --on-primary: #FFFFFF;
+      --secondary-container: #DAE3F0;
+      --on-secondary-container: #0B141D;
+      --on-surface: #0B141D;
+      --on-surface-var: #6B7380;
+      --outline: #6B7380;
+      --outline-var: #C4CAD4;
+      --error: #A8191F;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
+    }
+    [data-theme="dark"] {
+      --surface: #0B141D;
+      --surface-low: #060F18;
+      --surface-high: #222B34;
+      --surface-highest: #2D3640;
+      --primary: #9ACBFF;
+      --on-primary: #003355;
+      --secondary-container: #414A54;
+      --on-secondary-container: #E0E8F2;
+      --on-surface: #DAE3F0;
+      --on-surface-var: #8B919A;
+      --outline: #8B919A;
+      --outline-var: #41474F;
+      --error: #FFB4AB;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--surface);
+      color: var(--on-surface);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .shell {
+      width: 100%;
+      max-width: 420px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    @media (min-width: 768px) {
+      .shell { box-shadow: 0 0 0 1px var(--outline-var), 0 8px 32px rgba(0,0,0,.12); }
+    }
+
+    /* ── Top Bar ── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      padding: 0 4px 0 4px;
+      height: 64px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--outline-var);
+      position: sticky; top: 0; z-index: 10;
+      gap: 4px;
+    }
+    .icon-btn {
+      width: 48px; height: 48px;
+      border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .icon-btn:hover { background: var(--surface-high); }
+    .top-bar-title {
+      flex: 1;
+      font-size: 18px; font-weight: 500;
+    }
+    .session-timer {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--on-surface-var);
+      padding: 4px 8px;
+      background: var(--surface-high);
+      border-radius: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+    .session-timer.recording { color: var(--error); }
+    [data-theme="dark"] .session-timer.recording { color: var(--error); }
+
+    /* ── Recording indicator ── */
+    .rec-badge {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 10px;
+      background: var(--error);
+      color: #fff;
+      border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    [data-theme="dark"] .rec-badge { color: #0B141D; }
+    .rec-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: blink 1.2s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .rec-badge.paused { background: var(--outline); }
+    .rec-badge.paused .rec-dot { animation: none; }
+
+    /* ── Audio Level ── */
+    .audio-level-bar {
+      padding: 10px 16px 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .level-label { font-size: 12px; color: var(--on-surface-var); width: 30px; }
+    .level-track {
+      flex: 1; height: 6px;
+      background: var(--outline-var);
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+    .level-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 3px;
+      width: 42%;
+      transition: width 0.1s;
+    }
+    .level-fill.active { animation: level-pulse 0.3s ease-in-out infinite alternate; }
+    @keyframes level-pulse {
+      from { width: 28%; }
+      to { width: 72%; }
+    }
+
+    /* ── Caption Area ── */
+    .caption-area {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .caption-segment {
+      padding: 8px 4px;
+      line-height: 1.65;
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--on-surface);
+    }
+    .caption-segment.current {
+      color: var(--on-surface);
+    }
+    .caption-segment .interim {
+      color: var(--on-surface-var);
+    }
+
+    .speaker-break {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 4px;
+      color: var(--on-surface-var);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .speaker-break::before,
+    .speaker-break::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--outline-var);
+    }
+
+    .pause-break {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 4px;
+      color: var(--on-surface-var);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .pause-break::before,
+    .pause-break::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--outline-var);
+      border-top: 1px dashed var(--outline-var);
+      border-bottom: none;
+      height: 0;
+    }
+
+    /* ── Paused overlay ── */
+    .paused-banner {
+      display: none;
+      background: var(--surface-highest);
+      border-top: 1px solid var(--outline-var);
+      padding: 10px 16px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--on-surface-var);
+      font-weight: 500;
+    }
+    .shell.paused .paused-banner { display: block; }
+
+    /* ── Controls ── */
+    .controls {
+      border-top: 1px solid var(--outline-var);
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      background: var(--surface);
+    }
+    .btn {
+      border: none;
+      border-radius: var(--r-xl);
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .btn:hover { opacity: 0.88; }
+    .btn:active { transform: scale(0.97); }
+    .btn-pause {
+      flex: 1;
+      padding: 14px 20px;
+      background: var(--secondary-container);
+      color: var(--on-secondary-container);
+      font-size: 15px;
+    }
+    .btn-stop {
+      flex: 1;
+      padding: 14px 20px;
+      background: var(--surface-highest);
+      color: var(--on-surface);
+      font-size: 15px;
+    }
+    .btn-settings {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      padding: 0;
+      background: var(--surface-high);
+      color: var(--on-surface);
+      font-size: 20px;
+      flex-shrink: 0;
+      justify-content: center;
+    }
+
+    /* ── Appearance Controls (demo) ── */
+    .demo-controls {
+      background: var(--surface-high);
+      border-top: 1px solid var(--outline-var);
+      padding: 10px 16px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .demo-label { font-size: 11px; color: var(--on-surface-var); font-weight: 500; margin-right: 4px; }
+    .chip {
+      padding: 4px 10px;
+      border-radius: 16px;
+      border: 1px solid var(--outline-var);
+      background: transparent;
+      color: var(--on-surface);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .chip.active {
+      background: var(--secondary-container);
+      border-color: var(--primary);
+      color: var(--on-secondary-container);
+    }
+
+    .desktop-hint {
+      display: none;
+      position: fixed;
+      bottom: 16px; right: 16px;
+      background: var(--surface-highest);
+      color: var(--on-surface-var);
+      font-size: 12px;
+      padding: 8px 12px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--outline-var);
+    }
+    @media (min-width: 768px) { .desktop-hint { display: block; } }
+  </style>
+</head>
+<body>
+
+<div class="shell" id="shell">
+
+  <!-- Top Bar -->
+  <header class="top-bar">
+    <button class="icon-btn" aria-label="Back">←</button>
+    <span class="top-bar-title">Recording</span>
+    <span class="session-timer recording" id="timer">0:42</span>
+    <span id="rec-badge" class="rec-badge" style="margin:0 4px">
+      <span class="rec-dot"></span> REC
+    </span>
+    <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+      <span id="theme-icon">🌙</span>
+    </button>
+  </header>
+
+  <!-- Audio Level -->
+  <div class="audio-level-bar">
+    <span class="level-label">🎤</span>
+    <div class="level-track">
+      <div class="level-fill active" id="level-fill"></div>
+    </div>
+  </div>
+
+  <!-- Caption Area -->
+  <div class="caption-area" id="caption-area">
+
+    <div class="caption-segment">
+      The meeting will come to order. We have several items on the agenda today, including the quarterly review and the new project proposals.
+    </div>
+
+    <div class="speaker-break">Speaker change</div>
+
+    <div class="caption-segment">
+      Thank you. I'd like to start with the Q3 results which showed a significant improvement over the previous quarter.
+    </div>
+
+    <div class="caption-segment">
+      Our team managed to exceed expectations in the eastern region, and the numbers clearly demonstrate that the new strategy is working as intended.
+    </div>
+
+    <div class="speaker-break">Speaker change</div>
+
+    <div class="caption-segment">
+      That's excellent news. Can you walk us through the specific metrics?
+    </div>
+
+    <div class="pause-break">— paused 0:32 —</div>
+
+    <div class="caption-segment">
+      As I was saying, the key metrics show revenue up 18 percent and customer satisfaction scores at an all-time high.
+    </div>
+
+    <div class="caption-segment current">
+      The next slide will show the breakdown by region. If everyone could turn their attention to the <span class="interim">projector screen for a moment…</span>
+    </div>
+
+  </div>
+
+  <!-- Paused Banner (shown in paused state) -->
+  <div class="paused-banner">Captioning paused — tap Resume to continue</div>
+
+  <!-- Appearance demo strip -->
+  <div class="demo-controls">
+    <span class="demo-label">Text size:</span>
+    <button class="chip" onclick="setSize('small',this)">Sm</button>
+    <button class="chip active" onclick="setSize('medium',this)">Md</button>
+    <button class="chip" onclick="setSize('large',this)">Lg</button>
+    <button class="chip" onclick="setSize('xlarge',this)">XL</button>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn btn-pause" id="pause-btn" onclick="togglePause()">
+      <span id="pause-icon">⏸</span>
+      <span id="pause-label">Pause</span>
+    </button>
+    <button class="btn btn-stop">
+      <span>⏹</span>
+      <span>Stop</span>
+    </button>
+    <button class="btn btn-settings" aria-label="Caption settings">⚙️</button>
+  </div>
+
+</div>
+
+<p class="desktop-hint">Proto-02 · Zip Captions Recording · toggle Pause/Resume to see state change</p>
+
+<script>
+  let paused = false;
+  const fontSizes = { small: '15px', medium: '18px', large: '22px', xlarge: '28px' };
+
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? '' : 'dark');
+    document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
+  }
+
+  function togglePause() {
+    paused = !paused;
+    const shell = document.getElementById('shell');
+    const badge = document.getElementById('rec-badge');
+    const pauseBtn = document.getElementById('pause-btn');
+    const pauseIcon = document.getElementById('pause-icon');
+    const pauseLabel = document.getElementById('pause-label');
+    const levelFill = document.getElementById('level-fill');
+    const timer = document.getElementById('timer');
+
+    if (paused) {
+      shell.classList.add('paused');
+      badge.className = 'rec-badge paused';
+      badge.innerHTML = '<span class="rec-dot"></span> PAUSED';
+      pauseIcon.textContent = '▶';
+      pauseLabel.textContent = 'Resume';
+      levelFill.classList.remove('active');
+      timer.classList.remove('recording');
+    } else {
+      shell.classList.remove('paused');
+      badge.className = 'rec-badge';
+      badge.innerHTML = '<span class="rec-dot"></span> REC';
+      pauseIcon.textContent = '⏸';
+      pauseLabel.textContent = 'Pause';
+      levelFill.classList.add('active');
+      timer.classList.add('recording');
+    }
+  }
+
+  function setSize(size, el) {
+    document.querySelectorAll('.demo-controls .chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.caption-segment').forEach(s => {
+      s.style.fontSize = fontSizes[size];
+    });
+  }
+
+  // Animate timer
+  let seconds = 42;
+  setInterval(() => {
+    if (paused) return;
+    seconds++;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    document.getElementById('timer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  }, 1000);
+</script>
+
+</body>
+</html>

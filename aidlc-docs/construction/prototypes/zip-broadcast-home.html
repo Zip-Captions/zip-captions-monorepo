@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proto-06: Home — Zip Broadcast</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --surface: #FAFCFF;
+      --surface-low: #FFFFFF;
+      --surface-high: #EEF2F8;
+      --surface-highest: #E4EAF2;
+      --primary: #1A5A8C;
+      --on-primary: #FFFFFF;
+      --secondary-container: #DAE3F0;
+      --on-secondary-container: #0B141D;
+      --on-surface: #0B141D;
+      --on-surface-var: #6B7380;
+      --outline: #6B7380;
+      --outline-var: #C4CAD4;
+      --error: #A8191F;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
+    }
+    [data-theme="dark"] {
+      --surface: #0B141D;
+      --surface-low: #060F18;
+      --surface-high: #222B34;
+      --surface-highest: #2D3640;
+      --primary: #9ACBFF;
+      --on-primary: #003355;
+      --secondary-container: #414A54;
+      --on-secondary-container: #E0E8F2;
+      --on-surface: #DAE3F0;
+      --on-surface-var: #8B919A;
+      --outline: #8B919A;
+      --outline-var: #41474F;
+      --error: #FFB4AB;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--surface);
+      color: var(--on-surface);
+      min-height: 100vh;
+    }
+
+    /* ── Desktop layout: sidebar + main ── */
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    @media (min-width: 768px) {
+      .app-layout {
+        box-shadow: 0 0 0 1px var(--outline-var);
+      }
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--surface-high);
+      border-right: 1px solid var(--outline-var);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 0 16px;
+    }
+    @media (max-width: 600px) { .sidebar { display: none; } }
+
+    .sidebar-brand {
+      padding: 0 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .brand-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: var(--on-surface-var);
+    }
+
+    .nav-section {
+      padding: 0 8px;
+      flex: 1;
+    }
+    .nav-section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--on-surface-var);
+      padding: 12px 12px 4px;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: var(--r-md);
+      border: none;
+      background: transparent;
+      color: var(--on-surface-var);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      transition: background 0.12s, color 0.12s;
+    }
+    .nav-link:hover { background: var(--surface-highest); color: var(--on-surface); }
+    .nav-link.active {
+      background: var(--secondary-container);
+      color: var(--on-secondary-container);
+    }
+    .nav-link .nl-icon { font-size: 16px; }
+
+    .sidebar-footer {
+      padding: 0 8px;
+      border-top: 1px solid var(--outline-var);
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+
+    /* ── Main Content ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* ── Top Bar ── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      height: 60px;
+      border-bottom: 1px solid var(--outline-var);
+      gap: 12px;
+      background: var(--surface);
+    }
+    .top-bar-title {
+      flex: 1;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .icon-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .icon-btn:hover { background: var(--surface-high); }
+
+    /* ── Content Area ── */
+    .content {
+      flex: 1;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    @media (max-width: 600px) { .content { padding: 20px 16px; } }
+
+    /* ── Start Section ── */
+    .start-section {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .btn-start {
+      padding: 16px 32px;
+      border-radius: var(--r-xl);
+      border: none;
+      background: var(--primary);
+      color: var(--on-primary);
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 10px;
+      transition: opacity 0.15s, transform 0.1s;
+      box-shadow: 0 2px 8px rgba(26,90,140,.25);
+    }
+    .btn-start:hover { opacity: 0.9; transform: translateY(-1px); }
+    [data-theme="dark"] .btn-start { box-shadow: 0 2px 8px rgba(154,203,255,.15); }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: var(--r-xl);
+      background: var(--surface-high);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--on-surface-var);
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--outline);
+    }
+    .status-dot.ok { background: #2E7D32; }
+    .status-dot.warn { background: #F57F17; }
+    .status-dot.err { background: var(--error); }
+    [data-theme="dark"] .status-dot.ok { background: #81C784; }
+    [data-theme="dark"] .status-dot.warn { background: #FFB74D; }
+
+    /* ── Output Targets Card ── */
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--on-surface-var);
+      margin-bottom: 12px;
+    }
+    .targets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .target-card {
+      background: var(--surface-low);
+      border: 1.5px solid var(--outline-var);
+      border-radius: var(--r-lg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      transition: border-color 0.15s;
+    }
+    .target-card.enabled { border-color: var(--primary); }
+    .target-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .target-icon { font-size: 22px; }
+    .target-name { font-size: 14px; font-weight: 600; flex: 1; }
+    .target-toggle {
+      width: 44px; height: 26px;
+      border-radius: 13px;
+      background: var(--outline-var);
+      border: none;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .target-toggle.on { background: var(--primary); }
+    .target-toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: white;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .target-toggle.on::after { transform: translateX(18px); }
+
+    .target-status {
+      font-size: 12px;
+      color: var(--on-surface-var);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .target-status .s-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--outline-var);
+    }
+    .target-status .s-dot.ok { background: #2E7D32; }
+    .target-status .s-dot.warn { background: #F57F17; }
+    [data-theme="dark"] .target-status .s-dot.ok { background: #81C784; }
+    [data-theme="dark"] .target-status .s-dot.warn { background: #FFB74D; }
+
+    /* ── Audio Sources Card ── */
+    .audio-sources {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .audio-source-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--surface-low);
+      border: 1px solid var(--outline-var);
+      border-radius: var(--r-md);
+      font-size: 14px;
+    }
+    .as-icon { font-size: 18px; }
+    .as-name { flex: 1; font-weight: 500; }
+    .as-label {
+      font-size: 12px;
+      color: var(--on-surface-var);
+      background: var(--surface-high);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .as-style {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+    }
+    .color-blue { background: #1A5A8C; }
+    .color-green { background: #2E7D32; }
+
+    .desktop-hint {
+      display: none;
+      position: fixed;
+      bottom: 16px; right: 16px;
+      background: var(--surface-highest);
+      color: var(--on-surface-var);
+      font-size: 12px;
+      padding: 8px 12px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--outline-var);
+    }
+    @media (min-width: 768px) { .desktop-hint { display: block; } }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">📡</div>
+      <div>
+        <div class="brand-name">Zip Broadcast</div>
+        <div class="brand-sub">v2.0</div>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Captioning</div>
+      <button class="nav-link active">
+        <span class="nl-icon">🏠</span> Home
+      </button>
+      <button class="nav-link">
+        <span class="nl-icon">🎙</span> Recording
+      </button>
+      <button class="nav-link">
+        <span class="nl-icon">📋</span> History
+      </button>
+
+      <div class="nav-section-label" style="margin-top:8px">Configure</div>
+      <button class="nav-link">
+        <span class="nl-icon">⚙️</span> Settings
+      </button>
+      <button class="nav-link">
+        <span class="nl-icon">🎤</span> Audio Inputs
+      </button>
+      <button class="nav-link">
+        <span class="nl-icon">📺</span> Output Targets
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="nav-link" onclick="toggleTheme()">
+        <span class="nl-icon" id="theme-icon-side">🌙</span>
+        <span id="theme-label">Dark Mode</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <span class="top-bar-title">Home</span>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle theme">
+        <span id="theme-icon">🌙</span>
+      </button>
+      <button class="icon-btn" aria-label="Settings">⚙️</button>
+    </header>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- Start Section -->
+      <div class="start-section">
+        <button class="btn-start" aria-label="Start Captioning">
+          <span>▶</span> Start Captioning
+        </button>
+        <div class="status-pill">
+          <span class="status-dot ok"></span>
+          Ready · 2 inputs · 3 targets active
+        </div>
+      </div>
+
+      <!-- Output Targets -->
+      <div>
+        <div class="card-title">Output Targets</div>
+        <div class="targets-grid">
+
+          <div class="target-card enabled">
+            <div class="target-header">
+              <span class="target-icon">🖥️</span>
+              <span class="target-name">On-Screen</span>
+              <button class="target-toggle on" onclick="toggleTarget(this, this.closest('.target-card'))" aria-label="Toggle on-screen target"></button>
+            </div>
+            <div class="target-status">
+              <span class="s-dot ok"></span> Active
+            </div>
+          </div>
+
+          <div class="target-card enabled">
+            <div class="target-header">
+              <span class="target-icon">🎮</span>
+              <span class="target-name">OBS WebSocket</span>
+              <button class="target-toggle on" onclick="toggleTarget(this, this.closest('.target-card'))" aria-label="Toggle OBS target"></button>
+            </div>
+            <div class="target-status">
+              <span class="s-dot ok"></span> Connected · localhost:4455
+            </div>
+          </div>
+
+          <div class="target-card enabled">
+            <div class="target-header">
+              <span class="target-icon">🌐</span>
+              <span class="target-name">Browser Source</span>
+              <button class="target-toggle on" onclick="toggleTarget(this, this.closest('.target-card'))" aria-label="Toggle browser source target"></button>
+            </div>
+            <div class="target-status">
+              <span class="s-dot ok"></span> http://localhost:8080
+            </div>
+          </div>
+
+          <div class="target-card">
+            <div class="target-header">
+              <span class="target-icon">📺</span>
+              <span class="target-name">Caption Overlay</span>
+              <button class="target-toggle" onclick="toggleTarget(this, this.closest('.target-card'))" aria-label="Toggle overlay target"></button>
+            </div>
+            <div class="target-status">
+              <span class="s-dot"></span> Disabled
+            </div>
+          </div>
+
+          <div class="target-card enabled">
+            <div class="target-header">
+              <span class="target-icon">📝</span>
+              <span class="target-name">Transcripts</span>
+              <button class="target-toggle on" onclick="toggleTarget(this, this.closest('.target-card'))" aria-label="Toggle transcript target"></button>
+            </div>
+            <div class="target-status">
+              <span class="s-dot ok"></span> Saving enabled
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Audio Inputs -->
+      <div>
+        <div class="card-title">Audio Inputs</div>
+        <div class="audio-sources">
+          <div class="audio-source-row">
+            <span class="as-icon">🎤</span>
+            <span class="as-name">Built-in Microphone</span>
+            <span class="as-label">Teacher</span>
+            <span class="as-style color-blue"></span>
+          </div>
+          <div class="audio-source-row">
+            <span class="as-icon">🔌</span>
+            <span class="as-name">USB Audio · MV7+</span>
+            <span class="as-label">Student Mic</span>
+            <span class="as-style color-green"></span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end content -->
+  </div><!-- end main -->
+</div><!-- end layout -->
+
+<p class="desktop-hint">Proto-06 · Zip Broadcast Home · resize ≥768px for sidebar; toggle cards on/off</p>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? '' : 'dark');
+    const icon = isDark ? '🌙' : '☀️';
+    document.getElementById('theme-icon').textContent = icon;
+    if (document.getElementById('theme-icon-side'))
+      document.getElementById('theme-icon-side').textContent = icon;
+    const lbl = document.getElementById('theme-label');
+    if (lbl) lbl.textContent = isDark ? 'Dark Mode' : 'Light Mode';
+  }
+
+  function toggleTarget(btn, card) {
+    btn.classList.toggle('on');
+    card.classList.toggle('enabled', btn.classList.contains('on'));
+    const statusDot = card.querySelector('.s-dot');
+    const statusText = card.querySelector('.target-status');
+    if (btn.classList.contains('on')) {
+      statusDot.className = 's-dot ok';
+    } else {
+      statusDot.className = 's-dot';
+      statusText.innerHTML = '<span class="s-dot"></span> Disabled';
+    }
+  }
+</script>
+
+</body>
+</html>

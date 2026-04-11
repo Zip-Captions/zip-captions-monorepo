@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proto-09: Audio Configuration — Zip Broadcast</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --surface: #FAFCFF;
+      --surface-low: #FFFFFF;
+      --surface-high: #EEF2F8;
+      --surface-highest: #E4EAF2;
+      --primary: #1A5A8C;
+      --on-primary: #FFFFFF;
+      --secondary-container: #DAE3F0;
+      --on-secondary-container: #0B141D;
+      --on-surface: #0B141D;
+      --on-surface-var: #6B7380;
+      --outline: #6B7380;
+      --outline-var: #C4CAD4;
+      --error: #A8191F;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
+      --color-0: #1A5A8C;
+      --color-1: #2E7D32;
+      --color-2: #6A1B9A;
+      --color-3: #E65100;
+    }
+    [data-theme="dark"] {
+      --surface: #0B141D;
+      --surface-low: #060F18;
+      --surface-high: #222B34;
+      --surface-highest: #2D3640;
+      --primary: #9ACBFF;
+      --on-primary: #003355;
+      --secondary-container: #414A54;
+      --on-secondary-container: #E0E8F2;
+      --on-surface: #DAE3F0;
+      --on-surface-var: #8B919A;
+      --outline: #8B919A;
+      --outline-var: #41474F;
+      --error: #FFB4AB;
+      --color-0: #9ACBFF;
+      --color-1: #81C784;
+      --color-2: #CE93D8;
+      --color-3: #FFCC80;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--surface);
+      color: var(--on-surface);
+      min-height: 100vh;
+    }
+
+    /* ── Layout ── */
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    @media (min-width: 768px) {
+      .app-layout { box-shadow: 0 0 0 1px var(--outline-var); }
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px; flex-shrink: 0;
+      background: var(--surface-high);
+      border-right: 1px solid var(--outline-var);
+      display: flex; flex-direction: column; padding: 20px 0 16px;
+    }
+    @media (max-width: 600px) { .sidebar { display: none; } }
+    .sidebar-brand {
+      padding: 0 20px 20px; display: flex; align-items: center; gap: 10px;
+    }
+    .brand-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--primary);
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .brand-name { font-size: 15px; font-weight: 600; }
+    .nav-section { padding: 0 8px; flex: 1; }
+    .nav-section-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--on-surface-var);
+      padding: 12px 12px 4px;
+    }
+    .nav-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: var(--r-md);
+      border: none; background: transparent;
+      color: var(--on-surface-var);
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      cursor: pointer; width: 100%; text-align: left;
+      transition: background 0.12s, color 0.12s;
+    }
+    .nav-link:hover { background: var(--surface-highest); color: var(--on-surface); }
+    .nav-link.active { background: var(--secondary-container); color: var(--on-secondary-container); }
+    .sidebar-footer {
+      padding: 0 8px;
+      border-top: 1px solid var(--outline-var);
+      padding-top: 12px; margin-top: 12px;
+    }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .top-bar {
+      display: flex; align-items: center;
+      padding: 0 20px; height: 60px;
+      border-bottom: 1px solid var(--outline-var);
+      gap: 12px; background: var(--surface);
+    }
+    .top-bar-title { flex: 1; font-size: 18px; font-weight: 600; }
+    .icon-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; transition: background 0.15s;
+    }
+    .icon-btn:hover { background: var(--surface-high); }
+
+    /* ── Content ── */
+    .content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    @media (max-width: 600px) { .content { padding: 16px; } }
+
+    /* ── Section header ── */
+    .section-header {
+      font-size: 13px; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--on-surface-var);
+      margin-bottom: 10px;
+    }
+
+    /* ── Input Card ── */
+    .input-card {
+      background: var(--surface-low);
+      border: 1.5px solid var(--outline-var);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .input-card-header {
+      display: flex; align-items: center;
+      padding: 14px 16px; gap: 12px;
+      border-bottom: 1px solid var(--outline-var);
+      background: var(--surface-high);
+    }
+    .input-color-swatch {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .input-number {
+      font-size: 13px; font-weight: 600;
+      color: var(--on-surface-var);
+    }
+    .input-title { flex: 1; font-size: 15px; font-weight: 600; }
+    .btn-remove {
+      width: 32px; height: 32px;
+      border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface-var);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; transition: background 0.12s, color 0.12s;
+    }
+    .btn-remove:hover { background: var(--error); color: white; }
+    [data-theme="dark"] .btn-remove:hover { color: #0B141D; }
+
+    .input-card-body {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Source Selector */
+    .field-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .field-label {
+      font-size: 13px; font-weight: 500;
+      color: var(--on-surface-var);
+      width: 90px; flex-shrink: 0;
+    }
+    .field-select {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: var(--r-md);
+      border: 1.5px solid var(--outline-var);
+      background: var(--surface-high);
+      color: var(--on-surface);
+      font-family: inherit; font-size: 14px;
+      outline: none; cursor: pointer;
+      transition: border-color 0.15s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%236B7380' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 32px;
+    }
+    .field-select:focus { border-color: var(--primary); }
+    .field-input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: var(--r-md);
+      border: 1.5px solid var(--outline-var);
+      background: var(--surface-high);
+      color: var(--on-surface);
+      font-family: inherit; font-size: 14px;
+      outline: none; transition: border-color 0.15s;
+    }
+    .field-input:focus { border-color: var(--primary); background: var(--surface-low); }
+
+    /* Color Swatches */
+    .color-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .color-label {
+      font-size: 13px; font-weight: 500;
+      color: var(--on-surface-var);
+      width: 90px; flex-shrink: 0;
+    }
+    .color-options {
+      display: flex; gap: 8px;
+    }
+    .color-swatch-btn {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 2.5px solid transparent;
+      cursor: pointer;
+      transition: transform 0.1s, border-color 0.15s;
+    }
+    .color-swatch-btn:hover { transform: scale(1.15); }
+    .color-swatch-btn.selected { border-color: var(--on-surface); }
+    .c0 { background: var(--color-0); }
+    .c1 { background: var(--color-1); }
+    .c2 { background: var(--color-2); }
+    .c3 { background: var(--color-3); }
+
+    /* Unavailable notice */
+    .unavailable-notice {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px 14px;
+      background: var(--surface-highest);
+      border-radius: var(--r-md);
+      font-size: 13px; color: var(--on-surface-var);
+    }
+    .un-icon { font-size: 16px; flex-shrink: 0; }
+
+    /* Add Input Button */
+    .btn-add {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--r-lg);
+      border: 2px dashed var(--outline-var);
+      background: transparent;
+      color: var(--on-surface-var);
+      font-family: inherit; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-add:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--secondary-container);
+    }
+
+    /* State toggle (demo) */
+    .demo-state-bar {
+      background: var(--surface-high);
+      border: 1px solid var(--outline-var);
+      border-radius: var(--r-md);
+      padding: 10px 14px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; color: var(--on-surface-var);
+    }
+    .demo-btn {
+      padding: 5px 12px;
+      border-radius: var(--r-xl);
+      border: 1px solid var(--outline-var);
+      background: var(--surface-low);
+      color: var(--on-surface);
+      font-family: inherit; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: background 0.12s;
+    }
+    .demo-btn:hover { background: var(--surface-highest); }
+
+    .desktop-hint {
+      display: none;
+      position: fixed; bottom: 16px; right: 16px;
+      background: var(--surface-highest);
+      color: var(--on-surface-var);
+      font-size: 12px; padding: 8px 12px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--outline-var);
+    }
+    @media (min-width: 768px) { .desktop-hint { display: block; } }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">📡</div>
+      <div><div class="brand-name">Zip Broadcast</div></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Captioning</div>
+      <button class="nav-link">🏠 Home</button>
+      <button class="nav-link">🎙 Recording</button>
+      <button class="nav-link">📋 History</button>
+      <div class="nav-section-label" style="margin-top:8px">Configure</div>
+      <button class="nav-link">⚙️ Settings</button>
+      <button class="nav-link active">🎤 Audio Inputs</button>
+      <button class="nav-link">📺 Output Targets</button>
+    </div>
+    <div class="sidebar-footer">
+      <button class="nav-link" onclick="toggleTheme()">
+        <span id="theme-icon-side">🌙</span>
+        <span id="theme-label">Dark Mode</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <header class="top-bar">
+      <button class="icon-btn" aria-label="Back">←</button>
+      <span class="top-bar-title">Audio Inputs</span>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+        <span id="theme-icon">🌙</span>
+      </button>
+    </header>
+
+    <div class="content">
+
+      <!-- Demo state bar -->
+      <div class="demo-state-bar">
+        <span>Demo:</span>
+        <button class="demo-btn" onclick="setState('single')">Single input</button>
+        <button class="demo-btn" onclick="setState('multi')">Multi-input</button>
+        <button class="demo-btn" onclick="setState('empty')">Empty</button>
+      </div>
+
+      <!-- Active Inputs container -->
+      <div id="inputs-container">
+
+        <!-- Input 1 -->
+        <div class="input-card" data-input-id="0">
+          <div class="input-card-header">
+            <span class="input-color-swatch c0" id="swatch-0"></span>
+            <span class="input-number">#1</span>
+            <span class="input-title" id="title-0">Teacher Mic</span>
+            <button class="btn-remove" onclick="removeInput(0)" title="Remove input">✕</button>
+          </div>
+          <div class="input-card-body">
+            <div class="field-row">
+              <span class="field-label">Source</span>
+              <select class="field-select">
+                <option selected>🎤 Built-in Microphone</option>
+                <option>🔌 USB Audio · MV7+</option>
+                <option>🎧 AirPods Pro</option>
+                <option>🔊 System Audio (macOS)</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Speaker label</span>
+              <input class="field-input" type="text" value="Teacher" placeholder="e.g. Teacher, Speaker 1"
+                oninput="document.getElementById('title-0').textContent = this.value || 'Input 1'">
+            </div>
+            <div class="color-row">
+              <span class="color-label">Visual style</span>
+              <div class="color-options">
+                <button class="color-swatch-btn c0 selected" onclick="selectColor(this, 0, 'c0')" title="Blue"></button>
+                <button class="color-swatch-btn c1" onclick="selectColor(this, 0, 'c1')" title="Green"></button>
+                <button class="color-swatch-btn c2" onclick="selectColor(this, 0, 'c2')" title="Purple"></button>
+                <button class="color-swatch-btn c3" onclick="selectColor(this, 0, 'c3')" title="Orange"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input 2 (hidden by default in setState('single')) -->
+        <div class="input-card" id="input-card-1" style="margin-top:12px">
+          <div class="input-card-header">
+            <span class="input-color-swatch c1" id="swatch-1"></span>
+            <span class="input-number">#2</span>
+            <span class="input-title" id="title-1">Student Mic</span>
+            <button class="btn-remove" onclick="removeInput(1)" title="Remove input">✕</button>
+          </div>
+          <div class="input-card-body">
+            <div class="field-row">
+              <span class="field-label">Source</span>
+              <select class="field-select">
+                <option>🎤 Built-in Microphone</option>
+                <option selected>🔌 USB Audio · MV7+</option>
+                <option>🎧 AirPods Pro</option>
+                <option>🔊 System Audio (macOS)</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Speaker label</span>
+              <input class="field-input" type="text" value="Student Mic" placeholder="e.g. Student, Speaker 2"
+                oninput="document.getElementById('title-1').textContent = this.value || 'Input 2'">
+            </div>
+            <div class="color-row">
+              <span class="color-label">Visual style</span>
+              <div class="color-options">
+                <button class="color-swatch-btn c0" onclick="selectColor(this, 1, 'c0')" title="Blue"></button>
+                <button class="color-swatch-btn c1 selected" onclick="selectColor(this, 1, 'c1')" title="Green"></button>
+                <button class="color-swatch-btn c2" onclick="selectColor(this, 1, 'c2')" title="Purple"></button>
+                <button class="color-swatch-btn c3" onclick="selectColor(this, 1, 'c3')" title="Orange"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end inputs-container -->
+
+      <!-- System audio unavailable notice (hidden by default) -->
+      <div class="unavailable-notice" id="sys-audio-notice" style="display:none">
+        <span class="un-icon">ℹ️</span>
+        <span>System audio capture is not available on this platform. Only microphone sources are shown. System audio requires macOS with a virtual audio device, Windows with WASAPI loopback, or Linux with PulseAudio monitor sources.</span>
+      </div>
+
+      <!-- Empty state (hidden by default) -->
+      <div id="empty-state" style="display:none; flex-direction:column; align-items:center; text-align:center; padding:40px 24px; gap:14px">
+        <span style="font-size:48px;opacity:.4">🎤</span>
+        <span style="font-size:17px;font-weight:600">No Audio Inputs</span>
+        <span style="font-size:14px;color:var(--on-surface-var)">Add at least one audio input to begin captioning</span>
+      </div>
+
+      <!-- Add Input Button -->
+      <button class="btn-add" id="btn-add" onclick="addInput()">
+        <span style="font-size:20px">+</span>
+        <span>Add Audio Input</span>
+      </button>
+
+    </div><!-- end content -->
+  </div><!-- end main -->
+</div><!-- end layout -->
+
+<p class="desktop-hint">Proto-09 · Audio Config · use Demo buttons; add/remove inputs; pick colors</p>
+
+<script>
+  const colorClasses = ['c0','c1','c2','c3'];
+  let inputCount = 2;
+
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? '' : 'dark');
+    const icon = isDark ? '🌙' : '☀️';
+    document.getElementById('theme-icon').textContent = icon;
+    if (document.getElementById('theme-icon-side'))
+      document.getElementById('theme-icon-side').textContent = icon;
+    const lbl = document.getElementById('theme-label');
+    if (lbl) lbl.textContent = isDark ? 'Dark Mode' : 'Light Mode';
+  }
+
+  function selectColor(btn, inputIdx, colorCls) {
+    const card = document.querySelector(`[data-input-id="${inputIdx}"]`);
+    if (!card) return;
+    card.querySelectorAll('.color-swatch-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    const swatch = document.getElementById('swatch-' + inputIdx);
+    if (swatch) {
+      swatch.className = 'input-color-swatch ' + colorCls;
+    }
+  }
+
+  function removeInput(id) {
+    const card = document.querySelector(`[data-input-id="${id}"]`);
+    if (card) {
+      card.style.opacity = '0';
+      card.style.transform = 'translateX(-8px)';
+      card.style.transition = 'opacity 0.2s, transform 0.2s';
+      setTimeout(() => card.remove(), 200);
+    }
+    // Show empty state if no inputs remain
+    setTimeout(() => {
+      const remaining = document.querySelectorAll('.input-card');
+      if (remaining.length === 0) {
+        document.getElementById('empty-state').style.display = 'flex';
+        document.getElementById('btn-add').style.marginTop = '0';
+      }
+    }, 250);
+  }
+
+  function addInput() {
+    const idx = inputCount;
+    inputCount++;
+    const colorCls = colorClasses[idx % colorClasses.length];
+    const card = document.createElement('div');
+    card.className = 'input-card';
+    card.dataset.inputId = idx;
+    card.style.marginTop = '12px';
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(8px)';
+    card.style.transition = 'opacity 0.2s, transform 0.2s';
+    card.innerHTML = `
+      <div class="input-card-header">
+        <span class="input-color-swatch ${colorCls}" id="swatch-${idx}"></span>
+        <span class="input-number">#${idx+1}</span>
+        <span class="input-title" id="title-${idx}">Input ${idx+1}</span>
+        <button class="btn-remove" onclick="removeInput(${idx})" title="Remove">✕</button>
+      </div>
+      <div class="input-card-body">
+        <div class="field-row">
+          <span class="field-label">Source</span>
+          <select class="field-select">
+            <option>🎤 Built-in Microphone</option>
+            <option>🔌 USB Audio · MV7+</option>
+            <option>🎧 AirPods Pro</option>
+          </select>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Speaker label</span>
+          <input class="field-input" type="text" value="" placeholder="e.g. Speaker ${idx+1}"
+            oninput="document.getElementById('title-${idx}').textContent = this.value || 'Input ${idx+1}'">
+        </div>
+        <div class="color-row">
+          <span class="color-label">Visual style</span>
+          <div class="color-options">
+            ${colorClasses.map((c,i) => `<button class="color-swatch-btn ${c}${c===colorCls?' selected':''}" onclick="selectColor(this,${idx},'${c}')" title="${['Blue','Green','Purple','Orange'][i]}"></button>`).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('inputs-container').appendChild(card);
+    document.getElementById('empty-state').style.display = 'none';
+    requestAnimationFrame(() => {
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    });
+  }
+
+  function setState(state) {
+    const container = document.getElementById('inputs-container');
+    const emptyState = document.getElementById('empty-state');
+
+    if (state === 'empty') {
+      container.innerHTML = '';
+      emptyState.style.display = 'flex';
+      document.getElementById('sys-audio-notice').style.display = 'flex';
+    } else if (state === 'single') {
+      emptyState.style.display = 'none';
+      document.getElementById('sys-audio-notice').style.display = 'none';
+      // Rebuild with 1 input
+      container.innerHTML = `
+        <div class="input-card" data-input-id="10">
+          <div class="input-card-header">
+            <span class="input-color-swatch c0" id="swatch-10"></span>
+            <span class="input-number">#1</span>
+            <span class="input-title" id="title-10">Built-in Microphone</span>
+            <button class="btn-remove" onclick="removeInput(10)" title="Remove">✕</button>
+          </div>
+          <div class="input-card-body">
+            <div class="field-row">
+              <span class="field-label">Source</span>
+              <select class="field-select">
+                <option selected>🎤 Built-in Microphone</option>
+                <option>🔌 USB Audio · MV7+</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Speaker label</span>
+              <input class="field-input" type="text" value="" placeholder="Optional label">
+            </div>
+            <div class="color-row">
+              <span class="color-label">Visual style</span>
+              <div class="color-options">
+                <button class="color-swatch-btn c0 selected" title="Blue"></button>
+                <button class="color-swatch-btn c1" title="Green"></button>
+                <button class="color-swatch-btn c2" title="Purple"></button>
+                <button class="color-swatch-btn c3" title="Orange"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    } else { // multi
+      emptyState.style.display = 'none';
+      document.getElementById('sys-audio-notice').style.display = 'none';
+      container.innerHTML = `
+        <div class="input-card" data-input-id="20">
+          <div class="input-card-header">
+            <span class="input-color-swatch c0" id="swatch-20"></span>
+            <span class="input-number">#1</span>
+            <span class="input-title" id="title-20">Teacher</span>
+            <button class="btn-remove" onclick="removeInput(20)" title="Remove">✕</button>
+          </div>
+          <div class="input-card-body">
+            <div class="field-row">
+              <span class="field-label">Source</span>
+              <select class="field-select">
+                <option selected>🎤 Built-in Microphone</option>
+                <option>🔌 USB Audio · MV7+</option>
+                <option>🔊 System Audio (macOS)</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Speaker label</span>
+              <input class="field-input" type="text" value="Teacher" placeholder="e.g. Teacher">
+            </div>
+            <div class="color-row">
+              <span class="color-label">Visual style</span>
+              <div class="color-options">
+                <button class="color-swatch-btn c0 selected" title="Blue"></button>
+                <button class="color-swatch-btn c1" title="Green"></button>
+                <button class="color-swatch-btn c2" title="Purple"></button>
+                <button class="color-swatch-btn c3" title="Orange"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="input-card" data-input-id="21" style="margin-top:12px">
+          <div class="input-card-header">
+            <span class="input-color-swatch c1" id="swatch-21"></span>
+            <span class="input-number">#2</span>
+            <span class="input-title" id="title-21">Student Mic</span>
+            <button class="btn-remove" onclick="removeInput(21)" title="Remove">✕</button>
+          </div>
+          <div class="input-card-body">
+            <div class="field-row">
+              <span class="field-label">Source</span>
+              <select class="field-select">
+                <option>🎤 Built-in Microphone</option>
+                <option selected>🔌 USB Audio · MV7+</option>
+                <option>🔊 System Audio (macOS)</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Speaker label</span>
+              <input class="field-input" type="text" value="Student Mic" placeholder="e.g. Student">
+            </div>
+            <div class="color-row">
+              <span class="color-label">Visual style</span>
+              <div class="color-options">
+                <button class="color-swatch-btn c0" title="Blue"></button>
+                <button class="color-swatch-btn c1 selected" title="Green"></button>
+                <button class="color-swatch-btn c2" title="Purple"></button>
+                <button class="color-swatch-btn c3" title="Orange"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  }
+</script>
+
+</body>
+</html>
