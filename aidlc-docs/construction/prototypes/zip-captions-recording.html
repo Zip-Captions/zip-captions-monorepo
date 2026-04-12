@@ -10,455 +10,500 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --surface: #FAFCFF;
-      --surface-low: #FFFFFF;
-      --surface-high: #EEF2F8;
-      --surface-highest: #E4EAF2;
-      --primary: #1A5A8C;
-      --on-primary: #FFFFFF;
-      --secondary-container: #DAE3F0;
-      --on-secondary-container: #0B141D;
-      --on-surface: #0B141D;
-      --on-surface-var: #6B7380;
-      --outline: #6B7380;
-      --outline-var: #C4CAD4;
-      --error: #A8191F;
+      --surface: #FAFCFF; --surface-low: #FFFFFF; --surface-high: #EEF2F8;
+      --surface-highest: #E4EAF2; --primary: #1A5A8C; --on-primary: #FFFFFF;
+      --secondary-container: #DAE3F0; --on-secondary-container: #0B141D;
+      --on-surface: #0B141D; --on-surface-var: #6B7380;
+      --outline: #6B7380; --outline-var: #C4CAD4; --error: #A8191F;
       --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
+      --sidebar-w: 220px;
     }
     [data-theme="dark"] {
-      --surface: #0B141D;
-      --surface-low: #060F18;
-      --surface-high: #222B34;
-      --surface-highest: #2D3640;
-      --primary: #9ACBFF;
-      --on-primary: #003355;
-      --secondary-container: #414A54;
-      --on-secondary-container: #E0E8F2;
-      --on-surface: #DAE3F0;
-      --on-surface-var: #8B919A;
-      --outline: #8B919A;
-      --outline-var: #41474F;
-      --error: #FFB4AB;
+      --surface: #0B141D; --surface-low: #060F18; --surface-high: #222B34;
+      --surface-highest: #2D3640; --primary: #9ACBFF; --on-primary: #003355;
+      --secondary-container: #414A54; --on-secondary-container: #E0E8F2;
+      --on-surface: #DAE3F0; --on-surface-var: #8B919A;
+      --outline: #8B919A; --outline-var: #41474F; --error: #FFB4AB;
     }
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--surface);
-      color: var(--on-surface);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      background: var(--surface); color: var(--on-surface);
     }
-    .shell {
-      width: 100%;
-      max-width: 420px;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+
+    /* ── Root shell ── */
+    .app {
+      height: 100vh; max-width: 1920px; margin: 0 auto;
+      display: flex; flex-direction: column; overflow: hidden;
+      border-left: 1px solid var(--outline-var); border-right: 1px solid var(--outline-var);
     }
-    @media (min-width: 768px) {
-      .shell { box-shadow: 0 0 0 1px var(--outline-var), 0 8px 32px rgba(0,0,0,.12); }
+    .main-row { flex: 1; min-height: 0; display: flex; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      display: none; width: var(--sidebar-w); flex-shrink: 0;
+      background: var(--surface-high); border-right: 1px solid var(--outline-var);
+      flex-direction: column; padding: 20px 0 16px;
     }
+    .sidebar-brand { padding: 0 20px 24px; display: flex; align-items: center; gap: 10px; }
+    .brand-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .brand-name { font-size: 15px; font-weight: 600; }
+    .nav-section { padding: 0 8px; flex: 1; }
+    .nav-link {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--r-md);
+      border: none; background: transparent; color: var(--on-surface-var);
+      font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; width: 100%; text-align: left; transition: all 0.12s;
+    }
+    .nav-link:hover { background: var(--surface-highest); color: var(--on-surface); }
+    .nav-link.active { background: var(--secondary-container); color: var(--on-secondary-container); }
+    .sidebar-footer { padding: 0 8px; border-top: 1px solid var(--outline-var); padding-top: 12px; margin-top: 12px; }
+
+    /* ── Main column ── */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; position: relative; }
 
     /* ── Top Bar ── */
     .top-bar {
-      display: flex;
-      align-items: center;
-      padding: 0 4px 0 4px;
-      height: 64px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--outline-var);
-      position: sticky; top: 0; z-index: 10;
-      gap: 4px;
+      flex-shrink: 0; display: flex; align-items: center;
+      padding: 0 4px 0 4px; height: 64px;
+      background: var(--surface); border-bottom: 1px solid var(--outline-var); gap: 4px;
     }
+    .top-bar-title { flex: 1; font-size: 18px; font-weight: 500; padding-left: 4px; }
     .icon-btn {
-      width: 48px; height: 48px;
-      border-radius: 50%; border: none;
-      background: transparent; color: var(--on-surface);
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
-      transition: background 0.15s;
-      flex-shrink: 0;
+      width: 48px; height: 48px; border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+      transition: background 0.15s; flex-shrink: 0;
     }
     .icon-btn:hover { background: var(--surface-high); }
-    .top-bar-title {
-      flex: 1;
-      font-size: 18px; font-weight: 500;
-    }
-    .session-timer {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--on-surface-var);
-      padding: 4px 8px;
-      background: var(--surface-high);
-      border-radius: 8px;
-      font-variant-numeric: tabular-nums;
-    }
-    .session-timer.recording { color: var(--error); }
-    [data-theme="dark"] .session-timer.recording { color: var(--error); }
 
-    /* ── Recording indicator ── */
+    .session-timer {
+      font-size: 14px; font-weight: 600; color: var(--error);
+      font-variant-numeric: tabular-nums; padding: 4px 8px;
+      background: var(--surface-high); border-radius: 8px;
+    }
+    .session-timer.paused { color: var(--on-surface-var); }
+
     .rec-badge {
-      display: flex; align-items: center; gap: 6px;
-      padding: 4px 10px;
-      background: var(--error);
-      color: #fff;
-      border-radius: 20px;
-      font-size: 12px; font-weight: 600;
-      letter-spacing: 0.03em;
+      display: flex; align-items: center; gap: 6px; padding: 4px 10px;
+      background: var(--error); color: #fff; border-radius: 20px;
+      font-size: 11px; font-weight: 600; flex-shrink: 0;
     }
     [data-theme="dark"] .rec-badge { color: #0B141D; }
-    .rec-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: currentColor;
-      animation: blink 1.2s ease-in-out infinite;
-    }
+    .rec-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: blink 1.2s ease-in-out infinite; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-    .rec-badge.paused { background: var(--outline); }
-    .rec-badge.paused .rec-dot { animation: none; }
+    .rec-badge.paused { background: var(--surface-highest); color: var(--on-surface-var); }
+    .rec-badge.paused .rec-dot { animation: none; opacity: 0.5; }
 
-    /* ── Audio Level ── */
-    .audio-level-bar {
-      padding: 10px 16px 4px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    /* ── Audio Level (in top bar area, below top bar) ── */
+    .audio-strip {
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 16px; background: var(--surface-high);
+      border-bottom: 1px solid var(--outline-var);
     }
-    .level-label { font-size: 12px; color: var(--on-surface-var); width: 30px; }
+    .level-label { font-size: 12px; color: var(--on-surface-var); }
     .level-track {
-      flex: 1; height: 6px;
-      background: var(--outline-var);
-      border-radius: 3px;
-      overflow: hidden;
-      position: relative;
+      flex: 1; height: 5px; background: var(--outline-var); border-radius: 3px; overflow: hidden;
     }
     .level-fill {
-      height: 100%;
-      background: var(--primary);
-      border-radius: 3px;
-      width: 42%;
-      transition: width 0.1s;
+      height: 100%; background: var(--primary); border-radius: 3px;
+      animation: level-pulse 0.3s ease-in-out infinite alternate;
     }
-    .level-fill.active { animation: level-pulse 0.3s ease-in-out infinite alternate; }
-    @keyframes level-pulse {
-      from { width: 28%; }
-      to { width: 72%; }
-    }
+    @keyframes level-pulse { from{width:22%} to{width:68%} }
+    .level-fill.stopped { animation: none; width: 0; }
 
-    /* ── Caption Area ── */
+    /* ── Caption area (scrollable) ── */
     .caption-area {
-      flex: 1;
-      padding: 16px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 0;
+      flex: 1; min-height: 0; overflow-y: auto;
+      padding: 16px; display: flex; flex-direction: column; gap: 0;
+      position: relative; /* for the paused overlay */
     }
-
-    .caption-segment {
-      padding: 8px 4px;
-      line-height: 1.65;
-      font-size: 18px;
-      font-weight: 400;
-      color: var(--on-surface);
-    }
-    .caption-segment.current {
-      color: var(--on-surface);
-    }
-    .caption-segment .interim {
-      color: var(--on-surface-var);
-    }
+    .caption-segment { padding: 8px 4px; line-height: 1.65; font-size: 18px; color: var(--on-surface); }
+    .caption-segment .interim { color: var(--on-surface-var); }
 
     .speaker-break {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 4px;
-      color: var(--on-surface-var);
-      font-size: 12px;
-      font-weight: 500;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
+      display: flex; align-items: center; gap: 10px; padding: 10px 4px;
+      color: var(--on-surface-var); font-size: 12px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;
     }
-    .speaker-break::before,
-    .speaker-break::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--outline-var);
-    }
-
+    .speaker-break::before, .speaker-break::after { content: ''; flex: 1; height: 1px; background: var(--outline-var); }
     .pause-break {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 4px;
-      color: var(--on-surface-var);
-      font-size: 12px;
-      font-weight: 500;
+      display: flex; align-items: center; gap: 10px; padding: 8px 4px;
+      color: var(--on-surface-var); font-size: 12px; font-weight: 500;
     }
-    .pause-break::before,
-    .pause-break::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--outline-var);
-      border-top: 1px dashed var(--outline-var);
-      border-bottom: none;
-      height: 0;
-    }
+    .pause-break::before, .pause-break::after { content: ''; flex: 1; border-top: 1px dashed var(--outline-var); }
 
-    /* ── Paused overlay ── */
-    .paused-banner {
+    /* ── Paused overlay chip — floats over caption area ── */
+    .paused-overlay {
       display: none;
-      background: var(--surface-highest);
-      border-top: 1px solid var(--outline-var);
-      padding: 10px 16px;
-      text-align: center;
-      font-size: 13px;
-      color: var(--on-surface-var);
-      font-weight: 500;
+      position: absolute; top: 16px; left: 0; right: 0;
+      display: flex; justify-content: center; pointer-events: none;
+      z-index: 20;
     }
-    .shell.paused .paused-banner { display: block; }
+    .paused-chip {
+      pointer-events: all;
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 16px 10px 14px;
+      background: var(--surface-low);
+      border: 1.5px solid var(--outline);
+      border-radius: var(--r-xl);
+      box-shadow: 0 4px 16px rgba(0,0,0,.12);
+      white-space: nowrap;
+    }
+    .paused-chip-label { font-size: 14px; font-weight: 500; color: var(--on-surface); }
+    .paused-chip-icon { font-size: 16px; }
+    .paused-chip-resume {
+      padding: 6px 14px; border-radius: var(--r-xl);
+      border: none; background: var(--primary); color: var(--on-primary);
+      font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .paused-chip-resume:hover { opacity: 0.88; }
+    /* Hidden when not paused */
+    .paused-overlay.hidden { display: none; }
+    .paused-overlay.visible { display: flex; }
 
-    /* ── Controls ── */
-    .controls {
-      border-top: 1px solid var(--outline-var);
+    /* ── Appearance settings panel (floating, anchored to top-right) ── */
+    .appearance-panel {
+      display: none;
+      position: absolute; top: 72px; right: 8px;
+      width: 280px; z-index: 30;
+      background: var(--surface-low);
+      border: 1px solid var(--outline-var);
+      border-radius: var(--r-lg);
+      box-shadow: 0 8px 24px rgba(0,0,0,.14);
       padding: 16px;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      background: var(--surface);
+    }
+    .appearance-panel.open { display: block; }
+    .ap-title {
+      font-size: 13px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--on-surface-var); margin-bottom: 14px;
+    }
+    .ap-section { margin-bottom: 14px; }
+    .ap-section-label { font-size: 12px; font-weight: 500; color: var(--on-surface-var); margin-bottom: 7px; }
+    .chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      padding: 5px 12px; border-radius: 16px;
+      border: 1.5px solid var(--outline-var); background: transparent;
+      color: var(--on-surface); font-family: inherit; font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: all 0.12s;
+    }
+    .chip.active { background: var(--secondary-container); border-color: var(--primary); color: var(--on-secondary-container); }
+    .preview-row {
+      padding: 10px; background: var(--surface-high); border-radius: var(--r-md);
+      font-size: 15px; line-height: 1.6; color: var(--on-surface);
+      border: 1px solid var(--outline-var);
+    }
+    .preview-row.size-sm { font-size: 13px; }
+    .preview-row.size-md { font-size: 15px; }
+    .preview-row.size-lg { font-size: 19px; }
+    .preview-row.size-xl { font-size: 24px; }
+
+    /* ── Controls (sticky footer — never moves) ── */
+    .controls {
+      flex-shrink: 0;
+      border-top: 1px solid var(--outline-var); padding: 12px 16px;
+      display: flex; gap: 10px; align-items: center; background: var(--surface);
     }
     .btn {
-      border: none;
-      border-radius: var(--r-xl);
-      font-family: inherit;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
-      display: flex; align-items: center; gap: 8px;
+      border: none; border-radius: var(--r-xl);
+      font-family: inherit; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; gap: 8px; transition: opacity 0.15s;
     }
-    .btn:hover { opacity: 0.88; }
-    .btn:active { transform: scale(0.97); }
+    .btn:hover { opacity: 0.85; }
     .btn-pause {
-      flex: 1;
-      padding: 14px 20px;
-      background: var(--secondary-container);
-      color: var(--on-secondary-container);
-      font-size: 15px;
+      flex: 1; padding: 14px 20px;
+      background: var(--secondary-container); color: var(--on-secondary-container); font-size: 15px;
     }
     .btn-stop {
-      flex: 1;
-      padding: 14px 20px;
-      background: var(--surface-highest);
-      color: var(--on-surface);
-      font-size: 15px;
-    }
-    .btn-settings {
-      width: 52px; height: 52px;
-      border-radius: 50%;
-      padding: 0;
-      background: var(--surface-high);
-      color: var(--on-surface);
-      font-size: 20px;
-      flex-shrink: 0;
-      justify-content: center;
+      flex: 1; padding: 14px 20px;
+      background: var(--surface-highest); color: var(--on-surface); font-size: 15px;
     }
 
-    /* ── Appearance Controls (demo) ── */
-    .demo-controls {
-      background: var(--surface-high);
-      border-top: 1px solid var(--outline-var);
-      padding: 10px 16px;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
+    /* ── Responsive ── */
+    @media (min-width: 768px) {
+      .sidebar { display: flex; }
+      .top-bar-title { display: none; }
     }
-    .demo-label { font-size: 11px; color: var(--on-surface-var); font-weight: 500; margin-right: 4px; }
-    .chip {
-      padding: 4px 10px;
-      border-radius: 16px;
-      border: 1px solid var(--outline-var);
-      background: transparent;
-      color: var(--on-surface);
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.12s, border-color 0.12s;
+
+    /* ── Mobile hamburger + drawer ── */
+    .hamburger {
+      display: none; width: 40px; height: 40px; border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface); cursor: pointer;
+      align-items: center; justify-content: center; font-size: 22px; transition: background 0.15s; flex-shrink: 0;
     }
-    .chip.active {
-      background: var(--secondary-container);
-      border-color: var(--primary);
-      color: var(--on-secondary-container);
+    .hamburger:hover { background: var(--surface-high); }
+    @media (max-width: 767px) { .hamburger { display: flex; } }
+    .drawer-overlay {
+      display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.4);
     }
+    .drawer-overlay.open { display: block; }
+    .nav-drawer {
+      position: absolute; top: 0; left: 0; bottom: 0; width: 280px;
+      background: var(--surface-high); display: flex; flex-direction: column; padding: 20px 0 16px;
+      transform: translateX(-100%); transition: transform 0.25s ease;
+    }
+    .drawer-overlay.open .nav-drawer { transform: translateX(0); }
+    .drawer-top-row {
+      display: flex; align-items: center; justify-content: space-between; padding: 0 16px 16px;
+    }
+    .drawer-brand { display: flex; align-items: center; gap: 10px; }
+    .drawer-close {
+      width: 36px; height: 36px; border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface-var); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .drawer-close:hover { background: var(--surface-highest); }
 
     .desktop-hint {
-      display: none;
-      position: fixed;
-      bottom: 16px; right: 16px;
-      background: var(--surface-highest);
-      color: var(--on-surface-var);
-      font-size: 12px;
-      padding: 8px 12px;
-      border-radius: var(--r-md);
-      border: 1px solid var(--outline-var);
+      display: none; position: fixed; bottom: 16px; right: 16px;
+      background: var(--surface-highest); color: var(--on-surface-var); font-size: 12px;
+      padding: 8px 12px; border-radius: var(--r-md); border: 1px solid var(--outline-var);
     }
     @media (min-width: 768px) { .desktop-hint { display: block; } }
   </style>
 </head>
 <body>
 
-<div class="shell" id="shell">
+<div class="app">
+  <div class="main-row">
 
-  <!-- Top Bar -->
-  <header class="top-bar">
-    <button class="icon-btn" aria-label="Back">←</button>
-    <span class="top-bar-title">Recording</span>
-    <span class="session-timer recording" id="timer">0:42</span>
-    <span id="rec-badge" class="rec-badge" style="margin:0 4px">
-      <span class="rec-dot"></span> REC
-    </span>
-    <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">
-      <span id="theme-icon">🌙</span>
-    </button>
-  </header>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">🎤</div>
+        <div><div class="brand-name">Zip Captions</div></div>
+      </div>
+      <div class="nav-section">
+        <button class="nav-link">🏠 Home</button>
+        <button class="nav-link active">🎙 Recording</button>
+        <button class="nav-link">📋 History</button>
+        <button class="nav-link">⚙️ Settings</button>
+      </div>
+      <div class="sidebar-footer">
+        <button class="nav-link" onclick="toggleTheme()">
+          <span id="theme-icon-side">🌙</span> <span>Dark Mode</span>
+        </button>
+      </div>
+    </aside>
 
-  <!-- Audio Level -->
-  <div class="audio-level-bar">
-    <span class="level-label">🎤</span>
-    <div class="level-track">
-      <div class="level-fill active" id="level-fill"></div>
-    </div>
-  </div>
-
-  <!-- Caption Area -->
-  <div class="caption-area" id="caption-area">
-
-    <div class="caption-segment">
-      The meeting will come to order. We have several items on the agenda today, including the quarterly review and the new project proposals.
-    </div>
-
-    <div class="speaker-break">Speaker change</div>
-
-    <div class="caption-segment">
-      Thank you. I'd like to start with the Q3 results which showed a significant improvement over the previous quarter.
-    </div>
-
-    <div class="caption-segment">
-      Our team managed to exceed expectations in the eastern region, and the numbers clearly demonstrate that the new strategy is working as intended.
-    </div>
-
-    <div class="speaker-break">Speaker change</div>
-
-    <div class="caption-segment">
-      That's excellent news. Can you walk us through the specific metrics?
-    </div>
-
-    <div class="pause-break">— paused 0:32 —</div>
-
-    <div class="caption-segment">
-      As I was saying, the key metrics show revenue up 18 percent and customer satisfaction scores at an all-time high.
+    <!-- Mobile nav drawer -->
+    <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer(event)">
+      <nav class="nav-drawer">
+        <div class="drawer-top-row">
+          <div class="drawer-brand">
+            <div class="brand-icon">🎤</div>
+            <div><div class="brand-name">Zip Captions</div></div>
+          </div>
+          <button class="drawer-close" onclick="closeDrawer()" aria-label="Close menu">✕</button>
+        </div>
+        <div class="nav-section">
+          <button class="nav-link">🏠 Home</button>
+          <button class="nav-link active">🎙 Recording</button>
+          <button class="nav-link">📋 History</button>
+          <button class="nav-link">⚙️ Settings</button>
+        </div>
+        <div class="sidebar-footer">
+          <button class="nav-link" onclick="toggleTheme()">
+            <span id="theme-icon-drawer">🌙</span> <span id="theme-label-drawer">Dark Mode</span>
+          </button>
+        </div>
+      </nav>
     </div>
 
-    <div class="caption-segment current">
-      The next slide will show the breakdown by region. If everyone could turn their attention to the <span class="interim">projector screen for a moment…</span>
-    </div>
+    <!-- Main -->
+    <div class="main">
 
-  </div>
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <button class="hamburger" onclick="openDrawer()" aria-label="Open menu">☰</button>
+        <span class="top-bar-title">Recording</span>
+        <span class="session-timer" id="timer">0:42</span>
+        <span id="rec-badge" class="rec-badge"><span class="rec-dot"></span> REC</span>
+        <!-- Appearance settings icon -->
+        <button class="icon-btn" onclick="toggleAppearancePanel()" id="appearance-btn"
+          aria-label="Caption appearance settings" title="Caption appearance">🔡</button>
+        <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+          <span id="theme-icon">🌙</span>
+        </button>
+      </header>
 
-  <!-- Paused Banner (shown in paused state) -->
-  <div class="paused-banner">Captioning paused — tap Resume to continue</div>
+      <!-- Audio Level Strip -->
+      <div class="audio-strip">
+        <span class="level-label">🎤 Mic</span>
+        <div class="level-track">
+          <div class="level-fill" id="level-fill"></div>
+        </div>
+      </div>
 
-  <!-- Appearance demo strip -->
-  <div class="demo-controls">
-    <span class="demo-label">Text size:</span>
-    <button class="chip" onclick="setSize('small',this)">Sm</button>
-    <button class="chip active" onclick="setSize('medium',this)">Md</button>
-    <button class="chip" onclick="setSize('large',this)">Lg</button>
-    <button class="chip" onclick="setSize('xlarge',this)">XL</button>
-  </div>
+      <!-- Caption Area (scrollable) -->
+      <div class="caption-area" id="caption-area">
 
-  <!-- Controls -->
-  <div class="controls">
-    <button class="btn btn-pause" id="pause-btn" onclick="togglePause()">
-      <span id="pause-icon">⏸</span>
-      <span id="pause-label">Pause</span>
-    </button>
-    <button class="btn btn-stop">
-      <span>⏹</span>
-      <span>Stop</span>
-    </button>
-    <button class="btn btn-settings" aria-label="Caption settings">⚙️</button>
-  </div>
+        <!-- Paused overlay chip -->
+        <div class="paused-overlay hidden" id="paused-overlay" aria-live="assertive">
+          <div class="paused-chip">
+            <span class="paused-chip-icon">⏸</span>
+            <span class="paused-chip-label">Recognition paused</span>
+            <button class="paused-chip-resume" onclick="resume()">Resume</button>
+          </div>
+        </div>
 
+        <!-- Appearance settings panel (anchored inside caption-area for overlay effect) -->
+        <div class="appearance-panel" id="appearance-panel" role="dialog" aria-label="Caption appearance">
+          <div class="ap-title">Caption Appearance</div>
+          <div class="ap-section">
+            <div class="ap-section-label">Text size</div>
+            <div class="chip-group" id="size-group">
+              <button class="chip" onclick="setChip('size-group',this);setSize('size-sm')">Small</button>
+              <button class="chip active" onclick="setChip('size-group',this);setSize('size-md')">Medium</button>
+              <button class="chip" onclick="setChip('size-group',this);setSize('size-lg')">Large</button>
+              <button class="chip" onclick="setChip('size-group',this);setSize('size-xl')">X-Large</button>
+            </div>
+          </div>
+          <div class="ap-section">
+            <div class="ap-section-label">Font</div>
+            <div class="chip-group" id="font-group">
+              <button class="chip active" onclick="setChip('font-group',this);setFont('')">Inter</button>
+              <button class="chip" onclick="setChip('font-group',this);setFont('Georgia, serif')">Serif</button>
+              <button class="chip" onclick="setChip('font-group',this);setFont('monospace')">Mono</button>
+            </div>
+          </div>
+          <div class="ap-section">
+            <div class="ap-section-label">Scroll direction</div>
+            <div class="chip-group" id="dir-group">
+              <button class="chip active" onclick="setChip('dir-group',this)">↑ Bottom–top</button>
+              <button class="chip" onclick="setChip('dir-group',this)">↓ Top–bottom</button>
+            </div>
+          </div>
+          <div class="ap-section" style="margin-bottom:0">
+            <div class="ap-section-label" style="margin-bottom:4px">Preview</div>
+            <div class="preview-row size-md" id="preview-row">The quick brown fox jumps over the lazy dog.</div>
+          </div>
+        </div>
+
+        <!-- Caption segments -->
+        <div class="caption-segment">
+          The meeting will come to order. We have several items on the agenda today, including the quarterly review and the new project proposals.
+        </div>
+        <div class="speaker-break">Speaker change</div>
+        <div class="caption-segment">
+          Thank you. I'd like to start with the Q3 results which showed a significant improvement over the previous quarter.
+        </div>
+        <div class="caption-segment">
+          Our team managed to exceed expectations in the eastern region, and the numbers clearly demonstrate that the new strategy is working as intended.
+        </div>
+        <div class="speaker-break">Speaker change</div>
+        <div class="caption-segment">
+          That's excellent news. Can you walk us through the specific metrics?
+        </div>
+        <div class="pause-break">— paused 0:32 —</div>
+        <div class="caption-segment">
+          As I was saying, the key metrics show revenue up 18 percent and customer satisfaction scores at an all-time high.
+        </div>
+        <div class="caption-segment" id="current-seg">
+          The next slide will show the breakdown by region. If everyone could turn their attention to the <span class="interim">projector screen for a moment…</span>
+        </div>
+      </div>
+
+      <!-- Controls — always at bottom, never scrolls -->
+      <div class="controls">
+        <button class="btn btn-pause" id="pause-btn" onclick="togglePause()">
+          <span id="pause-icon">⏸</span>
+          <span id="pause-label">Pause</span>
+        </button>
+        <button class="btn btn-stop">
+          <span>⏹</span><span>Stop</span>
+        </button>
+      </div>
+
+    </div><!-- end main -->
+  </div><!-- end main-row -->
 </div>
 
-<p class="desktop-hint">Proto-02 · Zip Captions Recording · toggle Pause/Resume to see state change</p>
+<p class="desktop-hint">Proto-02 · Recording · Pause to see overlay · 🔡 for appearance · resize &lt;768px for mobile</p>
 
 <script>
   let paused = false;
-  const fontSizes = { small: '15px', medium: '18px', large: '22px', xlarge: '28px' };
+
+  function openDrawer() { document.getElementById('drawer-overlay').classList.add('open'); }
+  function closeDrawer(e) {
+    if (!e || e.target === document.getElementById('drawer-overlay'))
+      document.getElementById('drawer-overlay').classList.remove('open');
+  }
 
   function toggleTheme() {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? '' : 'dark');
-    document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+    const icon = isDark ? '🌙' : '☀️';
+    const label = isDark ? 'Dark Mode' : 'Light Mode';
+    document.getElementById('theme-icon').textContent = icon;
+    if (document.getElementById('theme-icon-side')) document.getElementById('theme-icon-side').textContent = icon;
+    if (document.getElementById('theme-icon-drawer')) document.getElementById('theme-icon-drawer').textContent = icon;
+    if (document.getElementById('theme-label-drawer')) document.getElementById('theme-label-drawer').textContent = label;
   }
 
   function togglePause() {
-    paused = !paused;
-    const shell = document.getElementById('shell');
-    const badge = document.getElementById('rec-badge');
-    const pauseBtn = document.getElementById('pause-btn');
-    const pauseIcon = document.getElementById('pause-icon');
-    const pauseLabel = document.getElementById('pause-label');
-    const levelFill = document.getElementById('level-fill');
-    const timer = document.getElementById('timer');
+    if (paused) { resume(); } else { pause(); }
+  }
 
-    if (paused) {
-      shell.classList.add('paused');
-      badge.className = 'rec-badge paused';
-      badge.innerHTML = '<span class="rec-dot"></span> PAUSED';
-      pauseIcon.textContent = '▶';
-      pauseLabel.textContent = 'Resume';
-      levelFill.classList.remove('active');
-      timer.classList.remove('recording');
-    } else {
-      shell.classList.remove('paused');
-      badge.className = 'rec-badge';
-      badge.innerHTML = '<span class="rec-dot"></span> REC';
-      pauseIcon.textContent = '⏸';
-      pauseLabel.textContent = 'Pause';
-      levelFill.classList.add('active');
-      timer.classList.add('recording');
+  function pause() {
+    paused = true;
+    document.getElementById('rec-badge').className = 'rec-badge paused';
+    document.getElementById('rec-badge').innerHTML = '<span class="rec-dot"></span> PAUSED';
+    document.getElementById('pause-icon').textContent = '▶';
+    document.getElementById('pause-label').textContent = 'Resume';
+    document.getElementById('level-fill').className = 'level-fill stopped';
+    document.getElementById('paused-overlay').className = 'paused-overlay visible';
+    document.getElementById('timer').classList.add('paused');
+  }
+
+  function resume() {
+    paused = false;
+    document.getElementById('rec-badge').className = 'rec-badge';
+    document.getElementById('rec-badge').innerHTML = '<span class="rec-dot"></span> REC';
+    document.getElementById('pause-icon').textContent = '⏸';
+    document.getElementById('pause-label').textContent = 'Pause';
+    document.getElementById('level-fill').className = 'level-fill';
+    document.getElementById('paused-overlay').className = 'paused-overlay hidden';
+    document.getElementById('timer').classList.remove('paused');
+  }
+
+  function toggleAppearancePanel() {
+    document.getElementById('appearance-panel').classList.toggle('open');
+  }
+
+  // Close appearance panel on outside click
+  document.addEventListener('click', e => {
+    const panel = document.getElementById('appearance-panel');
+    const btn = document.getElementById('appearance-btn');
+    if (!panel.contains(e.target) && !btn.contains(e.target)) {
+      panel.classList.remove('open');
     }
-  }
+  });
 
-  function setSize(size, el) {
-    document.querySelectorAll('.demo-controls .chip').forEach(c => c.classList.remove('active'));
+  function setChip(groupId, el) {
+    document.querySelectorAll('#' + groupId + ' .chip').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
-    document.querySelectorAll('.caption-segment').forEach(s => {
-      s.style.fontSize = fontSizes[size];
-    });
   }
 
-  // Animate timer
+  const sizeMap = { 'size-sm':'13px', 'size-md':'18px', 'size-lg':'22px', 'size-xl':'28px' };
+  function setSize(cls) {
+    document.querySelectorAll('.caption-segment').forEach(s => s.style.fontSize = sizeMap[cls] || '18px');
+    const p = document.getElementById('preview-row');
+    p.className = p.className.replace(/size-\w+/,'') + ' ' + cls;
+  }
+  function setFont(f) {
+    document.querySelectorAll('.caption-segment').forEach(s => s.style.fontFamily = f);
+    document.getElementById('preview-row').style.fontFamily = f;
+  }
+
+  // Timer
   let seconds = 42;
   setInterval(() => {
     if (paused) return;
     seconds++;
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
+    const m = Math.floor(seconds / 60), s = seconds % 60;
     document.getElementById('timer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
   }, 1000);
 </script>
-
 </body>
 </html>

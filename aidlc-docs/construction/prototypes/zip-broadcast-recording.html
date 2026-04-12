@@ -10,461 +10,321 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --surface: #FAFCFF;
-      --surface-low: #FFFFFF;
-      --surface-high: #EEF2F8;
-      --surface-highest: #E4EAF2;
-      --primary: #1A5A8C;
-      --on-primary: #FFFFFF;
-      --secondary-container: #DAE3F0;
-      --on-secondary-container: #0B141D;
-      --on-surface: #0B141D;
-      --on-surface-var: #6B7380;
-      --outline: #6B7380;
-      --outline-var: #C4CAD4;
-      --error: #A8191F;
-      --obs-ok: #2E7D32;
-      --obs-warn: #F57F17;
+      --surface: #FAFCFF; --surface-low: #FFFFFF; --surface-high: #EEF2F8;
+      --surface-highest: #E4EAF2; --primary: #1A5A8C; --on-primary: #FFFFFF;
+      --secondary-container: #DAE3F0; --on-secondary-container: #0B141D;
+      --on-surface: #0B141D; --on-surface-var: #6B7380;
+      --outline: #6B7380; --outline-var: #C4CAD4; --error: #A8191F;
+      --ok: #2E7D32; --warn: #F57F17;
       --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
     }
     [data-theme="dark"] {
-      --surface: #0B141D;
-      --surface-low: #060F18;
-      --surface-high: #222B34;
-      --surface-highest: #2D3640;
-      --primary: #9ACBFF;
-      --on-primary: #003355;
-      --secondary-container: #414A54;
-      --on-secondary-container: #E0E8F2;
-      --on-surface: #DAE3F0;
-      --on-surface-var: #8B919A;
-      --outline: #8B919A;
-      --outline-var: #41474F;
-      --error: #FFB4AB;
-      --obs-ok: #81C784;
-      --obs-warn: #FFB74D;
+      --surface: #0B141D; --surface-low: #060F18; --surface-high: #222B34;
+      --surface-highest: #2D3640; --primary: #9ACBFF; --on-primary: #003355;
+      --secondary-container: #414A54; --on-secondary-container: #E0E8F2;
+      --on-surface: #DAE3F0; --on-surface-var: #8B919A;
+      --outline: #8B919A; --outline-var: #41474F; --error: #FFB4AB;
+      --ok: #81C784; --warn: #FFB74D;
     }
 
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--surface);
-      color: var(--on-surface);
-      min-height: 100vh;
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--surface); color: var(--on-surface); }
+
+    /* ── Shell: fixed height, 1920px max ── */
+    .app {
+      height: 100vh; max-width: 1920px; margin: 0 auto;
+      display: flex; overflow: hidden;
+      border-left: 1px solid var(--outline-var); border-right: 1px solid var(--outline-var);
     }
 
-    /* ── Layout ── */
-    .app-layout {
-      display: flex;
-      min-height: 100vh;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-    @media (min-width: 768px) {
-      .app-layout { box-shadow: 0 0 0 1px var(--outline-var); }
-    }
-
-    /* ── Sidebar (slim, recording mode) ── */
+    /* ── Slim sidebar (icon-only, recording mode) ── */
     .sidebar {
-      width: 60px;
-      flex-shrink: 0;
-      background: var(--surface-high);
-      border-right: 1px solid var(--outline-var);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 16px 0;
-      gap: 8px;
+      width: 60px; flex-shrink: 0;
+      background: var(--surface-high); border-right: 1px solid var(--outline-var);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 16px 0; gap: 6px;
     }
-    @media (max-width: 600px) { .sidebar { display: none; } }
+    @media (max-width: 640px) { .sidebar { display: none; } }
     .icon-btn-side {
-      width: 44px; height: 44px;
-      border-radius: var(--r-md);
-      border: none;
-      background: transparent;
-      color: var(--on-surface-var);
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
-      transition: background 0.15s, color 0.15s;
+      width: 44px; height: 44px; border-radius: var(--r-md);
+      border: none; background: transparent; color: var(--on-surface-var);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 20px; transition: background 0.15s, color 0.15s;
     }
     .icon-btn-side:hover { background: var(--surface-highest); color: var(--on-surface); }
-    .icon-btn-side.active {
-      background: var(--secondary-container);
-      color: var(--on-secondary-container);
-    }
-    .side-divider {
-      width: 32px; height: 1px;
-      background: var(--outline-var);
-      margin: 4px 0;
-    }
+    .icon-btn-side.active { background: var(--secondary-container); color: var(--on-secondary-container); }
+    .side-divider { width: 32px; height: 1px; background: var(--outline-var); margin: 4px 0; }
     .side-spacer { flex: 1; }
 
-    /* ── Main ── */
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
+    /* ── Main column ── */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 
-    /* ── Top Bar ── */
+    /* ── Top bar ── */
     .top-bar {
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      height: 56px;
-      border-bottom: 1px solid var(--outline-var);
-      gap: 10px;
-      background: var(--surface);
+      flex-shrink: 0; display: flex; align-items: center;
+      padding: 0 16px; height: 56px;
+      border-bottom: 1px solid var(--outline-var); background: var(--surface); gap: 10px;
+      position: relative;
     }
+    .top-bar-title { flex: 1; font-size: 16px; font-weight: 600; }
     .icon-btn {
-      width: 40px; height: 40px;
-      border-radius: 50%; border: none;
-      background: transparent; color: var(--on-surface);
-      cursor: pointer;
+      width: 40px; height: 40px; border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface); cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
-      transition: background 0.15s;
-      flex-shrink: 0;
+      font-size: 16px; transition: background 0.15s; flex-shrink: 0;
     }
     .icon-btn:hover { background: var(--surface-high); }
-    .top-bar-title { flex: 1; font-size: 16px; font-weight: 600; }
+    .icon-btn.active-panel { background: var(--secondary-container); color: var(--on-secondary-container); }
 
     .rec-badge {
       display: flex; align-items: center; gap: 6px;
-      padding: 4px 10px;
-      background: var(--error);
-      color: #fff;
-      border-radius: 20px;
-      font-size: 11px; font-weight: 600;
-      flex-shrink: 0;
+      padding: 4px 10px; border-radius: 20px;
+      background: var(--error); color: #fff;
+      font-size: 11px; font-weight: 600; flex-shrink: 0;
     }
     [data-theme="dark"] .rec-badge { color: #0B141D; }
-    .rec-dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: currentColor;
-      animation: blink 1.2s ease-in-out infinite;
-    }
+    .rec-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: blink 1.2s ease-in-out infinite; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
     .rec-badge.paused { background: var(--outline); }
     .rec-badge.paused .rec-dot { animation: none; }
+    .session-timer { font-size: 13px; font-weight: 600; color: var(--on-surface-var); font-variant-numeric: tabular-nums; }
 
-    .session-timer {
-      font-size: 13px; font-weight: 600;
-      color: var(--on-surface-var);
-      font-variant-numeric: tabular-nums;
+    /* ── Appearance floating panel ── */
+    .appear-panel {
+      display: none; position: absolute; top: 64px; right: 8px;
+      width: 284px; background: var(--surface-low);
+      border: 1px solid var(--outline-var); border-radius: var(--r-lg);
+      box-shadow: 0 4px 20px rgba(0,0,0,.12); z-index: 30; padding: 16px;
+      flex-direction: column; gap: 12px;
     }
+    .appear-panel.open { display: flex; }
+    .ap-label { font-size: 12px; font-weight: 600; color: var(--on-surface-var); margin-bottom: 6px; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      padding: 5px 12px; border-radius: 16px;
+      border: 1.5px solid var(--outline-var); background: transparent;
+      color: var(--on-surface); font-family: inherit; font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: all 0.12s;
+    }
+    .chip.on { background: var(--secondary-container); border-color: var(--primary); color: var(--on-secondary-container); }
 
-    /* ── Status Bar (below top bar) ── */
+    /* ── Status bar ── */
     .status-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 16px;
-      background: var(--surface-high);
-      border-bottom: 1px solid var(--outline-var);
-      flex-wrap: wrap;
+      flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+      padding: 6px 16px; background: var(--surface-high);
+      border-bottom: 1px solid var(--outline-var); flex-wrap: wrap;
     }
     .status-pill {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 4px 10px;
-      border-radius: 16px;
-      border: 1px solid var(--outline-var);
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      background: var(--surface-low);
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 16px;
+      border: 1px solid var(--outline-var); background: var(--surface-low);
+      font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap;
       transition: border-color 0.15s;
-      white-space: nowrap;
     }
     .status-pill:hover { border-color: var(--outline); }
-    .s-dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-    }
-    .dot-ok { background: var(--obs-ok); }
+    .s-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .dot-ok { background: var(--ok); }
+    .dot-warn { background: var(--warn); }
     .dot-err { background: var(--error); }
-    .dot-warn { background: var(--obs-warn); }
     .dot-off { background: var(--outline-var); }
 
-    /* ── Content area: captions + right panel ── */
-    .content-row {
-      flex: 1;
-      display: flex;
-      min-height: 0;
-    }
+    /* ── Content row ── */
+    .content-row { flex: 1; display: flex; min-height: 0; }
 
-    /* ── Caption Area ── */
-    .caption-col {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
+    /* ── Caption column ── */
+    .caption-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
     .audio-level-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px 4px;
+      flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 8px 16px 4px;
     }
     .level-icon { font-size: 14px; color: var(--on-surface-var); }
     .level-source-label { font-size: 12px; font-weight: 600; margin-right: 2px; }
-    .level-track {
-      width: 80px; height: 5px;
-      background: var(--outline-var);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    .level-fill {
-      height: 100%;
-      border-radius: 3px;
-      background: var(--primary);
-    }
+    .level-track { width: 80px; height: 5px; background: var(--outline-var); border-radius: 3px; overflow: hidden; }
+    .level-fill { height: 100%; border-radius: 3px; background: var(--primary); }
     .level-fill.a1 { animation: l1 0.25s ease-in-out infinite alternate; }
     .level-fill.a2 { animation: l2 0.3s ease-in-out infinite alternate; }
     @keyframes l1 { from{width:20%} to{width:65%} }
     @keyframes l2 { from{width:30%} to{width:55%} }
 
+    /* Caption area — scrollable, hosts the paused overlay */
     .caption-area {
-      flex: 1;
+      flex: 1; min-height: 0; overflow-y: auto;
       padding: 12px 16px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+      display: flex; flex-direction: column; gap: 4px;
+      position: relative;
     }
 
-    .seg-group {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      padding: 4px 0;
+    /* ── Paused overlay chip ── */
+    .paused-overlay {
+      position: absolute; inset: 0; z-index: 20;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(var(--surface-rgb, 250,252,255), 0.55);
+      backdrop-filter: blur(2px);
     }
-    .seg-source-indicator {
-      width: 4px;
-      border-radius: 2px;
-      align-self: stretch;
-      min-height: 20px;
-      flex-shrink: 0;
+    .paused-overlay.hidden { display: none; }
+    .paused-chip {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface-highest); color: var(--on-surface);
+      border: 1.5px solid var(--outline-var);
+      border-radius: var(--r-xl); padding: 12px 20px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12);
+      font-size: 15px; font-weight: 600;
     }
+    .paused-chip-icon { font-size: 18px; }
+    .paused-chip-resume {
+      padding: 8px 18px; border-radius: var(--r-xl); border: none;
+      background: var(--primary); color: var(--on-primary);
+      font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .paused-chip-resume:hover { opacity: 0.85; }
+
+    /* ── Caption segments ── */
+    .seg-group { display: flex; gap: 10px; align-items: flex-start; padding: 4px 0; }
+    .seg-source-indicator { width: 4px; border-radius: 2px; align-self: stretch; min-height: 20px; flex-shrink: 0; }
     .color-blue { background: var(--primary); }
-    .color-green { background: var(--obs-ok); }
-
+    .color-green { background: var(--ok); }
     .seg-content { flex: 1; }
-    .seg-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--on-surface-var);
-      margin-bottom: 2px;
-    }
+    .seg-label { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--on-surface-var); margin-bottom: 2px; }
     .seg-label.lbl-blue { color: var(--primary); }
-    .seg-label.lbl-green { color: var(--obs-ok); }
-    .seg-text {
-      font-size: 17px;
-      line-height: 1.65;
-      color: var(--on-surface);
-    }
-    .seg-text.interim { color: var(--on-surface-var); }
-
+    .seg-label.lbl-green { color: var(--ok); }
+    .seg-text { font-size: 17px; line-height: 1.65; color: var(--on-surface); }
+    .seg-text .interim { color: var(--on-surface-var); }
     .speaker-break {
-      display: flex; align-items: center; gap: 8px;
-      padding: 6px 0; color: var(--on-surface-var);
-      font-size: 11px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 8px; padding: 6px 0;
+      color: var(--on-surface-var); font-size: 11px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;
     }
-    .speaker-break::before, .speaker-break::after {
-      content: ''; flex: 1; height: 1px; background: var(--outline-var);
-    }
+    .speaker-break::before, .speaker-break::after { content: ''; flex: 1; height: 1px; background: var(--outline-var); }
 
-    /* ── Controls ── */
+    /* ── Controls footer ── */
     .controls {
-      border-top: 1px solid var(--outline-var);
-      padding: 12px 16px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
+      flex-shrink: 0; border-top: 1px solid var(--outline-var);
+      padding: 12px 16px; display: flex; gap: 10px; align-items: center;
       background: var(--surface);
     }
     .btn {
-      border: none;
-      border-radius: var(--r-xl);
-      font-family: inherit;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex; align-items: center; gap: 8px;
+      border: none; border-radius: var(--r-xl); font-family: inherit;
+      font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
       transition: opacity 0.15s;
     }
     .btn:hover { opacity: 0.85; }
-    .btn-pause {
-      flex: 1;
-      padding: 12px 20px;
-      background: var(--secondary-container);
-      color: var(--on-secondary-container);
-      font-size: 14px;
-    }
-    .btn-stop {
-      flex: 1;
-      padding: 12px 20px;
-      background: var(--surface-highest);
-      color: var(--on-surface);
-      font-size: 14px;
-    }
+    .btn-pause { flex: 1; padding: 12px 20px; background: var(--secondary-container); color: var(--on-secondary-container); font-size: 14px; }
+    .btn-stop  { flex: 1; padding: 12px 20px; background: var(--surface-highest); color: var(--on-surface); font-size: 14px; }
 
-    /* ── Right Panel ── */
+    /* ── Right panel ── */
     .right-panel {
-      width: 260px;
-      flex-shrink: 0;
+      width: 260px; flex-shrink: 0;
       border-left: 1px solid var(--outline-var);
       background: var(--surface-high);
-      display: flex;
-      flex-direction: column;
-      padding: 16px;
-      gap: 16px;
-      overflow-y: auto;
+      display: flex; flex-direction: column;
+      padding: 16px; gap: 16px; overflow-y: auto;
     }
     @media (max-width: 860px) { .right-panel { display: none; } }
 
     .panel-section-title {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--on-surface-var);
-      margin-bottom: 8px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--on-surface-var); margin-bottom: 8px;
     }
 
-    /* OBS Status Card */
     .obs-card {
-      background: var(--surface-low);
-      border: 1.5px solid var(--outline-var);
-      border-radius: var(--r-lg);
-      padding: 12px;
+      background: var(--surface-low); border: 1.5px solid var(--outline-var);
+      border-radius: var(--r-lg); padding: 12px;
     }
-    .obs-card.connected { border-color: var(--obs-ok); }
+    .obs-card.connected { border-color: var(--ok); }
     .obs-card.error { border-color: var(--error); }
-    .obs-header {
-      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
-    }
+    .obs-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
     .obs-icon { font-size: 20px; }
     .obs-name { font-size: 14px; font-weight: 600; flex: 1; }
-    .obs-status-badge {
-      font-size: 11px; font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 10px;
-    }
-    .obs-status-badge.ok { background: var(--obs-ok); color: #fff; }
+    .obs-status-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+    .obs-status-badge.ok { background: var(--ok); color: #fff; }
     .obs-status-badge.err { background: var(--error); color: #fff; }
-    .obs-status-badge.warn { background: var(--obs-warn); color: #fff; }
-    [data-theme="dark"] .obs-status-badge.ok { color: #0B141D; }
-    [data-theme="dark"] .obs-status-badge.err { color: #0B141D; }
+    .obs-status-badge.warn { background: var(--warn); color: #fff; }
+    [data-theme="dark"] .obs-status-badge.ok, [data-theme="dark"] .obs-status-badge.err { color: #0B141D; }
     .obs-detail { font-size: 12px; color: var(--on-surface-var); }
 
-    /* Browser Source Card */
+    .obs-cycle-btn {
+      width: 100%; margin-top: 8px; padding: 6px; border-radius: var(--r-sm);
+      border: 1px solid var(--outline-var); background: transparent; color: var(--on-surface-var);
+      font-family: inherit; font-size: 11px; cursor: pointer;
+    }
+    .obs-cycle-btn:hover { background: var(--surface-high); }
+
     .bs-card {
-      background: var(--surface-low);
-      border: 1px solid var(--outline-var);
-      border-radius: var(--r-lg);
-      padding: 12px;
+      background: var(--surface-low); border: 1px solid var(--outline-var);
+      border-radius: var(--r-lg); padding: 12px;
     }
-    .bs-url {
-      font-size: 12px;
-      font-family: 'Courier New', monospace;
-      color: var(--primary);
-      word-break: break-all;
-      margin-bottom: 8px;
-    }
+    .bs-url { font-size: 12px; font-family: 'Courier New', monospace; color: var(--primary); word-break: break-all; margin-bottom: 8px; }
     .btn-copy {
-      width: 100%;
-      padding: 8px;
-      border-radius: var(--r-md);
-      border: 1px solid var(--outline-var);
-      background: transparent;
-      color: var(--on-surface);
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
+      width: 100%; padding: 8px; border-radius: var(--r-md);
+      border: 1px solid var(--outline-var); background: transparent; color: var(--on-surface);
+      font-family: inherit; font-size: 12px; font-weight: 500; cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 6px;
     }
     .btn-copy:hover { background: var(--surface-high); }
 
-    /* Overlay Toggle */
-    .overlay-row {
-      display: flex; align-items: center; gap: 10px;
-    }
     .toggle {
-      width: 44px; height: 26px;
-      border-radius: 13px;
-      background: var(--outline-var);
-      border: none;
-      cursor: pointer;
-      position: relative;
-      transition: background 0.2s;
+      width: 44px; height: 26px; border-radius: 13px;
+      background: var(--outline-var); border: none; cursor: pointer;
+      position: relative; transition: background 0.2s;
     }
     .toggle.on { background: var(--primary); }
     .toggle::after {
-      content: '';
-      position: absolute;
-      top: 3px; left: 3px;
-      width: 20px; height: 20px;
-      border-radius: 50%;
-      background: white;
-      transition: transform 0.2s;
-      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 20px; height: 20px; border-radius: 50%; background: white;
+      transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
     }
     .toggle.on::after { transform: translateX(18px); }
+    .overlay-row { display: flex; align-items: center; gap: 10px; }
     .overlay-label { flex: 1; font-size: 14px; font-weight: 500; }
-
     .overlay-config {
-      display: none;
-      padding: 10px;
-      background: var(--surface-highest);
-      border-radius: var(--r-md);
-      font-size: 12px;
-      color: var(--on-surface-var);
-      flex-direction: column;
-      gap: 6px;
+      display: none; padding: 10px; background: var(--surface-highest);
+      border-radius: var(--r-md); font-size: 12px; color: var(--on-surface-var);
+      flex-direction: column; gap: 6px;
     }
     .overlay-config.visible { display: flex; }
     .oc-row { display: flex; align-items: center; gap: 8px; }
     .oc-label { flex: 1; font-weight: 500; }
 
-    /* OBS state cycler */
-    .obs-cycle-btn {
-      width: 100%;
-      margin-top: 8px;
-      padding: 6px;
-      border-radius: var(--r-sm);
-      border: 1px solid var(--outline-var);
-      background: transparent;
-      color: var(--on-surface-var);
-      font-family: inherit;
-      font-size: 11px;
-      cursor: pointer;
+    /* ── Mobile hamburger + drawer ── */
+    .hamburger {
+      display: none; width: 40px; height: 40px; border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface); cursor: pointer;
+      align-items: center; justify-content: center; font-size: 22px; transition: background 0.15s; flex-shrink: 0;
     }
-    .obs-cycle-btn:hover { background: var(--surface-high); }
+    .hamburger:hover { background: var(--surface-high); }
+    @media (max-width: 640px) { .hamburger { display: flex; } }
+    .drawer-overlay {
+      display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.4);
+    }
+    .drawer-overlay.open { display: block; }
+    .nav-drawer {
+      position: absolute; top: 0; left: 0; bottom: 0; width: 280px;
+      background: var(--surface-high); display: flex; flex-direction: column; padding: 20px 0 16px;
+      transform: translateX(-100%); transition: transform 0.25s ease;
+    }
+    .drawer-overlay.open .nav-drawer { transform: translateX(0); }
+    .drawer-top-row {
+      display: flex; align-items: center; justify-content: space-between; padding: 0 16px 16px;
+    }
+    .drawer-brand { display: flex; align-items: center; gap: 10px; }
+    .drawer-close {
+      width: 36px; height: 36px; border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface-var); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .drawer-close:hover { background: var(--surface-highest); }
+    /* Reuse .nav-section, .nav-section-label, .nav-link, .sidebar-footer from sidebar styles */
 
     .desktop-hint {
-      display: none;
-      position: fixed;
-      bottom: 16px; right: 16px;
-      background: var(--surface-highest);
-      color: var(--on-surface-var);
-      font-size: 12px;
-      padding: 8px 12px;
-      border-radius: var(--r-md);
-      border: 1px solid var(--outline-var);
+      display: none; position: fixed; bottom: 16px; right: 16px;
+      background: var(--surface-highest); color: var(--on-surface-var); font-size: 12px;
+      padding: 8px 12px; border-radius: var(--r-md); border: 1px solid var(--outline-var);
     }
     @media (min-width: 768px) { .desktop-hint { display: block; } }
   </style>
 </head>
 <body>
 
-<div class="app-layout">
+<div class="app">
 
   <!-- Slim sidebar -->
   <aside class="sidebar">
@@ -475,61 +335,110 @@
     <button class="icon-btn-side" title="Settings">⚙️</button>
     <button class="icon-btn-side" title="Audio Inputs">🎤</button>
     <div class="side-spacer"></div>
-    <button class="icon-btn-side" onclick="toggleTheme()" title="Toggle theme">
-      <span id="theme-icon-side">🌙</span>
-    </button>
+    <button class="icon-btn-side" onclick="toggleTheme()" title="Toggle theme"><span id="theme-icon-side">🌙</span></button>
   </aside>
+
+  <!-- Mobile nav drawer (full labels, since slim sidebar only shows icons) -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer(event)">
+    <nav class="nav-drawer">
+      <div class="drawer-top-row">
+        <div class="drawer-brand">
+          <div class="brand-icon">📡</div>
+          <div><div class="brand-name">Zip Broadcast</div></div>
+        </div>
+        <button class="drawer-close" onclick="closeDrawer()" aria-label="Close menu">✕</button>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-label">Captioning</div>
+        <button class="nav-link">🏠 Home</button>
+        <button class="nav-link active">🎙 Recording</button>
+        <button class="nav-link">📋 History</button>
+        <div class="nav-section-label" style="margin-top:8px">Configure</div>
+        <button class="nav-link">⚙️ Settings</button>
+        <button class="nav-link">🎤 Audio Inputs</button>
+      </div>
+      <div class="sidebar-footer">
+        <button class="nav-link" onclick="toggleTheme()">
+          <span id="theme-icon-drawer">🌙</span> <span id="theme-label-drawer">Dark Mode</span>
+        </button>
+      </div>
+    </nav>
+  </div>
 
   <!-- Main -->
   <div class="main">
 
-    <!-- Top Bar -->
+    <!-- Top bar -->
     <header class="top-bar">
+      <button class="hamburger" onclick="openDrawer()" aria-label="Open menu">☰</button>
       <span class="top-bar-title">Recording</span>
       <span class="session-timer" id="timer">0:42</span>
       <span id="rec-badge" class="rec-badge"><span class="rec-dot"></span> REC</span>
-      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">
-        <span id="theme-icon">🌙</span>
-      </button>
+      <button class="icon-btn" id="appear-btn" onclick="toggleAppear(event)" aria-label="Appearance settings" title="Caption appearance">🔡</button>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme"><span id="theme-icon">🌙</span></button>
+
+      <!-- Appearance floating panel -->
+      <div class="appear-panel" id="appear-panel">
+        <div>
+          <div class="ap-label">Text Size</div>
+          <div class="chip-row" id="ap-size">
+            <button class="chip" onclick="setChip('ap-size',this)">Small</button>
+            <button class="chip on" onclick="setChip('ap-size',this)">Medium</button>
+            <button class="chip" onclick="setChip('ap-size',this)">Large</button>
+            <button class="chip" onclick="setChip('ap-size',this)">X-Large</button>
+          </div>
+        </div>
+        <div>
+          <div class="ap-label">Font</div>
+          <div class="chip-row" id="ap-font">
+            <button class="chip on" onclick="setChip('ap-font',this)">Inter</button>
+            <button class="chip" onclick="setChip('ap-font',this)">Serif</button>
+            <button class="chip" onclick="setChip('ap-font',this)">Mono</button>
+          </div>
+        </div>
+        <div>
+          <div class="ap-label">Scroll Direction</div>
+          <div class="chip-row" id="ap-dir">
+            <button class="chip on" onclick="setChip('ap-dir',this)">↑ Bottom to top</button>
+            <button class="chip" onclick="setChip('ap-dir',this)">↓ Top to bottom</button>
+          </div>
+        </div>
+      </div>
     </header>
 
-    <!-- Status Bar -->
+    <!-- Status bar -->
     <div class="status-bar">
       <div class="status-pill" id="obs-pill" onclick="cycleObs()">
         <span class="s-dot dot-ok" id="obs-dot"></span>
         <span id="obs-text">OBS Connected</span>
       </div>
       <div class="status-pill">
-        <span class="s-dot dot-ok"></span>
-        Browser Source Active
+        <span class="s-dot dot-ok"></span>Browser Source Active
       </div>
-      <div class="status-pill" id="overlay-pill">
+      <div class="status-pill">
         <span class="s-dot dot-off" id="overlay-dot"></span>
         <span id="overlay-text">Overlay Off</span>
       </div>
     </div>
 
+    <!-- Content row -->
     <div class="content-row">
 
-      <!-- Captions Column -->
+      <!-- Caption column -->
       <div class="caption-col">
 
-        <!-- Audio Levels -->
+        <!-- Audio levels -->
         <div class="audio-level-row">
           <span class="level-icon">🎤</span>
           <span class="level-source-label" style="color:var(--primary)">Teacher</span>
-          <div class="level-track">
-            <div class="level-fill a1"></div>
-          </div>
+          <div class="level-track"><div class="level-fill a1" id="lvl1"></div></div>
           <span style="width:12px"></span>
           <span class="level-icon">🎤</span>
-          <span class="level-source-label" style="color:var(--obs-ok)">Student</span>
-          <div class="level-track">
-            <div class="level-fill a2" style="background:var(--obs-ok)"></div>
-          </div>
+          <span class="level-source-label" style="color:var(--ok)">Student</span>
+          <div class="level-track"><div class="level-fill a2" id="lvl2" style="background:var(--ok)"></div></div>
         </div>
 
-        <!-- Caption Area -->
+        <!-- Caption area (scrollable, paused overlay lives inside) -->
         <div class="caption-area" id="caption-area">
 
           <div class="seg-group">
@@ -552,7 +461,7 @@
             <div class="seg-source-indicator color-blue"></div>
             <div class="seg-content">
               <div class="seg-label lbl-blue">Teacher</div>
-              <div class="seg-text">Yes, we'll get to neural networks in the second half. First let's build the mathematical foundation. So starting with linear regression…</div>
+              <div class="seg-text">Yes, we'll get to neural networks in the second half. First let's build the mathematical foundation. Starting with linear regression…</div>
             </div>
           </div>
 
@@ -562,28 +471,35 @@
             <div class="seg-source-indicator color-blue"></div>
             <div class="seg-content">
               <div class="seg-label lbl-blue">Teacher</div>
-              <div class="seg-text">Now, the key intuition here is that we're trying to find the line that minimizes the sum of squared <span class="seg-text interim">residuals between predicted…</span></div>
+              <div class="seg-text">Now, the key intuition here is that we're trying to find the line that minimizes the sum of squared <span class="interim">residuals between predicted…</span></div>
             </div>
           </div>
 
-        </div>
+          <!-- Paused overlay chip (centered over caption area) -->
+          <div class="paused-overlay hidden" id="paused-overlay">
+            <div class="paused-chip">
+              <span class="paused-chip-icon">⏸</span>
+              <span>Recognition paused</span>
+              <button class="paused-chip-resume" onclick="resume()">Resume</button>
+            </div>
+          </div>
 
-        <!-- Controls -->
+        </div><!-- end caption-area -->
+
+        <!-- Controls footer -->
         <div class="controls">
           <button class="btn btn-pause" id="pause-btn" onclick="togglePause()">
             <span id="pause-icon">⏸</span>
             <span id="pause-label">Pause</span>
           </button>
-          <button class="btn btn-stop">
-            <span>⏹</span> Stop
-          </button>
+          <button class="btn btn-stop">⏹ Stop</button>
         </div>
-      </div>
 
-      <!-- Right Panel -->
+      </div><!-- end caption-col -->
+
+      <!-- Right panel -->
       <div class="right-panel">
 
-        <!-- OBS Status -->
         <div>
           <div class="panel-section-title">OBS WebSocket</div>
           <div class="obs-card connected" id="obs-card">
@@ -597,19 +513,14 @@
           </div>
         </div>
 
-        <!-- Browser Source -->
         <div>
           <div class="panel-section-title">Browser Source</div>
           <div class="bs-card">
-            <div class="panel-section-title" style="margin-bottom:6px">URL</div>
             <div class="bs-url">http://localhost:8080/captions</div>
-            <button class="btn-copy" onclick="this.textContent='✓ Copied!'">
-              📋 Copy URL
-            </button>
+            <button class="btn-copy" onclick="this.textContent='✓ Copied!'">📋 Copy URL</button>
           </div>
         </div>
 
-        <!-- Caption Overlay -->
         <div>
           <div class="panel-section-title">Caption Overlay</div>
           <div class="overlay-row">
@@ -617,112 +528,104 @@
             <button class="toggle" id="overlay-toggle" onclick="toggleOverlay(this)" aria-label="Toggle caption overlay"></button>
           </div>
           <div class="overlay-config" id="overlay-config" style="margin-top:8px">
-            <div class="oc-row">
-              <span class="oc-label">Target Display</span>
-              <span>Display 2</span>
-            </div>
-            <div class="oc-row">
-              <span class="oc-label">Position</span>
-              <span>Bottom</span>
-            </div>
+            <div class="oc-row"><span class="oc-label">Target Display</span><span>Display 2</span></div>
+            <div class="oc-row"><span class="oc-label">Position</span><span>Bottom</span></div>
           </div>
         </div>
 
-      </div>
+      </div><!-- end right-panel -->
 
     </div><!-- end content-row -->
   </div><!-- end main -->
-</div><!-- end layout -->
+</div><!-- end app -->
 
-<p class="desktop-hint">Proto-07 · Zip Broadcast Recording · click "Demo: cycle OBS state" · Pause · toggle Overlay (≥860px for panel)</p>
+<p class="desktop-hint">Proto-07 · Zip Broadcast Recording · 🔡 icon: appearance panel · Pause: overlay chip · Demo: cycle OBS state · ≥860px: right panel</p>
 
 <script>
   let paused = false;
-  let obsState = 0; // 0=connected, 1=disconnected, 2=error
+  let obsState = 0;
   const obsStates = [
-    { class: 'connected', badge: 'ok',  badgeText: 'Connected',    detail: 'localhost:4455 · Captions active',      dot: 'dot-ok',  pillText: 'OBS Connected', overlayDot: 'dot-ok', overlayText: 'Overlay Off' },
-    { class: '',          badge: 'warn',badgeText: 'Disconnected', detail: 'Reconnecting… (attempt 2)',              dot: 'dot-warn', pillText: 'OBS Reconnecting', overlayDot: 'dot-off', overlayText: 'Overlay Off' },
-    { class: 'error',     badge: 'err', badgeText: 'Error',        detail: 'Connection refused · Check OBS settings', dot: 'dot-err', pillText: 'OBS Error', overlayDot: 'dot-off', overlayText: 'Overlay Off' },
+    { cls:'connected', badge:'ok',  badgeText:'Connected',    detail:'localhost:4455 · Captions active',       dot:'dot-ok',   pillText:'OBS Connected'    },
+    { cls:'',          badge:'warn',badgeText:'Disconnected', detail:'Reconnecting… (attempt 2)',               dot:'dot-warn', pillText:'OBS Reconnecting' },
+    { cls:'error',     badge:'err', badgeText:'Error',        detail:'Connection refused · Check OBS settings', dot:'dot-err',  pillText:'OBS Error'        },
   ];
 
+  function openDrawer() { document.getElementById('drawer-overlay').classList.add('open'); }
+  function closeDrawer(e) {
+    if (!e || e.target === document.getElementById('drawer-overlay'))
+      document.getElementById('drawer-overlay').classList.remove('open');
+  }
+
   function toggleTheme() {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? '' : 'dark');
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
     const icon = isDark ? '🌙' : '☀️';
+    const label = isDark ? 'Dark Mode' : 'Light Mode';
     document.getElementById('theme-icon').textContent = icon;
-    if (document.getElementById('theme-icon-side'))
-      document.getElementById('theme-icon-side').textContent = icon;
+    if (document.getElementById('theme-icon-side')) document.getElementById('theme-icon-side').textContent = icon;
+    if (document.getElementById('theme-icon-drawer')) document.getElementById('theme-icon-drawer').textContent = icon;
+    if (document.getElementById('theme-label-drawer')) document.getElementById('theme-label-drawer').textContent = label;
+  }
+
+  function toggleAppear(e) {
+    e.stopPropagation();
+    const panel = document.getElementById('appear-panel');
+    const btn = document.getElementById('appear-btn');
+    panel.classList.toggle('open');
+    btn.classList.toggle('active-panel', panel.classList.contains('open'));
+  }
+  document.addEventListener('click', () => {
+    document.getElementById('appear-panel').classList.remove('open');
+    document.getElementById('appear-btn').classList.remove('active-panel');
+  });
+
+  function setChip(groupId, el) {
+    document.querySelectorAll('#' + groupId + ' .chip').forEach(c => c.classList.remove('on'));
+    el.classList.add('on');
   }
 
   function togglePause() {
-    paused = !paused;
-    const badge = document.getElementById('rec-badge');
-    const pauseIcon = document.getElementById('pause-icon');
-    const pauseLabel = document.getElementById('pause-label');
-    const fills = document.querySelectorAll('.level-fill');
-    if (paused) {
-      badge.className = 'rec-badge paused';
-      badge.innerHTML = '<span class="rec-dot"></span> PAUSED';
-      pauseIcon.textContent = '▶';
-      pauseLabel.textContent = 'Resume';
-      fills.forEach(f => { f.classList.remove('a1','a2'); f.style.width = '0'; });
-    } else {
-      badge.className = 'rec-badge';
-      badge.innerHTML = '<span class="rec-dot"></span> REC';
-      pauseIcon.textContent = '⏸';
-      pauseLabel.textContent = 'Pause';
-      const [f1, f2] = fills;
-      f1.classList.add('a1');
-      f2.classList.add('a2');
-      f1.style.width = '';
-      f2.style.width = '';
-    }
+    paused = true;
+    document.getElementById('rec-badge').className = 'rec-badge paused';
+    document.getElementById('rec-badge').innerHTML = '<span class="rec-dot"></span> PAUSED';
+    document.getElementById('paused-overlay').classList.remove('hidden');
+    document.querySelectorAll('.level-fill').forEach(f => { f.className = 'level-fill'; f.style.width = '0'; });
+  }
+
+  function resume() {
+    paused = false;
+    document.getElementById('rec-badge').className = 'rec-badge';
+    document.getElementById('rec-badge').innerHTML = '<span class="rec-dot"></span> REC';
+    document.getElementById('paused-overlay').classList.add('hidden');
+    document.getElementById('lvl1').className = 'level-fill a1'; document.getElementById('lvl1').style.width = '';
+    document.getElementById('lvl2').className = 'level-fill a2'; document.getElementById('lvl2').style.width = '';
   }
 
   function cycleObs() {
     obsState = (obsState + 1) % obsStates.length;
     const s = obsStates[obsState];
-    const card = document.getElementById('obs-card');
-    const badge = document.getElementById('obs-badge');
-    const detail = document.getElementById('obs-detail');
-    const dot = document.getElementById('obs-dot');
-    const pill = document.getElementById('obs-pill');
-
-    card.className = 'obs-card ' + s.class;
-    badge.className = 'obs-status-badge ' + s.badge;
-    badge.textContent = s.badgeText;
-    detail.textContent = s.detail;
-    dot.className = 's-dot ' + s.dot;
-    pill.querySelector('span:last-child').textContent = s.pillText;
+    document.getElementById('obs-card').className = 'obs-card ' + s.cls;
+    document.getElementById('obs-badge').className = 'obs-status-badge ' + s.badge;
+    document.getElementById('obs-badge').textContent = s.badgeText;
+    document.getElementById('obs-detail').textContent = s.detail;
+    document.getElementById('obs-dot').className = 's-dot ' + s.dot;
+    document.getElementById('obs-text').textContent = s.pillText;
   }
 
   function toggleOverlay(btn) {
     btn.classList.toggle('on');
-    const config = document.getElementById('overlay-config');
-    const dot = document.getElementById('overlay-dot');
-    const text = document.getElementById('overlay-text');
-    if (btn.classList.contains('on')) {
-      config.classList.add('visible');
-      dot.className = 's-dot dot-ok';
-      text.textContent = 'Overlay Active';
-    } else {
-      config.classList.remove('visible');
-      dot.className = 's-dot dot-off';
-      text.textContent = 'Overlay Off';
-    }
+    document.getElementById('overlay-config').classList.toggle('visible', btn.classList.contains('on'));
+    document.getElementById('overlay-dot').className = 's-dot ' + (btn.classList.contains('on') ? 'dot-ok' : 'dot-off');
+    document.getElementById('overlay-text').textContent = btn.classList.contains('on') ? 'Overlay Active' : 'Overlay Off';
   }
 
-  // Timer
   let seconds = 42;
   setInterval(() => {
     if (paused) return;
     seconds++;
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
+    const m = Math.floor(seconds / 60), s = seconds % 60;
     document.getElementById('timer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
   }, 1000);
 </script>
-
 </body>
 </html>

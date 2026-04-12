@@ -10,433 +10,325 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --surface: #FAFCFF;
-      --surface-low: #FFFFFF;
-      --surface-high: #EEF2F8;
-      --surface-highest: #E4EAF2;
-      --primary: #1A5A8C;
-      --on-primary: #FFFFFF;
-      --secondary-container: #DAE3F0;
-      --on-secondary-container: #0B141D;
-      --on-surface: #0B141D;
-      --on-surface-var: #6B7380;
-      --outline: #6B7380;
-      --outline-var: #C4CAD4;
-      --error: #A8191F;
+      --surface: #FAFCFF; --surface-low: #FFFFFF; --surface-high: #EEF2F8;
+      --surface-highest: #E4EAF2; --primary: #1A5A8C; --on-primary: #FFFFFF;
+      --secondary-container: #DAE3F0; --on-secondary-container: #0B141D;
+      --on-surface: #0B141D; --on-surface-var: #6B7380;
+      --outline: #6B7380; --outline-var: #C4CAD4; --error: #A8191F;
       --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
+      --sidebar-w: 220px;
     }
     [data-theme="dark"] {
-      --surface: #0B141D;
-      --surface-low: #060F18;
-      --surface-high: #222B34;
-      --surface-highest: #2D3640;
-      --primary: #9ACBFF;
-      --on-primary: #003355;
-      --secondary-container: #414A54;
-      --on-secondary-container: #E0E8F2;
-      --on-surface: #DAE3F0;
-      --on-surface-var: #8B919A;
-      --outline: #8B919A;
-      --outline-var: #41474F;
-      --error: #FFB4AB;
+      --surface: #0B141D; --surface-low: #060F18; --surface-high: #222B34;
+      --surface-highest: #2D3640; --primary: #9ACBFF; --on-primary: #003355;
+      --secondary-container: #414A54; --on-secondary-container: #E0E8F2;
+      --on-surface: #DAE3F0; --on-surface-var: #8B919A;
+      --outline: #8B919A; --outline-var: #41474F; --error: #FFB4AB;
     }
 
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--surface);
-      color: var(--on-surface);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--surface); color: var(--on-surface); }
+
+    /* ── App shell ── */
+    .app {
+      height: 100vh; max-width: 1920px; margin: 0 auto;
+      display: flex; flex-direction: column; overflow: hidden;
+      border-left: 1px solid var(--outline-var); border-right: 1px solid var(--outline-var);
     }
-    .shell {
-      width: 100%;
-      max-width: 420px;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+    .main-row { flex: 1; min-height: 0; display: flex; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      display: none; width: var(--sidebar-w); flex-shrink: 0;
+      background: var(--surface-high); border-right: 1px solid var(--outline-var);
+      flex-direction: column; padding: 20px 0 16px;
     }
-    @media (min-width: 768px) {
-      .shell { box-shadow: 0 0 0 1px var(--outline-var), 0 8px 32px rgba(0,0,0,.12); }
+    .sidebar-brand { padding: 0 20px 24px; display: flex; align-items: center; gap: 10px; }
+    .brand-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .brand-name { font-size: 15px; font-weight: 600; }
+    .nav-section { padding: 0 8px; flex: 1; }
+    .nav-link {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--r-md);
+      border: none; background: transparent; color: var(--on-surface-var);
+      font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; width: 100%; text-align: left; transition: all 0.12s;
     }
+    .nav-link:hover { background: var(--surface-highest); color: var(--on-surface); }
+    .nav-link.active { background: var(--secondary-container); color: var(--on-secondary-container); }
+    .sidebar-footer { padding: 0 8px; border-top: 1px solid var(--outline-var); padding-top: 12px; margin-top: 12px; }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 
     /* ── Top Bar ── */
     .top-bar {
-      display: flex;
-      align-items: center;
-      padding: 0 4px;
-      height: 64px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--outline-var);
-      position: sticky; top: 0; z-index: 10;
-      gap: 4px;
+      flex-shrink: 0; display: flex; align-items: center;
+      padding: 0 4px; height: 64px;
+      background: var(--surface); border-bottom: 1px solid var(--outline-var); gap: 4px;
     }
+    .top-bar-title { flex: 1; font-size: 18px; font-weight: 500; padding-left: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .icon-btn {
-      width: 48px; height: 48px;
-      border-radius: 50%; border: none;
-      background: transparent; color: var(--on-surface);
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
-      transition: background 0.15s;
-      flex-shrink: 0;
+      width: 48px; height: 48px; border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+      transition: background 0.15s; flex-shrink: 0;
     }
     .icon-btn:hover { background: var(--surface-high); }
-    .top-bar-title { flex: 1; font-size: 18px; font-weight: 500; padding-left: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    /* ── Session Meta ── */
+    /* ── Session meta (pinned) ── */
     .session-meta {
-      padding: 14px 16px;
-      background: var(--surface-high);
-      border-bottom: 1px solid var(--outline-var);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .meta-row {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .meta-chip {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 13px;
-      color: var(--on-surface-var);
-      font-weight: 500;
-    }
-    .meta-chip-icon { font-size: 14px; }
-
-    /* ── Transcript Content ── */
-    .transcript-body {
-      flex: 1;
-      padding: 16px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .ts-segment {
-      display: flex;
-      gap: 12px;
-      padding: 6px 0;
-    }
-    .ts-time {
-      font-size: 11px;
-      color: var(--on-surface-var);
-      font-weight: 500;
-      font-variant-numeric: tabular-nums;
-      min-width: 40px;
-      padding-top: 3px;
       flex-shrink: 0;
+      padding: 12px 16px; background: var(--surface-high);
+      border-bottom: 1px solid var(--outline-var);
+      display: flex; flex-direction: column; gap: 6px;
     }
-    .ts-text {
-      font-size: 15px;
-      line-height: 1.65;
-      color: var(--on-surface);
-      flex: 1;
+    .meta-row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .meta-chip { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--on-surface-var); font-weight: 500; }
+
+    /* ── Transcript body (scrollable) ── */
+    .transcript-body {
+      flex: 1; min-height: 0; overflow-y: auto;
+      padding: 16px; display: flex; flex-direction: column; gap: 2px;
     }
 
+    .ts-segment { display: flex; gap: 12px; padding: 5px 0; }
+    .ts-time { font-size: 11px; color: var(--on-surface-var); font-weight: 500; font-variant-numeric: tabular-nums; min-width: 40px; padding-top: 3px; flex-shrink: 0; }
+    .ts-text { font-size: 15px; line-height: 1.65; color: var(--on-surface); flex: 1; }
     .ts-pause {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 0;
-      color: var(--on-surface-var);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
+      display: flex; align-items: center; gap: 10px; padding: 6px 0;
+      color: var(--on-surface-var); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
     }
-    .ts-pause::before,
-    .ts-pause::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--outline-var);
-    }
+    .ts-pause::before, .ts-pause::after { content: ''; flex: 1; height: 1px; background: var(--outline-var); }
 
-    /* ── Export Bottom Sheet ── */
+    /* ── Export bar (always at bottom, never scrolls) ── */
     .export-bar {
-      border-top: 1px solid var(--outline-var);
-      padding: 12px 16px;
+      flex-shrink: 0;
+      border-top: 1px solid var(--outline-var); padding: 12px 16px;
       background: var(--surface);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
     }
     .export-btn {
-      width: 100%;
-      padding: 14px 20px;
-      border-radius: var(--r-xl);
-      border: none;
-      background: var(--primary);
-      color: var(--on-primary);
-      font-family: inherit;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      width: 100%; padding: 14px 20px; border-radius: var(--r-xl); border: none;
+      background: var(--primary); color: var(--on-primary);
+      font-family: inherit; font-size: 15px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
       transition: opacity 0.15s;
     }
     .export-btn:hover { opacity: 0.88; }
 
-    /* ── Export Format Sheet (modal) ── */
+    /* ── Export format sheet ── */
     .sheet-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.45);
-      z-index: 100;
-      align-items: flex-end;
-      justify-content: center;
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.45); z-index: 100;
+      align-items: flex-end; justify-content: center;
     }
     .sheet-overlay.open { display: flex; }
     .sheet {
-      width: 100%;
-      max-width: 420px;
-      background: var(--surface-low);
-      border-radius: var(--r-lg) var(--r-lg) 0 0;
-      padding: 12px 0 32px;
-      animation: slide-up 0.22s ease;
+      width: 100%; max-width: 1920px;
+      background: var(--surface-low); border-radius: var(--r-lg) var(--r-lg) 0 0;
+      padding: 12px 0 32px; animation: slide-up 0.22s ease;
     }
-    @keyframes slide-up {
-      from { transform: translateY(30px); opacity: 0; }
-      to   { transform: translateY(0); opacity: 1; }
-    }
-    .sheet-handle {
-      width: 32px; height: 4px;
-      border-radius: 2px;
-      background: var(--outline-var);
-      margin: 0 auto 16px;
-    }
-    .sheet-title {
-      font-size: 16px;
-      font-weight: 600;
-      padding: 0 20px 12px;
-      color: var(--on-surface);
-    }
+    @keyframes slide-up { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+    .sheet-handle { width: 32px; height: 4px; border-radius: 2px; background: var(--outline-var); margin: 0 auto 16px; }
+    .sheet-title { font-size: 16px; font-weight: 600; padding: 0 20px 12px; }
     .format-option {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 14px 20px;
-      cursor: pointer;
-      transition: background 0.12s;
-      border: none;
-      background: transparent;
-      width: 100%;
-      text-align: left;
+      display: flex; align-items: center; gap: 14px; padding: 14px 20px;
+      cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; transition: background 0.12s;
     }
     .format-option:hover { background: var(--surface-high); }
     .format-icon {
-      width: 44px; height: 44px;
-      border-radius: var(--r-md);
-      background: var(--secondary-container);
+      width: 44px; height: 44px; border-radius: var(--r-md);
+      background: var(--secondary-container); color: var(--on-secondary-container);
       display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
-      font-weight: 700;
-      font-size: 14px;
-      color: var(--on-secondary-container);
-      font-family: 'Courier New', monospace;
-      flex-shrink: 0;
+      font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; flex-shrink: 0;
     }
     .format-info { flex: 1; }
     .format-name { font-size: 15px; font-weight: 600; color: var(--on-surface); }
     .format-desc { font-size: 13px; color: var(--on-surface-var); margin-top: 1px; }
-    .format-arrow { color: var(--outline); font-size: 16px; }
     .sheet-cancel {
-      margin: 8px 16px 0;
-      width: calc(100% - 32px);
-      padding: 14px;
-      border-radius: var(--r-xl);
-      border: none;
-      background: var(--surface-high);
-      color: var(--on-surface);
-      font-family: inherit;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
+      margin: 8px 16px 0; width: calc(100% - 32px); padding: 14px;
+      border-radius: var(--r-xl); border: none; background: var(--surface-high);
+      color: var(--on-surface); font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
     }
     .sheet-cancel:hover { background: var(--surface-highest); }
 
+    /* ── Responsive ── */
+    @media (min-width: 768px) {
+      .sidebar { display: flex; }
+      .top-bar-title { font-size: 16px; }
+    }
+
+    /* ── Mobile hamburger + drawer ── */
+    .hamburger {
+      display: none; width: 40px; height: 40px; border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface); cursor: pointer;
+      align-items: center; justify-content: center; font-size: 22px; transition: background 0.15s; flex-shrink: 0;
+    }
+    .hamburger:hover { background: var(--surface-high); }
+    @media (max-width: 767px) { .hamburger { display: flex; } }
+    .drawer-overlay {
+      display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.4);
+    }
+    .drawer-overlay.open { display: block; }
+    .nav-drawer {
+      position: absolute; top: 0; left: 0; bottom: 0; width: 280px;
+      background: var(--surface-high); display: flex; flex-direction: column; padding: 20px 0 16px;
+      transform: translateX(-100%); transition: transform 0.25s ease;
+    }
+    .drawer-overlay.open .nav-drawer { transform: translateX(0); }
+    .drawer-top-row {
+      display: flex; align-items: center; justify-content: space-between; padding: 0 16px 16px;
+    }
+    .drawer-brand { display: flex; align-items: center; gap: 10px; }
+    .drawer-close {
+      width: 36px; height: 36px; border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface-var); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .drawer-close:hover { background: var(--surface-highest); }
+
     .desktop-hint {
-      display: none;
-      position: fixed;
-      bottom: 16px; right: 16px;
-      background: var(--surface-highest);
-      color: var(--on-surface-var);
-      font-size: 12px;
-      padding: 8px 12px;
-      border-radius: var(--r-md);
-      border: 1px solid var(--outline-var);
+      display: none; position: fixed; bottom: 16px; right: 16px;
+      background: var(--surface-highest); color: var(--on-surface-var); font-size: 12px;
+      padding: 8px 12px; border-radius: var(--r-md); border: 1px solid var(--outline-var);
     }
     @media (min-width: 768px) { .desktop-hint { display: block; } }
   </style>
 </head>
 <body>
 
-<div class="shell">
+<div class="app">
+  <div class="main-row">
 
-  <!-- Top Bar -->
-  <header class="top-bar">
-    <button class="icon-btn" aria-label="Back">←</button>
-    <span class="top-bar-title">Apr 8 · Quarterly Review</span>
-    <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">
-      <span id="theme-icon">🌙</span>
-    </button>
-    <button class="icon-btn" aria-label="More options">⋮</button>
-  </header>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">🎤</div>
+        <div><div class="brand-name">Zip Captions</div></div>
+      </div>
+      <div class="nav-section">
+        <button class="nav-link">🏠 Home</button>
+        <button class="nav-link active">📋 History</button>
+        <button class="nav-link">⚙️ Settings</button>
+      </div>
+      <div class="sidebar-footer">
+        <button class="nav-link" onclick="toggleTheme()">
+          <span id="theme-icon-side">🌙</span> <span>Dark Mode</span>
+        </button>
+      </div>
+    </aside>
 
-  <!-- Session Meta -->
-  <div class="session-meta">
-    <div class="meta-row">
-      <span class="meta-chip"><span class="meta-chip-icon">📅</span>Today, 2:30 PM</span>
-      <span class="meta-chip"><span class="meta-chip-icon">⏱</span>48 min</span>
-      <span class="meta-chip"><span class="meta-chip-icon">📝</span>2,847 words</span>
-    </div>
-    <div class="meta-row">
-      <span class="meta-chip"><span class="meta-chip-icon">🧠</span>Platform (Apple Speech)</span>
-      <span class="meta-chip"><span class="meta-chip-icon">🌐</span>English (US)</span>
-    </div>
-  </div>
-
-  <!-- Transcript Body -->
-  <div class="transcript-body">
-
-    <div class="ts-segment">
-      <span class="ts-time">0:00</span>
-      <span class="ts-text">The meeting will come to order. We have several items on the agenda today, including the quarterly review and the new project proposals.</span>
-    </div>
-
-    <div class="ts-segment">
-      <span class="ts-time">0:18</span>
-      <span class="ts-text">Thank you. I'd like to start with the Q3 results which showed a significant improvement over the previous quarter.</span>
-    </div>
-
-    <div class="ts-segment">
-      <span class="ts-time">0:42</span>
-      <span class="ts-text">Our team managed to exceed expectations in the eastern region, and the numbers clearly demonstrate that the new strategy is working as intended.</span>
-    </div>
-
-    <div class="ts-pause">paused · 0:32</div>
-
-    <div class="ts-segment">
-      <span class="ts-time">8:15</span>
-      <span class="ts-text">As I was saying, the key metrics show revenue up 18 percent and customer satisfaction scores at an all-time high.</span>
+    <!-- Mobile nav drawer -->
+    <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer(event)">
+      <nav class="nav-drawer">
+        <div class="drawer-top-row">
+          <div class="drawer-brand">
+            <div class="brand-icon">🎤</div>
+            <div><div class="brand-name">Zip Captions</div></div>
+          </div>
+          <button class="drawer-close" onclick="closeDrawer()" aria-label="Close menu">✕</button>
+        </div>
+        <div class="nav-section">
+          <button class="nav-link">🏠 Home</button>
+          <button class="nav-link active">📋 History</button>
+          <button class="nav-link">⚙️ Settings</button>
+        </div>
+        <div class="sidebar-footer">
+          <button class="nav-link" onclick="toggleTheme()">
+            <span id="theme-icon-drawer">🌙</span> <span id="theme-label-drawer">Dark Mode</span>
+          </button>
+        </div>
+      </nav>
     </div>
 
-    <div class="ts-segment">
-      <span class="ts-time">9:02</span>
-      <span class="ts-text">The next slide will show the breakdown by region. If everyone could turn their attention to the projector screen.</span>
-    </div>
+    <!-- Main -->
+    <div class="main">
 
-    <div class="ts-segment">
-      <span class="ts-time">10:14</span>
-      <span class="ts-text">That's excellent news. Can you walk us through the specific metrics for the western division? I was expecting some challenges there.</span>
-    </div>
+      <!-- Top Bar (pinned) -->
+      <header class="top-bar">
+        <button class="hamburger" onclick="openDrawer()" aria-label="Open menu">☰</button>
+        <span class="top-bar-title">Apr 8 · Quarterly Review</span>
+        <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+          <span id="theme-icon">🌙</span>
+        </button>
+        <button class="icon-btn" aria-label="More options">⋮</button>
+      </header>
 
-    <div class="ts-segment">
-      <span class="ts-time">10:48</span>
-      <span class="ts-text">Absolutely. So the western division had some headwinds early in the quarter, primarily due to the supply chain delays. However, by mid-September we'd resolved those issues and the final numbers came in ahead of target.</span>
-    </div>
+      <!-- Session Meta (pinned) -->
+      <div class="session-meta">
+        <div class="meta-row">
+          <span class="meta-chip">📅 Today, 2:30 PM</span>
+          <span class="meta-chip">⏱ 48 min</span>
+          <span class="meta-chip">📝 2,847 words</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-chip">🧠 Platform (Apple Speech)</span>
+          <span class="meta-chip">🌐 English (US)</span>
+        </div>
+      </div>
 
-    <div class="ts-pause">paused · 1:18</div>
+      <!-- Transcript body (scrollable) -->
+      <div class="transcript-body">
+        <div class="ts-segment"><span class="ts-time">0:00</span><span class="ts-text">The meeting will come to order. We have several items on the agenda today, including the quarterly review and the new project proposals.</span></div>
+        <div class="ts-segment"><span class="ts-time">0:18</span><span class="ts-text">Thank you. I'd like to start with the Q3 results which showed a significant improvement over the previous quarter.</span></div>
+        <div class="ts-segment"><span class="ts-time">0:42</span><span class="ts-text">Our team managed to exceed expectations in the eastern region, and the numbers clearly demonstrate that the new strategy is working as intended.</span></div>
+        <div class="ts-pause">paused · 0:32</div>
+        <div class="ts-segment"><span class="ts-time">8:15</span><span class="ts-text">As I was saying, the key metrics show revenue up 18 percent and customer satisfaction scores at an all-time high.</span></div>
+        <div class="ts-segment"><span class="ts-time">9:02</span><span class="ts-text">The next slide will show the breakdown by region. If everyone could turn their attention to the projector screen.</span></div>
+        <div class="ts-segment"><span class="ts-time">10:14</span><span class="ts-text">That's excellent news. Can you walk us through the specific metrics for the western division? I was expecting some challenges there.</span></div>
+        <div class="ts-segment"><span class="ts-time">10:48</span><span class="ts-text">Absolutely. The western division had some headwinds early in the quarter, primarily due to the supply chain delays. However, by mid-September we'd resolved those issues and the final numbers came in ahead of target.</span></div>
+        <div class="ts-pause">paused · 1:18</div>
+        <div class="ts-segment"><span class="ts-time">22:06</span><span class="ts-text">Moving on to the new project proposals. We have three candidates for Q4 and I'd like to get everyone's input before we finalize the prioritization.</span></div>
+        <div class="ts-segment"><span class="ts-time">22:30</span><span class="ts-text">The first proposal is the customer portal redesign. This has been on the roadmap for two quarters and we have strong user research supporting the need for improvement.</span></div>
+        <div class="ts-segment"><span class="ts-time">35:14</span><span class="ts-text">The second proposal is the analytics dashboard. Given the improvements in Q3, leadership wants better visibility into regional performance in near real-time.</span></div>
+        <div class="ts-segment"><span class="ts-time">42:07</span><span class="ts-text">And finally the third proposal, which is perhaps the most ambitious: a full refresh of the mobile onboarding experience based on the recent usability study findings.</span></div>
+      </div>
 
-    <div class="ts-segment">
-      <span class="ts-time">22:06</span>
-      <span class="ts-text">Moving on to the new project proposals. We have three candidates for Q4 and I'd like to get everyone's input before we finalize the prioritization.</span>
-    </div>
+      <!-- Export bar — always visible at bottom, never inside the scroll region -->
+      <div class="export-bar">
+        <button class="export-btn" onclick="openSheet()" aria-label="Export or share transcript">
+          <span>⬆</span><span>Export / Share</span>
+        </button>
+      </div>
 
-    <div class="ts-segment">
-      <span class="ts-time">22:30</span>
-      <span class="ts-text">The first proposal is the customer portal redesign. This has been on the roadmap for two quarters and we have strong user research supporting the need for improvement.</span>
-    </div>
-
-  </div>
-
-  <!-- Export Bar -->
-  <div class="export-bar">
-    <button class="export-btn" onclick="openExportSheet()" aria-label="Export transcript">
-      <span>⬆</span>
-      <span>Export / Share</span>
-    </button>
-  </div>
-
+    </div><!-- end main -->
+  </div><!-- end main-row -->
 </div>
 
-<!-- Export Format Sheet -->
+<!-- Export sheet -->
 <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet(event)">
   <div class="sheet" role="dialog" aria-label="Export format">
     <div class="sheet-handle"></div>
     <div class="sheet-title">Export as…</div>
-
-    <button class="format-option" onclick="selectFormat('TXT')">
-      <div class="format-icon">TXT</div>
-      <div class="format-info">
-        <div class="format-name">Plain Text (.txt)</div>
-        <div class="format-desc">Simple text with timestamps</div>
-      </div>
-      <span class="format-arrow">›</span>
-    </button>
-
-    <button class="format-option" onclick="selectFormat('SRT')">
-      <div class="format-icon">SRT</div>
-      <div class="format-info">
-        <div class="format-name">SubRip Subtitle (.srt)</div>
-        <div class="format-desc">Standard subtitle format for video</div>
-      </div>
-      <span class="format-arrow">›</span>
-    </button>
-
-    <button class="format-option" onclick="selectFormat('VTT')">
-      <div class="format-icon">VTT</div>
-      <div class="format-info">
-        <div class="format-name">WebVTT (.vtt)</div>
-        <div class="format-desc">Web video text tracks format</div>
-      </div>
-      <span class="format-arrow">›</span>
-    </button>
-
-    <button class="sheet-cancel" onclick="closeSheetBtn()">Cancel</button>
+    <button class="format-option" onclick="pickFormat('TXT')"><div class="format-icon">TXT</div><div class="format-info"><div class="format-name">Plain Text (.txt)</div><div class="format-desc">Simple text with timestamps</div></div><span style="color:var(--outline);font-size:18px">›</span></button>
+    <button class="format-option" onclick="pickFormat('SRT')"><div class="format-icon">SRT</div><div class="format-info"><div class="format-name">SubRip Subtitle (.srt)</div><div class="format-desc">Standard subtitle format for video</div></div><span style="color:var(--outline);font-size:18px">›</span></button>
+    <button class="format-option" onclick="pickFormat('VTT')"><div class="format-icon">VTT</div><div class="format-info"><div class="format-name">WebVTT (.vtt)</div><div class="format-desc">Web video text tracks format</div></div><span style="color:var(--outline);font-size:18px">›</span></button>
+    <button class="sheet-cancel" onclick="document.getElementById('sheet-overlay').classList.remove('open')">Cancel</button>
   </div>
 </div>
 
-<p class="desktop-hint">Proto-05 · Transcript Viewer · tap Export/Share to see format sheet</p>
+<p class="desktop-hint">Proto-05 · Transcript Viewer · Export bar always visible · tap Export to see format sheet</p>
 
 <script>
+  function openDrawer() { document.getElementById('drawer-overlay').classList.add('open'); }
+  function closeDrawer(e) {
+    if (!e || e.target === document.getElementById('drawer-overlay'))
+      document.getElementById('drawer-overlay').classList.remove('open');
+  }
+
   function toggleTheme() {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? '' : 'dark');
-    document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+    const icon = isDark ? '🌙' : '☀️';
+    const label = isDark ? 'Dark Mode' : 'Light Mode';
+    document.getElementById('theme-icon').textContent = icon;
+    if (document.getElementById('theme-icon-side')) document.getElementById('theme-icon-side').textContent = icon;
+    if (document.getElementById('theme-icon-drawer')) document.getElementById('theme-icon-drawer').textContent = icon;
+    if (document.getElementById('theme-label-drawer')) document.getElementById('theme-label-drawer').textContent = label;
   }
-
-  function openExportSheet() {
-    document.getElementById('sheet-overlay').classList.add('open');
-  }
-
-  function closeSheetBtn() {
+  function openSheet() { document.getElementById('sheet-overlay').classList.add('open'); }
+  function closeSheet(e) { if (e.target === document.getElementById('sheet-overlay')) document.getElementById('sheet-overlay').classList.remove('open'); }
+  function pickFormat(fmt) {
     document.getElementById('sheet-overlay').classList.remove('open');
-  }
-
-  function closeSheet(e) {
-    if (e.target === document.getElementById('sheet-overlay')) {
-      closeSheetBtn();
-    }
-  }
-
-  function selectFormat(fmt) {
-    closeSheetBtn();
-    setTimeout(() => alert(`Share sheet would open here with "${fmt}" format ready to share.`), 100);
+    setTimeout(() => alert(`Share sheet: "${fmt}" ready to share.`), 100);
   }
 </script>
-
 </body>
 </html>
