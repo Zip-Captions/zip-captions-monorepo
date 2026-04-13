@@ -13,3 +13,4 @@ export 'src/providers/providers.dart';
 export 'src/services/services.dart';
 export 'src/stt/stt.dart';
 export 'src/theme/theme.dart';
+export 'src/widgets/caption_display_widget.dart';

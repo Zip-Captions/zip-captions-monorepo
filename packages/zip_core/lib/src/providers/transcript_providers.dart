@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:zip_core/src/database/transcript_database.dart';
+import 'package:zip_core/src/models/transcript_segment.dart';
+import 'package:zip_core/src/models/transcript_session.dart';
 import 'package:zip_core/src/models/transcript_settings.dart';
 import 'package:zip_core/src/output/transcript_repository.dart';
 import 'package:zip_core/src/providers/base_settings_notifier.dart';
@@ -44,4 +46,40 @@ class TranscriptSettingsNotifier extends _$TranscriptSettingsNotifier {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setBool(_captureEnabledKey, value);
   }
+}
+
+/// Returns all sessions ordered by date descending, or BM25-ranked search
+/// results when [query] is non-empty.
+@riverpod
+Future<List<TranscriptSession>> transcriptSessionList(
+  Ref ref,
+  String query,
+) async {
+  final repo = await ref.watch(transcriptRepositoryProvider.future);
+  final trimmed = query.trim();
+  if (trimmed.isEmpty) {
+    return repo.getSessions();
+  }
+  final results = await repo.search(trimmed);
+  return results.map((r) => r.session).toList();
+}
+
+/// Returns the session with [sessionId], or `null` if it does not exist.
+@riverpod
+Future<TranscriptSession?> transcriptSession(
+  Ref ref,
+  String sessionId,
+) async {
+  final repo = await ref.watch(transcriptRepositoryProvider.future);
+  return repo.getSession(sessionId);
+}
+
+/// Returns all segments for [sessionId] ordered by start time ascending.
+@riverpod
+Future<List<TranscriptSegment>> transcriptSegments(
+  Ref ref,
+  String sessionId,
+) async {
+  final repo = await ref.watch(transcriptRepositoryProvider.future);
+  return repo.getSegments(sessionId);
 }
