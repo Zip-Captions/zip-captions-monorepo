@@ -2,7 +2,7 @@
 
 > How to set up, write, and run tests for each package.
 
-**Last Updated:** 2026-03-26
+**Last Updated:** 2026-04-20
 
 ---
 
@@ -122,6 +122,34 @@ test('AC-1: settings provider loads defaults on first access', () async {
   final settings = await container.read(settingsProvider.future);
   expect(settings.textSize, equals(defaultTextSize));
 });
+```
+
+#### Simulating Eager Watch in Integration Tests
+
+Some providers (e.g., `transcriptWriterTargetProvider`) only rebuild when they have an active subscriber. In integration tests there is no widget layer, so call `container.read(provider)` explicitly after each settings change to trigger the rebuild and fire `onDispose`:
+
+```dart
+await transcriptNotifier.setCaptureEnabled(value: false);
+container.read(transcriptWriterTargetProvider); // mirrors ZcAppShell ref.watch
+```
+
+### Testing BackButtonListener
+
+To simulate the system back button in a widget test, use `tester.binding.handlePopRoute()`. This propagates through the `RootBackButtonDispatcher` to any `BackButtonListener` in the tree:
+
+```dart
+await tester.binding.handlePopRoute();
+await tester.pumpAndSettle();
+
+expect(find.byKey(const Key('home')), findsOneWidget);
+```
+
+Force a mobile viewport (width ≤ 768 px) so `ZcAppShell` renders the `BackButtonListener` branch rather than the desktop nav-rail branch:
+
+```dart
+tester.view.physicalSize = const Size(375, 812);
+tester.view.devicePixelRatio = 1.0;
+addTearDown(tester.view.resetPhysicalSize);
 ```
 
 ---

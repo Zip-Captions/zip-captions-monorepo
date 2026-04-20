@@ -10,6 +10,7 @@ Widget _wrap(
   VoidCallback? onStop,
 }) {
   return MaterialApp(
+    theme: ThemeData(splashFactory: NoSplash.splashFactory),
     home: Scaffold(
       body: RecordingControlsBar(
         state: state,

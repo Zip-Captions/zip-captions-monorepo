@@ -21,6 +21,7 @@ import 'package:zip_core/src/providers/base_settings_notifier.dart';
 import 'package:zip_core/src/providers/recording_state_notifier.dart';
 import 'package:zip_core/src/providers/resolved_locale_id_provider.dart';
 import 'package:zip_core/src/providers/stt_engine_registry_provider.dart';
+import 'package:zip_core/src/providers/session_stop_callback_provider.dart';
 import 'package:zip_core/src/providers/transcript_providers.dart';
 import 'package:zip_core/src/providers/transcript_writer_target_provider.dart';
 import 'package:zip_core/src/providers/wake_lock_service_provider.dart';
@@ -189,6 +190,75 @@ void main() {
 
       final sessions = await repo.getSessions();
       expect(sessions, isEmpty);
+    });
+
+    test('disable then re-enable capture: subsequent session is saved',
+        () async {
+      final notifier =
+          container.read(recordingStateNotifierProvider.notifier);
+      final transcriptNotifier =
+          container.read(transcriptSettingsNotifierProvider.notifier);
+
+      // Session A — capture enabled.
+      await notifier.start();
+      mockEngine.emitResult(_finalResult(text: 'session a'));
+      await Future<void>.delayed(Duration.zero);
+      await notifier.stop();
+      await Future<void>.delayed(Duration.zero);
+      notifier.clearSession();
+
+      // Disable; read provider to propagate rebuild (mirrors ZcAppShell eager watch).
+      await transcriptNotifier.setCaptureEnabled(value: false);
+      container.read(transcriptWriterTargetProvider);
+
+      // Session B — disabled; nothing written.
+      await notifier.start();
+      mockEngine.emitResult(_finalResult(text: 'session b'));
+      await Future<void>.delayed(Duration.zero);
+      await notifier.stop();
+      await Future<void>.delayed(Duration.zero);
+      notifier.clearSession();
+
+      // Re-enable; rebuild provider so new target is registered.
+      await transcriptNotifier.setCaptureEnabled(value: true);
+      container.read(transcriptWriterTargetProvider);
+
+      // Session C — re-enabled; should be written.
+      await notifier.start();
+      mockEngine.emitResult(_finalResult(text: 'session c'));
+      await Future<void>.delayed(Duration.zero);
+      await notifier.stop();
+      await Future<void>.delayed(Duration.zero);
+
+      final sessions = await repo.getSessions();
+      expect(sessions, hasLength(2));
+      final texts = (await Future.wait(
+        sessions.map((s) => repo.getSegments(s.sessionId)),
+      )).expand((segs) => segs).map((s) => s.text).toList();
+      expect(texts, containsAll(['session a', 'session c']));
+      expect(texts, isNot(contains('session b')));
+    });
+
+    test('toggling captureEnabled does not throw during provider rebuild',
+        () async {
+      final transcriptNotifier =
+          container.read(transcriptSettingsNotifierProvider.notifier);
+      final stopCallback = container.read(sessionStopCallbackProvider);
+
+      // Enabled from setUp — callback registered.
+      expect(stopCallback.callback, isNotNull);
+
+      await transcriptNotifier.setCaptureEnabled(value: false);
+      container.read(transcriptWriterTargetProvider);
+      expect(stopCallback.callback, isNull);
+
+      await transcriptNotifier.setCaptureEnabled(value: true);
+      container.read(transcriptWriterTargetProvider);
+      expect(stopCallback.callback, isNotNull);
+
+      await transcriptNotifier.setCaptureEnabled(value: false);
+      container.read(transcriptWriterTargetProvider);
+      expect(stopCallback.callback, isNull);
     });
   });
 }
