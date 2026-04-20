@@ -1,10 +1,11 @@
-// PBT generator library for zip_broadcast glados tests.
+// PBT generator library for zip_broadcast tests.
 //
-// Centralized Arbitrary<T> instances for zip_broadcast domain types.
+// Centralized Generator<T> instances for zip_broadcast domain types.
 
-import 'package:glados/glados.dart';
 import 'package:zip_broadcast/src/models/obs_connection_state.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
+
+import 'pbt.dart';
 
 /// Generates all sealed [ObsConnectionState] variants with plausible fields.
 final Generator<ObsConnectionState> arbitraryObsConnectionState =
@@ -22,12 +23,13 @@ final Generator<ObsConnectionState> arbitraryObsConnectionState =
 /// Generates [OutputTargetSettings] with random bool toggles and a valid port.
 final Generator<OutputTargetSettings> arbitraryOutputTargetSettings =
     any.combine5(
-  any.bool,
-  any.bool,
-  any.bool,
-  any.bool,
+  any.boolGen,
+  any.boolGen,
+  any.boolGen,
+  any.boolGen,
   any.intInRange(1024, 65536),
-  (onScreen, obs, browser, overlay, port) => OutputTargetSettings(
+  (bool onScreen, bool obs, bool browser, bool overlay, int port) =>
+      OutputTargetSettings(
     onScreenEnabled: onScreen,
     obsEnabled: obs,
     browserSourceEnabled: browser,
