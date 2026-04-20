@@ -32,12 +32,12 @@ final transcriptWriterTargetProvider = Provider<void>((ref) {
   if (repo == null) return;
 
   final registry = ref.read(captionOutputTargetRegistryProvider);
+  final stopCallback = ref.read(sessionStopCallbackProvider);
   final target = TranscriptWriterTarget(repository: repo, settings: settings);
   registry.add(target);
 
   // Register finalize callback so RecordingStateNotifier can await it.
-  ref.read(sessionStopCallbackProvider).callback =
-      target.finalizeCurrentSession;
+  stopCallback.callback = target.finalizeCurrentSession;
 
   // If saving is re-enabled while a session is already active, replay the
   // session-start event so the target initialises and captures remaining
@@ -57,6 +57,6 @@ final transcriptWriterTargetProvider = Provider<void>((ref) {
 
   ref.onDispose(() {
     registry.remove(target);
-    ref.read(sessionStopCallbackProvider).callback = null;
+    stopCallback.callback = null;
   });
 });

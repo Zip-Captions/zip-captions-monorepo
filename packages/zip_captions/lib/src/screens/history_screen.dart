@@ -107,18 +107,12 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     }
 
     // Mobile: shell provides AppBar; SearchBar goes at top of body.
-    // PopScope prevents the Android back button from exiting the app when
-    // history was reached via context.go() (which clears the navigation stack).
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) => context.go('/'),
-      child: Scaffold(
-        body: Column(
-          children: [
-            searchBar,
-            Expanded(child: body),
-          ],
-        ),
+    return Scaffold(
+      body: Column(
+        children: [
+          searchBar,
+          Expanded(child: body),
+        ],
       ),
     );
   }

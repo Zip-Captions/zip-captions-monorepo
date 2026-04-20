@@ -72,23 +72,35 @@ class ZcAppShell extends ConsumerWidget {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_screenTitle(location)),
-        leading: Builder(
-          builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(ctx).openDrawer(),
+    return BackButtonListener(
+      onBackButtonPressed: () async {
+        if (location == '/') return false;
+        final router = GoRouter.of(context);
+        if (router.canPop()) {
+          router.pop();
+        } else {
+          context.go('/');
+        }
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_screenTitle(location)),
+          leading: Builder(
+            builder: (ctx) => IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () => Scaffold.of(ctx).openDrawer(),
+            ),
           ),
         ),
-      ),
-      body: child,
-      drawer: ZcNavDrawer(
-        currentLocation: location,
-        onTap: (route) {
-          context.go(route);
-          Navigator.of(context).pop();
-        },
+        body: child,
+        drawer: ZcNavDrawer(
+          currentLocation: location,
+          onTap: (route) {
+            context.go(route);
+            Navigator.of(context).pop();
+          },
+        ),
       ),
     );
   }

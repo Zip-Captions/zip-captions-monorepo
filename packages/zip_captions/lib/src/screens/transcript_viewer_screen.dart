@@ -89,13 +89,19 @@ class TranscriptViewerScreen extends ConsumerWidget {
   }
 
   void _showExportSheet(BuildContext context, WidgetRef ref) {
+    // Capture share origin before the sheet appears; iOS rejects a zero rect.
+    Rect? shareOrigin;
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      final size = MediaQuery.sizeOf(context);
+      shareOrigin = Rect.fromLTWH(size.width - 72, size.height - 100, 56, 56);
+    }
     unawaited(
       showModalBottomSheet<void>(
         context: context,
         builder: (_) => ExportFormatSheet(
           onFormatSelected: (format) async {
             Navigator.of(context).pop();
-            await _runExport(context, ref, format);
+            await _runExport(context, ref, format, shareOrigin: shareOrigin);
           },
         ),
       ),
@@ -105,8 +111,9 @@ class TranscriptViewerScreen extends ConsumerWidget {
   Future<void> _runExport(
     BuildContext context,
     WidgetRef ref,
-    ExportFormat format,
-  ) async {
+    ExportFormat format, {
+    Rect? shareOrigin,
+  }) async {
     String? path;
     try {
       final repo = await ref.read(transcriptRepositoryProvider.future);
@@ -118,7 +125,12 @@ class TranscriptViewerScreen extends ConsumerWidget {
 
       if (defaultTargetPlatform == TargetPlatform.iOS ||
           defaultTargetPlatform == TargetPlatform.android) {
-        await SharePlus.instance.share(ShareParams(files: [XFile(path)]));
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(path)],
+            sharePositionOrigin: shareOrigin,
+          ),
+        );
       } else {
         final location = await getSaveLocation(
           suggestedName: _exportFileName(format),
