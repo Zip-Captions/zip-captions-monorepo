@@ -16,5 +16,6 @@ export 'stt_engine_provider.dart';
 export 'stt_engine_registry_provider.dart';
 export 'stt_session_manager_provider.dart';
 export 'transcript_providers.dart';
+export 'transcript_writer_target_provider.dart';
 export 'wake_lock_service_provider.dart';
 export 'wake_lock_settings_provider.dart';

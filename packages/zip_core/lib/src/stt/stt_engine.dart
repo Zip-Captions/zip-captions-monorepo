@@ -24,6 +24,12 @@ abstract interface class SttEngine {
   /// Whether the engine requires a model download before use.
   bool get requiresDownload;
 
+  /// Whether the engine requires microphone permission to function.
+  ///
+  /// Set to `false` for engines that produce audio synthetically (e.g. dev
+  /// fakes). `SttSessionManager` skips the permission check when `false`.
+  bool get requiresMicrophone;
+
   /// Request permissions and prepare the engine.
   Future<bool> initialize();
 

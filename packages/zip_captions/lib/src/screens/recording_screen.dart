@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +23,23 @@ class RecordingScreen extends ConsumerStatefulWidget {
 
 class _RecordingScreenState extends ConsumerState<RecordingScreen> {
   bool _showAppearancePanel = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final notifier = ref.read(recordingStateNotifierProvider.notifier);
+      final current = ref.read(recordingStateNotifierProvider);
+      if (current is StoppedState) {
+        notifier.clearSession();
+        unawaited(notifier.start());
+      } else if (current is IdleState) {
+        unawaited(notifier.start());
+      }
+      // recording / paused / reconnecting: a session is already active — leave it.
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

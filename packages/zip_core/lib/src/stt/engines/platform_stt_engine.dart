@@ -43,6 +43,9 @@ class PlatformSttEngine implements SttEngine {
   bool get requiresDownload => false;
 
   @override
+  bool get requiresMicrophone => true;
+
+  @override
   Future<bool> initialize() async {
     try {
       final available = await _stt.initialize();

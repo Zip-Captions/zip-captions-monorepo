@@ -69,7 +69,16 @@ class TranscriptDatabase extends _$TranscriptDatabase {
 
   TranscriptDatabase._openFresh(String dbPath, {String? corruptPath})
       : corruptFilePath = corruptPath,
-        super(NativeDatabase(File(dbPath)));
+        super(
+          NativeDatabase(
+            File(dbPath),
+            setup: (db) {
+              db
+                ..execute('PRAGMA journal_mode=WAL')
+                ..execute('PRAGMA foreign_keys=ON');
+            },
+          ),
+        );
 
   /// Path of the renamed corrupt file; non-null only after corruption recovery.
   ///

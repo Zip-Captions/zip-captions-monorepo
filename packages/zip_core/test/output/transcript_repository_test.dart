@@ -255,6 +255,7 @@ void main() {
   });
 
   group('exportSession', () {
+    /// Two segments with distinct, non-zero durations (start != end).
     Future<void> seedSession() async {
       await repo.createSession('ses-1', DateTime.utc(2026));
       await repo.saveSegment(
@@ -281,27 +282,131 @@ void main() {
       );
     }
 
-    test('TXT export joins text with spaces', () async {
+    /// Two segments where startTimeMs == endTimeMs (as stored by the
+    /// writer target when no merge window has extended the end time).
+    Future<void> seedSessionWithEqualTimestamps() async {
+      await repo.createSession('ses-eq', DateTime.utc(2026));
+      await repo.saveSegment(
+        'ses-eq',
+        const TranscriptSegment(
+          segmentId: 'seg-a',
+          sessionId: 'ses-eq',
+          text: 'alpha',
+          sourceId: 'default',
+          startTimeMs: 1000,
+          endTimeMs: 1000,
+        ),
+      );
+      await repo.saveSegment(
+        'ses-eq',
+        const TranscriptSegment(
+          segmentId: 'seg-b',
+          sessionId: 'ses-eq',
+          text: 'beta',
+          sourceId: 'default',
+          startTimeMs: 3000,
+          endTimeMs: 3000,
+        ),
+      );
+    }
+
+    // --- TXT ---
+
+    test('TXT export joins segments with newlines', () async {
       await seedSession();
       final txt = await repo.exportSession('ses-1', ExportFormat.txt);
-      expect(txt, equals('first second'));
+      expect(txt, equals('first\nsecond'));
     });
 
-    test('SRT export contains timestamps and index numbers', () async {
+    // --- SRT ---
+
+    test('SRT export contains cue index numbers and arrow separators', () async {
       await seedSession();
       final srt = await repo.exportSession('ses-1', ExportFormat.srt);
       expect(srt, contains('1\n'));
-      expect(srt, contains('-->'));
+      expect(srt, contains('2\n'));
+      expect(srt, contains(' --> '));
+    });
+
+    test('SRT cue timestamps use comma as decimal separator', () async {
+      await seedSession();
+      final srt = await repo.exportSession('ses-1', ExportFormat.srt);
+      // SRT uses HH:MM:SS,mmm format.
+      expect(srt, contains(','));
+      expect(srt, isNot(contains('.')));
+    });
+
+    test('SRT end timestamp is after start when durations are stored', () async {
+      await seedSession();
+      final srt = await repo.exportSession('ses-1', ExportFormat.srt);
+      // First cue: 00:00:00,000 --> 00:00:01,000
+      expect(srt, contains('00:00:00,000 --> 00:00:01,000'));
       expect(srt, contains('first'));
     });
+
+    test(
+      'SRT end timestamp is inferred from next segment start when start==end',
+      () async {
+        await seedSessionWithEqualTimestamps();
+        final srt = await repo.exportSession('ses-eq', ExportFormat.srt);
+        // seg-a: start=1000ms, end inferred from seg-b start=3000ms
+        expect(srt, contains('00:00:01,000 --> 00:00:03,000'));
+        expect(srt, contains('alpha'));
+      },
+    );
+
+    test(
+      'SRT last segment gets +3000ms when start==end and no next segment',
+      () async {
+        await seedSessionWithEqualTimestamps();
+        final srt = await repo.exportSession('ses-eq', ExportFormat.srt);
+        // seg-b: start=3000ms, end=3000+3000=6000ms
+        expect(srt, contains('00:00:03,000 --> 00:00:06,000'));
+        expect(srt, contains('beta'));
+      },
+    );
+
+    // --- VTT ---
 
     test('VTT export starts with WEBVTT header', () async {
       await seedSession();
       final vtt = await repo.exportSession('ses-1', ExportFormat.vtt);
-      expect(vtt, startsWith('WEBVTT'));
-      expect(vtt, contains('-->'));
-      expect(vtt, contains('second'));
+      expect(vtt, startsWith('WEBVTT\n'));
     });
+
+    test('VTT cue timestamps use dot as decimal separator', () async {
+      await seedSession();
+      final vtt = await repo.exportSession('ses-1', ExportFormat.vtt);
+      // VTT uses HH:MM:SS.mmm format.
+      expect(vtt, contains('.'));
+    });
+
+    test('VTT end timestamp is after start when durations are stored', () async {
+      await seedSession();
+      final vtt = await repo.exportSession('ses-1', ExportFormat.vtt);
+      expect(vtt, contains('00:00:00.000 --> 00:00:01.000'));
+      expect(vtt, contains('first'));
+    });
+
+    test(
+      'VTT end timestamp is inferred from next segment start when start==end',
+      () async {
+        await seedSessionWithEqualTimestamps();
+        final vtt = await repo.exportSession('ses-eq', ExportFormat.vtt);
+        expect(vtt, contains('00:00:01.000 --> 00:00:03.000'));
+        expect(vtt, contains('alpha'));
+      },
+    );
+
+    test(
+      'VTT last segment gets +3000ms when start==end and no next segment',
+      () async {
+        await seedSessionWithEqualTimestamps();
+        final vtt = await repo.exportSession('ses-eq', ExportFormat.vtt);
+        expect(vtt, contains('00:00:03.000 --> 00:00:06.000'));
+        expect(vtt, contains('beta'));
+      },
+    );
   });
 
   group('events — corruption notification', () {

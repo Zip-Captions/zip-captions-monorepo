@@ -5,6 +5,7 @@ library;
 
 export 'src/constants/constants.dart';
 export 'src/database/transcript_database.dart';
+export 'src/dev/fake_stt_engine.dart';
 export 'src/models/models.dart';
 export 'src/output/on_screen_caption_target.dart';
 export 'src/output/transcript_repository.dart';

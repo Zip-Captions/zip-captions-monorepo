@@ -30,6 +30,20 @@ class RecordingControlsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Idle means the engine is still initialising — show a spinner only.
+    if (state is IdleState) {
+      return const SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

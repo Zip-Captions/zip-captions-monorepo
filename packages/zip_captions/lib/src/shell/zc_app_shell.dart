@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:zip_captions/src/shell/zc_bottom_nav_bar.dart';
 import 'package:zip_captions/src/shell/zc_nav_drawer.dart';
 import 'package:zip_captions/src/shell/zc_nav_rail.dart';
+import 'package:zip_core/zip_core.dart';
 
 /// Platform-adaptive shell wrapping all routed screens with navigation chrome.
 ///
 /// - Width > 768px: persistent [ZcNavRail] on the left.
-/// - Width ≤ 768px, tab-bar screen: [AppBar] + [ZcBottomNavBar].
-/// - Width ≤ 768px, drawer screen: [AppBar] with hamburger + [ZcNavDrawer].
-class ZcAppShell extends StatelessWidget {
+/// - Width ≤ 768px: [AppBar] with hamburger + [ZcNavDrawer] on every screen.
+class ZcAppShell extends ConsumerWidget {
   /// Creates a [ZcAppShell].
   const ZcAppShell({required this.child, super.key});
 
@@ -17,10 +17,6 @@ class ZcAppShell extends StatelessWidget {
   final Widget child;
 
   static const _desktopBreakpoint = 768.0;
-
-  /// Returns `true` for routes that show a bottom tab bar on mobile.
-  static bool _isTabBarScreen(String location) =>
-      location == '/' || location == '/history';
 
   static String _screenTitle(String location) {
     if (location == '/') return 'Zip Captions';
@@ -53,13 +49,12 @@ class ZcAppShell extends StatelessWidget {
     }
   }
 
-  /// Maps the current tab-bar location to a tab index.
-  static int _tabIndex(String location) => location == '/' ? 0 : 1;
-
-  static String _tabDestination(int index) => index == 0 ? '/' : '/history';
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Keep transcriptWriterTargetProvider subscribed so it rebuilds eagerly
+    // when captureEnabled changes (e.g. user re-enables Save Transcripts).
+    ref.watch(transcriptWriterTargetProvider);
+
     final location = GoRouterState.of(context).matchedLocation;
     final width = MediaQuery.of(context).size.width;
 
@@ -77,42 +72,24 @@ class ZcAppShell extends StatelessWidget {
       );
     }
 
-    final isTabBar = _isTabBarScreen(location);
     return Scaffold(
       appBar: AppBar(
         title: Text(_screenTitle(location)),
-        leading: isTabBar
-            ? null
-            : Builder(
-                builder: (ctx) => IconButton(
-                  icon: const Icon(Icons.menu),
-                  onPressed: () => Scaffold.of(ctx).openDrawer(),
-                ),
-              ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Settings',
-            onPressed: () => context.go('/settings'),
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
-        ],
+        ),
       ),
       body: child,
-      bottomNavigationBar: isTabBar
-          ? ZcBottomNavBar(
-              currentIndex: _tabIndex(location),
-              onTap: (i) => context.go(_tabDestination(i)),
-            )
-          : null,
-      drawer: isTabBar
-          ? null
-          : ZcNavDrawer(
-              currentLocation: location,
-              onTap: (route) {
-                context.go(route);
-                Navigator.of(context).pop();
-              },
-            ),
+      drawer: ZcNavDrawer(
+        currentLocation: location,
+        onTap: (route) {
+          context.go(route);
+          Navigator.of(context).pop();
+        },
+      ),
     );
   }
 }

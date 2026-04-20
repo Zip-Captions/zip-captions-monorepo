@@ -255,7 +255,7 @@ class TranscriptRepository {
   TranscriptSession _rowToSession(TranscriptSessionRow row) =>
       TranscriptSession(
         sessionId: row.sessionId,
-        date: row.date,
+        date: row.date.toUtc(),
         durationMs: row.durationMs,
         segmentCount: row.segmentCount,
         title: row.title,
@@ -276,16 +276,17 @@ class TranscriptRepository {
   // ---------------------------------------------------------------------------
 
   String _exportTxt(List<TranscriptSegment> segments) =>
-      segments.map((s) => s.text).join(' ');
+      segments.map((s) => s.text).join('\n');
 
   String _exportSrt(List<TranscriptSegment> segments) {
     final buffer = StringBuffer();
     for (var i = 0; i < segments.length; i++) {
       final s = segments[i];
+      final endMs = _effectiveEndMs(s, i, segments);
       buffer
         ..writeln(i + 1)
         ..writeln(
-          '${_srtTimestamp(s.startTimeMs)} --> ${_srtTimestamp(s.endTimeMs)}',
+          '${_srtTimestamp(s.startTimeMs)} --> ${_srtTimestamp(endMs)}',
         )
         ..writeln(s.text)
         ..writeln();
@@ -295,15 +296,32 @@ class TranscriptRepository {
 
   String _exportVtt(List<TranscriptSegment> segments) {
     final buffer = StringBuffer('WEBVTT\n\n');
-    for (final s in segments) {
+    for (var i = 0; i < segments.length; i++) {
+      final s = segments[i];
+      final endMs = _effectiveEndMs(s, i, segments);
       buffer
         ..writeln(
-          '${_vttTimestamp(s.startTimeMs)} --> ${_vttTimestamp(s.endTimeMs)}',
+          '${_vttTimestamp(s.startTimeMs)} --> ${_vttTimestamp(endMs)}',
         )
         ..writeln(s.text)
         ..writeln();
     }
     return buffer.toString();
+  }
+
+  /// Returns a meaningful end time for cue at index [i].
+  ///
+  /// When stored end equals start (the writer records arrival time for both
+  /// when a new segment is created), end is inferred from the next segment's
+  /// start. For the last segment, 3 seconds are added as a default.
+  int _effectiveEndMs(
+    TranscriptSegment s,
+    int i,
+    List<TranscriptSegment> segments,
+  ) {
+    if (s.endTimeMs > s.startTimeMs) return s.endTimeMs;
+    if (i + 1 < segments.length) return segments[i + 1].startTimeMs;
+    return s.startTimeMs + 3000;
   }
 
   String _srtTimestamp(int ms) {

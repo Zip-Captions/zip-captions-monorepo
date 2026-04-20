@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:zip_captions/src/providers/settings_notifier.dart';
 import 'package:zip_core/zip_core.dart';
 
@@ -23,8 +24,10 @@ class SettingsScreen extends ConsumerWidget {
     final wakeLockNotifier =
         ref.read(wakeLockSettingsNotifierProvider.notifier);
 
+    final isDesktop = MediaQuery.of(context).size.width > 768;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: isDesktop ? AppBar(title: const Text('Settings')) : null,
       body: ListView(
         children: [
           const _SectionHeader('Display'),
@@ -55,7 +58,10 @@ class SettingsScreen extends ConsumerWidget {
                       value: f,
                       child: Text(
                         f.fontFamily,
-                        style: TextStyle(fontFamily: f.fontFamily),
+                        style: GoogleFonts.getFont(
+                          f.fontFamily,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   )

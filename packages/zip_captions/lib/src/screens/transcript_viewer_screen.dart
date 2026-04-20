@@ -28,29 +28,43 @@ class TranscriptViewerScreen extends ConsumerWidget {
     final sessionAsync = ref.watch(transcriptSessionProvider(sessionId));
     final segmentsAsync = ref.watch(transcriptSegmentsProvider(sessionId));
 
+    final isDesktop = MediaQuery.of(context).size.width > 768;
+    final canExport = sessionAsync.valueOrNull != null;
+
     return Scaffold(
-      appBar: AppBar(
-        title: sessionAsync.maybeWhen(
-          data: (s) {
-            if (s == null) return const Text('Transcript');
-            final d = s.date;
-            final mm = d.month.toString().padLeft(2, '0');
-            final dd = d.day.toString().padLeft(2, '0');
-            final dateStr = '${d.year}-$mm-$dd';
-            return Text(s.title?.isNotEmpty ?? false ? s.title! : dateStr);
-          },
-          orElse: () => const Text('Transcript'),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.ios_share),
-            tooltip: 'Export',
-            onPressed: sessionAsync.valueOrNull != null
-                ? () => _showExportSheet(context, ref)
-                : null,
-          ),
-        ],
-      ),
+      appBar: isDesktop
+          ? AppBar(
+              title: sessionAsync.maybeWhen(
+                data: (s) {
+                  if (s == null) return const Text('Transcript');
+                  final d = s.date;
+                  final mm = d.month.toString().padLeft(2, '0');
+                  final dd = d.day.toString().padLeft(2, '0');
+                  final dateStr = '${d.year}-$mm-$dd';
+                  return Text(
+                    s.title?.isNotEmpty ?? false ? s.title! : dateStr,
+                  );
+                },
+                orElse: () => const Text('Transcript'),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.ios_share),
+                  tooltip: 'Export',
+                  onPressed:
+                      canExport ? () => _showExportSheet(context, ref) : null,
+                ),
+              ],
+            )
+          : null,
+      floatingActionButton: !isDesktop
+          ? FloatingActionButton(
+              tooltip: 'Export',
+              onPressed:
+                  canExport ? () => _showExportSheet(context, ref) : null,
+              child: const Icon(Icons.ios_share),
+            )
+          : null,
       body: sessionAsync.when(
         loading: () => const LinearProgressIndicator(),
         error: (e, _) =>
@@ -98,6 +112,7 @@ class TranscriptViewerScreen extends ConsumerWidget {
       final repo = await ref.read(transcriptRepositoryProvider.future);
       final content = await repo.exportSession(sessionId, format);
       final tempDir = await getTemporaryDirectory();
+      await Directory(tempDir.path).create(recursive: true);
       path = '${tempDir.path}/export_$sessionId.${format.name}';
       await File(path).writeAsString(content);
 
@@ -113,7 +128,8 @@ class TranscriptViewerScreen extends ConsumerWidget {
           await File(path).copy(location.path);
         }
       }
-    } on Object {
+    } on Object catch (e, st) {
+      debugPrint('Export error: $e\n$st');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Export failed. Please try again.')),

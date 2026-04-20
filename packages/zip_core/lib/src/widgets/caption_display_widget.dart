@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:zip_core/src/models/caption_display_entry.dart';
 import 'package:zip_core/src/models/display_settings.dart';
 import 'package:zip_core/src/models/enums.dart';
@@ -45,13 +46,9 @@ class _CaptionDisplayWidgetState extends ConsumerState<CaptionDisplayWidget> {
 
   void _scrollToLatest() {
     if (!_scrollController.hasClients) return;
-    final target =
-        widget.settings.scrollDirection == ScrollDirection.bottomToTop
-            ? _scrollController.position.maxScrollExtent
-            : 0.0;
     unawaited(
       _scrollController.animateTo(
-        target,
+        0,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
       ),
@@ -65,20 +62,46 @@ class _CaptionDisplayWidgetState extends ConsumerState<CaptionDisplayWidget> {
 
     if (entries.length != _lastEntryCount) {
       _lastEntryCount = entries.length;
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _scrollToLatest());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToLatest());
     }
 
-    final textStyle = settings.captionTextSize
-        .resolve(Theme.of(context).textTheme)
-        ?.copyWith(fontFamily: settings.captionFont.fontFamily);
+    final baseStyle = settings.captionTextSize.resolve(
+      Theme.of(context).textTheme,
+    );
+    final textStyle = baseStyle != null
+        ? GoogleFonts.getFont(
+            settings.captionFont.fontFamily,
+            textStyle: baseStyle,
+            fontWeight: FontWeight.w500,
+          )
+        : null;
 
     return ListView.builder(
       controller: _scrollController,
       reverse: settings.scrollDirection == ScrollDirection.bottomToTop,
       itemCount: entries.length,
-      itemBuilder: (_, i) {
-        final entry = entries[i];
+      itemBuilder: (context, i) {
+        final entry = entries[entries.length - 1 - i];
+        if (entry.sourceId == '__pause__') {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                const Expanded(child: Divider()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    'paused',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                ),
+                const Expanded(child: Divider()),
+              ],
+            ),
+          );
+        }
         return Opacity(
           opacity: entry.isFinal ? 1.0 : 0.8,
           child: Padding(

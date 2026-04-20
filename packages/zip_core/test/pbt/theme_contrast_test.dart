@@ -60,6 +60,11 @@ void main() {
       expect(r, ge);
     });
 
+    test('onPrimaryContainer on primaryContainer', () {
+      final r = contrastRatio(cs.onPrimaryContainer, cs.primaryContainer);
+      expect(r, ge);
+    });
+
     test('error on surface', () {
       expect(contrastRatio(cs.error, cs.surface), ge);
     });
@@ -113,6 +118,11 @@ void main() {
         cs.onInverseSurface,
         cs.inverseSurface,
       );
+      expect(r, ge);
+    });
+
+    test('onPrimaryContainer on primaryContainer', () {
+      final r = contrastRatio(cs.onPrimaryContainer, cs.primaryContainer);
       expect(r, ge);
     });
 

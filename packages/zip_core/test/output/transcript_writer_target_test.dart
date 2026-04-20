@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart'
@@ -53,12 +54,27 @@ void main() {
   late TranscriptWriterTarget target;
   late MockTranscriptRepository mockRepo;
 
+  setUpAll(() {
+    registerFallbackValue(DateTime(2026));
+    registerFallbackValue(
+      const TranscriptSegment(
+        segmentId: 'fallback',
+        sessionId: 'fallback',
+        text: '',
+        sourceId: '',
+        startTimeMs: 0,
+        endTimeMs: 0,
+      ),
+    );
+  });
+
   setUp(() {
     mockRepo = MockTranscriptRepository();
     _stubRepo(mockRepo);
     target = TranscriptWriterTarget(
       repository: mockRepo,
       settings: const TranscriptSettings(),
+      now: () => clock.now(),
     );
   });
 

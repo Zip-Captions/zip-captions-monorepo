@@ -50,6 +50,9 @@ class SherpaOnnxSttEngine implements SttEngine {
   bool get requiresDownload => true;
 
   @override
+  bool get requiresMicrophone => true;
+
+  @override
   Future<bool> isAvailable() async =>
       _modelManager.downloadedModels.isNotEmpty;
 

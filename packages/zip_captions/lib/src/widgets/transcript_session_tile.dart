@@ -5,12 +5,16 @@ import 'package:zip_core/zip_core.dart';
 ///
 /// Shows session title (or formatted date as fallback), duration, and segment
 /// count. Provides swipe-to-delete and a tap handler.
+///
+/// Set [isLive] when the session is currently active — the tile shows a
+/// "LIVE" chip instead of duration/segment stats.
 class TranscriptSessionTile extends StatelessWidget {
   /// Creates a [TranscriptSessionTile].
   const TranscriptSessionTile({
     required this.session,
     required this.onTap,
     required this.onDelete,
+    this.isLive = false,
     super.key,
   });
 
@@ -20,8 +24,11 @@ class TranscriptSessionTile extends StatelessWidget {
   /// Called when the tile is tapped.
   final VoidCallback onTap;
 
-  /// Called when the delete action is confirmed.
-  final VoidCallback onDelete;
+  /// Called when deletion is confirmed; must throw on failure.
+  final Future<void> Function() onDelete;
+
+  /// Whether this session is currently being captioned.
+  final bool isLive;
 
   @override
   Widget build(BuildContext context) {
@@ -45,30 +52,59 @@ class TranscriptSessionTile extends StatelessWidget {
           color: Theme.of(context).colorScheme.onError,
         ),
       ),
-      confirmDismiss: (_) => showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Delete session?'),
-          content: const Text('This cannot be undone.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Delete'),
-            ),
-          ],
-        ),
-      ),
-      onDismissed: (_) => onDelete(),
+      confirmDismiss: (_) async {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Delete session?'),
+            content: const Text('This cannot be undone.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true) return false;
+        try {
+          await onDelete();
+          return true;
+        } on Object {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Could not delete session.')),
+            );
+          }
+          return false;
+        }
+      },
       child: ListTile(
         title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-        subtitle: Text(
-          '$dateLabel · $durationLabel · ${session.segmentCount} segments',
-        ),
-        trailing: const Icon(Icons.chevron_right),
+        subtitle: isLive
+            ? null
+            : Text(
+                '$dateLabel · $durationLabel'
+                ' · ${session.segmentCount} segments',
+              ),
+        trailing: isLive
+            ? Chip(
+                label: const Text('LIVE'),
+                backgroundColor:
+                    Theme.of(context).colorScheme.error.withAlpha(30),
+                labelStyle: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                ),
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              )
+            : const Icon(Icons.chevron_right),
         onTap: onTap,
       ),
     );

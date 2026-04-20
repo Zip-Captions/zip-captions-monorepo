@@ -38,52 +38,87 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     });
   }
 
+  static const _desktopBreakpoint = 768.0;
+
   @override
   Widget build(BuildContext context) {
     final query = ref.watch(transcriptSearchQueryProvider);
     final sessionsAsync = ref.watch(transcriptSessionListProvider(query));
+    final recordingState = ref.watch(recordingStateNotifierProvider);
+    final activeSessionId = switch (recordingState) {
+      RecordingActiveState() => recordingState.sessionId,
+      PausedState() => recordingState.sessionId,
+      ReconnectingState() => recordingState.sessionId,
+      _ => null,
+    };
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('History'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: SearchBar(
-              controller: _searchController,
-              hintText: 'Search transcripts…',
-              onChanged: _onSearchChanged,
-            ),
-          ),
-        ),
+    final isDesktop =
+        MediaQuery.of(context).size.width > _desktopBreakpoint;
+
+    final searchBar = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: SearchBar(
+        controller: _searchController,
+        hintText: 'Search transcripts…',
+        onChanged: _onSearchChanged,
       ),
-      body: sessionsAsync.when(
-        loading: () => const LinearProgressIndicator(),
-        error: (e, _) => const Center(child: Text('Error loading sessions')),
-        data: (list) {
-          if (list.isEmpty) {
-            return _EmptyHistoryPlaceholder(
-              hasQuery: query.trim().isNotEmpty,
-            );
-          }
-          return ListView.builder(
-            itemCount: list.length,
-            itemBuilder: (context, i) {
-              final session = list[i];
-              return TranscriptSessionTile(
-                session: session,
-                onTap: () => context.go('/history/${session.sessionId}'),
-                onDelete: () async {
-                  final repo =
-                      await ref.read(transcriptRepositoryProvider.future);
-                  await repo.deleteSession(session.sessionId);
-                  ref.invalidate(transcriptSessionListProvider);
-                },
-              );
+    );
+
+    Widget buildList(List<TranscriptSession> list) {
+      if (list.isEmpty) {
+        return _EmptyHistoryPlaceholder(hasQuery: query.trim().isNotEmpty);
+      }
+      return ListView.builder(
+        itemCount: list.length,
+        itemBuilder: (context, i) {
+          final session = list[i];
+          return TranscriptSessionTile(
+            session: session,
+            isLive: session.sessionId == activeSessionId,
+            onTap: () => context.go('/history/${session.sessionId}'),
+            onDelete: () async {
+              final repo =
+                  await ref.read(transcriptRepositoryProvider.future);
+              await repo.deleteSession(session.sessionId);
+              ref.invalidate(transcriptSessionListProvider);
             },
           );
         },
+      );
+    }
+
+    final body = sessionsAsync.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (e, _) => const Center(child: Text('Error loading sessions')),
+      data: buildList,
+    );
+
+    if (isDesktop) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('History'),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(56),
+            child: searchBar,
+          ),
+        ),
+        body: body,
+      );
+    }
+
+    // Mobile: shell provides AppBar; SearchBar goes at top of body.
+    // PopScope prevents the Android back button from exiting the app when
+    // history was reached via context.go() (which clears the navigation stack).
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) => context.go('/'),
+      child: Scaffold(
+        body: Column(
+          children: [
+            searchBar,
+            Expanded(child: body),
+          ],
+        ),
       ),
     );
   }

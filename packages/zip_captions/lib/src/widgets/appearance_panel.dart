@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:zip_core/zip_core.dart';
 
 /// Floating overlay panel for adjusting caption display settings.
@@ -72,7 +73,10 @@ class AppearancePanel extends StatelessWidget {
                       value: f,
                       child: Text(
                         f.fontFamily,
-                        style: TextStyle(fontFamily: f.fontFamily),
+                        style: GoogleFonts.getFont(
+                          f.fontFamily,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   )

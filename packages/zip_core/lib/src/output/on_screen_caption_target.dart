@@ -130,13 +130,36 @@ class OnScreenCaptionTarget implements CaptionOutputTarget {
   void _handleSessionState(RecordingState state) {
     switch (state) {
       case RecordingActiveState():
-        _currentSessionId = state.sessionId;
-        _buffer.clear();
+        if (state.sessionId != _currentSessionId) {
+          _currentSessionId = state.sessionId;
+          _buffer.clear();
+          _currentInterim = null;
+          _log.fine(
+            'session started: targetId=$_targetId'
+            ' sessionId=${state.sessionId}',
+          );
+        } else {
+          // Resume after pause — keep buffer, clear interim only.
+          _currentInterim = null;
+          _log.fine(
+            'session resumed: targetId=$_targetId'
+            ' sessionId=${state.sessionId}',
+          );
+        }
+      case PausedState():
         _currentInterim = null;
-        _log.fine(
-          'session started: targetId=$_targetId'
-          ' sessionId=${state.sessionId}',
-        );
+        if (_currentSessionId != null) {
+          _buffer.add(
+            CaptionDisplayEntry(
+              entryId: _uuid.v4(),
+              sessionId: _currentSessionId!,
+              text: '',
+              isFinal: true,
+              sourceId: '__pause__',
+              timestamp: DateTime.now(),
+            ),
+          );
+        }
       case StoppedState():
         _currentSessionId = null;
         _currentInterim = null;
@@ -145,7 +168,7 @@ class OnScreenCaptionTarget implements CaptionOutputTarget {
         _currentSessionId = null;
         _buffer.clear();
         _currentInterim = null;
-      case PausedState() || ReconnectingState():
+      case ReconnectingState():
         break;
     }
   }

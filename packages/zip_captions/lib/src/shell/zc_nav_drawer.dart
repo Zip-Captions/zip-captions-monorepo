@@ -21,47 +21,54 @@ class ZcNavDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
+      child: SafeArea(
+        child: Column(
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Zip Captions',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
             ),
-            child: Text(
-              'Zip Captions',
-              style: Theme.of(context).textTheme.headlineSmall,
+            _DrawerTile(
+              icon: Icons.home_outlined,
+              label: 'Home',
+              route: '/',
+              currentLocation: currentLocation,
+              onTap: onTap,
             ),
-          ),
-          _DrawerTile(
-            icon: Icons.home_outlined,
-            label: 'Home',
-            route: '/',
-            currentLocation: currentLocation,
-            onTap: onTap,
-          ),
-          _DrawerTile(
-            icon: Icons.closed_caption_outlined,
-            label: 'Caption',
-            route: '/recording',
-            currentLocation: currentLocation,
-            onTap: onTap,
-          ),
-          _DrawerTile(
-            icon: Icons.history,
-            label: 'History',
-            route: '/history',
-            currentLocation: currentLocation,
-            onTap: onTap,
-          ),
-          _DrawerTile(
-            icon: Icons.settings_outlined,
-            label: 'Settings',
-            route: '/settings',
-            currentLocation: currentLocation,
-            onTap: onTap,
-          ),
-        ],
+            _DrawerTile(
+              icon: Icons.closed_caption_outlined,
+              label: 'Caption',
+              route: '/recording',
+              currentLocation: currentLocation,
+              onTap: onTap,
+            ),
+            _DrawerTile(
+              icon: Icons.history,
+              label: 'History',
+              route: '/history',
+              currentLocation: currentLocation,
+              onTap: onTap,
+            ),
+            const Spacer(),
+            _DrawerTile(
+              icon: Icons.settings_outlined,
+              label: 'Settings',
+              route: '/settings',
+              currentLocation: currentLocation,
+              onTap: onTap,
+            ),
+          ],
+        ),
       ),
     );
   }

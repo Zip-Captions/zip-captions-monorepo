@@ -14,6 +14,8 @@ abstract final class AppTheme {
       surfaceContainerHighest: Color(0xFF2D3640),
       primary: Color(0xFF9ACBFF),
       onPrimary: Color(0xFF003355),
+      primaryContainer: Color(0xFF003355),
+      onPrimaryContainer: Color(0xFFD1E4FF),
       secondaryContainer: Color(0xFF414A54),
       onSecondaryContainer: Color(0xFFE0E8F2),
       onSurface: Color(0xFFDAE3F0),
@@ -31,6 +33,18 @@ abstract final class AppTheme {
       colorScheme: colorScheme,
       textTheme: _buildTextTheme(colorScheme),
       scaffoldBackgroundColor: colorScheme.surface,
+      searchBarTheme: SearchBarThemeData(
+        elevation: const WidgetStatePropertyAll(0),
+        backgroundColor: WidgetStatePropertyAll(
+          colorScheme.surfaceContainerHighest,
+        ),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: colorScheme.outlineVariant),
+          ),
+        ),
+      ),
     );
   }
 
@@ -45,6 +59,8 @@ abstract final class AppTheme {
       surfaceContainerHigh: Color(0xFFEEF2F8),
       surfaceContainerHighest: Color(0xFFE4EAF2),
       primary: Color(0xFF1A5A8C),
+      primaryContainer: Color(0xFFD1E4FF),
+      onPrimaryContainer: Color(0xFF001D36),
       secondaryContainer: Color(0xFFDAE3F0),
       onSecondaryContainer: Color(0xFF0B141D),
       onSurface: Color(0xFF0B141D),
@@ -62,6 +78,18 @@ abstract final class AppTheme {
       colorScheme: colorScheme,
       textTheme: _buildTextTheme(colorScheme),
       scaffoldBackgroundColor: colorScheme.surface,
+      searchBarTheme: SearchBarThemeData(
+        elevation: const WidgetStatePropertyAll(0),
+        backgroundColor: WidgetStatePropertyAll(
+          colorScheme.surfaceContainerHighest,
+        ),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: colorScheme.outlineVariant),
+          ),
+        ),
+      ),
     );
   }
 
