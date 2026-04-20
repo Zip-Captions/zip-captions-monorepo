@@ -1,9 +1,9 @@
-// PBT generator library for glados (LC-01).
+// PBT generator library (LC-01).
 //
-// Centralized Arbitrary<T> instances for all domain types.
+// Centralized Generator<T> instances for all domain types.
 // Imported by PBT test files.
 
-import 'package:glados/glados.dart';
+import 'pbt.dart';
 import 'package:zip_core/src/models/audio_device.dart';
 import 'package:zip_core/src/models/caption_event.dart';
 import 'package:zip_core/src/models/display_settings.dart';
@@ -97,11 +97,11 @@ final Generator<String> arbitraryLocaleId = any.choose([
 /// Generates valid SttResult instances with randomized fields.
 final Generator<SttResult> arbitrarySttResult = any.combine5(
   any.letterOrDigits, // text
-  any.bool, // isFinal
+  any.boolGen, // isFinal
   any.doubleInRange(0, 1), // confidence
   any.choose(['default', 'mic-1', 'mic-2', 'system-audio']), // sourceId
   any.choose([null, 'Speaker A', 'Speaker B']), // speakerTag
-  (text, isFinal, confidence, sourceId, speakerTag) => SttResult(
+  (String text, bool isFinal, double confidence, String sourceId, String? speakerTag) => SttResult(
     text: text.isEmpty && isFinal ? 'fallback' : text,
     isFinal: isFinal,
     confidence: confidence,
@@ -133,10 +133,10 @@ final Generator<RecordingState> arbitraryRecordingState = any.combine3(
 /// Generates random CaptionEvent instances (either SttResultEvent or
 /// SessionStateEvent with a varied [RecordingState]).
 final Generator<CaptionEvent> arbitraryCaptionEvent = any.combine3(
-  any.bool,
+  any.boolGen,
   arbitrarySttResult,
   arbitraryRecordingState,
-  (useResult, result, state) =>
+  (bool useResult, SttResult result, RecordingState state) =>
       useResult ? SttResultEvent(result) : SessionStateEvent(state),
 );
 
@@ -159,8 +159,8 @@ final Generator<List<RegistryOp>> arbitraryRegistryOps =
 final Generator<AudioDevice> arbitraryAudioDevice = any.combine3(
   any.letterOrDigits,
   any.letterOrDigits,
-  any.bool,
-  (id, name, isDefault) => AudioDevice(
+  any.boolGen,
+  (String id, String name, bool isDefault) => AudioDevice(
     deviceId: id.isEmpty ? 'dev-0' : id,
     name: name.isEmpty ? 'Device' : name,
     isDefault: isDefault,
@@ -169,9 +169,9 @@ final Generator<AudioDevice> arbitraryAudioDevice = any.combine3(
 
 /// Generates [WakeLockSettings] with all boolean combinations.
 final Generator<WakeLockSettings> arbitraryWakeLockSettings = any.combine2(
-  any.bool,
-  any.bool,
-  (enabled, releaseOnPause) => WakeLockSettings(
+  any.boolGen,
+  any.boolGen,
+  (bool enabled, bool releaseOnPause) => WakeLockSettings(
     enabled: enabled,
     releaseOnPause: releaseOnPause,
   ),
@@ -200,8 +200,8 @@ final Generator<SherpaModelCatalogEntry> arbitrarySherpaModelCatalogEntry =
 /// Generates [SherpaModelInfo] instances.
 final Generator<SherpaModelInfo> arbitrarySherpaModelInfo = any.combine2(
   arbitrarySherpaModelCatalogEntry,
-  any.bool,
-  (entry, isDownloaded) => SherpaModelInfo(
+  any.boolGen,
+  (SherpaModelCatalogEntry entry, bool isDownloaded) => SherpaModelInfo(
     catalogEntry: entry,
     isDownloaded: isDownloaded,
     localPath: isDownloaded ? '/models/${entry.modelId}' : null,

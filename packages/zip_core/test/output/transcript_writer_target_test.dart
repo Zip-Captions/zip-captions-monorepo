@@ -1,8 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart'
-    hide addTearDown, any, expect, group, setUp, tearDown, test;
+import '../helpers/pbt.dart' hide any;
 import 'package:mocktail/mocktail.dart';
 import 'package:zip_core/src/models/caption_event.dart';
 import 'package:zip_core/src/models/recording_state.dart';
