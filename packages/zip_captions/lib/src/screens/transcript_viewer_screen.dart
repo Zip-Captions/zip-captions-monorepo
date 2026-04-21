@@ -115,16 +115,15 @@ class TranscriptViewerScreen extends ConsumerWidget {
   }) async {
     final secured =
         await ref.read(deviceSecuredProvider.future).catchError((_) => false);
+    if (!context.mounted) return;
     if (!secured) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Export requires a screen lock to protect transcript data.',
-            ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Export requires a screen lock to protect transcript data.',
           ),
-        );
-      }
+        ),
+      );
       return;
     }
     try {

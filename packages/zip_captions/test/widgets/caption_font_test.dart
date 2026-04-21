@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:zip_core/src/models/caption_display_entry.dart';
-import 'package:zip_core/src/models/display_settings.dart';
-import 'package:zip_core/src/models/enums.dart';
-import 'package:zip_core/src/theme/app_theme.dart';
-import 'package:zip_core/src/widgets/caption_display_widget.dart';
+import 'package:zip_core/zip_core.dart';
 
 CaptionDisplayEntry _entry(String text) => CaptionDisplayEntry(
       entryId: text,
@@ -48,6 +44,14 @@ void main() {
         await tester.pumpWidget(_wrap(font));
         await tester.pumpAndSettle();
         expect(find.text('Sample caption text'), findsOneWidget);
+        final text =
+            tester.widget<Text>(find.text('Sample caption text'));
+        expect(
+          text.style?.fontFamily,
+          GoogleFonts.getFont(font.fontFamily, fontWeight: FontWeight.w500)
+              .fontFamily,
+          reason: 'CaptionDisplayWidget must apply ${font.fontFamily}',
+        );
       });
     }
   });

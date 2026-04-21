@@ -197,6 +197,7 @@ class ObsWebSocketTarget implements CaptionOutputTarget {
       ObsReconnecting(attempt: _retryAttempt, nextRetryMs: delay),
     );
 
+    _reconnectTimer?.cancel();
     _reconnectTimer = Timer(Duration(milliseconds: delay), _connectOnce);
   }
 

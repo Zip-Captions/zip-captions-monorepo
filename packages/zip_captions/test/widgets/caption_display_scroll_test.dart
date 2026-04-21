@@ -8,23 +8,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:zip_core/src/models/caption_display_entry.dart';
-import 'package:zip_core/src/models/display_settings.dart';
-import 'package:zip_core/src/models/enums.dart';
-import 'package:zip_core/src/theme/app_theme.dart';
-import 'package:zip_core/src/widgets/caption_display_widget.dart';
+import 'package:zip_core/zip_core.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-CaptionDisplayEntry _entry(String text) => CaptionDisplayEntry(
+CaptionDisplayEntry _entry(String text, DateTime timestamp) =>
+    CaptionDisplayEntry(
       entryId: text,
       sessionId: 'session',
       text: text,
       isFinal: true,
       sourceId: 'default',
-      timestamp: DateTime.utc(2024),
+      timestamp: timestamp,
     );
 
 Widget _wrap(ScrollDirection dir) => ProviderScope(
@@ -32,7 +29,10 @@ Widget _wrap(ScrollDirection dir) => ProviderScope(
         theme: AppTheme.light(),
         home: Scaffold(
           body: CaptionDisplayWidget(
-            entries: [_entry('first'), _entry('second')],
+            entries: [
+              _entry('first', DateTime.utc(2024)),
+              _entry('second', DateTime.utc(2024, 1, 1, 0, 0, 1)),
+            ],
             settings: DisplaySettings(
               scrollDirection: dir,
               captionTextSize: CaptionTextSize.md,
@@ -64,6 +64,10 @@ void main() {
 
       final firstDy = tester.getCenter(find.text('first')).dy;
       final secondDy = tester.getCenter(find.text('second')).dy;
+      final widgetBottom =
+          tester.getBottomRight(find.byType(CaptionDisplayWidget)).dy;
+      final newestBottom =
+          tester.getBottomRight(find.text('second')).dy;
 
       // "first" (oldest) must be higher on screen (lower dy) than
       // "second" (newest) which is pinned to the bottom.
@@ -72,6 +76,11 @@ void main() {
         lessThan(secondDy),
         reason: '"first" (oldest) should appear above "second" (newest) '
             'in bottomToTop mode',
+      );
+      expect(
+        newestBottom,
+        closeTo(widgetBottom, 32),
+        reason: '"second" (newest) should be pinned near the bottom',
       );
     });
 
@@ -84,6 +93,9 @@ void main() {
 
       final firstDy = tester.getCenter(find.text('first')).dy;
       final secondDy = tester.getCenter(find.text('second')).dy;
+      final widgetTop =
+          tester.getTopLeft(find.byType(CaptionDisplayWidget)).dy;
+      final newestTop = tester.getTopLeft(find.text('second')).dy;
 
       // "second" (newest) must be higher on screen (lower dy) than
       // "first" (oldest) in reverse-chronological top-pinned mode.
@@ -92,6 +104,11 @@ void main() {
         lessThan(firstDy),
         reason: '"second" (newest) should appear above "first" (oldest) '
             'in topToBottom mode',
+      );
+      expect(
+        newestTop,
+        closeTo(widgetTop, 32),
+        reason: '"second" (newest) should be pinned near the top',
       );
     });
   });
