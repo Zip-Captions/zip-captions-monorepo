@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:zip_captions/src/providers/device_auth_provider.dart';
 import 'package:zip_captions/src/providers/settings_notifier.dart';
 import 'package:zip_core/zip_core.dart';
 
@@ -23,6 +24,7 @@ class SettingsScreen extends ConsumerWidget {
     final wakeLockSettings = ref.watch(wakeLockSettingsNotifierProvider);
     final wakeLockNotifier =
         ref.read(wakeLockSettingsNotifierProvider.notifier);
+    final isDeviceSecured = ref.watch(deviceSecuredProvider);
 
     final isDesktop = MediaQuery.of(context).size.width > 768;
 
@@ -115,9 +117,9 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const _SectionHeader('Transcripts'),
-          SwitchListTile(
-            title: const Text('Save transcripts'),
-            value: transcriptSettings.captureEnabled,
+          _TranscriptToggle(
+            enabled: transcriptSettings.captureEnabled,
+            deviceSecured: isDeviceSecured,
             onChanged: (v) =>
                 unawaited(transcriptNotifier.setCaptureEnabled(value: v)),
           ),
@@ -134,6 +136,34 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TranscriptToggle extends StatelessWidget {
+  const _TranscriptToggle({
+    required this.enabled,
+    required this.deviceSecured,
+    required this.onChanged,
+  });
+
+  final bool enabled;
+  final AsyncValue<bool> deviceSecured;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final secured = deviceSecured.valueOrNull ?? false;
+    return SwitchListTile(
+      title: const Text('Save transcripts'),
+      subtitle: secured
+          ? null
+          : const Text(
+              'Requires a screen lock (PIN, pattern, or biometrics) '
+              'to protect stored data.',
+            ),
+      value: enabled && secured,
+      onChanged: secured ? onChanged : null,
     );
   }
 }
