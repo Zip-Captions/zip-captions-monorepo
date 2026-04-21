@@ -127,7 +127,10 @@ class ObsWebSocketTarget implements CaptionOutputTarget {
             ),
     );
 
-    final url = '${settings.host}:${settings.port}';
+    final rawHost = settings.host;
+    final url = rawHost.startsWith('ws://') || rawHost.startsWith('wss://')
+        ? '$rawHost:${settings.port}'
+        : 'ws://$rawHost:${settings.port}';
     _log.fine(
       'connection attempt ${_retryAttempt + 1}: url=$url',
     );
