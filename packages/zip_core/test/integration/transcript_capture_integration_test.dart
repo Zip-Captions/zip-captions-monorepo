@@ -20,8 +20,8 @@ import 'package:zip_core/src/output/transcript_repository.dart';
 import 'package:zip_core/src/providers/base_settings_notifier.dart';
 import 'package:zip_core/src/providers/recording_state_notifier.dart';
 import 'package:zip_core/src/providers/resolved_locale_id_provider.dart';
-import 'package:zip_core/src/providers/stt_engine_registry_provider.dart';
 import 'package:zip_core/src/providers/session_stop_callback_provider.dart';
+import 'package:zip_core/src/providers/stt_engine_registry_provider.dart';
 import 'package:zip_core/src/providers/transcript_providers.dart';
 import 'package:zip_core/src/providers/transcript_writer_target_provider.dart';
 import 'package:zip_core/src/providers/wake_lock_service_provider.dart';
@@ -101,7 +101,7 @@ void main() {
         isA<RecordingActiveState>(),
       );
 
-      mockEngine.emitResult(_finalResult(text: 'hello'));
+      mockEngine.emitResult(_finalResult());
       await Future<void>.delayed(Duration.zero);
 
       await notifier.stop();
@@ -146,7 +146,7 @@ void main() {
           container.read(recordingStateNotifierProvider.notifier);
       await notifier.start();
 
-      mockEngine.emitResult(_finalResult(text: 'hello'));
+      mockEngine.emitResult(_finalResult());
       await Future<void>.delayed(Duration.zero);
       mockEngine.emitResult(_finalResult(text: 'world'));
       await Future<void>.delayed(Duration.zero);
@@ -207,7 +207,8 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       notifier.clearSession();
 
-      // Disable; read provider to propagate rebuild (mirrors ZcAppShell eager watch).
+      // Disable; read provider to propagate rebuild
+      // (mirrors ZcAppShell eager watch).
       await transcriptNotifier.setCaptureEnabled(value: false);
       container.read(transcriptWriterTargetProvider);
 

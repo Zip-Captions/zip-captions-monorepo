@@ -45,12 +45,10 @@ class CaptionOverlayTarget implements CaptionOutputTarget {
 
     if (_isVisible && _windowId != null) {
       _log.fine('show: already visible; sending config update');
-      unawaited(
-        _windowService.invokeMethod(
-          _windowId!,
-          'updateConfig',
-          _encodeConfig(config),
-        ),
+      await _windowService.invokeMethod(
+        _windowId!,
+        'updateConfig',
+        _encodeConfig(config),
       );
       return;
     }
@@ -75,11 +73,15 @@ class CaptionOverlayTarget implements CaptionOutputTarget {
     if (!_isVisible || _windowId == null) return;
     if (event case SttResultEvent(:final result)) {
       unawaited(
-        _windowService.invokeMethod(
-          _windowId!,
-          'captionUpdate',
-          json.encode({'text': result.text, 'isFinal': result.isFinal}),
-        ),
+        _windowService
+            .invokeMethod(
+              _windowId!,
+              'captionUpdate',
+              json.encode({'text': result.text, 'isFinal': result.isFinal}),
+            )
+            .catchError(
+              (Object e) => _log.warning('captionUpdate failed: $e'),
+            ),
       );
     }
   }

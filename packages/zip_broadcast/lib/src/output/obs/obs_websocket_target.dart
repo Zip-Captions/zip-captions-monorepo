@@ -102,7 +102,10 @@ class ObsWebSocketTarget implements CaptionOutputTarget {
   }
 
   @override
-  void dispose() => disconnect();
+  void dispose() {
+    disconnect();
+    if (!_stateController.isClosed) unawaited(_stateController.close());
+  }
 
   // ---------------------------------------------------------------------------
   // Private
@@ -155,10 +158,12 @@ class ObsWebSocketTarget implements CaptionOutputTarget {
 
   Future<void> _sendCaption(String text) async {
     final client = _client;
+    final gen = _gen;
     if (client == null) return;
     try {
       await client.stream.sendStreamCaption(text);
     } on Object catch (error) {
+      if (_gen != gen) return;
       _log.warning('sendStreamCaption failed: $error');
       _client = null;
       unawaited(client.close());

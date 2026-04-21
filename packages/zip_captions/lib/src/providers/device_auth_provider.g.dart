@@ -6,13 +6,15 @@ part of 'device_auth_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$deviceSecuredHash() => r'd2e2ecb4dac74f1eacac0b03aca6161b826fea32';
+String _$deviceSecuredHash() => r'786dc6293ef696f50dba3896940a6ac147124469';
 
 /// Returns true if the device has any authentication configured
 /// (PIN, pattern, password, or biometrics).
 ///
 /// Transcript saving is blocked when this returns false — a device with no
 /// lock screen cannot protect locally stored transcript data.
+///
+/// Always returns false on web and Linux (unsupported platforms).
 ///
 /// Copied from [deviceSecured].
 @ProviderFor(deviceSecured)

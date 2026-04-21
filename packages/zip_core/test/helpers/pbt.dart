@@ -10,9 +10,9 @@ import 'package:flutter_test/flutter_test.dart' as ft;
 
 typedef Generator<T> = T Function(Random random);
 
-final _AnyGenerators any = _AnyGenerators();
+final AnyGenerators any = AnyGenerators();
 
-class _AnyGenerators {
+class AnyGenerators {
   Generator<T> choose<T>(List<T> choices) =>
       (r) => choices[r.nextInt(choices.length)];
 

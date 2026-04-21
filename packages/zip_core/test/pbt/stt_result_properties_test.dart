@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../helpers/pbt.dart';
 
 import '../helpers/generators.dart';
+import '../helpers/pbt.dart';
 
 void main() {
   group('SttResult PBT properties', () {

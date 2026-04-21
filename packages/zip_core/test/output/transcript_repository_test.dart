@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../helpers/pbt.dart';
 import 'package:zip_core/src/models/export_format.dart';
 import 'package:zip_core/src/models/repository_event.dart';
 import 'package:zip_core/src/models/transcript_segment.dart';
@@ -7,6 +6,7 @@ import 'package:zip_core/src/output/transcript_repository.dart';
 
 import '../helpers/db_helpers.dart';
 import '../helpers/generators.dart';
+import '../helpers/pbt.dart';
 
 void main() {
   late TranscriptRepository repo;
@@ -319,7 +319,8 @@ void main() {
 
     // --- SRT ---
 
-    test('SRT export contains cue index numbers and arrow separators', () async {
+    test('SRT export contains cue index numbers and arrow separators',
+        () async {
       await seedSession();
       final srt = await repo.exportSession('ses-1', ExportFormat.srt);
       expect(srt, contains('1\n'));
@@ -335,7 +336,8 @@ void main() {
       expect(srt, isNot(contains('.')));
     });
 
-    test('SRT end timestamp is after start when durations are stored', () async {
+    test('SRT end timestamp is after start when durations are stored',
+        () async {
       await seedSession();
       final srt = await repo.exportSession('ses-1', ExportFormat.srt);
       // First cue: 00:00:00,000 --> 00:00:01,000
@@ -380,7 +382,8 @@ void main() {
       expect(vtt, contains('.'));
     });
 
-    test('VTT end timestamp is after start when durations are stored', () async {
+    test('VTT end timestamp is after start when durations are stored',
+        () async {
       await seedSession();
       final vtt = await repo.exportSession('ses-1', ExportFormat.vtt);
       expect(vtt, contains('00:00:00.000 --> 00:00:01.000'));

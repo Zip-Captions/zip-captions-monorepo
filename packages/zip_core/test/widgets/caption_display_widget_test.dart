@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' hide ScrollDirection;
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -41,9 +41,13 @@ void main() {
 
   group('CaptionDisplayWidget — scroll direction', () {
     group('bottomToTop (↑ New)', () {
-      testWidgets('single interim entry renders at visual bottom', (tester) async {
+      testWidgets('single interim entry renders at visual bottom',
+          (tester) async {
         await tester.pumpWidget(
-          _wrap([_entry('Alpha', isFinal: false)], _settings(ScrollDirection.bottomToTop)),
+          _wrap(
+            [_entry('Alpha', isFinal: false)],
+            _settings(ScrollDirection.bottomToTop),
+          ),
         );
         await tester.pump();
         final viewportHeight = tester.getSize(find.byType(Scaffold)).height;
@@ -64,7 +68,8 @@ void main() {
         expect(interimY, greaterThan(finalY));
       });
 
-      testWidgets('finals ordered oldest-top to newest-bottom, interim at very bottom',
+      testWidgets(
+          'finals ordered oldest-top to newest-bottom, interim at very bottom',
           (tester) async {
         await tester.pumpWidget(
           _wrap(
@@ -84,7 +89,10 @@ void main() {
     group('topToBottom (↓ New)', () {
       testWidgets('single interim entry renders at visual top', (tester) async {
         await tester.pumpWidget(
-          _wrap([_entry('Alpha', isFinal: false)], _settings(ScrollDirection.topToBottom)),
+          _wrap(
+            [_entry('Alpha', isFinal: false)],
+            _settings(ScrollDirection.topToBottom),
+          ),
         );
         await tester.pump();
         final viewportHeight = tester.getSize(find.byType(Scaffold)).height;
@@ -105,7 +113,8 @@ void main() {
         expect(interimY, lessThan(finalY));
       });
 
-      testWidgets('interim at very top, newest final below, oldest final at bottom',
+      testWidgets(
+          'interim at very top, newest final below, oldest final at bottom',
           (tester) async {
         await tester.pumpWidget(
           _wrap(

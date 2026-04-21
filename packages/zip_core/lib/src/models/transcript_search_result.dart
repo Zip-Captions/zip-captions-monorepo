@@ -7,7 +7,7 @@ part 'transcript_search_result.freezed.dart';
 ///
 /// Returned by `TranscriptRepository.search`. Snippets use `[` and `]` as
 /// match delimiters for UI highlight rendering.
-@freezed
+@Freezed(toStringOverride: false)
 abstract class TranscriptSearchResult with _$TranscriptSearchResult {
   /// Creates a [TranscriptSearchResult] instance.
   const factory TranscriptSearchResult({
@@ -20,4 +20,13 @@ abstract class TranscriptSearchResult with _$TranscriptSearchResult {
     /// BM25 relevance score (lower = more relevant in SQLite FTS5).
     required double relevanceScore,
   }) = _TranscriptSearchResult;
+
+  const TranscriptSearchResult._();
+
+  @override
+  String toString() =>
+      'TranscriptSearchResult('
+      'snippetCount: ${snippets.length}, '
+      'relevanceScore: $relevanceScore'
+      ')';
 }

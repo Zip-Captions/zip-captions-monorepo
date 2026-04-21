@@ -3,7 +3,6 @@
 // Centralized Generator<T> instances for all domain types.
 // Imported by PBT test files.
 
-import 'pbt.dart';
 import 'package:zip_core/src/models/audio_device.dart';
 import 'package:zip_core/src/models/caption_event.dart';
 import 'package:zip_core/src/models/display_settings.dart';
@@ -18,6 +17,7 @@ import 'package:zip_core/src/models/transcript_segment.dart';
 import 'package:zip_core/src/models/transcript_session.dart';
 import 'package:zip_core/src/models/wake_lock_settings.dart';
 
+import 'pbt.dart';
 import 'prefs_helpers.dart';
 import 'recording_state_model.dart';
 
@@ -101,7 +101,7 @@ final Generator<SttResult> arbitrarySttResult = any.combine5(
   any.doubleInRange(0, 1), // confidence
   any.choose(['default', 'mic-1', 'mic-2', 'system-audio']), // sourceId
   any.choose([null, 'Speaker A', 'Speaker B']), // speakerTag
-  (String text, bool isFinal, double confidence, String sourceId, String? speakerTag) => SttResult(
+  (text, isFinal, confidence, sourceId, speakerTag) => SttResult(
     text: text.isEmpty && isFinal ? 'fallback' : text,
     isFinal: isFinal,
     confidence: confidence,
@@ -136,7 +136,7 @@ final Generator<CaptionEvent> arbitraryCaptionEvent = any.combine3(
   any.boolGen,
   arbitrarySttResult,
   arbitraryRecordingState,
-  (bool useResult, SttResult result, RecordingState state) =>
+  (useResult, result, state) =>
       useResult ? SttResultEvent(result) : SessionStateEvent(state),
 );
 
@@ -160,7 +160,7 @@ final Generator<AudioDevice> arbitraryAudioDevice = any.combine3(
   any.letterOrDigits,
   any.letterOrDigits,
   any.boolGen,
-  (String id, String name, bool isDefault) => AudioDevice(
+  (id, name, isDefault) => AudioDevice(
     deviceId: id.isEmpty ? 'dev-0' : id,
     name: name.isEmpty ? 'Device' : name,
     isDefault: isDefault,
@@ -171,7 +171,7 @@ final Generator<AudioDevice> arbitraryAudioDevice = any.combine3(
 final Generator<WakeLockSettings> arbitraryWakeLockSettings = any.combine2(
   any.boolGen,
   any.boolGen,
-  (bool enabled, bool releaseOnPause) => WakeLockSettings(
+  (enabled, releaseOnPause) => WakeLockSettings(
     enabled: enabled,
     releaseOnPause: releaseOnPause,
   ),
@@ -201,7 +201,7 @@ final Generator<SherpaModelCatalogEntry> arbitrarySherpaModelCatalogEntry =
 final Generator<SherpaModelInfo> arbitrarySherpaModelInfo = any.combine2(
   arbitrarySherpaModelCatalogEntry,
   any.boolGen,
-  (SherpaModelCatalogEntry entry, bool isDownloaded) => SherpaModelInfo(
+  (entry, isDownloaded) => SherpaModelInfo(
     catalogEntry: entry,
     isDownloaded: isDownloaded,
     localPath: isDownloaded ? '/models/${entry.modelId}' : null,

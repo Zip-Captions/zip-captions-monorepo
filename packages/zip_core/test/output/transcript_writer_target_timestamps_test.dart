@@ -93,7 +93,8 @@ void main() {
 
   group('segment timestamps', () {
     test(
-      'startTimeMs uses interim arrival time; endTimeMs uses final arrival time',
+      'startTimeMs uses interim arrival time; '
+          'endTimeMs uses final arrival time',
       () {
         fakeAsync((fake) {
           target.onCaptionEvent(_recordingEvent('s1'));
@@ -149,7 +150,7 @@ void main() {
           target.onCaptionEvent(_interimEvent(text: 'he'));
           // Final at 600ms.
           fake.elapse(const Duration(milliseconds: 200));
-          target.onCaptionEvent(_finalEvent(text: 'hello'));
+          target.onCaptionEvent(_finalEvent());
           fake.elapse(Duration.zero);
 
           final captured = verify(
@@ -171,9 +172,10 @@ void main() {
           fake.elapse(const Duration(milliseconds: 300));
           target.onCaptionEvent(_interimEvent());
           fake.elapse(const Duration(milliseconds: 400));
-          target.onCaptionEvent(_finalEvent(text: 'hello'));
+          target.onCaptionEvent(_finalEvent());
 
-          // Second utterance within merge window: interim at 900ms, final at 1100ms.
+          // Second utterance within merge window:
+          // interim at 900ms, final at 1100ms.
           fake.elapse(const Duration(milliseconds: 200));
           target.onCaptionEvent(_interimEvent());
           fake.elapse(const Duration(milliseconds: 200));

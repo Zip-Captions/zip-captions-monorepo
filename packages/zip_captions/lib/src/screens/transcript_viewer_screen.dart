@@ -115,7 +115,18 @@ class TranscriptViewerScreen extends ConsumerWidget {
   }) async {
     final secured =
         await ref.read(deviceSecuredProvider.future).catchError((_) => false);
-    if (!secured) return;
+    if (!secured) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Export requires a screen lock to protect transcript data.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
     try {
       final repo = await ref.read(transcriptRepositoryProvider.future);
       final content = await repo.exportSession(sessionId, format);

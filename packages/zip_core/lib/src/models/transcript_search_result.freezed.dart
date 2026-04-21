@@ -160,12 +160,13 @@ class __$$TranscriptSearchResultImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$TranscriptSearchResultImpl implements _TranscriptSearchResult {
+class _$TranscriptSearchResultImpl extends _TranscriptSearchResult {
   const _$TranscriptSearchResultImpl({
     required this.session,
     required final List<String> snippets,
     required this.relevanceScore,
-  }) : _snippets = snippets;
+  }) : _snippets = snippets,
+       super._();
 
   /// The matching session's metadata.
   @override
@@ -185,11 +186,6 @@ class _$TranscriptSearchResultImpl implements _TranscriptSearchResult {
   /// BM25 relevance score (lower = more relevant in SQLite FTS5).
   @override
   final double relevanceScore;
-
-  @override
-  String toString() {
-    return 'TranscriptSearchResult(session: $session, snippets: $snippets, relevanceScore: $relevanceScore)';
-  }
 
   @override
   bool operator ==(Object other) {
@@ -223,12 +219,13 @@ class _$TranscriptSearchResultImpl implements _TranscriptSearchResult {
       );
 }
 
-abstract class _TranscriptSearchResult implements TranscriptSearchResult {
+abstract class _TranscriptSearchResult extends TranscriptSearchResult {
   const factory _TranscriptSearchResult({
     required final TranscriptSession session,
     required final List<String> snippets,
     required final double relevanceScore,
   }) = _$TranscriptSearchResultImpl;
+  const _TranscriptSearchResult._() : super._();
 
   /// The matching session's metadata.
   @override

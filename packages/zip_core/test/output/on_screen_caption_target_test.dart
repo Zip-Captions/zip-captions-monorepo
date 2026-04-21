@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../helpers/pbt.dart' hide any;
 import 'package:mocktail/mocktail.dart';
 import 'package:zip_core/src/models/caption_display_entry.dart';
 import 'package:zip_core/src/models/caption_event.dart';
@@ -12,6 +11,7 @@ import 'package:zip_core/src/output/on_screen_caption_target.dart';
 
 import '../helpers/generators.dart';
 import '../helpers/mock_transcript_repository.dart';
+import '../helpers/pbt.dart' hide any;
 
 SttResultEvent _finalEvent({
   String text = 'hello',

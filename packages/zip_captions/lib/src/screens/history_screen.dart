@@ -34,7 +34,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   void _onSearchChanged(String value) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-      ref.read(transcriptSearchQueryProvider.notifier).state = value;
+      ref.read(transcriptSearchQueryProvider.notifier).query = value;
     });
   }
 
