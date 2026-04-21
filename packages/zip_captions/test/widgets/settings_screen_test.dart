@@ -60,7 +60,7 @@ void main() {
       await _pump(tester, deviceSecured: false);
 
       final toggle = tester.widget<SwitchListTile>(
-        find.byType(SwitchListTile).first,
+        find.widgetWithText(SwitchListTile, 'Save transcripts'),
       );
       expect(toggle.onChanged, isNull,
           reason: 'onChanged must be null to disable the toggle');
@@ -70,7 +70,7 @@ void main() {
       await _pump(tester, deviceSecured: false, captureEnabled: true);
 
       final toggle = tester.widget<SwitchListTile>(
-        find.byType(SwitchListTile).first,
+        find.widgetWithText(SwitchListTile, 'Save transcripts'),
       );
       expect(toggle.value, isFalse,
           reason: 'value is always false when device is not secured');
@@ -95,7 +95,7 @@ void main() {
       await _pump(tester, deviceSecured: true);
 
       final toggle = tester.widget<SwitchListTile>(
-        find.byType(SwitchListTile).first,
+        find.widgetWithText(SwitchListTile, 'Save transcripts'),
       );
       expect(toggle.onChanged, isNotNull,
           reason: 'onChanged must be non-null to enable the toggle');
@@ -116,7 +116,7 @@ void main() {
       await _pump(tester, deviceSecured: true, captureEnabled: true);
 
       final toggle = tester.widget<SwitchListTile>(
-        find.byType(SwitchListTile).first,
+        find.widgetWithText(SwitchListTile, 'Save transcripts'),
       );
       expect(toggle.value, isTrue);
     });
@@ -124,11 +124,11 @@ void main() {
     testWidgets('tapping toggle calls setCaptureEnabled', (tester) async {
       await _pump(tester, deviceSecured: true);
 
-      await tester.tap(find.byType(SwitchListTile).first);
+      await tester.tap(find.widgetWithText(SwitchListTile, 'Save transcripts'));
       await tester.pumpAndSettle();
 
       final toggle = tester.widget<SwitchListTile>(
-        find.byType(SwitchListTile).first,
+        find.widgetWithText(SwitchListTile, 'Save transcripts'),
       );
       expect(toggle.value, isTrue);
     });

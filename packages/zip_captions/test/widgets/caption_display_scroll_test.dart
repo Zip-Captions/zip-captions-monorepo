@@ -4,7 +4,7 @@
 /// bottom and new-at-top did not render in reverse-chronological order.
 library;
 
-import 'package:flutter/material.dart' hide ScrollDirection;
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -56,7 +56,8 @@ void main() {
 
   group('CaptionDisplayWidget — scroll direction', () {
     testWidgets(
-        'bottomToTop: oldest entry renders above newest (new captions pin to bottom)',
+        'bottomToTop: oldest entry renders above newest '
+        '(new captions pin to bottom)',
         (tester) async {
       await tester.pumpWidget(_wrap(ScrollDirection.bottomToTop));
       await tester.pumpAndSettle();
@@ -75,7 +76,8 @@ void main() {
     });
 
     testWidgets(
-        'topToBottom: newest entry renders above oldest (new captions pin to top)',
+        'topToBottom: newest entry renders above oldest '
+        '(new captions pin to top)',
         (tester) async {
       await tester.pumpWidget(_wrap(ScrollDirection.topToBottom));
       await tester.pumpAndSettle();

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,8 +6,7 @@ import 'package:obs_websocket/obs_websocket.dart';
 import 'package:zip_broadcast/src/models/obs_connection_state.dart';
 import 'package:zip_broadcast/src/models/obs_settings.dart';
 import 'package:zip_broadcast/src/output/obs/obs_websocket_target.dart';
-import 'package:zip_core/src/models/caption_event.dart';
-import 'package:zip_core/src/models/stt_result.dart';
+import 'package:zip_core/zip_core.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -137,6 +135,7 @@ void main() {
         // timers fire because _scheduleReconnect() hasn't run yet. Failing
         // that attempt calls _scheduleReconnect() with now = 11 min, which
         // exceeds the 600 s threshold and emits ObsError.
+        // ignore: cascade_invocations — connector.failNext() must run between
         fake.elapse(const Duration(minutes: 11));
         connector.failNext();
         fake.elapse(Duration.zero);

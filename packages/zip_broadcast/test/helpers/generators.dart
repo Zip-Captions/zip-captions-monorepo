@@ -28,7 +28,7 @@ final Generator<OutputTargetSettings> arbitraryOutputTargetSettings =
   any.boolGen,
   any.boolGen,
   any.intInRange(1024, 65536),
-  (bool onScreen, bool obs, bool browser, bool overlay, int port) =>
+  (onScreen, obs, browser, overlay, port) =>
       OutputTargetSettings(
     onScreenEnabled: onScreen,
     obsEnabled: obs,

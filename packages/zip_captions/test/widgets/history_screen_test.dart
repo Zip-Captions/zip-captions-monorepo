@@ -13,8 +13,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_captions/src/screens/history_screen.dart';
-import 'package:zip_core/src/database/transcript_database.dart';
-import 'package:zip_core/src/models/transcript_segment.dart';
 import 'package:zip_core/zip_core.dart';
 
 import '../helpers/fake_recording_state_notifier.dart';
@@ -106,7 +104,7 @@ void main() {
 
   group('HistoryScreen — sessions list', () {
     testWidgets('shows a tile for each saved session', (tester) async {
-      await repo.createSession('ses-1', DateTime.utc(2026, 1, 1));
+      await repo.createSession('ses-1', DateTime.utc(2026));
       await repo.finalizeSession('ses-1', durationMs: 60000, segmentCount: 2);
       await repo.createSession('ses-2', DateTime.utc(2026, 1, 2));
       await repo.finalizeSession('ses-2', durationMs: 30000, segmentCount: 1);
@@ -118,7 +116,7 @@ void main() {
     });
 
     testWidgets('tile shows segment count', (tester) async {
-      await repo.createSession('ses-1', DateTime.utc(2026, 1, 1));
+      await repo.createSession('ses-1', DateTime.utc(2026));
       await repo.finalizeSession('ses-1', durationMs: 5000, segmentCount: 3);
 
       await _pump(tester, repo);
@@ -127,7 +125,7 @@ void main() {
     });
 
     testWidgets('tapping a tile navigates to the viewer', (tester) async {
-      await repo.createSession('ses-1', DateTime.utc(2026, 1, 1));
+      await repo.createSession('ses-1', DateTime.utc(2026));
       await repo.finalizeSession('ses-1', durationMs: 5000, segmentCount: 1);
 
       await _pump(tester, repo);
@@ -141,7 +139,7 @@ void main() {
 
   group('HistoryScreen — search', () {
     setUp(() async {
-      await repo.createSession('ses-alpha', DateTime.utc(2026, 1, 1));
+      await repo.createSession('ses-alpha', DateTime.utc(2026));
       await repo.finalizeSession(
         'ses-alpha',
         durationMs: 5000,
@@ -221,7 +219,7 @@ void main() {
   group('HistoryScreen — swipe to delete', () {
     testWidgets('confirming delete removes the tile and persists the deletion',
         (tester) async {
-      await repo.createSession('ses-1', DateTime.utc(2026, 1, 1));
+      await repo.createSession('ses-1', DateTime.utc(2026));
       await repo.finalizeSession('ses-1', durationMs: 5000, segmentCount: 1);
       await repo.createSession('ses-2', DateTime.utc(2026, 1, 2));
       await repo.finalizeSession('ses-2', durationMs: 5000, segmentCount: 1);
@@ -248,7 +246,7 @@ void main() {
     });
 
     testWidgets('cancelling delete keeps the tile', (tester) async {
-      await repo.createSession('ses-1', DateTime.utc(2026, 1, 1));
+      await repo.createSession('ses-1', DateTime.utc(2026));
       await repo.finalizeSession('ses-1', durationMs: 5000, segmentCount: 1);
 
       await _pump(tester, repo);

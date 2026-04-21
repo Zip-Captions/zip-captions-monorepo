@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' hide ScrollDirection;
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -53,7 +53,9 @@ void main() {
   });
 
   group('caption font weight', () {
-    testWidgets('caption text renders at w500 (matches text theme)', (tester) async {
+    testWidgets(
+        'caption text renders at w500 (matches text theme)',
+        (tester) async {
       await tester.pumpWidget(_wrap(CaptionFont.poppins));
       await tester.pumpAndSettle();
       final text = tester.widget<Text>(find.text('Sample caption text'));

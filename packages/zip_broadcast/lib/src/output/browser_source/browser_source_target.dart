@@ -1,7 +1,5 @@
 import 'package:zip_broadcast/src/output/browser_source/browser_source_server.dart';
-import 'package:zip_core/src/models/caption_event.dart';
-import 'package:zip_core/src/models/recording_state.dart';
-import 'package:zip_core/src/services/caption/caption_output_target.dart';
+import 'package:zip_core/zip_core.dart';
 
 /// Caption output target that bridges [CaptionEvent]s to [BrowserSourceServer].
 ///

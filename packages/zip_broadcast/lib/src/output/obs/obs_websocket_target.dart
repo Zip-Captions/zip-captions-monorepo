@@ -7,8 +7,7 @@ import 'package:logging/logging.dart';
 import 'package:obs_websocket/obs_websocket.dart';
 import 'package:zip_broadcast/src/models/obs_connection_state.dart';
 import 'package:zip_broadcast/src/models/obs_settings.dart';
-import 'package:zip_core/src/models/caption_event.dart';
-import 'package:zip_core/src/services/caption/caption_output_target.dart';
+import 'package:zip_core/zip_core.dart';
 
 /// Caption output target that forwards final captions to OBS via WebSocket v5.
 ///
@@ -42,6 +41,7 @@ class ObsWebSocketTarget implements CaptionOutputTarget {
   int? _retryStartMs;
   int _retryAttempt = 0;
   bool _enabled = false;
+  int _gen = 0;
 
   final _stateController =
       StreamController<ObsConnectionState>.broadcast();
@@ -67,6 +67,7 @@ class ObsWebSocketTarget implements CaptionOutputTarget {
   void connect(ObsSettings settings) {
     _settings = settings;
     _enabled = true;
+    _gen++;
     _retryAttempt = 0;
     _retryStartMs = null;
     _log.fine(
@@ -78,6 +79,7 @@ class ObsWebSocketTarget implements CaptionOutputTarget {
   /// Disconnects from OBS and cancels any pending reconnect timer.
   void disconnect() {
     _enabled = false;
+    _gen++;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
     _log.fine('disconnect requested');
@@ -94,7 +96,7 @@ class ObsWebSocketTarget implements CaptionOutputTarget {
         _log.finest(
           'sendStreamCaption: ${result.text.length} chars',
         );
-        unawaited(_client!.stream.sendStreamCaption(result.text));
+        unawaited(_sendCaption(result.text));
       }
     }
   }
@@ -110,6 +112,8 @@ class ObsWebSocketTarget implements CaptionOutputTarget {
     if (!_enabled) return;
     final settings = _settings;
     if (settings == null) return;
+
+    final gen = _gen;
 
     _setState(
       _retryAttempt == 0
@@ -129,8 +133,8 @@ class ObsWebSocketTarget implements CaptionOutputTarget {
       _connector(
         url,
         password: settings.password.isEmpty ? null : settings.password,
-      ).then((client) {
-        if (!_enabled) {
+      ).timeout(const Duration(seconds: 10)).then((client) {
+        if (!_enabled || _gen != gen) {
           unawaited(client.close());
           return;
         }
@@ -140,13 +144,26 @@ class ObsWebSocketTarget implements CaptionOutputTarget {
         _log.fine('connected: url=$url');
         _setState(const ObsConnected());
       }).onError<Object>((error, stack) {
-        if (!_enabled) return;
+        if (!_enabled || _gen != gen) return;
         _log.warning(
           'connection failed (attempt ${_retryAttempt + 1}): $error',
         );
         _scheduleReconnect();
       }),
     );
+  }
+
+  Future<void> _sendCaption(String text) async {
+    final client = _client;
+    if (client == null) return;
+    try {
+      await client.stream.sendStreamCaption(text);
+    } on Object catch (error) {
+      _log.warning('sendStreamCaption failed: $error');
+      _client = null;
+      unawaited(client.close());
+      if (_enabled) _scheduleReconnect();
+    }
   }
 
   void _scheduleReconnect() {

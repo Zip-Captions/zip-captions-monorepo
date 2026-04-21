@@ -13,8 +13,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_captions/src/providers/settings_notifier.dart';
 import 'package:zip_captions/src/screens/recording_screen.dart';
-import 'package:zip_core/src/models/enums.dart';
-import 'package:zip_core/src/widgets/caption_display_widget.dart';
 import 'package:zip_core/zip_core.dart';
 
 import '../helpers/fake_recording_state_notifier.dart';
@@ -89,7 +87,8 @@ void main() {
     });
 
     testWidgets(
-        'changing font via notifier rebuilds CaptionDisplayWidget with new font',
+        'changing font via notifier rebuilds CaptionDisplayWidget '
+        'with new font',
         (tester) async {
       final container = await _pump(tester);
 
@@ -110,7 +109,8 @@ void main() {
     });
 
     testWidgets(
-        'non-default scroll direction stored in prefs is passed to CaptionDisplayWidget',
+        'non-default scroll direction stored in prefs is passed '
+        'to CaptionDisplayWidget',
         (tester) async {
       await _pump(tester, prefsValues: {
         'zip_captions.display_settings.scrollDirection': 'topToBottom',

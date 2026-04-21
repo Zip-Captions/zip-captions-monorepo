@@ -6,8 +6,7 @@ import 'package:zip_broadcast/src/models/overlay_config.dart';
 import 'package:zip_broadcast/src/models/overlay_position.dart';
 import 'package:zip_broadcast/src/output/overlay/desktop_multi_window_service.dart';
 import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
-import 'package:zip_core/src/models/caption_event.dart';
-import 'package:zip_core/src/services/caption/caption_output_target.dart';
+import 'package:zip_core/zip_core.dart';
 
 /// Caption output target that renders captions in a separate desktop window.
 ///

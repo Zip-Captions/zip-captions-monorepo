@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:zip_captions/src/providers/device_auth_provider.dart';
 import 'package:zip_captions/src/services/transcript_export.dart';
 import 'package:zip_captions/src/widgets/export_format_sheet.dart';
 import 'package:zip_captions/src/widgets/transcript_segment_tile.dart';
@@ -26,7 +27,8 @@ class TranscriptViewerScreen extends ConsumerWidget {
     final segmentsAsync = ref.watch(transcriptSegmentsProvider(sessionId));
 
     final isDesktop = MediaQuery.of(context).size.width > 768;
-    final canExport = sessionAsync.valueOrNull != null;
+    final canExport =
+        !kIsWeb && sessionAsync.valueOrNull != null;
 
     return Scaffold(
       appBar: isDesktop
@@ -111,6 +113,9 @@ class TranscriptViewerScreen extends ConsumerWidget {
     ExportFormat format, {
     Rect? shareOrigin,
   }) async {
+    final secured =
+        await ref.read(deviceSecuredProvider.future).catchError((_) => false);
+    if (!secured) return;
     try {
       final repo = await ref.read(transcriptRepositoryProvider.future);
       final content = await repo.exportSession(sessionId, format);
