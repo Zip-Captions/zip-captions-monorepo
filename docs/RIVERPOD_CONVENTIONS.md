@@ -88,6 +88,68 @@ Use `Ref` (not the generated `*Ref` typedef) as the parameter type for functiona
 List<SpeechLocale> localeInfo(Ref ref) => const [];
 ```
 
+## Side Effects
+
+Side effects (service calls, I/O, hardware) belong inside **notifier transition methods**, not in reactive listeners or `build()`.
+
+```dart
+// CORRECT — explicit call in the transition method
+Future<void> start() async {
+  await _wakeLockService.acquire();
+  _captionBus.publish(SessionStateEvent(...));
+  state = RecordingState.recording(...);
+}
+
+// WRONG — reactive side effect in a provider build
+final sideEffectProvider = Provider<void>((ref) {
+  final state = ref.watch(recordingStateNotifierProvider);
+  if (state is RecordingActiveState) {
+    ref.read(wakeLockServiceProvider).acquire(); // don't do this
+  }
+});
+```
+
+Services are obtained once via `ref.read(someServiceProvider)` in `build()` or the transition method itself. **No provider should watch another provider solely to trigger a side effect.**
+
+**Why:** Side effects in reactive chains make execution order implicit and make testing harder. Explicit calls are traceable, testable, and consistent with Dart's imperative model.
+
+## `onDispose` Safety
+
+**Never call `ref.read` inside an `onDispose` callback.** The callback fires during a provider dispose cycle which may itself be triggered by another provider's rebuild — calling `ref.read` at that point violates Riverpod's invariant and throws an assertion.
+
+Capture any values needed by the cleanup closure *before* registering it:
+
+```dart
+// WRONG — ref.read inside onDispose
+ref.onDispose(() {
+  ref.read(sessionStopCallbackProvider).callback = null; // assertion thrown
+});
+
+// CORRECT — capture before the closure
+final stopCallback = ref.read(sessionStopCallbackProvider);
+ref.onDispose(() {
+  stopCallback.callback = null;
+});
+```
+
+## Eager Watch for Resource-Managing Providers
+
+When a `Provider` watches a settings notifier and conditionally registers/deregisters resources (e.g., `transcriptWriterTargetProvider`), it only rebuilds when it has an **active subscriber**. Without one, the rebuild is deferred until the next `ref.read`.
+
+The widget shell must `ref.watch` such providers to drive immediate rebuilds when settings change:
+
+```dart
+// In ZcAppShell.build — keeps transcriptWriterTargetProvider subscribed
+ref.watch(transcriptWriterTargetProvider);
+```
+
+In integration tests there is no widget layer, so simulate the eager watch by reading the provider explicitly after each settings change:
+
+```dart
+await transcriptNotifier.setCaptureEnabled(value: false);
+container.read(transcriptWriterTargetProvider); // triggers rebuild + onDispose
+```
+
 ## Code Generation
 
 Run `dart run build_runner build --delete-conflicting-outputs` after modifying any `@riverpod`-annotated file. Generated files (`*.g.dart`) are committed to version control.

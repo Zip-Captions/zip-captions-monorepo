@@ -7,7 +7,7 @@ part of 'audio_input_settings_provider.dart';
 // **************************************************************************
 
 String _$audioInputSettingsNotifierHash() =>
-    r'e6cb6404d8e4b17dee3d397cc0515d8a8e3ea5f2';
+    r'0f1e49153636f9ba2112f85bb57c5a107b7d65f6';
 
 /// Manages the list of audio input configurations for Zip Broadcast.
 ///

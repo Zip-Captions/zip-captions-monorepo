@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' hide addTearDown, expect, group, test;
 import 'package:zip_core/src/services/stt/stt_engine_registry.dart';
 
 import '../helpers/generators.dart';
 import '../helpers/mock_stt_engine.dart';
+import '../helpers/pbt.dart';
 
 void main() {
   group('SttEngineRegistry PBT', () {

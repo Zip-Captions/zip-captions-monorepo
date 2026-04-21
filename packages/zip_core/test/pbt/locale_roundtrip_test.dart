@@ -2,12 +2,12 @@ import 'dart:ui';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' hide addTearDown, expect, group, test;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_core/src/providers/base_settings_notifier.dart';
 import 'package:zip_core/src/providers/locale_provider.dart';
 
 import '../helpers/generators.dart';
+import '../helpers/pbt.dart';
 
 void main() {
   group('Locale round-trip PBT', () {

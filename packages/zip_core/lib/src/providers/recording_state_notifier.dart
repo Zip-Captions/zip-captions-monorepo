@@ -11,6 +11,7 @@ import 'package:zip_core/src/models/recording_state.dart';
 import 'package:zip_core/src/models/stt_result.dart';
 import 'package:zip_core/src/providers/caption_bus_provider.dart';
 import 'package:zip_core/src/providers/resolved_locale_id_provider.dart';
+import 'package:zip_core/src/providers/session_stop_callback_provider.dart';
 import 'package:zip_core/src/providers/stt_engine_provider.dart';
 import 'package:zip_core/src/providers/stt_session_manager_provider.dart';
 import 'package:zip_core/src/providers/wake_lock_service_provider.dart';
@@ -148,7 +149,9 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
 
   /// Transitions recording|paused|reconnecting -> stopped.
   ///
-  /// Stops the STT engine and releases the wake lock.
+  /// Stops the STT engine, awaits transcript finalization, then releases
+  /// the wake lock. Finalization is awaited before [StoppedState] is
+  /// published so that the History screen sees correct counts on navigation.
   Future<void> stop() async {
     final current = state;
     final String sessionId;
@@ -163,6 +166,7 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
     }
     await _sessionManager.stop();
     _log.info('Session stopped');
+    await _finalizeTranscript();
     state = RecordingState.stopped(
       sessionId: sessionId,
     );
@@ -231,9 +235,12 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
 
     if (_hasAttemptedRestart) {
       _log.warning('Engine error after restart attempt — stopping');
-      state = RecordingState.stopped(sessionId: active.sessionId);
-      _captionBus.publish(SessionStateEvent(state));
-      unawaited(_wakeLockService.release());
+      unawaited(() async {
+        await _finalizeTranscript();
+        state = RecordingState.stopped(sessionId: active.sessionId);
+        _captionBus.publish(SessionStateEvent(state));
+        unawaited(_wakeLockService.release());
+      }());
       return;
     }
 
@@ -261,6 +268,7 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
           _captionBus.publish(SessionStateEvent(state));
         } else {
           _log.warning('Engine restart failed — stopping');
+          await _finalizeTranscript();
           state = RecordingState.stopped(sessionId: active.sessionId);
           _captionBus.publish(SessionStateEvent(state));
           unawaited(_wakeLockService.release());
@@ -268,10 +276,20 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
       } on Object catch (e) {
         _log.severe('Unexpected error during recovery: ${e.runtimeType}');
         if (state is! ReconnectingState) return;
+        await _finalizeTranscript();
         state = RecordingState.stopped(sessionId: active.sessionId);
         _captionBus.publish(SessionStateEvent(state));
         unawaited(_wakeLockService.release());
       }
     }());
+  }
+
+  /// Calls the registered stop callback (transcript finalization) if present.
+  ///
+  /// Must be awaited before publishing [StoppedState] so the History screen
+  /// sees accurate segment counts and duration on navigation.
+  Future<void> _finalizeTranscript() async {
+    final callback = ref.read(sessionStopCallbackProvider).callback;
+    if (callback != null) await callback();
   }
 }

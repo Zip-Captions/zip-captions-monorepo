@@ -10,7 +10,7 @@ String _$localeInfoHash() => r'9a54500405095b7b87b551978daf772cfefd3581';
 
 /// Exposes the list of locales available for speech recognition.
 ///
-/// Queries the active [SttEngine]'s `supportedLocales()`. Returns an empty
+/// Queries the active `SttEngine`'s `supportedLocales()`. Returns an empty
 /// list when no engine is available.
 ///
 /// Copied from [localeInfo].

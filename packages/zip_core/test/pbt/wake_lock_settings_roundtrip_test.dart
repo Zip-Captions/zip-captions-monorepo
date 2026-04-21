@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' hide addTearDown, expect, group, test;
 
 import '../helpers/generators.dart';
+import '../helpers/pbt.dart';
 
 void main() {
   group('WakeLockSettings PBT', () {

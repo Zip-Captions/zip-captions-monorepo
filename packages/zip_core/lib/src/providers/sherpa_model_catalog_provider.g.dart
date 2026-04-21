@@ -7,7 +7,7 @@ part of 'sherpa_model_catalog_provider.dart';
 // **************************************************************************
 
 String _$sherpaModelCatalogNotifierHash() =>
-    r'0acd2c57d74f237222c6cf1c38f3584ec22aee03';
+    r'389b4c13bb18802ab820ec6da55365738064db1f';
 
 /// User-facing model catalog + download lifecycle notifier.
 ///

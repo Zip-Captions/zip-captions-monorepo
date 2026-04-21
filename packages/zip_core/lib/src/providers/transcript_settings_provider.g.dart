@@ -7,7 +7,7 @@ part of 'transcript_settings_provider.dart';
 // **************************************************************************
 
 String _$transcriptSettingsNotifierHash() =>
-    r'b6384a90eb4499d5012f27fb00b116e89e5dc58f';
+    r'aaa57ad6159fc3984bd8d31706e3f8317f7cfa0a';
 
 /// Manages the transcript capture toggle.
 ///

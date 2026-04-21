@@ -1,9 +1,8 @@
-// PBT generator library for glados (LC-01).
+// PBT generator library (LC-01).
 //
-// Centralized Arbitrary<T> instances for all domain types.
+// Centralized Generator<T> instances for all domain types.
 // Imported by PBT test files.
 
-import 'package:glados/glados.dart';
 import 'package:zip_core/src/models/audio_device.dart';
 import 'package:zip_core/src/models/caption_event.dart';
 import 'package:zip_core/src/models/display_settings.dart';
@@ -13,8 +12,12 @@ import 'package:zip_core/src/models/sherpa_model_catalog.dart';
 import 'package:zip_core/src/models/sherpa_model_download_progress.dart';
 import 'package:zip_core/src/models/sherpa_model_info.dart';
 import 'package:zip_core/src/models/stt_result.dart';
+import 'package:zip_core/src/models/transcript_search_result.dart';
+import 'package:zip_core/src/models/transcript_segment.dart';
+import 'package:zip_core/src/models/transcript_session.dart';
 import 'package:zip_core/src/models/wake_lock_settings.dart';
 
+import 'pbt.dart';
 import 'prefs_helpers.dart';
 import 'recording_state_model.dart';
 
@@ -94,7 +97,7 @@ final Generator<String> arbitraryLocaleId = any.choose([
 /// Generates valid SttResult instances with randomized fields.
 final Generator<SttResult> arbitrarySttResult = any.combine5(
   any.letterOrDigits, // text
-  any.bool, // isFinal
+  any.boolGen, // isFinal
   any.doubleInRange(0, 1), // confidence
   any.choose(['default', 'mic-1', 'mic-2', 'system-audio']), // sourceId
   any.choose([null, 'Speaker A', 'Speaker B']), // speakerTag
@@ -130,7 +133,7 @@ final Generator<RecordingState> arbitraryRecordingState = any.combine3(
 /// Generates random CaptionEvent instances (either SttResultEvent or
 /// SessionStateEvent with a varied [RecordingState]).
 final Generator<CaptionEvent> arbitraryCaptionEvent = any.combine3(
-  any.bool,
+  any.boolGen,
   arbitrarySttResult,
   arbitraryRecordingState,
   (useResult, result, state) =>
@@ -156,7 +159,7 @@ final Generator<List<RegistryOp>> arbitraryRegistryOps =
 final Generator<AudioDevice> arbitraryAudioDevice = any.combine3(
   any.letterOrDigits,
   any.letterOrDigits,
-  any.bool,
+  any.boolGen,
   (id, name, isDefault) => AudioDevice(
     deviceId: id.isEmpty ? 'dev-0' : id,
     name: name.isEmpty ? 'Device' : name,
@@ -166,8 +169,8 @@ final Generator<AudioDevice> arbitraryAudioDevice = any.combine3(
 
 /// Generates [WakeLockSettings] with all boolean combinations.
 final Generator<WakeLockSettings> arbitraryWakeLockSettings = any.combine2(
-  any.bool,
-  any.bool,
+  any.boolGen,
+  any.boolGen,
   (enabled, releaseOnPause) => WakeLockSettings(
     enabled: enabled,
     releaseOnPause: releaseOnPause,
@@ -197,7 +200,7 @@ final Generator<SherpaModelCatalogEntry> arbitrarySherpaModelCatalogEntry =
 /// Generates [SherpaModelInfo] instances.
 final Generator<SherpaModelInfo> arbitrarySherpaModelInfo = any.combine2(
   arbitrarySherpaModelCatalogEntry,
-  any.bool,
+  any.boolGen,
   (entry, isDownloaded) => SherpaModelInfo(
     catalogEntry: entry,
     isDownloaded: isDownloaded,
@@ -218,5 +221,61 @@ final Generator<SherpaModelDownloadProgress>
     modelId: modelId.isEmpty ? 'model-0' : modelId,
     downloadedBytes: (totalBytes * fraction).round(),
     totalBytes: totalBytes,
+  ),
+);
+
+// --- Unit 3 domain generators ---
+
+/// Generates [TranscriptSession] instances with valid invariants.
+final Generator<TranscriptSession> arbitraryTranscriptSession = any.combine5(
+  any.letterOrDigits,
+  any.intInRange(0, 100000000),
+  any.choose([null, 'Short title', 'A longer session title']),
+  any.intInRange(0, 3600000),
+  any.intInRange(0, 10000),
+  (id, epochMs, title, durationMs, segmentCount) => TranscriptSession(
+    sessionId: id.isEmpty ? 'ses-0' : id,
+    date: DateTime.fromMillisecondsSinceEpoch(epochMs, isUtc: true),
+    durationMs: durationMs,
+    segmentCount: segmentCount,
+    title: title,
+  ),
+);
+
+/// Generates [TranscriptSegment] instances with `endTimeMs >= startTimeMs`.
+final Generator<TranscriptSegment> arbitraryTranscriptSegment = any.combine5(
+  any.letterOrDigits,
+  any.letterOrDigits,
+  any.choose(['default', 'mic-1', 'mic-2', 'system-audio']),
+  any.intInRange(0, 3600000),
+  any.intInRange(0, 10000),
+  (segId, sessionId, sourceId, startMs, durationMs) => TranscriptSegment(
+    segmentId: segId.isEmpty ? 'seg-0' : segId,
+    sessionId: sessionId.isEmpty ? 'ses-0' : sessionId,
+    text: segId.isEmpty ? 'fallback text' : segId,
+    sourceId: sourceId,
+    startTimeMs: startMs,
+    endTimeMs: startMs + durationMs,
+  ),
+);
+
+/// Generates a list of 2–5 non-empty word strings for merge-window PBTs.
+final Generator<List<String>> arbitraryNonEmptyWordList =
+    any.listWithLengthInRange(
+  2,
+  6,
+  any.choose(['hello', 'world', 'foo', 'bar', 'baz', 'qux', 'dart', 'test']),
+);
+
+/// Generates [TranscriptSearchResult] with 1–3 non-empty snippets.
+final Generator<TranscriptSearchResult> arbitraryTranscriptSearchResult =
+    any.combine3(
+  arbitraryTranscriptSession,
+  any.intInRange(1, 4),
+  any.doubleInRange(-10, 0),
+  (session, snippetCount, score) => TranscriptSearchResult(
+    session: session,
+    snippets: List.generate(snippetCount, (i) => '[match] snippet $i'),
+    relevanceScore: score,
   ),
 );

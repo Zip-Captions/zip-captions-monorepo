@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:zip_captions/src/home_screen.dart';
+import 'package:zip_captions/src/providers/settings_notifier.dart';
+import 'package:zip_captions/src/routing/zc_router.dart';
 import 'package:zip_core/zip_core.dart';
 
 /// Root widget for the Zip Captions app.
@@ -10,11 +11,19 @@ class ZipCaptionsApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return MaterialApp(
+    final settings = ref.watch(displaySettingsProvider);
+    final themeMode = switch (settings.themeModeSetting) {
+      ThemeModeSetting.light => ThemeMode.light,
+      ThemeModeSetting.dark => ThemeMode.dark,
+      ThemeModeSetting.system => ThemeMode.system,
+    };
+
+    return MaterialApp.router(
       title: 'Zip Captions',
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      home: const HomeScreen(),
+      themeMode: themeMode,
+      routerConfig: zcRouter,
     );
   }
 }

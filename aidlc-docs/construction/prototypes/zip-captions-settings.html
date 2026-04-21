@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proto-03: Settings — Zip Captions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --surface: #FAFCFF; --surface-low: #FFFFFF; --surface-high: #EEF2F8;
+      --surface-highest: #E4EAF2; --primary: #1A5A8C; --on-primary: #FFFFFF;
+      --secondary-container: #DAE3F0; --on-secondary-container: #0B141D;
+      --on-surface: #0B141D; --on-surface-var: #6B7380;
+      --outline: #6B7380; --outline-var: #C4CAD4; --error: #A8191F;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
+      --sidebar-w: 220px;
+    }
+    [data-theme="dark"] {
+      --surface: #0B141D; --surface-low: #060F18; --surface-high: #222B34;
+      --surface-highest: #2D3640; --primary: #9ACBFF; --on-primary: #003355;
+      --secondary-container: #414A54; --on-secondary-container: #E0E8F2;
+      --on-surface: #DAE3F0; --on-surface-var: #8B919A;
+      --outline: #8B919A; --outline-var: #41474F; --error: #FFB4AB;
+    }
+
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--surface); color: var(--on-surface); }
+
+    /* ── App shell ── */
+    .app {
+      height: 100vh; max-width: 1920px; margin: 0 auto;
+      display: flex; flex-direction: column; overflow: hidden;
+      border-left: 1px solid var(--outline-var); border-right: 1px solid var(--outline-var);
+    }
+    .main-row { flex: 1; min-height: 0; display: flex; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      display: none; width: var(--sidebar-w); flex-shrink: 0;
+      background: var(--surface-high); border-right: 1px solid var(--outline-var);
+      flex-direction: column; padding: 20px 0 16px;
+    }
+    .sidebar-brand { padding: 0 20px 24px; display: flex; align-items: center; gap: 10px; }
+    .brand-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .brand-name { font-size: 15px; font-weight: 600; }
+    .nav-section { padding: 0 8px; flex: 1; }
+    .nav-link {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--r-md);
+      border: none; background: transparent; color: var(--on-surface-var);
+      font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; width: 100%; text-align: left; transition: all 0.12s;
+    }
+    .nav-link:hover { background: var(--surface-highest); color: var(--on-surface); }
+    .nav-link.active { background: var(--secondary-container); color: var(--on-secondary-container); }
+    .sidebar-footer { padding: 0 8px; border-top: 1px solid var(--outline-var); padding-top: 12px; margin-top: 12px; }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+
+    /* ── Top Bar ── */
+    .top-bar {
+      flex-shrink: 0; display: flex; align-items: center;
+      padding: 0 4px 0 4px; height: 64px;
+      background: var(--surface); border-bottom: 1px solid var(--outline-var); gap: 4px;
+    }
+    .top-bar-title { flex: 1; font-size: 22px; font-weight: 500; padding-left: 4px; }
+    .icon-btn {
+      width: 48px; height: 48px; border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+      transition: background 0.15s; flex-shrink: 0;
+    }
+    .icon-btn:hover { background: var(--surface-high); }
+
+    /* ── View switcher (category list vs. detail) ── */
+    .view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+    .view.active { display: flex; }
+
+    /* ── Category list view ── */
+    .cat-list { flex: 1; min-height: 0; overflow-y: auto; }
+
+    /* Section within category list */
+    .section-header {
+      padding: 20px 16px 6px;
+      font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--primary);
+    }
+
+    /* Direct setting row (for STT engine, language — shown as-is) */
+    .setting-row {
+      display: flex; align-items: center; padding: 14px 16px; gap: 12px;
+      border-bottom: 1px solid var(--outline-var); background: var(--surface-low);
+      transition: background 0.12s; cursor: pointer;
+    }
+    .setting-row:hover { background: var(--surface-high); }
+    .setting-icon {
+      width: 36px; height: 36px; border-radius: var(--r-md);
+      background: var(--secondary-container);
+      display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+    }
+    .setting-info { flex: 1; min-width: 0; }
+    .setting-label { font-size: 15px; font-weight: 500; }
+    .setting-value { font-size: 13px; color: var(--on-surface-var); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .setting-chevron { color: var(--outline); font-size: 18px; }
+
+    /* Category row (taps into detail view) */
+    .cat-row {
+      display: flex; align-items: center; padding: 16px 16px; gap: 12px;
+      border-bottom: 1px solid var(--outline-var); background: var(--surface-low);
+      transition: background 0.12s; cursor: pointer;
+    }
+    .cat-row:hover { background: var(--surface-high); }
+    .cat-icon {
+      width: 44px; height: 44px; border-radius: var(--r-lg);
+      background: var(--secondary-container);
+      display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+    }
+    .cat-info { flex: 1; min-width: 0; }
+    .cat-name { font-size: 16px; font-weight: 600; color: var(--on-surface); }
+    .cat-summary { font-size: 13px; color: var(--on-surface-var); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cat-chevron { color: var(--outline); font-size: 20px; }
+
+    /* ── Detail view ── */
+    .detail-top-bar {
+      flex-shrink: 0; display: flex; align-items: center;
+      padding: 0 4px; height: 56px;
+      border-bottom: 1px solid var(--outline-var); background: var(--surface); gap: 4px;
+    }
+    .detail-top-bar-title { flex: 1; font-size: 18px; font-weight: 600; padding-left: 4px; }
+
+    .detail-scroll { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 24px; }
+
+    /* Detail section header */
+    .d-section-header {
+      padding: 18px 16px 6px;
+      font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--on-surface-var);
+    }
+
+    /* Chip rows in detail view */
+    .chip-row {
+      padding: 12px 16px; border-bottom: 1px solid var(--outline-var); background: var(--surface-low);
+    }
+    .chip-row-label { font-size: 13px; font-weight: 500; color: var(--on-surface-var); margin-bottom: 10px; }
+    .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 6px 14px; border-radius: 20px;
+      border: 1.5px solid var(--outline-var); background: transparent;
+      color: var(--on-surface); font-family: inherit; font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: all 0.12s;
+    }
+    .chip.active { background: var(--secondary-container); border-color: var(--primary); color: var(--on-secondary-container); }
+
+    /* Toggle row in detail view */
+    .toggle-row {
+      display: flex; align-items: center; padding: 14px 16px; gap: 12px;
+      border-bottom: 1px solid var(--outline-var); background: var(--surface-low);
+    }
+    .toggle-icon { font-size: 20px; flex-shrink: 0; }
+    .toggle-info { flex: 1; }
+    .toggle-label { font-size: 15px; font-weight: 500; }
+    .toggle-sub { font-size: 13px; color: var(--on-surface-var); margin-top: 1px; }
+    .toggle {
+      width: 52px; height: 30px; border-radius: 15px;
+      background: var(--outline-var); border: none; cursor: pointer;
+      position: relative; transition: background 0.2s; flex-shrink: 0;
+    }
+    .toggle.on { background: var(--primary); }
+    .toggle::after {
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 24px; height: 24px; border-radius: 50%; background: white;
+      transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,.2);
+    }
+    .toggle.on::after { transform: translateX(22px); }
+
+    /* Preview card in Appearance detail */
+    .preview-card {
+      margin: 12px 16px; padding: 16px; border-radius: var(--r-lg);
+      background: var(--surface-highest); border: 1px solid var(--outline-var);
+    }
+    .preview-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--on-surface-var); margin-bottom: 10px; }
+    .preview-text { font-size: 18px; line-height: 1.65; color: var(--on-surface); }
+
+    /* Audio source list */
+    .source-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border-bottom: 1px solid var(--outline-var);
+      background: var(--surface-low); cursor: pointer; transition: background 0.12s;
+    }
+    .source-row:hover { background: var(--surface-high); }
+    .source-icon { font-size: 22px; }
+    .source-info { flex: 1; }
+    .source-name { font-size: 15px; font-weight: 500; }
+    .source-type { font-size: 12px; color: var(--on-surface-var); }
+    .radio {
+      width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--outline-var);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .radio.selected { border-color: var(--primary); }
+    .radio.selected::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); }
+
+    /* ── Responsive ── */
+    @media (min-width: 768px) {
+      .sidebar { display: flex; }
+      .top-bar-title { display: none; }
+    }
+
+    /* ── Mobile hamburger + drawer ── */
+    .hamburger {
+      display: none; width: 40px; height: 40px; border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface); cursor: pointer;
+      align-items: center; justify-content: center; font-size: 22px; transition: background 0.15s; flex-shrink: 0;
+    }
+    .hamburger:hover { background: var(--surface-high); }
+    @media (max-width: 767px) { .hamburger { display: flex; } }
+    .drawer-overlay {
+      display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.4);
+    }
+    .drawer-overlay.open { display: block; }
+    .nav-drawer {
+      position: absolute; top: 0; left: 0; bottom: 0; width: 280px;
+      background: var(--surface-high); display: flex; flex-direction: column; padding: 20px 0 16px;
+      transform: translateX(-100%); transition: transform 0.25s ease;
+    }
+    .drawer-overlay.open .nav-drawer { transform: translateX(0); }
+    .drawer-top-row {
+      display: flex; align-items: center; justify-content: space-between; padding: 0 16px 16px;
+    }
+    .drawer-brand { display: flex; align-items: center; gap: 10px; }
+    .drawer-close {
+      width: 36px; height: 36px; border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface-var); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .drawer-close:hover { background: var(--surface-highest); }
+
+    .desktop-hint {
+      display: none; position: fixed; bottom: 16px; right: 16px;
+      background: var(--surface-highest); color: var(--on-surface-var); font-size: 12px;
+      padding: 8px 12px; border-radius: var(--r-md); border: 1px solid var(--outline-var);
+    }
+    @media (min-width: 768px) { .desktop-hint { display: block; } }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="main-row">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">🎤</div>
+        <div><div class="brand-name">Zip Captions</div></div>
+      </div>
+      <div class="nav-section">
+        <button class="nav-link">🏠 Home</button>
+        <button class="nav-link">📋 History</button>
+        <button class="nav-link active">⚙️ Settings</button>
+      </div>
+      <div class="sidebar-footer">
+        <button class="nav-link" onclick="toggleTheme()">
+          <span id="theme-icon-side">🌙</span> <span>Dark Mode</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Mobile nav drawer -->
+    <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer(event)">
+      <nav class="nav-drawer">
+        <div class="drawer-top-row">
+          <div class="drawer-brand">
+            <div class="brand-icon">🎤</div>
+            <div><div class="brand-name">Zip Captions</div></div>
+          </div>
+          <button class="drawer-close" onclick="closeDrawer()" aria-label="Close menu">✕</button>
+        </div>
+        <div class="nav-section">
+          <button class="nav-link">🏠 Home</button>
+          <button class="nav-link">📋 History</button>
+          <button class="nav-link active">⚙️ Settings</button>
+        </div>
+        <div class="sidebar-footer">
+          <button class="nav-link" onclick="toggleTheme()">
+            <span id="theme-icon-drawer">🌙</span> <span id="theme-label-drawer">Dark Mode</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+
+      <!-- Top Bar (for category list view) -->
+      <header class="top-bar" id="list-topbar">
+        <button class="hamburger" onclick="openDrawer()" aria-label="Open menu">☰</button>
+        <span class="top-bar-title">Settings</span>
+        <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+          <span id="theme-icon">🌙</span>
+        </button>
+      </header>
+
+      <!-- ── CATEGORY LIST VIEW ── -->
+      <div class="view active" id="view-list">
+        <div class="cat-list">
+
+          <!-- Speech Recognition (direct rows — already the correct pattern) -->
+          <div class="section-header">Speech Recognition</div>
+          <div class="setting-row" onclick="">
+            <div class="setting-icon">🧠</div>
+            <div class="setting-info">
+              <div class="setting-label">STT Engine</div>
+              <div class="setting-value">Platform (Apple Speech) · Ready</div>
+            </div>
+            <span class="setting-chevron">›</span>
+          </div>
+          <div class="setting-row" onclick="">
+            <div class="setting-icon">🌐</div>
+            <div class="setting-info">
+              <div class="setting-label">Language / Locale</div>
+              <div class="setting-value">English (United States)</div>
+            </div>
+            <span class="setting-chevron">›</span>
+          </div>
+
+          <!-- Category rows -->
+          <div class="section-header">Preferences</div>
+
+          <div class="cat-row" onclick="showDetail('appearance')">
+            <div class="cat-icon">🎨</div>
+            <div class="cat-info">
+              <div class="cat-name">Appearance</div>
+              <div class="cat-summary">Medium · Inter · Bottom-to-top · Light theme</div>
+            </div>
+            <span class="cat-chevron">›</span>
+          </div>
+
+          <div class="cat-row" onclick="showDetail('behaviour')">
+            <div class="cat-icon">🔆</div>
+            <div class="cat-info">
+              <div class="cat-name">App Behaviour</div>
+              <div class="cat-summary">Wake lock on · Release on pause</div>
+            </div>
+            <span class="cat-chevron">›</span>
+          </div>
+
+          <div class="cat-row" onclick="showDetail('audio')">
+            <div class="cat-icon">🎤</div>
+            <div class="cat-info">
+              <div class="cat-name">Audio Source</div>
+              <div class="cat-summary">Default Microphone (Built-in)</div>
+            </div>
+            <span class="cat-chevron">›</span>
+          </div>
+
+          <div class="cat-row" onclick="showDetail('transcripts')">
+            <div class="cat-icon">📝</div>
+            <div class="cat-info">
+              <div class="cat-name">Transcripts</div>
+              <div class="cat-summary">Saving enabled</div>
+            </div>
+            <span class="cat-chevron">›</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── APPEARANCE DETAIL VIEW ── -->
+      <div class="view" id="view-appearance">
+        <div class="detail-top-bar">
+          <button class="icon-btn" onclick="showList()" aria-label="Back">←</button>
+          <span class="detail-top-bar-title">Appearance</span>
+        </div>
+        <div class="detail-scroll">
+          <div class="d-section-header">Caption Text</div>
+          <div class="chip-row">
+            <div class="chip-row-label">Text size</div>
+            <div class="chip-group" id="size-group">
+              <button class="chip" onclick="setChip('size-group',this);setPreviewSize('13px')">Small</button>
+              <button class="chip active" onclick="setChip('size-group',this);setPreviewSize('18px')">Medium</button>
+              <button class="chip" onclick="setChip('size-group',this);setPreviewSize('22px')">Large</button>
+              <button class="chip" onclick="setChip('size-group',this);setPreviewSize('28px')">X-Large</button>
+            </div>
+          </div>
+          <div class="chip-row">
+            <div class="chip-row-label">Font</div>
+            <div class="chip-group" id="font-group">
+              <button class="chip active" onclick="setChip('font-group',this);setPreviewFont('')">Inter</button>
+              <button class="chip" onclick="setChip('font-group',this);setPreviewFont('Georgia, serif')">Serif</button>
+              <button class="chip" onclick="setChip('font-group',this);setPreviewFont('monospace')">Monospace</button>
+            </div>
+          </div>
+          <div class="chip-row">
+            <div class="chip-row-label">Scroll direction</div>
+            <div class="chip-group" id="dir-group">
+              <button class="chip active" onclick="setChip('dir-group',this)">↑ Bottom to top</button>
+              <button class="chip" onclick="setChip('dir-group',this)">↓ Top to bottom</button>
+            </div>
+          </div>
+
+          <div class="preview-card">
+            <div class="preview-label">Preview</div>
+            <div class="preview-text" id="preview-text">The quick brown fox jumps over the lazy dog.</div>
+          </div>
+
+          <div class="d-section-header">Theme</div>
+          <div class="toggle-row">
+            <span class="toggle-icon">🌙</span>
+            <div class="toggle-info">
+              <div class="toggle-label">Dark Theme</div>
+              <div class="toggle-sub">Use dark background for all screens</div>
+            </div>
+            <button class="toggle" id="theme-toggle" onclick="toggleThemeRow(this)"></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── APP BEHAVIOUR DETAIL VIEW ── -->
+      <div class="view" id="view-behaviour">
+        <div class="detail-top-bar">
+          <button class="icon-btn" onclick="showList()" aria-label="Back">←</button>
+          <span class="detail-top-bar-title">App Behaviour</span>
+        </div>
+        <div class="detail-scroll">
+          <div class="d-section-header">Screen</div>
+          <div class="toggle-row">
+            <span class="toggle-icon">🔆</span>
+            <div class="toggle-info">
+              <div class="toggle-label">Keep Screen On</div>
+              <div class="toggle-sub">Screen stays awake while captioning</div>
+            </div>
+            <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-icon">⏸</span>
+            <div class="toggle-info">
+              <div class="toggle-label">Release on Pause</div>
+              <div class="toggle-sub">Allow screen to sleep when captioning is paused</div>
+            </div>
+            <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── AUDIO SOURCE DETAIL VIEW ── -->
+      <div class="view" id="view-audio">
+        <div class="detail-top-bar">
+          <button class="icon-btn" onclick="showList()" aria-label="Back">←</button>
+          <span class="detail-top-bar-title">Audio Source</span>
+        </div>
+        <div class="detail-scroll">
+          <div class="d-section-header">Select source</div>
+          <div class="source-row" onclick="selectSource(this)">
+            <span class="source-icon">🎤</span>
+            <div class="source-info"><div class="source-name">Default Microphone</div><div class="source-type">Built-in</div></div>
+            <div class="radio selected"></div>
+          </div>
+          <div class="source-row" onclick="selectSource(this)">
+            <span class="source-icon">🎧</span>
+            <div class="source-info"><div class="source-name">AirPods Pro</div><div class="source-type">Bluetooth</div></div>
+            <div class="radio"></div>
+          </div>
+          <div class="source-row" onclick="selectSource(this)">
+            <span class="source-icon">🔌</span>
+            <div class="source-info"><div class="source-name">USB Audio Device</div><div class="source-type">USB</div></div>
+            <div class="radio"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TRANSCRIPTS DETAIL VIEW ── -->
+      <div class="view" id="view-transcripts">
+        <div class="detail-top-bar">
+          <button class="icon-btn" onclick="showList()" aria-label="Back">←</button>
+          <span class="detail-top-bar-title">Transcripts</span>
+        </div>
+        <div class="detail-scroll">
+          <div class="d-section-header">Storage</div>
+          <div class="toggle-row">
+            <span class="toggle-icon">📝</span>
+            <div class="toggle-info">
+              <div class="toggle-label">Save Transcripts</div>
+              <div class="toggle-sub">Automatically save sessions to history after stopping</div>
+            </div>
+            <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end main -->
+  </div><!-- end main-row -->
+</div>
+
+<p class="desktop-hint">Proto-03 · Settings · tap category rows to drill in · ← to return · resize &lt;768px for mobile</p>
+
+<script>
+  const views = ['list','appearance','behaviour','audio','transcripts'];
+
+  function showDetail(name) {
+    views.forEach(v => document.getElementById('view-' + v).classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    document.getElementById('list-topbar').style.display = 'none';
+  }
+
+  function showList() {
+    views.forEach(v => document.getElementById('view-' + v).classList.remove('active'));
+    document.getElementById('view-list').classList.add('active');
+    document.getElementById('list-topbar').style.display = '';
+  }
+
+  function openDrawer() { document.getElementById('drawer-overlay').classList.add('open'); }
+  function closeDrawer(e) {
+    if (!e || e.target === document.getElementById('drawer-overlay'))
+      document.getElementById('drawer-overlay').classList.remove('open');
+  }
+
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+    const icon = isDark ? '🌙' : '☀️';
+    const label = isDark ? 'Dark Mode' : 'Light Mode';
+    document.getElementById('theme-icon').textContent = icon;
+    if (document.getElementById('theme-icon-side')) document.getElementById('theme-icon-side').textContent = icon;
+    if (document.getElementById('theme-icon-drawer')) document.getElementById('theme-icon-drawer').textContent = icon;
+    if (document.getElementById('theme-label-drawer')) document.getElementById('theme-label-drawer').textContent = label;
+    const tt = document.getElementById('theme-toggle');
+    if (tt) tt.classList.toggle('on', !isDark);
+  }
+
+  function toggleThemeRow(toggle) {
+    toggle.classList.toggle('on');
+    const isDark = toggle.classList.contains('on');
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : '');
+    const icon = isDark ? '☀️' : '🌙';
+    const label = isDark ? 'Light Mode' : 'Dark Mode';
+    document.getElementById('theme-icon').textContent = icon;
+    if (document.getElementById('theme-icon-side')) document.getElementById('theme-icon-side').textContent = icon;
+    if (document.getElementById('theme-icon-drawer')) document.getElementById('theme-icon-drawer').textContent = icon;
+    if (document.getElementById('theme-label-drawer')) document.getElementById('theme-label-drawer').textContent = label;
+  }
+
+  function setChip(groupId, el) {
+    document.querySelectorAll('#' + groupId + ' .chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function setPreviewSize(size) {
+    document.getElementById('preview-text').style.fontSize = size;
+  }
+  function setPreviewFont(font) {
+    document.getElementById('preview-text').style.fontFamily = font;
+  }
+
+  function selectSource(row) {
+    document.querySelectorAll('.source-row .radio').forEach(r => r.classList.remove('selected'));
+    row.querySelector('.radio').classList.add('selected');
+  }
+</script>
+</body>
+</html>

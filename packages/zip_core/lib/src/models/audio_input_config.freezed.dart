@@ -187,14 +187,14 @@ mixin _$AudioInputConfig {
   /// Unique identifier for this input.
   String get inputId => throw _privateConstructorUsedError;
 
-  /// Platform audio device identifier (null = default mic).
-  String? get sourceDeviceId => throw _privateConstructorUsedError;
-
   /// User-assigned label (e.g., "Teacher", "Student Mic").
   String get speakerLabel => throw _privateConstructorUsedError;
 
   /// Color/indicator for rendering this source's captions.
   AudioInputVisualStyle get visualStyle => throw _privateConstructorUsedError;
+
+  /// Platform audio device identifier (null = default mic).
+  String? get sourceDeviceId => throw _privateConstructorUsedError;
 
   /// Whether this input is currently capturing.
   bool get isActive => throw _privateConstructorUsedError;
@@ -215,9 +215,9 @@ abstract class $AudioInputConfigCopyWith<$Res> {
   @useResult
   $Res call({
     String inputId,
-    String? sourceDeviceId,
     String speakerLabel,
     AudioInputVisualStyle visualStyle,
+    String? sourceDeviceId,
     bool isActive,
   });
 
@@ -240,9 +240,9 @@ class _$AudioInputConfigCopyWithImpl<$Res, $Val extends AudioInputConfig>
   @override
   $Res call({
     Object? inputId = null,
-    Object? sourceDeviceId = freezed,
     Object? speakerLabel = null,
     Object? visualStyle = null,
+    Object? sourceDeviceId = freezed,
     Object? isActive = null,
   }) {
     return _then(
@@ -251,10 +251,6 @@ class _$AudioInputConfigCopyWithImpl<$Res, $Val extends AudioInputConfig>
                 ? _value.inputId
                 : inputId // ignore: cast_nullable_to_non_nullable
                       as String,
-            sourceDeviceId: freezed == sourceDeviceId
-                ? _value.sourceDeviceId
-                : sourceDeviceId // ignore: cast_nullable_to_non_nullable
-                      as String?,
             speakerLabel: null == speakerLabel
                 ? _value.speakerLabel
                 : speakerLabel // ignore: cast_nullable_to_non_nullable
@@ -263,6 +259,10 @@ class _$AudioInputConfigCopyWithImpl<$Res, $Val extends AudioInputConfig>
                 ? _value.visualStyle
                 : visualStyle // ignore: cast_nullable_to_non_nullable
                       as AudioInputVisualStyle,
+            sourceDeviceId: freezed == sourceDeviceId
+                ? _value.sourceDeviceId
+                : sourceDeviceId // ignore: cast_nullable_to_non_nullable
+                      as String?,
             isActive: null == isActive
                 ? _value.isActive
                 : isActive // ignore: cast_nullable_to_non_nullable
@@ -294,9 +294,9 @@ abstract class _$$AudioInputConfigImplCopyWith<$Res>
   @useResult
   $Res call({
     String inputId,
-    String? sourceDeviceId,
     String speakerLabel,
     AudioInputVisualStyle visualStyle,
+    String? sourceDeviceId,
     bool isActive,
   });
 
@@ -319,9 +319,9 @@ class __$$AudioInputConfigImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? inputId = null,
-    Object? sourceDeviceId = freezed,
     Object? speakerLabel = null,
     Object? visualStyle = null,
+    Object? sourceDeviceId = freezed,
     Object? isActive = null,
   }) {
     return _then(
@@ -330,10 +330,6 @@ class __$$AudioInputConfigImplCopyWithImpl<$Res>
             ? _value.inputId
             : inputId // ignore: cast_nullable_to_non_nullable
                   as String,
-        sourceDeviceId: freezed == sourceDeviceId
-            ? _value.sourceDeviceId
-            : sourceDeviceId // ignore: cast_nullable_to_non_nullable
-                  as String?,
         speakerLabel: null == speakerLabel
             ? _value.speakerLabel
             : speakerLabel // ignore: cast_nullable_to_non_nullable
@@ -342,6 +338,10 @@ class __$$AudioInputConfigImplCopyWithImpl<$Res>
             ? _value.visualStyle
             : visualStyle // ignore: cast_nullable_to_non_nullable
                   as AudioInputVisualStyle,
+        sourceDeviceId: freezed == sourceDeviceId
+            ? _value.sourceDeviceId
+            : sourceDeviceId // ignore: cast_nullable_to_non_nullable
+                  as String?,
         isActive: null == isActive
             ? _value.isActive
             : isActive // ignore: cast_nullable_to_non_nullable
@@ -356,19 +356,15 @@ class __$$AudioInputConfigImplCopyWithImpl<$Res>
 class _$AudioInputConfigImpl implements _AudioInputConfig {
   const _$AudioInputConfigImpl({
     required this.inputId,
-    this.sourceDeviceId,
     required this.speakerLabel,
     required this.visualStyle,
+    this.sourceDeviceId,
     this.isActive = true,
   });
 
   /// Unique identifier for this input.
   @override
   final String inputId;
-
-  /// Platform audio device identifier (null = default mic).
-  @override
-  final String? sourceDeviceId;
 
   /// User-assigned label (e.g., "Teacher", "Student Mic").
   @override
@@ -378,6 +374,10 @@ class _$AudioInputConfigImpl implements _AudioInputConfig {
   @override
   final AudioInputVisualStyle visualStyle;
 
+  /// Platform audio device identifier (null = default mic).
+  @override
+  final String? sourceDeviceId;
+
   /// Whether this input is currently capturing.
   @override
   @JsonKey()
@@ -385,7 +385,7 @@ class _$AudioInputConfigImpl implements _AudioInputConfig {
 
   @override
   String toString() {
-    return 'AudioInputConfig(inputId: $inputId, sourceDeviceId: $sourceDeviceId, speakerLabel: $speakerLabel, visualStyle: $visualStyle, isActive: $isActive)';
+    return 'AudioInputConfig(inputId: $inputId, speakerLabel: $speakerLabel, visualStyle: $visualStyle, sourceDeviceId: $sourceDeviceId, isActive: $isActive)';
   }
 
   @override
@@ -394,12 +394,12 @@ class _$AudioInputConfigImpl implements _AudioInputConfig {
         (other.runtimeType == runtimeType &&
             other is _$AudioInputConfigImpl &&
             (identical(other.inputId, inputId) || other.inputId == inputId) &&
-            (identical(other.sourceDeviceId, sourceDeviceId) ||
-                other.sourceDeviceId == sourceDeviceId) &&
             (identical(other.speakerLabel, speakerLabel) ||
                 other.speakerLabel == speakerLabel) &&
             (identical(other.visualStyle, visualStyle) ||
                 other.visualStyle == visualStyle) &&
+            (identical(other.sourceDeviceId, sourceDeviceId) ||
+                other.sourceDeviceId == sourceDeviceId) &&
             (identical(other.isActive, isActive) ||
                 other.isActive == isActive));
   }
@@ -408,9 +408,9 @@ class _$AudioInputConfigImpl implements _AudioInputConfig {
   int get hashCode => Object.hash(
     runtimeType,
     inputId,
-    sourceDeviceId,
     speakerLabel,
     visualStyle,
+    sourceDeviceId,
     isActive,
   );
 
@@ -429,19 +429,15 @@ class _$AudioInputConfigImpl implements _AudioInputConfig {
 abstract class _AudioInputConfig implements AudioInputConfig {
   const factory _AudioInputConfig({
     required final String inputId,
-    final String? sourceDeviceId,
     required final String speakerLabel,
     required final AudioInputVisualStyle visualStyle,
+    final String? sourceDeviceId,
     final bool isActive,
   }) = _$AudioInputConfigImpl;
 
   /// Unique identifier for this input.
   @override
   String get inputId;
-
-  /// Platform audio device identifier (null = default mic).
-  @override
-  String? get sourceDeviceId;
 
   /// User-assigned label (e.g., "Teacher", "Student Mic").
   @override
@@ -450,6 +446,10 @@ abstract class _AudioInputConfig implements AudioInputConfig {
   /// Color/indicator for rendering this source's captions.
   @override
   AudioInputVisualStyle get visualStyle;
+
+  /// Platform audio device identifier (null = default mic).
+  @override
+  String? get sourceDeviceId;
 
   /// Whether this input is currently capturing.
   @override

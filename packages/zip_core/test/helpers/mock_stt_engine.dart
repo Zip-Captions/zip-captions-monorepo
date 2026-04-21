@@ -12,6 +12,7 @@ class MockSttEngine implements SttEngine {
     this.displayName = 'Mock Engine',
     this.requiresNetwork = false,
     this.requiresDownload = false,
+    this.requiresMicrophone = true,
     this.mockLocales = const [],
     this.mockIsAvailable = true,
     this.asyncDelay = const Duration(milliseconds: 100),
@@ -25,6 +26,8 @@ class MockSttEngine implements SttEngine {
   final bool requiresNetwork;
   @override
   final bool requiresDownload;
+  @override
+  final bool requiresMicrophone;
 
   final List<SpeechLocale> mockLocales;
   final bool mockIsAvailable;

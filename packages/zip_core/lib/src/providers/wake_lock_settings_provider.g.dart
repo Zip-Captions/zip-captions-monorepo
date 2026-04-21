@@ -7,7 +7,7 @@ part of 'wake_lock_settings_provider.dart';
 // **************************************************************************
 
 String _$wakeLockSettingsNotifierHash() =>
-    r'78290a6fbb3cb5627bb0465a81e507674e4f6752';
+    r'32644a29722a3f91101313d1e1b9a0cbf92f6e38';
 
 /// SharedPreferences-backed provider for [WakeLockSettings].
 ///

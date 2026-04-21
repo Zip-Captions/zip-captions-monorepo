@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' hide addTearDown, expect, group, test;
 import 'package:zip_core/src/models/speech_locale.dart';
 
 import '../helpers/generators.dart';
+import '../helpers/pbt.dart';
 
 void main() {
   group('SpeechLocale properties PBT', () {

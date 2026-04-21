@@ -105,6 +105,29 @@ void main() {
         expect(capturedErrors, hasLength(1));
         expect(capturedErrors.first.message, contains('Settings'));
       });
+
+      test(
+          'succeeds without permission check when requiresMicrophone is false',
+          () async {
+        // Engine declares it does not need the microphone — no permission
+        // stub is set up, so any call to the permission handler would throw.
+        final noMicEngine = MockSttEngine(
+          engineId: 'no-mic',
+          requiresMicrophone: false,
+        );
+        final noMicRegistry = SttEngineRegistry()..register(noMicEngine);
+        final noMicManager = SttSessionManager(registry: noMicRegistry);
+
+        final ok = await noMicManager.initialize(
+          engineId: 'no-mic',
+          localeId: 'en-US',
+          onResult: capturedResults.add,
+          onError: capturedErrors.add,
+        );
+
+        expect(ok, isTrue);
+        expect(capturedErrors, isEmpty);
+      });
     });
 
     group('full lifecycle', () {

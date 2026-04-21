@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proto-01: Home — Zip Captions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --surface: #FAFCFF; --surface-low: #FFFFFF; --surface-high: #EEF2F8;
+      --surface-highest: #E4EAF2; --primary: #1A5A8C; --on-primary: #FFFFFF;
+      --secondary-container: #DAE3F0; --on-secondary-container: #0B141D;
+      --on-surface: #0B141D; --on-surface-var: #6B7380;
+      --outline: #6B7380; --outline-var: #C4CAD4; --error: #A8191F;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
+      --sidebar-w: 220px;
+    }
+    [data-theme="dark"] {
+      --surface: #0B141D; --surface-low: #060F18; --surface-high: #222B34;
+      --surface-highest: #2D3640; --primary: #9ACBFF; --on-primary: #003355;
+      --secondary-container: #414A54; --on-secondary-container: #E0E8F2;
+      --on-surface: #DAE3F0; --on-surface-var: #8B919A;
+      --outline: #8B919A; --outline-var: #41474F; --error: #FFB4AB;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--surface); color: var(--on-surface);
+    }
+
+    /* ── Root shell: fixed height, max 1920px ── */
+    .app {
+      height: 100vh;
+      max-width: 1920px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-left: 1px solid var(--outline-var);
+      border-right: 1px solid var(--outline-var);
+    }
+
+    /* ── Main row holds sidebar + content ── */
+    .main-row {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+    }
+
+    /* ── Sidebar (desktop only) ── */
+    .sidebar {
+      display: none;
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--surface-high);
+      border-right: 1px solid var(--outline-var);
+      flex-direction: column;
+      padding: 20px 0 16px;
+    }
+    .sidebar-brand {
+      padding: 0 20px 24px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .brand-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--primary);
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .brand-name { font-size: 15px; font-weight: 600; }
+    .nav-section { padding: 0 8px; flex: 1; }
+    .nav-section-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--on-surface-var); padding: 12px 12px 4px;
+    }
+    .nav-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: var(--r-md);
+      border: none; background: transparent; color: var(--on-surface-var);
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      cursor: pointer; width: 100%; text-align: left; transition: all 0.12s;
+    }
+    .nav-link:hover { background: var(--surface-highest); color: var(--on-surface); }
+    .nav-link.active { background: var(--secondary-container); color: var(--on-secondary-container); }
+    .sidebar-footer {
+      padding: 0 8px; border-top: 1px solid var(--outline-var);
+      padding-top: 12px; margin-top: 12px;
+    }
+
+    /* ── Main column ── */
+    .main {
+      flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+    }
+
+    /* ── Top Bar ── */
+    .top-bar {
+      flex-shrink: 0;
+      display: flex; align-items: center;
+      padding: 0 4px 0 16px; height: 64px;
+      background: var(--surface); border-bottom: 1px solid var(--outline-var);
+    }
+    .top-bar-title { flex: 1; font-size: 22px; font-weight: 500; }
+    .icon-btn {
+      width: 48px; height: 48px; border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+      transition: background 0.15s;
+    }
+    .icon-btn:hover { background: var(--surface-high); }
+
+    /* ── Scrollable content ── */
+    .content {
+      flex: 1; min-height: 0; overflow-y: auto;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 32px 24px; gap: 32px;
+    }
+    .content-inner {
+      width: 100%; max-width: 480px;
+      display: flex; flex-direction: column; align-items: center; gap: 32px;
+    }
+
+    /* ── Hero ── */
+    .hero { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+    .hero-icon {
+      width: 80px; height: 80px; border-radius: var(--r-xl);
+      background: var(--secondary-container);
+      display: flex; align-items: center; justify-content: center; font-size: 40px;
+    }
+    .hero-title { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
+    .hero-sub { font-size: 15px; color: var(--on-surface-var); }
+
+    /* ── Start Button ── */
+    .btn-start {
+      width: 100%;
+      padding: 18px 32px; border-radius: var(--r-xl); border: none;
+      background: var(--primary); color: var(--on-primary);
+      font-family: inherit; font-size: 17px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: opacity 0.15s, transform 0.1s;
+      box-shadow: 0 2px 8px rgba(26,90,140,.25);
+    }
+    .btn-start:hover { opacity: 0.9; transform: translateY(-1px); }
+    [data-theme="dark"] .btn-start { box-shadow: 0 2px 8px rgba(154,203,255,.15); }
+
+    /* ── Status Card ── */
+    .status-card {
+      width: 100%; background: var(--surface-high); border-radius: var(--r-lg); padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .status-row { display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
+    .status-label { color: var(--on-surface-var); font-weight: 500; }
+    .status-value { color: var(--on-surface); font-weight: 500; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--on-surface-var); display: inline-block; margin-right: 6px; }
+    .status-dot.ready { background: #2E7D32; }
+    [data-theme="dark"] .status-dot.ready { background: #81C784; }
+    .divider { width: 100%; height: 1px; background: var(--outline-var); }
+
+    /* ── History link ── */
+    .history-link {
+      display: flex; align-items: center; gap: 12px; width: 100%;
+      padding: 14px 16px; border-radius: var(--r-md);
+      border: 1px solid var(--outline-var); background: transparent; color: var(--on-surface);
+      font-family: inherit; font-size: 15px; font-weight: 500;
+      cursor: pointer; transition: background 0.15s; text-align: left;
+    }
+    .history-link:hover { background: var(--surface-high); }
+    .hl-label { flex: 1; }
+    .hl-count { font-size: 13px; color: var(--on-surface-var); background: var(--surface-highest); padding: 2px 8px; border-radius: 12px; }
+
+    /* ── Bottom nav (mobile only) ── */
+    .bottom-nav {
+      flex-shrink: 0;
+      display: flex; border-top: 1px solid var(--outline-var); background: var(--surface);
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 4px; padding: 8px 0 12px; border: none; background: transparent;
+      color: var(--on-surface-var); font-family: inherit; font-size: 11px; font-weight: 500;
+      cursor: pointer; position: relative; transition: color 0.15s;
+    }
+    .nav-item.active { color: var(--primary); }
+    .nav-item .nav-icon { font-size: 22px; }
+    .nav-indicator {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 64px; height: 3px; border-radius: 0 0 3px 3px;
+      background: var(--primary); opacity: 0;
+    }
+    .nav-item.active .nav-indicator { opacity: 1; }
+
+    /* ── Responsive: desktop shows sidebar, hides bottom nav ── */
+    @media (min-width: 768px) {
+      .sidebar { display: flex; }
+      .bottom-nav { display: none; }
+      .top-bar-title { display: none; } /* brand is in sidebar */
+    }
+
+    .desktop-hint {
+      display: none; position: fixed; bottom: 16px; right: 16px;
+      background: var(--surface-highest); color: var(--on-surface-var); font-size: 12px;
+      padding: 8px 12px; border-radius: var(--r-md); border: 1px solid var(--outline-var);
+    }
+    @media (min-width: 768px) { .desktop-hint { display: block; } }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="main-row">
+
+    <!-- Sidebar (desktop) -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">🎤</div>
+        <div><div class="brand-name">Zip Captions</div></div>
+      </div>
+      <div class="nav-section">
+        <button class="nav-link active">🏠 Home</button>
+        <button class="nav-link">📋 History</button>
+        <button class="nav-link">⚙️ Settings</button>
+      </div>
+      <div class="sidebar-footer">
+        <button class="nav-link" onclick="toggleTheme()">
+          <span id="theme-icon-side">🌙</span> <span id="theme-label-side">Dark Mode</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="main">
+      <header class="top-bar">
+        <span class="top-bar-title">Zip Captions</span>
+        <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme"><span id="theme-icon">🌙</span></button>
+        <button class="icon-btn" aria-label="Settings">⚙️</button>
+      </header>
+
+      <div class="content">
+        <div class="content-inner">
+          <div class="hero">
+            <div class="hero-icon">🎤</div>
+            <h1 class="hero-title">Zip Captions</h1>
+            <p class="hero-sub">Real-time speech-to-text captioning</p>
+          </div>
+          <button class="btn-start" aria-label="Start captioning">
+            <span>▶</span><span>Start Captioning</span>
+          </button>
+          <div class="status-card">
+            <div class="status-row">
+              <span class="status-label">STT Engine</span>
+              <span class="status-value"><span class="status-dot ready"></span>Platform (Apple)</span>
+            </div>
+            <div class="divider"></div>
+            <div class="status-row">
+              <span class="status-label">Language</span>
+              <span class="status-value">English (US)</span>
+            </div>
+            <div class="divider"></div>
+            <div class="status-row">
+              <span class="status-label">Wake Lock</span>
+              <span class="status-value">On during captioning</span>
+            </div>
+          </div>
+          <button class="history-link" aria-label="Session history">
+            <span style="font-size:20px">📋</span>
+            <span class="hl-label">Session History</span>
+            <span class="hl-count">12 transcripts</span>
+            <span>›</span>
+          </button>
+        </div>
+      </div>
+    </div><!-- end main -->
+
+  </div><!-- end main-row -->
+
+  <!-- Bottom nav (mobile only) -->
+  <nav class="bottom-nav">
+    <button class="nav-item active"><div class="nav-indicator"></div><span class="nav-icon">🏠</span><span>Home</span></button>
+    <button class="nav-item"><div class="nav-indicator"></div><span class="nav-icon">📋</span><span>History</span></button>
+    <button class="nav-item"><div class="nav-indicator"></div><span class="nav-icon">⚙️</span><span>Settings</span></button>
+  </nav>
+</div>
+
+<p class="desktop-hint">Proto-01 · Home · resize &lt;768px to see mobile layout</p>
+
+<script>
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+    const icon = isDark ? '🌙' : '☀️';
+    document.getElementById('theme-icon').textContent = icon;
+    if (document.getElementById('theme-icon-side')) document.getElementById('theme-icon-side').textContent = icon;
+    if (document.getElementById('theme-label-side')) document.getElementById('theme-label-side').textContent = isDark ? 'Dark Mode' : 'Light Mode';
+  }
+</script>
+</body>
+</html>

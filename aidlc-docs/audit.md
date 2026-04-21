@@ -861,3 +861,40 @@
 **Status**: Complete
 
 ---
+
+## CONSTRUCTION - Unit 3: Output Targets — NFR Design (Questions + Answers)
+**Timestamp**: 2026-04-06T00:00:00Z
+**User Input**: NFR-DQ1:A (Timer at call site — cancel + restart Timer(50ms) on each onCaptionEvent(); state updated synchronously, trailing emission only; no rxdart), NFR-DQ2:C (skip unit testing PRAGMA + file-rename path; unit-test only downstream notification/state effects; treat SQLite path as acceptance test), NFR-DQ3:B (StreamController<List<int>> per client; catch SocketException on write errors via onError; close controller and decrement counter on error or onDone)
+**AI Response**: All 3 answers received. Generated 2 artifacts: nfr-design-patterns.md (11 patterns: timer-based debounce OnScreenCaptionTarget, FTS5 query via drift, SSE client cap + disconnect detection, UUID token auth + localhost bypass, database corruption recovery PRAGMA→rename→fresh, immediate segment persistence via merge window, DesktopWindowService abstraction + MockDesktopWindowService, fake_async timer tests merge window + OBS backoff, BrowserSourceServer test pattern shelf test client, PBT generators new domain types, logging pattern extension zip_broadcast logger names); logical-components.md (9 runtime components across zip_core and zip_broadcast, 6 test infrastructure elements, test file map, provider dependency map).
+**Context**: Unit 3 NFR Design — artifacts generated, awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 3: Output Targets — NFR Design (Approval)
+**Timestamp**: 2026-04-07T00:00:00Z
+**User Input**: "approve"
+**AI Response**: NFR Design approved. Updated aidlc-state.md to mark NFR-D complete for Unit 3.
+**Context**: Unit 3 NFR Design — COMPLETE. Next stage: Implementation Design (ID), then Code Generation.
+
+---
+
+## Implementation Design + Code Generation Planning — Unit 3: Output Targets
+**Timestamp**: 2026-04-07T00:00:00Z
+**User Input**: "let's do it" (proceed with ID + CG plan in token-efficient mode; CG execution to be delegated to local Ollama instance)
+**AI Response**: ID treated as complete (logical-components.md serves as implementation design artifact). Produced CG plan at aidlc-docs/construction/plans/output-targets-code-generation-plan.md — 21 steps covering 9 RC + 6 TI elements across zip_core and zip_broadcast. aidlc-state.md updated.
+**Context**: Unit 3 ID — COMPLETE. Unit 3 CG — PLAN COMPLETE, execution pending (Ollama).
+
+---
+
+## CONSTRUCTION - Unit 3: Output Targets — Code Generation (All 21 Steps)
+**Timestamp**: 2026-04-11T00:00:00Z
+**User Input**: "proceed" (autonomous execution through all 21 steps)
+**AI Response**: Executed all 21 CG steps. Key artifacts produced:
+- zip_core: OnScreenCaptionTarget, TranscriptWriterTarget, TranscriptRepository (drift), barrel updates, all Unit 3 models exported
+- zip_broadcast: ObsWebSocketTarget (exponential backoff), BrowserSourceServer (shelf SSE), BrowserSourceTarget, CaptionOverlayTarget (desktop_multi_window), ObsSettingsNotifier, OutputTargetSettingsNotifier, barrel (zip_broadcast.dart)
+- Tests: 6 test files across zip_core and zip_broadcast; glados/mocktail/flutter_test conflict resolved via hide directives
+- Lint cleanup: 0 errors, 0 warnings; 7 pre-existing implementation_imports infos remain (pre-Unit-3)
+- Notable API discoveries: ObsWebSocket cannot be subclassed (tests cover timer paths only); DesktopMultiWindow.createWindow() returns WindowController not int; OverlayConfig has no toJson() (manual JSON encoding added)
+**Context**: Unit 3 Code Generation — COMPLETE. aidlc-state.md updated. Next: Unit 4 (UI Prototypes).
+
+---

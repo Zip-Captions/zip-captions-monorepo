@@ -3,10 +3,14 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  desktop_multi_window
+  flutter_secure_storage_linux
   record_linux
+  sqlite3_flutter_libs
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  jni
   sherpa_onnx_linux
 )
 

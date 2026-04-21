@@ -23,7 +23,7 @@ void main() {
       expect(find.byType(MaterialApp), findsOneWidget);
     });
 
-    testWidgets('home screen shows app title', (tester) async {
+    testWidgets('home screen shows headline', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
@@ -36,10 +36,10 @@ void main() {
         ),
       );
 
-      expect(find.text('Zip Captions'), findsWidgets);
+      expect(find.text('Real-time captions'), findsOneWidget);
     });
 
-    testWidgets('home screen shows placeholder text', (tester) async {
+    testWidgets('home screen shows start button', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
@@ -52,10 +52,7 @@ void main() {
         ),
       );
 
-      expect(
-        find.text('Tap Start to begin captioning'),
-        findsOneWidget,
-      );
+      expect(find.text('Start Captioning'), findsOneWidget);
     });
   });
 }

@@ -55,9 +55,12 @@ class SttSessionManager {
       return false;
     }
 
-    // Check microphone permission (Q6=A).
-    final permissionOk = await _checkPermission(onError);
-    if (!permissionOk) return false;
+    // Check microphone permission (Q6=A). Skipped for engines that do not
+    // use the microphone (e.g. synthetic/fake engines).
+    if (_engine!.requiresMicrophone) {
+      final permissionOk = await _checkPermission(onError);
+      if (!permissionOk) return false;
+    }
 
     // Initialize engine.
     try {
