@@ -166,7 +166,9 @@ void main() {
             .transform(utf8.decoder)
             .transform(const LineSplitter());
 
-        final first = await lines.first
+        final first = await lines
+            .where((l) => l.startsWith('data:'))
+            .first
             .timeout(const Duration(seconds: 3));
         expect(first, contains('"text":"hello"'));
       } finally {
@@ -184,6 +186,7 @@ void main() {
         final linesFuture = response
             .transform(utf8.decoder)
             .transform(const LineSplitter())
+            .where((l) => l.startsWith('data:'))
             .first
             .timeout(const Duration(seconds: 3));
 

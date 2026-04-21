@@ -151,6 +151,10 @@ class BrowserSourceServer {
     final controller = StreamController<List<int>>();
     _clients.add(controller);
 
+    // Send a comment immediately so shelf flushes response headers to the
+    // socket before any caption arrives (SSE comment lines start with ':').
+    controller.add(utf8.encode(': connected\n\n'));
+
     // Replay last known caption to the newly connected client.
     final latest = _latestCaption;
     if (latest != null) {
@@ -169,6 +173,7 @@ class BrowserSourceServer {
         'cache-control': 'no-cache',
         'x-accel-buffering': 'no',
       },
+      context: {'shelf.io.buffer_output': false},
     );
   }
 
