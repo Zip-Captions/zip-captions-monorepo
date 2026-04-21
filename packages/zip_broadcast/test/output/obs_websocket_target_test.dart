@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,24 +17,24 @@ import 'package:zip_core/src/models/stt_result.dart';
 const _testSettings = ObsSettings();
 
 SttResultEvent _interimEvent(String text) => SttResultEvent(
-      SttResult(
-        text: text,
-        isFinal: false,
-        confidence: 0.5,
-        timestamp: DateTime.utc(2026),
-        sourceId: 'default',
-      ),
-    );
+  SttResult(
+    text: text,
+    isFinal: false,
+    confidence: 0.5,
+    timestamp: DateTime.utc(2026),
+    sourceId: 'default',
+  ),
+);
 
 SttResultEvent _finalEvent(String text) => SttResultEvent(
-      SttResult(
-        text: text,
-        isFinal: true,
-        confidence: 1,
-        timestamp: DateTime.utc(2026),
-        sourceId: 'default',
-      ),
-    );
+  SttResult(
+    text: text,
+    isFinal: true,
+    confidence: 1,
+    timestamp: DateTime.utc(2026),
+    sourceId: 'default',
+  ),
+);
 
 /// A connector that always throws on the next call, or hangs indefinitely.
 class _FailingConnector {
@@ -47,7 +48,9 @@ class _FailingConnector {
 
   void failNext([Object? error]) {
     if (_pending.isEmpty) return;
-    _pending.removeAt(0).completeError(
+    _pending
+        .removeAt(0)
+        .completeError(
           error ?? Exception('connect failed'),
           StackTrace.empty,
         );
@@ -129,20 +132,14 @@ void main() {
         connector.failNext();
         fake.elapse(Duration.zero);
 
-        // Advance beyond the 10-minute total window, failing each attempt.
-        var elapsed = 0;
-        var delay = 1000;
-        while (elapsed < 600000) {
-          final step = delay.clamp(0, 600000 - elapsed + 1);
-          fake.elapse(Duration(milliseconds: step));
-          elapsed += step;
-          if (connector.pendingCount > 0) {
-            connector.failNext();
-            fake.elapse(Duration.zero);
-          }
-          delay = (delay * 2).clamp(0, 30000);
-          if (states.last is ObsError) break;
-        }
+        // Advance past the 10-minute window in one shot. The 1 s retry timer
+        // fires inside fake.elapse, queuing one connection attempt. No further
+        // timers fire because _scheduleReconnect() hasn't run yet. Failing
+        // that attempt calls _scheduleReconnect() with now = 11 min, which
+        // exceeds the 600 s threshold and emits ObsError.
+        fake.elapse(const Duration(minutes: 11));
+        connector.failNext();
+        fake.elapse(Duration.zero);
 
         expect(states.last, isA<ObsError>());
         target.dispose();

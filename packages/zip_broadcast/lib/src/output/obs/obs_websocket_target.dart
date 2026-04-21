@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:obs_websocket/obs_websocket.dart';
@@ -149,7 +150,7 @@ class ObsWebSocketTarget implements CaptionOutputTarget {
   }
 
   void _scheduleReconnect() {
-    final now = DateTime.now().millisecondsSinceEpoch;
+    final now = clock.now().millisecondsSinceEpoch;
     _retryStartMs ??= now;
 
     if (now - _retryStartMs! >= _timeoutMs) {

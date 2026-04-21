@@ -10,6 +10,7 @@ environment:
   flutter: '>=3.38.0'
 
 dependencies:
+  clock: ^1.1.0
   desktop_multi_window: ^0.2.0
   flutter:
     sdk: flutter

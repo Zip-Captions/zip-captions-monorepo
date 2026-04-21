@@ -1,12 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:zip_captions/src/services/transcript_export.dart';
 import 'package:zip_captions/src/widgets/export_format_sheet.dart';
 import 'package:zip_captions/src/widgets/transcript_segment_tile.dart';
 import 'package:zip_core/zip_core.dart';
@@ -114,32 +111,18 @@ class TranscriptViewerScreen extends ConsumerWidget {
     ExportFormat format, {
     Rect? shareOrigin,
   }) async {
-    String? path;
     try {
       final repo = await ref.read(transcriptRepositoryProvider.future);
       final content = await repo.exportSession(sessionId, format);
-      final tempDir = await getTemporaryDirectory();
-      await Directory(tempDir.path).create(recursive: true);
-      path = '${tempDir.path}/export_$sessionId.${format.name}';
-      await File(path).writeAsString(content);
-
-      if (defaultTargetPlatform == TargetPlatform.iOS ||
-          defaultTargetPlatform == TargetPlatform.android) {
-        await SharePlus.instance.share(
-          ShareParams(
-            files: [XFile(path)],
-            sharePositionOrigin: shareOrigin,
-          ),
-        );
-      } else {
-        final location = await getSaveLocation(
-          suggestedName: _exportFileName(format),
-          acceptedTypeGroups: [_typeGroupFor(format)],
-        );
-        if (location != null) {
-          await File(path).copy(location.path);
-        }
-      }
+      final isMobile = defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android;
+      await exportTranscript(
+        content: content,
+        sessionId: sessionId,
+        format: format,
+        isMobile: isMobile,
+        shareOrigin: shareOrigin,
+      );
     } on Object catch (e, st) {
       debugPrint('Export error: $e\n$st');
       if (context.mounted) {
@@ -147,29 +130,7 @@ class TranscriptViewerScreen extends ConsumerWidget {
           const SnackBar(content: Text('Export failed. Please try again.')),
         );
       }
-    } finally {
-      if (path != null) {
-        try {
-          await File(path).delete();
-        } on Object {
-          // Best-effort cleanup; OS will eventually purge temp files.
-        }
-      }
     }
-  }
-
-  String _exportFileName(ExportFormat format) =>
-      'transcript_${sessionId.substring(0, 8)}.${format.name}';
-
-  XTypeGroup _typeGroupFor(ExportFormat format) {
-    return switch (format) {
-      ExportFormat.txt =>
-        const XTypeGroup(label: 'Text', extensions: ['txt']),
-      ExportFormat.srt =>
-        const XTypeGroup(label: 'SubRip', extensions: ['srt']),
-      ExportFormat.vtt =>
-        const XTypeGroup(label: 'WebVTT', extensions: ['vtt']),
-    };
   }
 }
 
