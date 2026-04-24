@@ -241,6 +241,7 @@ class _ObsDetailState extends ConsumerState<_ObsDetail> {
   late final TextEditingController _hostCtrl;
   late final TextEditingController _portCtrl;
   late final TextEditingController _passCtrl;
+  Timer? _saveDebounce;
 
   // Prevents the async-load callback from overwriting user edits.
   bool _userEdited = false;
@@ -265,6 +266,7 @@ class _ObsDetailState extends ConsumerState<_ObsDetail> {
 
   @override
   void dispose() {
+    _saveDebounce?.cancel();
     _hostCtrl.dispose();
     _portCtrl.dispose();
     _passCtrl.dispose();
@@ -337,14 +339,17 @@ class _ObsDetailState extends ConsumerState<_ObsDetail> {
 
   void _save() {
     _userEdited = true;
-    final port = int.tryParse(_portCtrl.text);
-    unawaited(
-      ref.read(obsSettingsNotifierProvider.notifier).update(
-            host: _hostCtrl.text,
-            port: port,
-            password: _passCtrl.text,
-          ),
-    );
+    _saveDebounce?.cancel();
+    _saveDebounce = Timer(const Duration(milliseconds: 300), () {
+      final port = int.tryParse(_portCtrl.text);
+      unawaited(
+        ref.read(obsSettingsNotifierProvider.notifier).update(
+              host: _hostCtrl.text,
+              port: port,
+              password: _passCtrl.text,
+            ),
+      );
+    });
   }
 }
 
