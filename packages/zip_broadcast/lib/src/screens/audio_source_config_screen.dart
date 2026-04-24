@@ -174,24 +174,30 @@ class _InputCardState extends ConsumerState<_InputCard> {
                 final selected = config.colorIndex == i;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: GestureDetector(
-                    onTap: () => unawaited(
-                      widget.notifier.setColor(config.deviceId, i),
-                    ),
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: s.accent,
-                        shape: BoxShape.circle,
-                        border: selected
-                            ? Border.all(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface,
-                                width: 2,
-                              )
-                            : null,
+                  child: Semantics(
+                    label: 'Colour ${i + 1}',
+                    selected: selected,
+                    button: true,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => unawaited(
+                        widget.notifier.setColor(config.deviceId, i),
+                      ),
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: s.accent,
+                          shape: BoxShape.circle,
+                          border: selected
+                              ? Border.all(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface,
+                                  width: 2,
+                                )
+                              : null,
+                        ),
                       ),
                     ),
                   ),
