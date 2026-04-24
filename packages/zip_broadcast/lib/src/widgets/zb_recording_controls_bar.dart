@@ -37,10 +37,15 @@ class ZbRecordingControlsBar extends StatelessWidget {
       return const SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          child: SizedBox(
-            width: 48,
-            height: 48,
-            child: CircularProgressIndicator(),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 48,
+                height: 48,
+                child: CircularProgressIndicator(),
+              ),
+            ],
           ),
         ),
       );
