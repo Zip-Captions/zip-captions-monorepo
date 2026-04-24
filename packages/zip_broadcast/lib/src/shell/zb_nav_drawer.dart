@@ -100,7 +100,7 @@ class _DrawerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = currentLocation == route ||
-        (route != '/' && currentLocation.startsWith(route));
+        (route != '/' && currentLocation.startsWith('$route/'));
     return ListTile(
       leading: Icon(icon),
       title: Text(label),
