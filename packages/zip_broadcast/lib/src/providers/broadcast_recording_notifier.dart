@@ -35,6 +35,7 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
   final List<_EngineSession> _sessions = [];
   CaptionBus? _captionBus;
   WakeLockService? _wakeLockService;
+  bool _starting = false;
 
   @override
   BroadcastSessionState build() {
@@ -49,69 +50,73 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
   /// Uses [resolvedLocaleIdProvider] for the recognition locale.
   /// Invalid to call when not in [BroadcastIdleState].
   Future<void> start() async {
-    if (state is! BroadcastIdleState) return;
-
-    final configs = ref.read(audioInputConfigNotifierProvider);
-    if (configs.isEmpty) {
-      state = const BroadcastIdleState(
-        lastError: 'No audio inputs configured',
-      );
-      return;
-    }
-
-    final localeId = ref.read(resolvedLocaleIdProvider);
-    final sessionId = _uuid.v4();
-
-    final perEngineStates = <String, EngineSessionState>{};
-
-    await Future.wait(
-      configs.map((AudioInputConfig config) async {
-        final engine = ref.read(sttEngineFactoryProvider(config.deviceId));
-        final session =
-            _EngineSession(deviceId: config.deviceId, engine: engine);
-        _sessions.add(session);
-
-        final initOk = await engine.initialize();
-        if (!initOk) {
-          _log.warning('Engine init failed for ${config.deviceId}');
-          perEngineStates[config.deviceId] =
-              const EngineErrorState('Initialisation failed');
-          return;
-        }
-
-        final listenOk = await engine.startListening(
-          localeId: localeId,
-          onResult: (SttResult result) => _handleResult(result, config),
+    if (state is! BroadcastIdleState || _starting) return;
+    _starting = true;
+    try {
+      final configs = ref.read(audioInputConfigNotifierProvider);
+      if (configs.isEmpty) {
+        state = const BroadcastIdleState(
+          lastError: 'No audio inputs configured',
         );
+        return;
+      }
 
-        perEngineStates[config.deviceId] = listenOk
-            ? const EngineActiveState()
-            : const EngineErrorState('Failed to start listening');
-        if (!listenOk) {
-          _log.warning(
-            'Engine startListening failed for ${config.deviceId}',
+      final localeId = ref.read(resolvedLocaleIdProvider);
+      final sessionId = _uuid.v4();
+
+      final perEngineStates = <String, EngineSessionState>{};
+
+      await Future.wait(
+        configs.map((AudioInputConfig config) async {
+          final engine = ref.read(sttEngineFactoryProvider(config.deviceId));
+          final session =
+              _EngineSession(deviceId: config.deviceId, engine: engine);
+          _sessions.add(session);
+
+          final initOk = await engine.initialize();
+          if (!initOk) {
+            _log.warning('Engine init failed for ${config.deviceId}');
+            perEngineStates[config.deviceId] =
+                const EngineErrorState('Initialisation failed');
+            return;
+          }
+
+          final listenOk = await engine.startListening(
+            localeId: localeId,
+            onResult: (SttResult result) => _handleResult(result, config),
           );
-        }
-      }),
-    );
 
-    final anyActive = perEngineStates.values.any((s) => s.isActive);
-    if (!anyActive) {
-      _log.warning('All engines failed — staying idle');
-      state = const BroadcastIdleState(lastError: 'All engines failed');
-      _disposeEngines();
-      return;
+          perEngineStates[config.deviceId] = listenOk
+              ? const EngineActiveState()
+              : const EngineErrorState('Failed to start listening');
+          if (!listenOk) {
+            _log.warning(
+              'Engine startListening failed for ${config.deviceId}',
+            );
+          }
+        }),
+      );
+
+      final anyActive = perEngineStates.values.any((s) => s.isActive);
+      if (!anyActive) {
+        _log.warning('All engines failed — staying idle');
+        state = const BroadcastIdleState(lastError: 'All engines failed');
+        _disposeEngines();
+        return;
+      }
+
+      _log.info('Session started: $sessionId');
+      state = BroadcastActiveState(
+        sessionId: sessionId,
+        perEngineStates: Map.unmodifiable(perEngineStates),
+      );
+      _captionBus!.publish(
+        SessionStateEvent(RecordingState.recording(sessionId: sessionId)),
+      );
+      await _wakeLockService!.acquire();
+    } finally {
+      _starting = false;
     }
-
-    _log.info('Session started: $sessionId');
-    state = BroadcastActiveState(
-      sessionId: sessionId,
-      perEngineStates: Map.unmodifiable(perEngineStates),
-    );
-    _captionBus!.publish(
-      SessionStateEvent(RecordingState.recording(sessionId: sessionId)),
-    );
-    await _wakeLockService!.acquire();
   }
 
   /// Transitions active → paused.
