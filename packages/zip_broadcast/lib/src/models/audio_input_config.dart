@@ -3,7 +3,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'audio_input_config.freezed.dart';
 part 'audio_input_config.g.dart';
 
-/// Composite configuration for a single audio input source in a broadcast session.
+/// Composite configuration for a single audio input source in a broadcast
+/// session.
 ///
 /// Persisted to SharedPreferences as JSON under
 /// `zip_broadcast.audioInputConfigs`.
@@ -20,7 +21,7 @@ abstract class AudioInputConfig with _$AudioInputConfig {
     /// Speaker label assigned by the user (e.g. "Speaker A").
     @Default('') String speakerLabel,
 
-    /// Colour index (0–3) selecting from [AudioInputVisualStyle].
+    /// Colour index (0–3) selecting from AudioInputVisualStyle.
     @Default(0) int colorIndex,
   }) = _AudioInputConfig;
 
