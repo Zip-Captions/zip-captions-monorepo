@@ -249,10 +249,5 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
     _sessions.clear();
   }
 
-  void _cleanup() {
-    for (final s in _sessions) {
-      s.engine.dispose();
-    }
-    _sessions.clear();
-  }
+  void _cleanup() => _disposeEngines();
 }
