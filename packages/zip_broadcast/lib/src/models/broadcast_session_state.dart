@@ -1,7 +1,7 @@
-/// State machine for [BroadcastRecordingNotifier].
+/// State machine for `BroadcastRecordingNotifier`.
 ///
-/// Parallel to the zip_core [RecordingState] hierarchy but extended to carry
-/// per-engine state for N concurrent [SttEngine] instances.
+/// Parallel to the zip_core `RecordingState` hierarchy but extended to carry
+/// per-engine state for N concurrent `SttEngine` instances.
 sealed class BroadcastSessionState {
   const BroadcastSessionState();
 
@@ -12,7 +12,7 @@ sealed class BroadcastSessionState {
   bool get isPaused => false;
 }
 
-/// No active session. Initial state, also returned after [stop]/[clearSession].
+/// No active session. Initial state, also returned after `stop`/`clearSession`.
 class BroadcastIdleState extends BroadcastSessionState {
   /// Creates a [BroadcastIdleState].
   const BroadcastIdleState({this.lastError});
@@ -73,7 +73,7 @@ class BroadcastReconnectingState extends BroadcastSessionState {
   final String sessionId;
 }
 
-/// Session ended normally (via [BroadcastRecordingNotifier.stop]).
+/// Session ended normally (via `BroadcastRecordingNotifier.stop`).
 class BroadcastStoppedState extends BroadcastSessionState {
   /// Creates a [BroadcastStoppedState].
   const BroadcastStoppedState({required this.sessionId});
