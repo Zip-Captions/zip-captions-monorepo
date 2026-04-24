@@ -42,12 +42,26 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
       final current = ref.read(broadcastRecordingNotifierProvider);
       if (current is BroadcastStoppedState) {
         notifier.clearSession();
-        unawaited(notifier.start());
+        unawaited(_startAndHandleError(notifier));
       } else if (current is BroadcastIdleState) {
-        unawaited(notifier.start());
+        unawaited(_startAndHandleError(notifier));
       }
       // active / paused / reconnecting: leave existing session running.
     });
+  }
+
+  Future<void> _startAndHandleError(
+    BroadcastRecordingNotifier notifier,
+  ) async {
+    await notifier.start();
+    if (!mounted) return;
+    final state = ref.read(broadcastRecordingNotifierProvider);
+    if (state is BroadcastIdleState && state.lastError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not start broadcast: ${state.lastError}')),
+      );
+      context.go('/');
+    }
   }
 
   @override
