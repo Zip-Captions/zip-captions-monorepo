@@ -114,6 +114,11 @@ void main() {
 
       // AudioInputVisualStyle.count == 4 swatches per card.
       expect(find.text('Colour'), findsOneWidget);
+      // Each swatch is an InkWell with a Semantics button label.
+      expect(
+        find.bySemanticsLabel(RegExp(r'^Colour \d$')),
+        findsNWidgets(4),
+      );
     });
   });
 }
