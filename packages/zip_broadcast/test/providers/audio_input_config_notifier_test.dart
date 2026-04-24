@@ -67,7 +67,7 @@ void main() {
 
       final notifier =
           container.read(audioInputConfigNotifierProvider.notifier);
-      await Future<void>.delayed(Duration.zero); // let _loadAsync complete
+      await notifier.loadFuture;
 
       await notifier.removeConfig('mic-1');
 
@@ -87,7 +87,7 @@ void main() {
 
       final notifier =
           container.read(audioInputConfigNotifierProvider.notifier);
-      await Future<void>.delayed(Duration.zero);
+      await notifier.loadFuture;
 
       await notifier.setSpeakerLabel('mic-1', 'Speaker A');
 
@@ -110,7 +110,7 @@ void main() {
 
       final notifier =
           container.read(audioInputConfigNotifierProvider.notifier);
-      await Future<void>.delayed(Duration.zero);
+      await notifier.loadFuture;
 
       await notifier.setColor('mic-1', 2);
 
@@ -137,8 +137,9 @@ void main() {
       addTearDown(container.dispose);
 
       // Initialize the notifier and wait for async load.
-      container.read(audioInputConfigNotifierProvider.notifier);
-      await Future<void>.delayed(Duration.zero);
+      final loadNotifier =
+          container.read(audioInputConfigNotifierProvider.notifier);
+      await loadNotifier.loadFuture;
 
       final state = container.read(audioInputConfigNotifierProvider);
       expect(state.length, equals(1));

@@ -27,6 +27,9 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
 
   Future<void>? _loadFuture;
 
+  /// Completes when the initial async SharedPreferences load has finished.
+  Future<void> get loadFuture => _loadFuture ?? Future.value();
+
   // Serializes concurrent _persist() calls so disk writes never interleave.
   Future<void> _persistQueue = Future.value();
 
