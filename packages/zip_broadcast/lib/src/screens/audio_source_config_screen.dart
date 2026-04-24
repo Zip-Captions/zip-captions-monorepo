@@ -22,10 +22,33 @@ class AudioSourceConfigScreen extends ConsumerWidget {
     final assignedDeviceIds =
         configs.map((c) => c.deviceId).toSet();
 
+    void addInput() => unawaited(
+          notifier.addConfig(
+            AudioInputConfig(
+              deviceId: 'device_${DateTime.now().millisecondsSinceEpoch}',
+              name: 'New Input',
+            ),
+          ),
+        );
+
     return Scaffold(
       body: SafeArea(
         child: configs.isEmpty
-            ? const Center(child: Text('No audio inputs configured.'))
+            ? Column(
+                children: [
+                  const Expanded(
+                    child: Center(child: Text('No audio inputs configured.')),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Audio Input'),
+                      onPressed: addInput,
+                    ),
+                  ),
+                ],
+              )
             : ListView.builder(
                 padding: const EdgeInsets.all(16),
                 itemCount: configs.length + 1, // +1 for Add button.
@@ -36,15 +59,7 @@ class AudioSourceConfigScreen extends ConsumerWidget {
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.add),
                         label: const Text('Add Audio Input'),
-                        onPressed: () => unawaited(
-                          notifier.addConfig(
-                            AudioInputConfig(
-                              deviceId:
-                                  'device_${DateTime.now().millisecondsSinceEpoch}',
-                              name: 'New Input',
-                            ),
-                          ),
-                        ),
+                        onPressed: addInput,
                       ),
                     );
                   }
