@@ -37,4 +37,7 @@ abstract interface class ObsWebSocketTarget {
   ///
   /// Emits on every state transition; the latest value is not replayed.
   Stream<ObsConnectionStatus> get statusStream;
+
+  /// Release all resources held by this target.
+  void dispose();
 }

@@ -161,11 +161,16 @@ class _ObsWebSocketTargetImpl implements ObsWebSocketTarget {
   }
 
   static String _buildUrl(ObsSettings s) {
-    final raw = s.host;
-    final base = (raw.startsWith('ws://') || raw.startsWith('wss://'))
+    final raw = s.host.trim();
+    final withScheme = (raw.startsWith('ws://') || raw.startsWith('wss://'))
         ? raw
         : 'ws://$raw';
-    return '$base:${s.port}';
+    final parsed = Uri.tryParse(withScheme);
+    if (parsed == null) return 'ws://localhost:${s.port}';
+    // Only append the configured port if the host string didn't already
+    // include one, to avoid producing ws://host:4455:4455.
+    final port = parsed.hasPort ? parsed.port : s.port;
+    return parsed.replace(port: port).toString();
   }
 
   static int _backoffMs(int attempt) =>
