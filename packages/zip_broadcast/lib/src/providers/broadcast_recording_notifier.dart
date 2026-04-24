@@ -152,9 +152,14 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
       ...current.perEngineStates,
     };
 
+    final orphaned = <_EngineSession>[];
     for (final s in _sessions) {
       final config = configMap[s.deviceId];
-      if (config == null) continue;
+      if (config == null) {
+        orphaned.add(s);
+        perEngineStates.remove(s.deviceId);
+        continue;
+      }
       final ok = await s.engine.resume();
       if (!ok) {
         // Fall back to a fresh startListening.
@@ -168,6 +173,11 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
       } else {
         perEngineStates[s.deviceId] = const EngineActiveState();
       }
+    }
+
+    for (final s in orphaned) {
+      s.engine.dispose();
+      _sessions.remove(s);
     }
 
     _log.info('Session resumed');
