@@ -133,28 +133,25 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
               left: 0,
               right: 0,
               bottom: 0,
-              child: IgnorePointer(
-                ignoring: false,
-                child: Center(
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.pause_circle_outline),
-                          const SizedBox(width: 8),
-                          const Text('Paused'),
-                          const SizedBox(width: 16),
-                          TextButton(
-                            onPressed: recordingNotifier.resume,
-                            child: const Text('Resume'),
-                          ),
-                        ],
-                      ),
+              child: Center(
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.pause_circle_outline),
+                        const SizedBox(width: 8),
+                        const Text('Paused'),
+                        const SizedBox(width: 16),
+                        TextButton(
+                          onPressed: recordingNotifier.resume,
+                          child: const Text('Resume'),
+                        ),
+                      ],
                     ),
                   ),
                 ),
