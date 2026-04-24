@@ -1,0 +1,191 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:zip_broadcast/src/models/audio_input_config.dart';
+import 'package:zip_broadcast/src/models/audio_input_visual_style.dart';
+import 'package:zip_broadcast/src/providers/audio_input_config_notifier.dart';
+
+/// Screen for managing per-source [AudioInputConfig] entries (G1–G5).
+///
+/// Each card shows: colour dot, position, speaker label, remove button,
+/// device dropdown, label text field, colour swatches. Device exclusivity
+/// is enforced by removing already-assigned devices from other cards' lists.
+class AudioSourceConfigScreen extends ConsumerWidget {
+  /// Creates an [AudioSourceConfigScreen].
+  const AudioSourceConfigScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final configs = ref.watch(audioInputConfigNotifierProvider);
+    final notifier = ref.read(audioInputConfigNotifierProvider.notifier);
+    final assignedDeviceIds =
+        configs.map((c) => c.deviceId).toSet();
+
+    return Scaffold(
+      body: SafeArea(
+        child: configs.isEmpty
+            ? const Center(child: Text('No audio inputs configured.'))
+            : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: configs.length + 1, // +1 for Add button.
+                itemBuilder: (context, index) {
+                  if (index == configs.length) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Audio Input'),
+                        onPressed: () => unawaited(
+                          notifier.addConfig(
+                            AudioInputConfig(
+                              deviceId:
+                                  'device_${DateTime.now().millisecondsSinceEpoch}',
+                              name: 'New Input',
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  final config = configs[index];
+                  return _InputCard(
+                    key: ValueKey(config.deviceId),
+                    config: config,
+                    position: index + 1,
+                    allAssignedDeviceIds: assignedDeviceIds,
+                    notifier: notifier,
+                  );
+                },
+              ),
+      ),
+    );
+  }
+}
+
+class _InputCard extends ConsumerStatefulWidget {
+  const _InputCard({
+    required this.config,
+    required this.position,
+    required this.allAssignedDeviceIds,
+    required this.notifier,
+    super.key,
+  });
+
+  final AudioInputConfig config;
+  final int position;
+  final Set<String> allAssignedDeviceIds;
+  final AudioInputConfigNotifier notifier;
+
+  @override
+  ConsumerState<_InputCard> createState() => _InputCardState();
+}
+
+class _InputCardState extends ConsumerState<_InputCard> {
+  late final TextEditingController _labelCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _labelCtrl = TextEditingController(text: widget.config.speakerLabel);
+  }
+
+  @override
+  void dispose() {
+    _labelCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final config = widget.config;
+    final style = AudioInputVisualStyle.forIndex(config.colorIndex);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Card header.
+            Row(
+              children: [
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: style.accent,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Input ${widget.position}',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  tooltip: 'Remove',
+                  onPressed: () => unawaited(
+                    widget.notifier.removeConfig(config.deviceId),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Speaker label field.
+            TextField(
+              controller: _labelCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Speaker label',
+                hintText: 'e.g. Teacher',
+              ),
+              onChanged: (v) => unawaited(
+                widget.notifier.setSpeakerLabel(config.deviceId, v),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Colour swatches (G5).
+            Text(
+              'Colour',
+              style: Theme.of(context).textTheme.labelMedium,
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: List.generate(AudioInputVisualStyle.count, (i) {
+                final s = AudioInputVisualStyle.forIndex(i);
+                final selected = config.colorIndex == i;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => unawaited(
+                      widget.notifier.setColor(config.deviceId, i),
+                    ),
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: s.accent,
+                        shape: BoxShape.circle,
+                        border: selected
+                            ? Border.all(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface,
+                                width: 2,
+                              )
+                            : null,
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

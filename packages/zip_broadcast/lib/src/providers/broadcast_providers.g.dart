@@ -7,7 +7,7 @@ part of 'broadcast_providers.dart';
 // **************************************************************************
 
 String _$obsSettingsNotifierHash() =>
-    r'ec6fba20a6cdb5d75454dde64f9a2608ca53a7ed';
+    r'f2ee93f262860d3d725294e5b1b5a8faac5adc6f';
 
 /// Manages [ObsSettings] persistence.
 ///

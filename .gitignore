@@ -74,3 +74,4 @@ node_modules/
 # ---------- AI-DLC ----------
 # Working docs (inception, construction, audit) are tracked in VCS
 # aidlc-docs/ — formerly gitignored, now committed for design traceability
+.claude/settings.json
