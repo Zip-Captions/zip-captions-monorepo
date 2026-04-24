@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/providers/settings_notifier.dart';
 import 'package:zip_core/zip_core.dart';
 
@@ -25,6 +26,7 @@ class AppearancePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ZipBroadcastLocalizations.of(context)!;
     return Material(
       elevation: 8,
       borderRadius: BorderRadius.circular(12),
@@ -36,11 +38,11 @@ class AppearancePanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Appearance',
+              l10n.appearanceTitle,
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 12),
-            _SectionLabel('Text size'),
+            _SectionLabel(l10n.appearanceTextSize),
             Wrap(
               spacing: 4,
               children: CaptionTextSize.values.map((size) {
@@ -53,7 +55,7 @@ class AppearancePanel extends StatelessWidget {
               }).toList(),
             ),
             const SizedBox(height: 8),
-            _SectionLabel('Font'),
+            _SectionLabel(l10n.appearanceFont),
             Wrap(
               spacing: 4,
               runSpacing: 4,
@@ -66,12 +68,12 @@ class AppearancePanel extends StatelessWidget {
               }).toList(),
             ),
             const SizedBox(height: 8),
-            _SectionLabel('Scroll direction'),
+            _SectionLabel(l10n.appearanceScrollDirection),
             Wrap(
               spacing: 4,
               children: [
                 ChoiceChip(
-                  label: const Text('↑ New at bottom'),
+                  label: Text(l10n.appearanceNewAtBottom),
                   selected: settings.scrollDirection ==
                       ScrollDirection.bottomToTop,
                   onSelected: (_) => unawaited(
@@ -79,7 +81,7 @@ class AppearancePanel extends StatelessWidget {
                   ),
                 ),
                 ChoiceChip(
-                  label: const Text('↓ New at top'),
+                  label: Text(l10n.appearanceNewAtTop),
                   selected:
                       settings.scrollDirection == ScrollDirection.topToBottom,
                   onSelected: (_) => unawaited(

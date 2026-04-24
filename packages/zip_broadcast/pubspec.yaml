@@ -14,6 +14,9 @@ dependencies:
   desktop_multi_window: ^0.2.0
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   flutter_riverpod: ^2.6.1
   flutter_secure_storage: ^9.2.2
   freezed_annotation: ^2.4.4
@@ -43,4 +46,5 @@ dev_dependencies:
   very_good_analysis: ^10.0.0
 
 flutter:
+  generate: true
   uses-material-design: true

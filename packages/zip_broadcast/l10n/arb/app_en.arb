@@ -7,5 +7,66 @@
   "homePlaceholder": "Tap Start to begin captioning",
   "@homePlaceholder": {
     "description": "Placeholder text on the home screen before captioning starts"
+  },
+  "appearanceTitle": "Appearance",
+  "@appearanceTitle": {
+    "description": "Title of the Appearance settings panel"
+  },
+  "appearanceTextSize": "Text size",
+  "@appearanceTextSize": {
+    "description": "Label for the text-size setting section"
+  },
+  "appearanceFont": "Font",
+  "@appearanceFont": {
+    "description": "Label for the font setting section"
+  },
+  "appearanceScrollDirection": "Scroll direction",
+  "@appearanceScrollDirection": {
+    "description": "Label for the scroll-direction setting section"
+  },
+  "appearanceNewAtBottom": "↑ New at bottom",
+  "@appearanceNewAtBottom": {
+    "description": "Scroll direction chip: newest captions appear at the bottom"
+  },
+  "appearanceNewAtTop": "↓ New at top",
+  "@appearanceNewAtTop": {
+    "description": "Scroll direction chip: newest captions appear at the top"
+  },
+  "audioSourceNoInputs": "No audio inputs configured.",
+  "@audioSourceNoInputs": {
+    "description": "Empty-state message on the audio source config screen"
+  },
+  "audioSourceAddInput": "Add Audio Input",
+  "@audioSourceAddInput": {
+    "description": "Button label to add a new audio input"
+  },
+  "audioSourceSpeakerLabel": "Speaker label",
+  "@audioSourceSpeakerLabel": {
+    "description": "TextField label for the speaker name"
+  },
+  "audioSourceSpeakerLabelHint": "e.g. Teacher",
+  "@audioSourceSpeakerLabelHint": {
+    "description": "Hint text for the speaker label field"
+  },
+  "audioSourceColour": "Colour",
+  "@audioSourceColour": {
+    "description": "Label above the colour swatch row"
+  },
+  "audioSourceInputPosition": "Input {position}",
+  "@audioSourceInputPosition": {
+    "description": "Card title showing the input's position in the list",
+    "placeholders": {
+      "position": {
+        "type": "int"
+      }
+    }
+  },
+  "audioSourceRemoveTooltip": "Remove",
+  "@audioSourceRemoveTooltip": {
+    "description": "Tooltip on the remove-input icon button"
+  },
+  "audioSourceNewInputName": "New Input",
+  "@audioSourceNewInputName": {
+    "description": "Default name given to a newly added audio input"
   }
 }

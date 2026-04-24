@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/audio_input_config.dart';
 import 'package:zip_broadcast/src/models/audio_input_visual_style.dart';
 import 'package:zip_broadcast/src/providers/audio_input_config_notifier.dart';
@@ -22,11 +23,13 @@ class AudioSourceConfigScreen extends ConsumerWidget {
     final assignedDeviceIds =
         configs.map((c) => c.deviceId).toSet();
 
+    final l10n = ZipBroadcastLocalizations.of(context)!;
+
     void addInput() => unawaited(
           notifier.addConfig(
             AudioInputConfig(
               deviceId: 'device_${DateTime.now().millisecondsSinceEpoch}',
-              name: 'New Input',
+              name: l10n.audioSourceNewInputName,
             ),
           ),
         );
@@ -36,14 +39,14 @@ class AudioSourceConfigScreen extends ConsumerWidget {
         child: configs.isEmpty
             ? Column(
                 children: [
-                  const Expanded(
-                    child: Center(child: Text('No audio inputs configured.')),
+                  Expanded(
+                    child: Center(child: Text(l10n.audioSourceNoInputs)),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.add),
-                      label: const Text('Add Audio Input'),
+                      label: Text(l10n.audioSourceAddInput),
                       onPressed: addInput,
                     ),
                   ),
@@ -58,7 +61,7 @@ class AudioSourceConfigScreen extends ConsumerWidget {
                       padding: const EdgeInsets.only(top: 8),
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.add),
-                        label: const Text('Add Audio Input'),
+                        label: Text(l10n.audioSourceAddInput),
                         onPressed: addInput,
                       ),
                     );
@@ -113,6 +116,7 @@ class _InputCardState extends ConsumerState<_InputCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ZipBroadcastLocalizations.of(context)!;
     final config = widget.config;
     final style = AudioInputVisualStyle.forIndex(config.colorIndex);
 
@@ -136,13 +140,13 @@ class _InputCardState extends ConsumerState<_InputCard> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Input ${widget.position}',
+                  l10n.audioSourceInputPosition(widget.position),
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.remove_circle_outline),
-                  tooltip: 'Remove',
+                  tooltip: l10n.audioSourceRemoveTooltip,
                   onPressed: () => unawaited(
                     widget.notifier.removeConfig(config.deviceId),
                   ),
@@ -153,9 +157,9 @@ class _InputCardState extends ConsumerState<_InputCard> {
             // Speaker label field.
             TextField(
               controller: _labelCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Speaker label',
-                hintText: 'e.g. Teacher',
+              decoration: InputDecoration(
+                labelText: l10n.audioSourceSpeakerLabel,
+                hintText: l10n.audioSourceSpeakerLabelHint,
               ),
               onChanged: (v) => unawaited(
                 widget.notifier.setSpeakerLabel(config.deviceId, v),
@@ -164,7 +168,7 @@ class _InputCardState extends ConsumerState<_InputCard> {
             const SizedBox(height: 12),
             // Colour swatches (G5).
             Text(
-              'Colour',
+              l10n.audioSourceColour,
               style: Theme.of(context).textTheme.labelMedium,
             ),
             const SizedBox(height: 4),

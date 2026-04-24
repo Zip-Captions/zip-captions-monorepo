@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/providers/settings_notifier.dart';
 import 'package:zip_broadcast/src/routing/zb_router.dart';
 import 'package:zip_core/zip_core.dart';
@@ -14,6 +16,13 @@ class ZipBroadcastApp extends ConsumerWidget {
     final settings = ref.watch(displaySettingsProvider);
     return MaterialApp.router(
       title: 'Zip Broadcast',
+      localizationsDelegates: const [
+        ZipBroadcastLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: ZipBroadcastLocalizations.supportedLocales,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: switch (settings.themeModeSetting) {
