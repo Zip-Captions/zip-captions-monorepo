@@ -55,13 +55,19 @@ class MockSttEngine implements SttEngine {
     required void Function(SttResult result) onResult,
   }) async {
     startCount++;
-    if (shouldFailStart) return false;
+    if (shouldFailStart) {
+      _onResult = null;
+      return false;
+    }
     _onResult = onResult;
     return true;
   }
 
   @override
-  Future<void> stopListening() async => stopCount++;
+  Future<void> stopListening() async {
+    stopCount++;
+    _onResult = null;
+  }
 
   @override
   Future<bool> pause() async {
@@ -76,7 +82,9 @@ class MockSttEngine implements SttEngine {
   }
 
   @override
-  void dispose() {}
+  void dispose() {
+    _onResult = null;
+  }
 
   /// Push a fake [SttResult] through the registered callback.
   void emit(SttResult result) => _onResult?.call(result);
