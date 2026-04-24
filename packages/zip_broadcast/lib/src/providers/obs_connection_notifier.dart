@@ -207,34 +207,34 @@ class ObsConnectionNotifier extends _$ObsConnectionNotifier {
   ObsConnectionStatus build() {
     _target = ref.watch(obsWebSocketTargetProvider);
 
-    _statusSub?.cancel();
+    unawaited(_statusSub?.cancel());
     _statusSub = _target!.statusStream.listen((status) {
       state = status;
     });
 
-    ref.onDispose(() {
-      _statusSub?.cancel();
-      _busSub?.cancel();
-    });
-
-    ref.listen(
-      outputTargetSettingsNotifierProvider.select((s) => s.obsEnabled),
-      (_, enabled) {
-        if (enabled) {
-          final bus = ref.read(captionBusProvider);
-          _busSub?.cancel();
-          _busSub = bus.stream.listen(_onCaptionEvent);
-          unawaited(_target!.connect());
-          _log.fine('OBS enabled — connecting');
-        } else {
-          _busSub?.cancel();
-          _busSub = null;
-          unawaited(_target!.disconnect());
-          _log.fine('OBS disabled — disconnecting');
-        }
-      },
-      fireImmediately: true,
-    );
+    ref
+      ..onDispose(() {
+        unawaited(_statusSub?.cancel());
+        unawaited(_busSub?.cancel());
+      })
+      ..listen(
+        outputTargetSettingsNotifierProvider.select((s) => s.obsEnabled),
+        (_, enabled) {
+          if (enabled) {
+            final bus = ref.read(captionBusProvider);
+            unawaited(_busSub?.cancel());
+            _busSub = bus.stream.listen(_onCaptionEvent);
+            unawaited(_target!.connect());
+            _log.fine('OBS enabled — connecting');
+          } else {
+            unawaited(_busSub?.cancel());
+            _busSub = null;
+            unawaited(_target!.disconnect());
+            _log.fine('OBS disabled — disconnecting');
+          }
+        },
+        fireImmediately: true,
+      );
 
     return ObsConnectionStatus.disconnected;
   }
