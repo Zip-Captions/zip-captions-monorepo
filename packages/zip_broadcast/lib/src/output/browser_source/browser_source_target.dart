@@ -17,6 +17,9 @@ class BrowserSourceTarget implements CaptionOutputTarget {
 
   final BrowserSourceServer _server;
 
+  // Serializes start/stop calls so a concurrent stop cannot race a start.
+  Future<void> _lifecycleLock = Future.value();
+
   static const _targetIdValue = 'browser_source';
 
   @override
@@ -28,10 +31,17 @@ class BrowserSourceTarget implements CaptionOutputTarget {
   /// Starts the browser source HTTP server on [port].
   ///
   /// Throws [BrowserSourceStartException] if the port is already in use.
-  Future<void> start({int port = 8080}) => _server.start(port: port);
+  Future<void> start({int port = 8080}) {
+    return _lifecycleLock = _lifecycleLock
+        .then((_) => _server.start(port: port));
+  }
 
   /// Stops the server and disconnects all SSE clients.
-  Future<void> stop() => _server.stop();
+  Future<void> stop() {
+    return _lifecycleLock = _lifecycleLock
+        .then((_) => _server.stop())
+        .onError<Object>((_, __) {});
+  }
 
   @override
   void onCaptionEvent(CaptionEvent event) {
