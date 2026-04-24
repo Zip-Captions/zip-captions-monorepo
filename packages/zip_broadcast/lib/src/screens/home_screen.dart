@@ -31,9 +31,11 @@ class HomeScreen extends ConsumerWidget {
     final isIdle = sessionState is BroadcastIdleState;
     final canStart = isIdle && configs.isNotEmpty;
 
+    // OBS uses the actual connection status; the others use intent toggles as
+    // their runtime state is not exposed via providers without a larger refactor.
     final activeTargetCount = [
       outputSettings.onScreenEnabled,
-      outputSettings.obsEnabled,
+      outputSettings.obsEnabled && obsStatus == ObsConnectionStatus.connected,
       outputSettings.browserSourceEnabled,
       outputSettings.overlayEnabled,
     ].where((e) => e).length;
