@@ -22,6 +22,7 @@ class AudioLevelRow extends ConsumerWidget {
     if (!visible) return const SizedBox.shrink();
 
     final configs = ref.watch(audioInputConfigNotifierProvider);
+    if (configs.isEmpty) return const SizedBox.shrink();
     final levels = ref.watch(audioLevelProvider);
 
     final children = <Widget>[];
