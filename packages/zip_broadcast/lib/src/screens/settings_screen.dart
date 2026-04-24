@@ -242,6 +242,9 @@ class _ObsDetailState extends ConsumerState<_ObsDetail> {
   late final TextEditingController _portCtrl;
   late final TextEditingController _passCtrl;
 
+  // Prevents the async-load callback from overwriting user edits.
+  bool _userEdited = false;
+
   @override
   void initState() {
     super.initState();
@@ -249,6 +252,15 @@ class _ObsDetailState extends ConsumerState<_ObsDetail> {
     _hostCtrl = TextEditingController(text: settings.host);
     _portCtrl = TextEditingController(text: settings.port.toString());
     _passCtrl = TextEditingController(text: settings.password);
+
+    // If the provider's synchronous build returned defaults, re-seed once
+    // the async SharedPreferences load completes (if user hasn't edited yet).
+    ref.listenManual(obsSettingsNotifierProvider, (prev, next) {
+      if (_userEdited) return;
+      _hostCtrl.text = next.host;
+      _portCtrl.text = next.port.toString();
+      _passCtrl.text = next.password;
+    });
   }
 
   @override
@@ -324,6 +336,7 @@ class _ObsDetailState extends ConsumerState<_ObsDetail> {
   }
 
   void _save() {
+    _userEdited = true;
     final port = int.tryParse(_portCtrl.text);
     unawaited(
       ref.read(obsSettingsNotifierProvider.notifier).update(
