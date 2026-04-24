@@ -41,6 +41,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
   late final CaptionOutputTargetRegistry _registry;
 
   bool _browserSourceRegistered = false;
+  bool _browserSourceStarting = false;
   bool _overlayRegistered = false;
 
   @override
@@ -52,7 +53,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     _overlayTarget = CaptionOverlayTarget();
     _registry = ref.read(captionOutputTargetRegistryProvider);
 
-    // Register on-screen and transcript targets (always active).
+    // Register transcript target (always active).
     ref.read(transcriptWriterTargetProvider);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -65,9 +66,11 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
   void dispose() {
     if (_browserSourceRegistered) {
       _registry.remove(_browserSourceTarget);
+      unawaited(_browserSourceTarget.stop());
     }
     if (_overlayRegistered) {
       _registry.remove(_overlayTarget);
+      unawaited(_overlayTarget.hide());
     }
     super.dispose();
   }
@@ -78,7 +81,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
   }
 
   void _syncBrowserSource(bool enabled, int port) {
-    if (enabled && !_browserSourceRegistered) {
+    if (enabled && !_browserSourceRegistered && !_browserSourceStarting) {
       _startBrowserSource(port);
     } else if (!enabled && _browserSourceRegistered) {
       _registry.remove(_browserSourceTarget);
@@ -99,6 +102,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
   }
 
   Future<void> _startBrowserSource(int port) async {
+    _browserSourceStarting = true;
     try {
       await _browserSourceTarget.start(port: port);
       _registry.add(_browserSourceTarget);
@@ -110,6 +114,8 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
           content: Text('Browser source failed to start: ${e.reason}'),
         ),
       );
+    } finally {
+      _browserSourceStarting = false;
     }
   }
 
