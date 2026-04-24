@@ -27,6 +27,9 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
 
   Future<void>? _loadFuture;
 
+  // Serializes concurrent _persist() calls so disk writes never interleave.
+  Future<void> _persistQueue = Future.value();
+
   @override
   List<AudioInputConfig> build() {
     _loadFuture = _loadAsync();
@@ -41,7 +44,7 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
         .firstWhere((i) => !usedColors.contains(i), orElse: () => 0);
     final updated = [...state, config.copyWith(colorIndex: nextColor)];
     state = updated;
-    await _persist(updated);
+    await _enqueuePersist(updated);
   }
 
   /// Removes the config with [deviceId].
@@ -49,7 +52,7 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
     await _loadFuture;
     final updated = state.where((c) => c.deviceId != deviceId).toList();
     state = updated;
-    await _persist(updated);
+    await _enqueuePersist(updated);
   }
 
   /// Updates the speaker label for [deviceId].
@@ -59,7 +62,7 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
         .map((c) => c.deviceId == deviceId ? c.copyWith(speakerLabel: label) : c)
         .toList();
     state = updated;
-    await _persist(updated);
+    await _enqueuePersist(updated);
   }
 
   /// Updates the colour index for [deviceId].
@@ -71,7 +74,7 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
         )
         .toList();
     state = updated;
-    await _persist(updated);
+    await _enqueuePersist(updated);
   }
 
   /// Updates the device selection for an existing config at [oldDeviceId].
@@ -84,7 +87,7 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
         .map((c) => c.deviceId == oldDeviceId ? newConfig : c)
         .toList();
     state = updated;
-    await _persist(updated);
+    await _enqueuePersist(updated);
   }
 
   Future<void> _loadAsync() async {
@@ -99,6 +102,12 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
     } on Object {
       // Malformed storage — keep defaults.
     }
+  }
+
+  Future<void> _enqueuePersist(List<AudioInputConfig> configs) {
+    return _persistQueue = _persistQueue
+        .then((_) => _persist(configs))
+        .onError<Object>((_, __) {});
   }
 
   Future<void> _persist(List<AudioInputConfig> configs) async {
