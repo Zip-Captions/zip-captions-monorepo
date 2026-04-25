@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/obs_connection_status.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
@@ -45,7 +46,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ? null
           : AppBar(
               leading: BackButton(onPressed: _goBack),
-              title: Text(_viewTitle(_view)),
+              title: Text(_viewTitle(context, _view)),
             ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
@@ -67,16 +68,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     };
   }
 
-  static String _viewTitle(_SettingsView view) {
+  String _viewTitle(BuildContext context, _SettingsView view) {
+    final l10n = ZipBroadcastLocalizations.of(context)!;
     return switch (view) {
-      _SettingsView.list => 'Settings',
-      _SettingsView.appearance => 'Appearance',
-      _SettingsView.obs => 'OBS WebSocket',
-      _SettingsView.outputTargets => 'Output Targets',
-      _SettingsView.audioInputs => 'Audio Inputs',
-      _SettingsView.transcripts => 'Transcripts & Behaviour',
+      _SettingsView.list => l10n.appTitleSettings,
+      _SettingsView.appearance => l10n.settingsAppearance,
+      _SettingsView.obs => l10n.settingsObs,
+      _SettingsView.outputTargets => l10n.settingsOutputTargets,
+      _SettingsView.audioInputs => l10n.settingsAudioInputs,
+      _SettingsView.transcripts => l10n.settingsTranscripts,
     };
   }
+}
+
+String _textSizeLabel(ZipBroadcastLocalizations l10n, CaptionTextSize size) {
+  return switch (size) {
+    CaptionTextSize.xs => l10n.appearanceTextSizeLabelXs,
+    CaptionTextSize.sm => l10n.appearanceTextSizeLabelSm,
+    CaptionTextSize.md => l10n.appearanceTextSizeLabelMd,
+    CaptionTextSize.lg => l10n.appearanceTextSizeLabelLg,
+    CaptionTextSize.xl => l10n.appearanceTextSizeLabelXl,
+    CaptionTextSize.xxl => l10n.appearanceTextSizeLabelXxl,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -92,39 +105,42 @@ class _ListView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final outputSettings = ref.watch(outputTargetSettingsNotifierProvider);
     final obsStatus = ref.watch(obsConnectionNotifierProvider);
+    final l10n = ZipBroadcastLocalizations.of(context)!;
 
     return ListView(
       key: const ValueKey('list'),
       children: [
         ListTile(
           leading: const Icon(Icons.format_size),
-          title: const Text('Appearance'),
-          subtitle: const Text('Text size, font, scroll direction'),
+          title: Text(l10n.settingsAppearance),
+          subtitle: Text(l10n.settingsAppearanceSubtitle),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => onTap(_SettingsView.appearance),
         ),
         ListTile(
           leading: const Icon(Icons.cast),
-          title: const Text('OBS WebSocket'),
-          subtitle: Text(_obsSubLabel(obsStatus, outputSettings.obsEnabled)),
+          title: Text(l10n.settingsObs),
+          subtitle: Text(
+            _obsSubLabel(l10n, obsStatus, outputSettings.obsEnabled),
+          ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => onTap(_SettingsView.obs),
         ),
         ListTile(
           leading: const Icon(Icons.output),
-          title: const Text('Output Targets'),
+          title: Text(l10n.settingsOutputTargets),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => onTap(_SettingsView.outputTargets),
         ),
         ListTile(
           leading: const Icon(Icons.mic),
-          title: const Text('Audio Inputs'),
+          title: Text(l10n.settingsAudioInputs),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => onTap(_SettingsView.audioInputs),
         ),
         ListTile(
           leading: const Icon(Icons.article_outlined),
-          title: const Text('Transcripts & Behaviour'),
+          title: Text(l10n.settingsTranscripts),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => onTap(_SettingsView.transcripts),
         ),
@@ -132,14 +148,18 @@ class _ListView extends ConsumerWidget {
     );
   }
 
-  static String _obsSubLabel(ObsConnectionStatus status, bool enabled) {
-    if (!enabled) return 'Disabled';
+  static String _obsSubLabel(
+    ZipBroadcastLocalizations l10n,
+    ObsConnectionStatus status,
+    bool enabled,
+  ) {
+    if (!enabled) return l10n.obsStatusDisabled;
     return switch (status) {
-      ObsConnectionStatus.connected => 'Connected',
-      ObsConnectionStatus.connecting => 'Connecting…',
-      ObsConnectionStatus.reconnecting => 'Reconnecting…',
-      ObsConnectionStatus.error => 'Error',
-      ObsConnectionStatus.disconnected => 'Disconnected',
+      ObsConnectionStatus.connected => l10n.obsStatusConnected,
+      ObsConnectionStatus.connecting => l10n.obsStatusConnecting,
+      ObsConnectionStatus.reconnecting => l10n.obsStatusReconnecting,
+      ObsConnectionStatus.error => l10n.obsStatusError,
+      ObsConnectionStatus.disconnected => l10n.obsStatusDisconnected,
     };
   }
 }
@@ -156,16 +176,18 @@ class _AppearanceDetail extends ConsumerWidget {
     final settings = ref.watch(displaySettingsProvider);
     final notifier = ref.read(displaySettingsProvider.notifier);
 
+    final l10n = ZipBroadcastLocalizations.of(context)!;
     return ListView(
       key: const ValueKey('appearance'),
       padding: const EdgeInsets.all(16),
       children: [
-        Text('Text size', style: Theme.of(context).textTheme.labelLarge),
+        Text(l10n.appearanceTextSize,
+            style: Theme.of(context).textTheme.labelLarge),
         Wrap(
           spacing: 4,
           children: CaptionTextSize.values.map((size) {
             return ChoiceChip(
-              label: Text(size.name.toUpperCase()),
+              label: Text(_textSizeLabel(l10n, size)),
               selected: settings.captionTextSize == size,
               onSelected: (_) =>
                   unawaited(notifier.setCaptionTextSize(size)),
@@ -173,7 +195,8 @@ class _AppearanceDetail extends ConsumerWidget {
           }).toList(),
         ),
         const SizedBox(height: 16),
-        Text('Font', style: Theme.of(context).textTheme.labelLarge),
+        Text(l10n.appearanceFont,
+            style: Theme.of(context).textTheme.labelLarge),
         Wrap(
           spacing: 4,
           runSpacing: 4,
@@ -187,14 +210,14 @@ class _AppearanceDetail extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          'Scroll direction',
+          l10n.appearanceScrollDirection,
           style: Theme.of(context).textTheme.labelLarge,
         ),
         Wrap(
           spacing: 4,
           children: [
             ChoiceChip(
-              label: const Text('↑ New at bottom'),
+              label: Text(l10n.appearanceNewAtBottom),
               selected:
                   settings.scrollDirection == ScrollDirection.bottomToTop,
               onSelected: (_) => unawaited(
@@ -202,7 +225,7 @@ class _AppearanceDetail extends ConsumerWidget {
               ),
             ),
             ChoiceChip(
-              label: const Text('↓ New at top'),
+              label: Text(l10n.appearanceNewAtTop),
               selected:
                   settings.scrollDirection == ScrollDirection.topToBottom,
               onSelected: (_) => unawaited(
@@ -213,7 +236,7 @@ class _AppearanceDetail extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         SwitchListTile(
-          title: const Text('Dark Theme'),
+          title: Text(l10n.appearanceDarkTheme),
           value: settings.themeModeSetting == ThemeModeSetting.dark,
           onChanged: (v) => unawaited(
             notifier.setThemeModeSetting(
@@ -278,12 +301,13 @@ class _ObsDetailState extends ConsumerState<_ObsDetail> {
     final outputSettings = ref.watch(outputTargetSettingsNotifierProvider);
     final obsStatus = ref.watch(obsConnectionNotifierProvider);
 
+    final l10n = ZipBroadcastLocalizations.of(context)!;
     return ListView(
       key: const ValueKey('obs'),
       padding: const EdgeInsets.all(16),
       children: [
         SwitchListTile(
-          title: const Text('OBS WebSocket'),
+          title: Text(l10n.settingsObs),
           value: outputSettings.obsEnabled,
           onChanged: (v) => unawaited(
             ref
@@ -294,31 +318,31 @@ class _ObsDetailState extends ConsumerState<_ObsDetail> {
         const SizedBox(height: 8),
         TextField(
           controller: _hostCtrl,
-          decoration: const InputDecoration(labelText: 'Host'),
+          decoration: InputDecoration(labelText: l10n.settingsObsHost),
           onChanged: (_) => _save(),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _portCtrl,
-          decoration: const InputDecoration(labelText: 'Port'),
+          decoration: InputDecoration(labelText: l10n.settingsObsPort),
           keyboardType: TextInputType.number,
           onChanged: (_) => _save(),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _passCtrl,
-          decoration: const InputDecoration(labelText: 'Password'),
+          decoration: InputDecoration(labelText: l10n.settingsObsPassword),
           obscureText: true,
           onChanged: (_) => _save(),
         ),
         const SizedBox(height: 16),
         FilledButton.tonal(
           onPressed: _testConnection,
-          child: const Text('Test Connection'),
+          child: Text(l10n.settingsObsTestConnection),
         ),
         const SizedBox(height: 8),
         Text(
-          'Status: ${obsStatus.name}',
+          l10n.settingsObsStatus(obsStatus.name),
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
@@ -330,9 +354,10 @@ class _ObsDetailState extends ConsumerState<_ObsDetail> {
         .read(obsConnectionNotifierProvider.notifier)
         .testConnection();
     if (!mounted) return;
+    final l10n = ZipBroadcastLocalizations.of(context)!;
     final label = status == ObsConnectionStatus.connected
-        ? 'Connected successfully'
-        : 'Connection failed (${status.name})';
+        ? l10n.settingsObsConnectedSuccess
+        : l10n.settingsObsConnectionFailed(status.name);
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(label)));
   }
@@ -368,38 +393,39 @@ class _OutputTargetsDetail extends ConsumerWidget {
           ref.read(outputTargetSettingsNotifierProvider.notifier).update(next),
         );
 
+    final l10n = ZipBroadcastLocalizations.of(context)!;
     return ListView(
       key: const ValueKey('output-targets'),
       children: [
         SwitchListTile(
           secondary: const Icon(Icons.monitor),
-          title: const Text('On-Screen Captions'),
+          title: Text(l10n.settingsOnScreenCaptions),
           value: settings.onScreenEnabled,
           onChanged: (v) =>
               update(settings.copyWith(onScreenEnabled: v)),
         ),
         SwitchListTile(
           secondary: const Icon(Icons.cast),
-          title: const Text('OBS WebSocket'),
+          title: Text(l10n.settingsObs),
           value: settings.obsEnabled,
           onChanged: (v) => update(settings.copyWith(obsEnabled: v)),
         ),
         SwitchListTile(
           secondary: const Icon(Icons.public),
-          title: const Text('Browser Source'),
+          title: Text(l10n.settingsBrowserSource),
           value: settings.browserSourceEnabled,
           onChanged: (v) =>
               update(settings.copyWith(browserSourceEnabled: v)),
         ),
         SwitchListTile(
           secondary: const Icon(Icons.picture_in_picture_alt),
-          title: const Text('Caption Overlay'),
+          title: Text(l10n.settingsCaptionOverlay),
           value: settings.overlayEnabled,
           onChanged: (v) => update(settings.copyWith(overlayEnabled: v)),
         ),
-        const SwitchListTile(
-          secondary: Icon(Icons.description_outlined),
-          title: Text('Transcripts'),
+        SwitchListTile(
+          secondary: const Icon(Icons.description_outlined),
+          title: Text(l10n.settingsTranscriptsTarget),
           value: true,
           onChanged: null, // Always active.
         ),
@@ -424,12 +450,13 @@ class _AudioInputsDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ZipBroadcastLocalizations.of(context)!;
     return ListView(
       key: const ValueKey('audio-inputs'),
       children: [
         ListTile(
           leading: const Icon(Icons.mic),
-          title: const Text('Manage Audio Inputs'),
+          title: Text(l10n.settingsManageAudioInputs),
           trailing: const Icon(Icons.open_in_new),
           onTap: onNavigate,
         ),
@@ -451,11 +478,12 @@ class _TranscriptsDetail extends ConsumerWidget {
         ref.watch(transcriptSettingsNotifierProvider);
     final wakeLock = ref.watch(wakeLockSettingsNotifierProvider);
 
+    final l10n = ZipBroadcastLocalizations.of(context)!;
     return ListView(
       key: const ValueKey('transcripts'),
       children: [
         SwitchListTile(
-          title: const Text('Save Transcripts'),
+          title: Text(l10n.settingsSaveTranscripts),
           value: transcriptSettings.captureEnabled,
           onChanged: (v) => unawaited(
             ref
@@ -464,7 +492,7 @@ class _TranscriptsDetail extends ConsumerWidget {
           ),
         ),
         SwitchListTile(
-          title: const Text('Keep Screen On'),
+          title: Text(l10n.settingsKeepScreenOn),
           value: wakeLock.enabled,
           onChanged: (v) => unawaited(
             ref
@@ -473,7 +501,7 @@ class _TranscriptsDetail extends ConsumerWidget {
           ),
         ),
         SwitchListTile(
-          title: const Text('Release on Pause'),
+          title: Text(l10n.settingsReleaseOnPause),
           value: wakeLock.releaseOnPause,
           onChanged: (v) => unawaited(
             ref

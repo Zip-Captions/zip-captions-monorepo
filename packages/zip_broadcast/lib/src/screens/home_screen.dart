@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/audio_input_config.dart';
 import 'package:zip_broadcast/src/models/audio_input_visual_style.dart';
 import 'package:zip_broadcast/src/models/broadcast_session_state.dart';
@@ -28,6 +29,7 @@ class HomeScreen extends ConsumerWidget {
     final obsStatus = ref.watch(obsConnectionNotifierProvider);
     final browserSourceUrl = ref.watch(browserSourceUrlProvider);
 
+    final l10n = ZipBroadcastLocalizations.of(context)!;
     final isIdle = sessionState is BroadcastIdleState;
     final canStart = isIdle && configs.isNotEmpty;
 
@@ -57,12 +59,12 @@ class HomeScreen extends ConsumerWidget {
               // Start button (D1).
               FilledButton.icon(
                 icon: const Icon(Icons.radio),
-                label: const Text('Start Broadcast'),
+                label: Text(l10n.homeStartBroadcast),
                 onPressed: canStart ? () => context.go('/recording') : null,
               ),
               const SizedBox(height: 24),
               Text(
-                'Output targets',
+                l10n.homeOutputTargets,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -80,7 +82,7 @@ class HomeScreen extends ConsumerWidget {
               _TargetCard(
                 icon: Icons.cast,
                 label: 'OBS WebSocket',
-                subtitle: _obsSubLabel(obsStatus),
+                subtitle: _obsSubLabel(l10n, obsStatus),
                 enabled: outputSettings.obsEnabled,
                 onToggle: (v) => unawaited(
                   ref
@@ -130,19 +132,19 @@ class HomeScreen extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Audio inputs',
+                      l10n.homeAudioInputs,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
                   TextButton(
                     onPressed: () => context.go('/audio-inputs'),
-                    child: const Text('Manage'),
+                    child: Text(l10n.homeManage),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               if (configs.isEmpty)
-                const Text('No audio inputs configured.')
+                Text(l10n.homeNoAudioInputs)
               else
                 for (final config in configs) _AudioInputRow(config: config),
             ],
@@ -152,13 +154,16 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  String _obsSubLabel(ObsConnectionStatus status) {
+  String _obsSubLabel(
+    ZipBroadcastLocalizations l10n,
+    ObsConnectionStatus status,
+  ) {
     return switch (status) {
-      ObsConnectionStatus.connected => 'Connected',
-      ObsConnectionStatus.connecting => 'Connecting…',
-      ObsConnectionStatus.reconnecting => 'Reconnecting…',
-      ObsConnectionStatus.error => 'Error',
-      ObsConnectionStatus.disconnected => 'Disconnected',
+      ObsConnectionStatus.connected => l10n.obsStatusConnected,
+      ObsConnectionStatus.connecting => l10n.obsStatusConnecting,
+      ObsConnectionStatus.reconnecting => l10n.obsStatusReconnecting,
+      ObsConnectionStatus.error => l10n.obsStatusError,
+      ObsConnectionStatus.disconnected => l10n.obsStatusDisconnected,
     };
   }
 }
@@ -174,13 +179,22 @@ class _StatusSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ZipBroadcastLocalizations.of(context)!;
+    final inputLabel =
+        inputCount == 1 ? l10n.homeInputSingular : l10n.homeInputPlural;
+    final targetLabel = activeTargetCount == 1
+        ? l10n.homeTargetSingular
+        : l10n.homeTargetPlural;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Text(
-          'Ready · $inputCount ${inputCount == 1 ? 'input' : 'inputs'} · '
-          '$activeTargetCount '
-          '${activeTargetCount == 1 ? 'target' : 'targets'} active',
+          l10n.homeStatusSummary(
+            inputCount,
+            inputLabel,
+            activeTargetCount,
+            targetLabel,
+          ),
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       ),

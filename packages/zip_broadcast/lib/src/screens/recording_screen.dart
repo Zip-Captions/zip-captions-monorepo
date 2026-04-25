@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/broadcast_session_state.dart';
 import 'package:zip_broadcast/src/models/obs_connection_status.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
@@ -57,10 +58,10 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
     if (!mounted) return;
     final state = ref.read(broadcastRecordingNotifierProvider);
     if (state is BroadcastIdleState && state.lastError != null) {
+      final l10n = ZipBroadcastLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text('Could not start broadcast: ${state.lastError}'),
+          content: Text(l10n.recordingStartError(state.lastError!)),
         ),
       );
       context.go('/');
@@ -103,8 +104,12 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
               AudioLevelRow(visible: !isPaused),
               Expanded(
                 child: GestureDetector(
-                  onTap: () =>
-                      setState(() => _showAppearancePanel = false),
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _showAppearancePanel
+                      ? () => setState(
+                            () => _showAppearancePanel = false,
+                          )
+                      : null,
                   child: CaptionDisplayWidget(
                     entries: entries,
                     settings: settings,
@@ -148,11 +153,17 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                       children: [
                         const Icon(Icons.pause_circle_outline),
                         const SizedBox(width: 8),
-                        const Text('Paused'),
+                        Text(
+                          ZipBroadcastLocalizations.of(context)!
+                              .recordingPaused,
+                        ),
                         const SizedBox(width: 16),
                         TextButton(
                           onPressed: recordingNotifier.resume,
-                          child: const Text('Resume'),
+                          child: Text(
+                            ZipBroadcastLocalizations.of(context)!
+                                .recordingResume,
+                          ),
                         ),
                       ],
                     ),
@@ -166,7 +177,7 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
       floatingActionButtonLocation:
           FloatingActionButtonLocation.miniEndTop,
       floatingActionButton: FloatingActionButton.small(
-        tooltip: 'Appearance',
+        tooltip: ZipBroadcastLocalizations.of(context)!.recordingAppearance,
         onPressed: () =>
             setState(() => _showAppearancePanel = !_showAppearancePanel),
         child: const Icon(Icons.text_fields),

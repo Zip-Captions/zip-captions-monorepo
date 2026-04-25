@@ -47,7 +47,7 @@ class AppearancePanel extends StatelessWidget {
               spacing: 4,
               children: CaptionTextSize.values.map((size) {
                 return ChoiceChip(
-                  label: Text(size.name.toUpperCase()),
+                  label: Text(_textSizeLabel(l10n, size)),
                   selected: settings.captionTextSize == size,
                   onSelected: (_) =>
                       unawaited(notifier.setCaptionTextSize(size)),
@@ -95,6 +95,17 @@ class AppearancePanel extends StatelessWidget {
       ),
     );
   }
+}
+
+String _textSizeLabel(ZipBroadcastLocalizations l10n, CaptionTextSize size) {
+  return switch (size) {
+    CaptionTextSize.xs => l10n.appearanceTextSizeLabelXs,
+    CaptionTextSize.sm => l10n.appearanceTextSizeLabelSm,
+    CaptionTextSize.md => l10n.appearanceTextSizeLabelMd,
+    CaptionTextSize.lg => l10n.appearanceTextSizeLabelLg,
+    CaptionTextSize.xl => l10n.appearanceTextSizeLabelXl,
+    CaptionTextSize.xxl => l10n.appearanceTextSizeLabelXxl,
+  };
 }
 
 class _SectionLabel extends StatelessWidget {

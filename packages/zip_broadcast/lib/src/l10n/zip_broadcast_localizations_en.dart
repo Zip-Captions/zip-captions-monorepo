@@ -21,6 +21,24 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
   String get appearanceTextSize => 'Text size';
 
   @override
+  String get appearanceTextSizeLabelXs => 'XS';
+
+  @override
+  String get appearanceTextSizeLabelSm => 'SM';
+
+  @override
+  String get appearanceTextSizeLabelMd => 'MD';
+
+  @override
+  String get appearanceTextSizeLabelLg => 'LG';
+
+  @override
+  String get appearanceTextSizeLabelXl => 'XL';
+
+  @override
+  String get appearanceTextSizeLabelXxl => 'XXL';
+
+  @override
   String get appearanceFont => 'Font';
 
   @override
@@ -31,6 +49,165 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
 
   @override
   String get appearanceNewAtTop => '↓ New at top';
+
+  @override
+  String get appearanceDarkTheme => 'Dark Theme';
+
+  @override
+  String get obsStatusConnected => 'Connected';
+
+  @override
+  String get obsStatusConnecting => 'Connecting…';
+
+  @override
+  String get obsStatusReconnecting => 'Reconnecting…';
+
+  @override
+  String get obsStatusError => 'Error';
+
+  @override
+  String get obsStatusDisconnected => 'Disconnected';
+
+  @override
+  String get obsStatusDisabled => 'Disabled';
+
+  @override
+  String get homeStartBroadcast => 'Start Broadcast';
+
+  @override
+  String get homeOutputTargets => 'Output targets';
+
+  @override
+  String get homeNoAudioInputs => 'No audio inputs configured.';
+
+  @override
+  String get homeAudioInputs => 'Audio inputs';
+
+  @override
+  String get homeManage => 'Manage';
+
+  @override
+  String homeStatusSummary(
+    int inputCount,
+    String inputLabel,
+    int targetCount,
+    String targetLabel,
+  ) {
+    return 'Ready · $inputCount $inputLabel · $targetCount $targetLabel active';
+  }
+
+  @override
+  String get homeInputSingular => 'input';
+
+  @override
+  String get homeInputPlural => 'inputs';
+
+  @override
+  String get homeTargetSingular => 'target';
+
+  @override
+  String get homeTargetPlural => 'targets';
+
+  @override
+  String get recordingPaused => 'Paused';
+
+  @override
+  String get recordingResume => 'Resume';
+
+  @override
+  String get recordingAppearance => 'Appearance';
+
+  @override
+  String recordingStartError(Object error) {
+    return 'Could not start broadcast: $error';
+  }
+
+  @override
+  String get settingsAppearance => 'Appearance';
+
+  @override
+  String get settingsAppearanceSubtitle => 'Text size, font, scroll direction';
+
+  @override
+  String get settingsObs => 'OBS WebSocket';
+
+  @override
+  String get settingsOutputTargets => 'Output Targets';
+
+  @override
+  String get settingsAudioInputs => 'Audio Inputs';
+
+  @override
+  String get settingsTranscripts => 'Transcripts & Behaviour';
+
+  @override
+  String get settingsObsHost => 'Host';
+
+  @override
+  String get settingsObsPort => 'Port';
+
+  @override
+  String get settingsObsPassword => 'Password';
+
+  @override
+  String get settingsObsTestConnection => 'Test Connection';
+
+  @override
+  String get settingsObsConnectedSuccess => 'Connected successfully';
+
+  @override
+  String settingsObsConnectionFailed(String status) {
+    return 'Connection failed ($status)';
+  }
+
+  @override
+  String settingsObsStatus(String status) {
+    return 'Status: $status';
+  }
+
+  @override
+  String get settingsOnScreenCaptions => 'On-Screen Captions';
+
+  @override
+  String get settingsBrowserSource => 'Browser Source';
+
+  @override
+  String get settingsCaptionOverlay => 'Caption Overlay';
+
+  @override
+  String get settingsTranscriptsTarget => 'Transcripts';
+
+  @override
+  String get settingsManageAudioInputs => 'Manage Audio Inputs';
+
+  @override
+  String get settingsSaveTranscripts => 'Save Transcripts';
+
+  @override
+  String get settingsKeepScreenOn => 'Keep Screen On';
+
+  @override
+  String get settingsReleaseOnPause => 'Release on Pause';
+
+  @override
+  String get appTitleDefault => 'Zip Broadcast';
+
+  @override
+  String get appTitleBroadcast => 'Broadcast';
+
+  @override
+  String get appTitleSettings => 'Settings';
+
+  @override
+  String get appTitleHistory => 'History';
+
+  @override
+  String get appTitleAudioInputs => 'Audio Inputs';
+
+  @override
+  String browserSourceFailedToStart(String reason) {
+    return 'Browser source failed to start: $reason';
+  }
 
   @override
   String get audioSourceNoInputs => 'No audio inputs configured.';
@@ -46,6 +223,11 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
 
   @override
   String get audioSourceColour => 'Colour';
+
+  @override
+  String audioSourceColourOption(int index) {
+    return 'Colour $index';
+  }
 
   @override
   String audioSourceInputPosition(int position) {

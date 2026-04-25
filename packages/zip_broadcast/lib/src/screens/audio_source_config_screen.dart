@@ -179,7 +179,7 @@ class _InputCardState extends ConsumerState<_InputCard> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: Semantics(
-                    label: 'Colour ${i + 1}',
+                    label: l10n.audioSourceColourOption(i + 1),
                     selected: selected,
                     button: true,
                     child: InkWell(

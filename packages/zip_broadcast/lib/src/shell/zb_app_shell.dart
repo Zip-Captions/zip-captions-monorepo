@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/browser_source_start_exception.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
 import 'package:zip_broadcast/src/output/browser_source/browser_source_server.dart';
@@ -42,6 +43,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
 
   bool _browserSourceRegistered = false;
   bool _browserSourceStarting = false;
+  bool _browserSourceDesiredEnabled = false;
   bool _overlayRegistered = false;
 
   @override
@@ -64,8 +66,11 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
 
   @override
   void dispose() {
+    _browserSourceDesiredEnabled = false;
     if (_browserSourceRegistered) {
       _registry.remove(_browserSourceTarget);
+      unawaited(_browserSourceTarget.stop());
+    } else if (_browserSourceStarting) {
       unawaited(_browserSourceTarget.stop());
     }
     if (_overlayRegistered) {
@@ -84,6 +89,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
   }
 
   void _syncBrowserSource(bool enabled, int port) {
+    _browserSourceDesiredEnabled = enabled;
     if (enabled && !_browserSourceRegistered && !_browserSourceStarting) {
       unawaited(_startBrowserSource(port));
     } else if (!enabled && _browserSourceRegistered) {
@@ -108,13 +114,18 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     _browserSourceStarting = true;
     try {
       await _browserSourceTarget.start(port: port);
+      if (!_browserSourceDesiredEnabled || !mounted) {
+        unawaited(_browserSourceTarget.stop());
+        return;
+      }
       _registry.add(_browserSourceTarget);
       _browserSourceRegistered = true;
     } on BrowserSourceStartException catch (e) {
       if (!mounted) return;
+      final l10n = ZipBroadcastLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Browser source failed to start: ${e.reason}'),
+          content: Text(l10n.browserSourceFailedToStart(e.reason)),
         ),
       );
     } finally {
@@ -122,13 +133,14 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     }
   }
 
-  static String _screenTitle(String location) {
-    if (location == '/') return 'Zip Broadcast';
-    if (location == '/recording') return 'Broadcast';
-    if (location == '/settings') return 'Settings';
-    if (location == '/history') return 'History';
-    if (location == '/audio-inputs') return 'Audio Inputs';
-    return 'Zip Broadcast';
+  String _screenTitle(BuildContext context, String location) {
+    final l10n = ZipBroadcastLocalizations.of(context)!;
+    if (location == '/') return l10n.appTitleDefault;
+    if (location == '/recording') return l10n.appTitleBroadcast;
+    if (location == '/settings') return l10n.appTitleSettings;
+    if (location == '/history') return l10n.appTitleHistory;
+    if (location == '/audio-inputs') return l10n.appTitleAudioInputs;
+    return l10n.appTitleDefault;
   }
 
   static int _railIndex(String location) {
@@ -189,7 +201,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(_screenTitle(location)),
+          title: Text(_screenTitle(context, location)),
           leading: Builder(
             builder: (ctx) => IconButton(
               icon: const Icon(Icons.menu),

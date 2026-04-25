@@ -78,6 +78,8 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
             _log.warning('Engine init failed for ${config.deviceId}');
             perEngineStates[config.deviceId] =
                 const EngineErrorState('Initialisation failed');
+            _sessions.remove(session);
+            session.engine.dispose();
             return;
           }
 
@@ -93,6 +95,8 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
             _log.warning(
               'Engine startListening failed for ${config.deviceId}',
             );
+            _sessions.remove(session);
+            session.engine.dispose();
           }
         }),
       );
