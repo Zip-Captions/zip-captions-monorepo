@@ -7,5 +7,339 @@
   "homePlaceholder": "Tap Start to begin captioning",
   "@homePlaceholder": {
     "description": "Placeholder text on the home screen before captioning starts"
+  },
+  "appearanceTitle": "Appearance",
+  "@appearanceTitle": {
+    "description": "Title of the Appearance settings panel"
+  },
+  "appearanceTextSize": "Text size",
+  "@appearanceTextSize": {
+    "description": "Label for the text-size setting section"
+  },
+  "appearanceTextSizeLabelXs": "XS",
+  "@appearanceTextSizeLabelXs": {
+    "description": "Label for the extra-small caption text size chip"
+  },
+  "appearanceTextSizeLabelSm": "SM",
+  "@appearanceTextSizeLabelSm": {
+    "description": "Label for the small caption text size chip"
+  },
+  "appearanceTextSizeLabelMd": "MD",
+  "@appearanceTextSizeLabelMd": {
+    "description": "Label for the medium caption text size chip"
+  },
+  "appearanceTextSizeLabelLg": "LG",
+  "@appearanceTextSizeLabelLg": {
+    "description": "Label for the large caption text size chip"
+  },
+  "appearanceTextSizeLabelXl": "XL",
+  "@appearanceTextSizeLabelXl": {
+    "description": "Label for the extra-large caption text size chip"
+  },
+  "appearanceTextSizeLabelXxl": "XXL",
+  "@appearanceTextSizeLabelXxl": {
+    "description": "Label for the double-extra-large caption text size chip"
+  },
+  "appearanceFont": "Font",
+  "@appearanceFont": {
+    "description": "Label for the font setting section"
+  },
+  "appearanceScrollDirection": "Scroll direction",
+  "@appearanceScrollDirection": {
+    "description": "Label for the scroll-direction setting section"
+  },
+  "appearanceNewAtBottom": "↑ New at bottom",
+  "@appearanceNewAtBottom": {
+    "description": "Scroll direction chip: newest captions appear at the bottom"
+  },
+  "appearanceNewAtTop": "↓ New at top",
+  "@appearanceNewAtTop": {
+    "description": "Scroll direction chip: newest captions appear at the top"
+  },
+  "appearanceDarkTheme": "Dark Theme",
+  "@appearanceDarkTheme": {
+    "description": "Label for the dark theme toggle"
+  },
+  "obsStatusConnected": "Connected",
+  "@obsStatusConnected": {
+    "description": "OBS connection status: connected"
+  },
+  "obsStatusConnecting": "Connecting…",
+  "@obsStatusConnecting": {
+    "description": "OBS connection status: connecting"
+  },
+  "obsStatusReconnecting": "Reconnecting…",
+  "@obsStatusReconnecting": {
+    "description": "OBS connection status: reconnecting"
+  },
+  "obsStatusError": "Error",
+  "@obsStatusError": {
+    "description": "OBS connection status: error"
+  },
+  "obsStatusDisconnected": "Disconnected",
+  "@obsStatusDisconnected": {
+    "description": "OBS connection status: disconnected"
+  },
+  "obsStatusDisabled": "Disabled",
+  "@obsStatusDisabled": {
+    "description": "OBS connection status shown when OBS target is disabled"
+  },
+  "homeStartBroadcast": "Start Broadcast",
+  "@homeStartBroadcast": {
+    "description": "Label on the Start Broadcast button"
+  },
+  "homeOutputTargets": "Output targets",
+  "@homeOutputTargets": {
+    "description": "Section heading for output targets list on home screen"
+  },
+  "homeNoAudioInputs": "No audio inputs configured.",
+  "@homeNoAudioInputs": {
+    "description": "Empty-state text when no audio inputs are configured"
+  },
+  "homeAudioInputs": "Audio inputs",
+  "@homeAudioInputs": {
+    "description": "Section heading for audio inputs list on home screen"
+  },
+  "homeManage": "Manage",
+  "@homeManage": {
+    "description": "Button label to navigate to audio input management"
+  },
+  "homeStatusSummary": "Ready · {inputCount, plural, =1{1 input} other{{inputCount} inputs}} · {targetCount, plural, =1{1 target} other{{targetCount} targets}} active",
+  "@homeStatusSummary": {
+    "description": "Status pill text on the home screen; uses ICU plural for correct singular/plural forms across languages",
+    "placeholders": {
+      "inputCount": {
+        "type": "int"
+      },
+      "targetCount": {
+        "type": "int"
+      }
+    }
+  },
+  "recordingPaused": "Paused",
+  "@recordingPaused": {
+    "description": "Label shown when the broadcast session is paused"
+  },
+  "recordingResume": "Resume",
+  "@recordingResume": {
+    "description": "Tooltip on the Resume floating action button"
+  },
+  "recordingAppearance": "Appearance",
+  "@recordingAppearance": {
+    "description": "Tooltip on the Appearance floating action button"
+  },
+  "recordingStartError": "Could not start broadcast: {error}",
+  "@recordingStartError": {
+    "description": "Snackbar message when a broadcast fails to start",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsAppearance": "Appearance",
+  "@settingsAppearance": {
+    "description": "Settings list tile title for Appearance detail"
+  },
+  "settingsAppearanceSubtitle": "Text size, font, scroll direction",
+  "@settingsAppearanceSubtitle": {
+    "description": "Settings list tile subtitle for Appearance detail"
+  },
+  "settingsObs": "OBS WebSocket",
+  "@settingsObs": {
+    "description": "Settings list tile and detail title for OBS WebSocket"
+  },
+  "settingsOutputTargets": "Output Targets",
+  "@settingsOutputTargets": {
+    "description": "Settings list tile and detail title for Output Targets"
+  },
+  "settingsAudioInputs": "Audio Inputs",
+  "@settingsAudioInputs": {
+    "description": "Settings list tile and detail title for Audio Inputs"
+  },
+  "settingsTranscripts": "Transcripts & Behaviour",
+  "@settingsTranscripts": {
+    "description": "Settings list tile and detail title for Transcripts & Behaviour"
+  },
+  "settingsObsHost": "Host",
+  "@settingsObsHost": {
+    "description": "Label for the OBS host text field"
+  },
+  "settingsObsPort": "Port",
+  "@settingsObsPort": {
+    "description": "Label for the OBS port text field"
+  },
+  "settingsObsPassword": "Password",
+  "@settingsObsPassword": {
+    "description": "Label for the OBS password text field"
+  },
+  "settingsObsTestConnection": "Test Connection",
+  "@settingsObsTestConnection": {
+    "description": "Label on the OBS Test Connection button"
+  },
+  "settingsObsConnectedSuccess": "Connected successfully",
+  "@settingsObsConnectedSuccess": {
+    "description": "Snackbar message when OBS test connection succeeds"
+  },
+  "settingsObsConnectionFailed": "Connection failed ({status})",
+  "@settingsObsConnectionFailed": {
+    "description": "Snackbar message when OBS test connection fails",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsObsStatus": "Status: {status}",
+  "@settingsObsStatus": {
+    "description": "OBS connection status label shown below test connection button",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsOnScreenCaptions": "On-Screen Captions",
+  "@settingsOnScreenCaptions": {
+    "description": "Label for the On-Screen Captions output target toggle"
+  },
+  "settingsBrowserSource": "Browser Source",
+  "@settingsBrowserSource": {
+    "description": "Label for the Browser Source output target toggle"
+  },
+  "settingsCaptionOverlay": "Caption Overlay",
+  "@settingsCaptionOverlay": {
+    "description": "Label for the Caption Overlay output target toggle"
+  },
+  "settingsTranscriptsTarget": "Transcripts",
+  "@settingsTranscriptsTarget": {
+    "description": "Label for the Transcripts output target (always active)"
+  },
+  "settingsManageAudioInputs": "Manage Audio Inputs",
+  "@settingsManageAudioInputs": {
+    "description": "List tile to navigate to audio input management"
+  },
+  "settingsSaveTranscripts": "Save Transcripts",
+  "@settingsSaveTranscripts": {
+    "description": "Label for the Save Transcripts toggle"
+  },
+  "settingsKeepScreenOn": "Keep Screen On",
+  "@settingsKeepScreenOn": {
+    "description": "Label for the Keep Screen On wake-lock toggle"
+  },
+  "settingsReleaseOnPause": "Release on Pause",
+  "@settingsReleaseOnPause": {
+    "description": "Label for the Release on Pause wake-lock toggle"
+  },
+  "appTitleDefault": "Zip Broadcast",
+  "@appTitleDefault": {
+    "description": "App bar title on the home screen and as fallback"
+  },
+  "appTitleBroadcast": "Broadcast",
+  "@appTitleBroadcast": {
+    "description": "App bar title on the recording screen"
+  },
+  "appTitleSettings": "Settings",
+  "@appTitleSettings": {
+    "description": "App bar title on the settings screen"
+  },
+  "appTitleHistory": "History",
+  "@appTitleHistory": {
+    "description": "App bar title on the history screen"
+  },
+  "appTitleAudioInputs": "Audio Inputs",
+  "@appTitleAudioInputs": {
+    "description": "App bar title on the audio inputs screen"
+  },
+  "browserSourceFailedToStart": "Browser source failed to start: {reason}",
+  "@browserSourceFailedToStart": {
+    "description": "Snackbar message when the browser source server fails to bind",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "audioSourceNoInputs": "No audio inputs configured.",
+  "@audioSourceNoInputs": {
+    "description": "Empty-state message on the audio source config screen"
+  },
+  "audioSourceAddInput": "Add Audio Input",
+  "@audioSourceAddInput": {
+    "description": "Button label to add a new audio input"
+  },
+  "audioSourceSpeakerLabel": "Speaker label",
+  "@audioSourceSpeakerLabel": {
+    "description": "TextField label for the speaker name"
+  },
+  "audioSourceSpeakerLabelHint": "e.g. Teacher",
+  "@audioSourceSpeakerLabelHint": {
+    "description": "Hint text for the speaker label field"
+  },
+  "audioSourceColour": "Colour",
+  "@audioSourceColour": {
+    "description": "Label above the colour swatch row"
+  },
+  "audioSourceColourOption": "Colour {index}",
+  "@audioSourceColourOption": {
+    "description": "Semantic label for a colour swatch button, e.g. 'Colour 1'",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "audioSourceInputPosition": "Input {position}",
+  "@audioSourceInputPosition": {
+    "description": "Card title showing the input's position in the list",
+    "placeholders": {
+      "position": {
+        "type": "int"
+      }
+    }
+  },
+  "audioSourceRemoveTooltip": "Remove",
+  "@audioSourceRemoveTooltip": {
+    "description": "Tooltip on the remove-input icon button"
+  },
+  "audioSourceNewInputName": "New Input",
+  "@audioSourceNewInputName": {
+    "description": "Default name given to a newly added audio input"
+  },
+  "statusPillObs": "OBS",
+  "@statusPillObs": {
+    "description": "Label on the OBS status pill in the recording screen status bar"
+  },
+  "statusPillBrowserSource": "Browser Source",
+  "@statusPillBrowserSource": {
+    "description": "Label on the Browser Source status pill in the recording screen status bar"
+  },
+  "statusPillOverlay": "Overlay",
+  "@statusPillOverlay": {
+    "description": "Label on the Caption Overlay status pill in the recording screen status bar"
+  },
+  "recordingControlsPause": "Pause",
+  "@recordingControlsPause": {
+    "description": "Tooltip on the Pause button in the recording controls bar"
+  },
+  "recordingControlsResume": "Resume",
+  "@recordingControlsResume": {
+    "description": "Tooltip on the Resume button in the recording controls bar"
+  },
+  "recordingControlsStop": "Stop",
+  "@recordingControlsStop": {
+    "description": "Tooltip on the Stop button in the recording controls bar"
+  },
+  "comingSoon": "Coming soon",
+  "@comingSoon": {
+    "description": "Badge label on coming-soon output target cards"
+  },
+  "outputTargetsRemoteViewers": "Remote Viewers",
+  "@outputTargetsRemoteViewers": {
+    "description": "Label for the Remote Viewers coming-soon output target card"
+  },
+  "outputTargetsPhase2": "Phase 2",
+  "@outputTargetsPhase2": {
+    "description": "Subtitle for the Remote Viewers card indicating it is planned for Phase 2"
   }
 }

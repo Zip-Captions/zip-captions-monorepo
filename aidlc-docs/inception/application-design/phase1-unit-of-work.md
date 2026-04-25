@@ -232,7 +232,33 @@ Phase 1 is decomposed into 3 pre-construction research spikes and 7 construction
 
 ---
 
-### Unit 7: Integration Milestones
+### Unit 7: Engine Registration + Sherpa-ONNX
+
+**Package**: `zip_core`, `zip_captions`, `zip_broadcast`
+**Stories**: S-02 (remainder — Sherpa-ONNX production path), S-01 (engine registration wiring)
+
+**Scope**: Register `PlatformSttEngine` in both apps so the real speech engine is used at runtime. Complete the `SherpaOnnxSttEngine` native production path (currently a placeholder returning `false`). Wire the model catalog and download flow into the Settings screens of both apps.
+
+**Components**:
+- `zip_captions/main.dart` — register `PlatformSttEngine`; keep `FakeSttEngine` in debug mode alongside it
+- `zip_broadcast/main.dart` — register `PlatformSttEngine`; add logging init and debug guard matching zip_captions
+- `SherpaOnnxSttEngine.initialize()` — complete native setup: resolve downloaded model path via `SherpaModelManager`, build `OnlineRecognizerConfig`, construct native `OnlineRecognizer`, assign `_adapter`
+- Audio feed wiring — connect `SherpaOnnxSttEngine.feedAudio()` to the platform audio capture pipeline so PCM chunks are forwarded during recording
+- Model catalog UI — surface `SherpaModelCatalogProvider` and download progress in both apps' Settings screens (engine picker, download button, progress indicator, locale list reflects downloaded models)
+
+**Construction Stages**:
+1. Functional Design — engine registration approach, model selection flow, Settings screen additions for model management
+2. NFR Requirements — download UX (progress, cancellation, error), model storage limits, engine switch latency
+3. NFR Design — test strategy for native recognizer construction, mock model manager
+4. Code Generation — implementation + tests
+
+**Acceptance**: Running either app in release mode uses `PlatformSttEngine` by default. `SherpaOnnxSttEngine` initializes successfully when a model is downloaded. Users can download a model and switch to Sherpa-ONNX via Settings. `FakeSttEngine` remains available in debug builds.
+
+**Dependencies**: Unit 6 complete (both apps fully wired before engine registration is meaningful).
+
+---
+
+### Unit 8: Integration Milestones
 
 **Package**: All
 **Stories**: M-S1.1, M-S1.2, M-S1.3, M-S2.1, M-S2.2, M-S3.1
@@ -245,7 +271,23 @@ Phase 1 is decomposed into 3 pre-construction research spikes and 7 construction
 
 **Acceptance**: All 6 milestone scenarios pass. 80%+ coverage per package. Zero lint warnings. All CI checks pass. Documentation current.
 
-**Dependencies**: Units 1-6 all complete.
+**Dependencies**: Units 1-7 all complete.
+
+---
+
+## Phase 2 — Known Deferred Features
+
+The following features are intentional Phase 1 omissions. They are recorded here so they are not lost when Phase 2 planning begins.
+
+### Zip Broadcast: Caption Pop-Out Window
+
+**Context**: REL-U6.5 (Unit 6 NFR Requirements) places a `PopScope` guard on `RecordingScreen` that prevents navigation while captioning is active. This protects against accidental session termination when OBS and browser source are live. The trade-off is that users cannot adjust settings (e.g., Speech Recognition, Audio Inputs) during an active session without first stopping.
+
+**Deferred feature**: A floating, detached caption window — using `DesktopWindowService` (Unit 3) — that persists independently of the main app shell. Once the pop-out window is active, the `PopScope` guard on `RecordingScreen` can be relaxed to permit free navigation within the main app while captioning continues uninterrupted.
+
+**Scope note**: Zip Broadcast is desktop-only (macOS first; Windows/Linux per Spike 1.1 findings). No mobile pop-out implementation is required.
+
+**Phase 2 sizing**: New construction unit covering: `CaptionPopOutTarget` implementing `CaptionOutputTarget`; `DesktopWindowService` extension for a dedicated pop-out window; relaxation of REL-U6.5 when pop-out is active; UI affordance on `RecordingScreen` (e.g., a detach button in the top bar).
 
 ---
 

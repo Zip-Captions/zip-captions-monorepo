@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:zip_broadcast/src/output/browser_source/browser_source_server.dart';
 import 'package:zip_core/zip_core.dart';
 
@@ -5,6 +7,9 @@ import 'package:zip_core/zip_core.dart';
 ///
 /// Converts final STT results to SSE caption pushes and maps session lifecycle
 /// events to clear/stop signals so browser overlay clients stay in sync.
+///
+/// Call [start] before registering with [CaptionOutputTargetRegistry] and
+/// [stop] (or [dispose]) when removing.
 class BrowserSourceTarget implements CaptionOutputTarget {
   /// Creates a [BrowserSourceTarget] backed by [server].
   BrowserSourceTarget({required BrowserSourceServer server})
@@ -12,10 +17,34 @@ class BrowserSourceTarget implements CaptionOutputTarget {
 
   final BrowserSourceServer _server;
 
+  // Serializes start/stop calls so a concurrent stop cannot race a start.
+  Future<void> _lifecycleLock = Future.value();
+
   static const _targetIdValue = 'browser_source';
 
   @override
   String get targetId => _targetIdValue;
+
+  /// Whether the server is currently bound and accepting connections.
+  bool get isRunning => _server.port != null;
+
+  /// Starts the browser source HTTP server on [port].
+  ///
+  /// Throws `BrowserSourceStartException` if the port is already in use.
+  Future<void> start({int port = 8080}) {
+    final next = _lifecycleLock.then((_) => _server.start(port: port));
+    // Reset the lock on failure so the next start() attempt is not
+    // short-circuited by a rejected predecessor.
+    _lifecycleLock = next.catchError((_) {});
+    return next;
+  }
+
+  /// Stops the server and disconnects all SSE clients.
+  Future<void> stop() {
+    return _lifecycleLock = _lifecycleLock
+        .then((_) => _server.stop())
+        .onError<Object>((_, _) {});
+  }
 
   @override
   void onCaptionEvent(CaptionEvent event) {
@@ -28,7 +57,9 @@ class BrowserSourceTarget implements CaptionOutputTarget {
   }
 
   @override
-  void dispose() {}
+  void dispose() {
+    unawaited(stop());
+  }
 
   void _handleSessionState(RecordingState state) {
     switch (state) {

@@ -14,9 +14,20 @@ dependencies:
   desktop_multi_window: ^0.2.0
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   flutter_riverpod: ^2.6.1
   flutter_secure_storage: ^9.2.2
   freezed_annotation: ^2.4.4
+  # go_router: declarative routing with nested shell routes (ZbAppShell) and
+  # deep-link support. flutter Navigator 2 alone lacks type-safe, nested-shell
+  # API needed for the rail/drawer adaptive layout (FD C1). Approved via PR #15.
+  go_router: ^14.0.0
+  # google_fonts: required to render CaptionFont.notoSans / .openDyslexic at
+  # runtime without bundling large font assets. No built-in Flutter equivalent.
+  # Approved via PR #15.
+  google_fonts: ^6.1.0
+  intl: any
   json_annotation: ^4.9.0
   logging: ^1.3.0
   obs_websocket: ^5.0.0
@@ -41,4 +52,5 @@ dev_dependencies:
   very_good_analysis: ^10.0.0
 
 flutter:
+  generate: true
   uses-material-design: true

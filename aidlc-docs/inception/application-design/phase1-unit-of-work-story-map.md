@@ -67,7 +67,7 @@
 
 ### All Milestones Assigned
 
-**Result**: 6/6 milestones assigned to Unit 7. No gaps.
+**Result**: 6/6 milestones assigned to Unit 8. No gaps.
 
 ### All Spikes Assigned
 
@@ -94,6 +94,7 @@
 | Unit 4 | Proto-01..09 | 9 HTML files | CG | Medium |
 | Unit 5 | S-09 | 7 | FD, NFR-R, NFR-D, CG | Medium-Large |
 | Unit 6 | S-10 | 5 + orchestration | FD, NFR-R, NFR-D, ID, CG | Large |
-| Unit 7 | M-S1.1..M-S3.1 | — | B&T, Doc Refinement | Medium |
+| Unit 7 | S-02 (remainder), S-01 (wiring) | 5 | FD, NFR-R, NFR-D, CG | Medium |
+| Unit 8 | M-S1.1..M-S3.1 | — | B&T, Doc Refinement | Medium |
 
-**Note**: Unit 1 is the largest because it includes the DisplaySettings rename (touching all packages), all core abstractions, and multiple service classes. Unit 3 has the most stories (4) but they are all output target implementations following the same CaptionOutputTarget pattern. Unit 6 is complex due to multi-input orchestration and caption overlay.
+**Note**: Unit 1 is the largest because it includes the DisplaySettings rename (touching all packages), all core abstractions, and multiple service classes. Unit 3 has the most stories (4) but they are all output target implementations following the same CaptionOutputTarget pattern. Unit 6 is complex due to multi-input orchestration and caption overlay. Unit 7 was added to close the gap between Unit 2's Sherpa-ONNX placeholder and the real engine integration required for Windows/Linux support.

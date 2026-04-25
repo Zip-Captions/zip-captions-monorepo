@@ -150,6 +150,60 @@ await transcriptNotifier.setCaptureEnabled(value: false);
 container.read(transcriptWriterTargetProvider); // triggers rebuild + onDispose
 ```
 
+## `ref.listen` in `Notifier.build()` for Settings-Driven Connection Management
+
+When a `keepAlive` notifier must connect or disconnect an external resource in response to a boolean settings flag, use `ref.listen` with `fireImmediately: true` inside `build()`. This is the correct Riverpod pattern for stateful notifiers — it avoids the reactive-side-effect anti-pattern while still reacting to settings changes.
+
+```dart
+@override
+ObsConnectionStatus build() {
+  _target = ref.watch(obsWebSocketTargetProvider);
+
+  ref.listen(
+    outputTargetSettingsNotifierProvider.select((s) => s.obsEnabled),
+    (_, enabled) {
+      if (enabled) {
+        _busSub = ref.read(captionBusProvider).stream.listen(_onCaptionEvent);
+        unawaited(_target!.connect());
+      } else {
+        _busSub?.cancel();
+        unawaited(_target!.disconnect());
+      }
+    },
+    fireImmediately: true,
+  );
+
+  return ObsConnectionStatus.disconnected;
+}
+```
+
+`fireImmediately: true` drives the initial connect/disconnect on first build without requiring a separate `read` call after construction.
+
+**Why this is not a reactive side-effect anti-pattern:** `ref.listen` inside a `Notifier` is an explicit subscription to state changes, not a computed value chain. Execution order is deterministic — the listener fires once per change, in the order notifiers are read.
+
+## Async Deferred Load with Future Fence
+
+When `Notifier.build()` must return a synchronous default but load persisted state asynchronously, fire the async load immediately and store the `Future` as a private field. All mutating methods must await the fence before proceeding, ensuring no mutation races with the initial load.
+
+```dart
+Future<void>? _loadFuture;
+
+@override
+List<AudioInputConfig> build() {
+  _loadFuture = _loadAsync(); // fires immediately, completes asynchronously
+  return _defaultConfig;      // synchronous default while load is in-flight
+}
+
+Future<void> addConfig(AudioInputConfig config) async {
+  await _loadFuture; // wait for load before mutating
+  final updated = [...state, config];
+  state = updated;
+  await _persist(updated);
+}
+```
+
+**Why:** `Notifier.build()` is synchronous; `SharedPreferences.getInstance()` is not. Returning a synchronous default keeps the widget tree rendering while the real data loads. The future fence prevents a mutation that fires immediately after construction (e.g., from a deep-link or widget test) from overwriting freshly loaded state.
+
 ## Code Generation
 
 Run `dart run build_runner build --delete-conflicting-outputs` after modifying any `@riverpod`-annotated file. Generated files (`*.g.dart`) are committed to version control.
