@@ -97,16 +97,16 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
   }
 
   Future<void> _loadAsync() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getString(_key);
-    if (stored == null) return;
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString(_key);
+      if (stored == null) return;
       final list = (jsonDecode(stored) as List<dynamic>)
           .map((e) => AudioInputConfig.fromJson(e as Map<String, dynamic>))
           .toList();
-      if (list.isNotEmpty) state = list;
+      state = list;
     } on Object {
-      // Malformed storage — keep defaults.
+      // Platform error or malformed storage — keep defaults.
     }
   }
 

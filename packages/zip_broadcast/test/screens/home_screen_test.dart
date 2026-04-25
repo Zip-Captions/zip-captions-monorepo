@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_broadcast/src/providers/audio_input_config_notifier.dart';
 import 'package:zip_broadcast/src/providers/broadcast_recording_notifier.dart';
+import 'package:zip_broadcast/src/providers/obs_connection_notifier.dart';
 
 import '../helpers/fake_notifiers.dart';
 import '../helpers/zb_test_harness.dart';
@@ -23,6 +24,8 @@ void main() {
                 .overrideWith(FakeEmptyAudioInputConfigNotifier.new),
             broadcastRecordingNotifierProvider
                 .overrideWith(FakeIdleBroadcastRecordingNotifier.new),
+            obsConnectionNotifierProvider
+                .overrideWith(FakeDisconnectedObsConnectionNotifier.new),
           ],
         ),
       );
@@ -47,6 +50,8 @@ void main() {
                 .overrideWith(FakeOneInputAudioInputConfigNotifier.new),
             broadcastRecordingNotifierProvider
                 .overrideWith(FakeIdleBroadcastRecordingNotifier.new),
+            obsConnectionNotifierProvider
+                .overrideWith(FakeDisconnectedObsConnectionNotifier.new),
           ],
         ),
       );
@@ -68,6 +73,8 @@ void main() {
                 .overrideWith(FakeOneInputAudioInputConfigNotifier.new),
             broadcastRecordingNotifierProvider
                 .overrideWith(FakeIdleBroadcastRecordingNotifier.new),
+            obsConnectionNotifierProvider
+                .overrideWith(FakeDisconnectedObsConnectionNotifier.new),
           ],
         ),
       );
@@ -87,6 +94,8 @@ void main() {
                 .overrideWith(FakeEmptyAudioInputConfigNotifier.new),
             broadcastRecordingNotifierProvider
                 .overrideWith(FakeIdleBroadcastRecordingNotifier.new),
+            obsConnectionNotifierProvider
+                .overrideWith(FakeDisconnectedObsConnectionNotifier.new),
           ],
         ),
       );
@@ -106,6 +115,8 @@ void main() {
                 .overrideWith(FakeEmptyAudioInputConfigNotifier.new),
             broadcastRecordingNotifierProvider
                 .overrideWith(FakeIdleBroadcastRecordingNotifier.new),
+            obsConnectionNotifierProvider
+                .overrideWith(FakeDisconnectedObsConnectionNotifier.new),
           ],
         ),
       );
@@ -124,6 +135,8 @@ void main() {
                 .overrideWith(FakeEmptyAudioInputConfigNotifier.new),
             broadcastRecordingNotifierProvider
                 .overrideWith(FakeIdleBroadcastRecordingNotifier.new),
+            obsConnectionNotifierProvider
+                .overrideWith(FakeDisconnectedObsConnectionNotifier.new),
           ],
         ),
       );

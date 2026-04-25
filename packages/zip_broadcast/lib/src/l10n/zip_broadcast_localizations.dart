@@ -527,6 +527,48 @@ abstract class ZipBroadcastLocalizations {
   /// In en, this message translates to:
   /// **'New Input'**
   String get audioSourceNewInputName;
+
+  /// Label on the OBS status pill in the recording screen status bar
+  ///
+  /// In en, this message translates to:
+  /// **'OBS'**
+  String get statusPillObs;
+
+  /// Label on the Browser Source status pill in the recording screen status bar
+  ///
+  /// In en, this message translates to:
+  /// **'Browser Source'**
+  String get statusPillBrowserSource;
+
+  /// Label on the Caption Overlay status pill in the recording screen status bar
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay'**
+  String get statusPillOverlay;
+
+  /// Tooltip on the Pause button in the recording controls bar
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get recordingControlsPause;
+
+  /// Tooltip on the Resume button in the recording controls bar
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get recordingControlsResume;
+
+  /// Tooltip on the Stop button in the recording controls bar
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get recordingControlsStop;
+
+  /// Badge label on coming-soon output target cards
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get comingSoon;
 }
 
 class _ZipBroadcastLocalizationsDelegate

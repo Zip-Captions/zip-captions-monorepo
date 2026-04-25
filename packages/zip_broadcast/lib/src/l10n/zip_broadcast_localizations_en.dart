@@ -239,4 +239,25 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
 
   @override
   String get audioSourceNewInputName => 'New Input';
+
+  @override
+  String get statusPillObs => 'OBS';
+
+  @override
+  String get statusPillBrowserSource => 'Browser Source';
+
+  @override
+  String get statusPillOverlay => 'Overlay';
+
+  @override
+  String get recordingControlsPause => 'Pause';
+
+  @override
+  String get recordingControlsResume => 'Resume';
+
+  @override
+  String get recordingControlsStop => 'Stop';
+
+  @override
+  String get comingSoon => 'Coming soon';
 }

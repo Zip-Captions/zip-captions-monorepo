@@ -204,19 +204,20 @@ class _StatusBar extends StatelessWidget {
         child: Row(
           children: [
             StatusPill(
-              label: 'OBS',
+              label: ZipBroadcastLocalizations.of(context)!.statusPillObs,
               color: _obsColor(obsStatus),
             ),
             const SizedBox(width: 12),
             StatusPill(
-              label: 'Browser Source',
+              label: ZipBroadcastLocalizations.of(context)!
+                  .statusPillBrowserSource,
               color: outputSettings.browserSourceEnabled
                   ? Colors.green
                   : Colors.grey,
             ),
             const SizedBox(width: 12),
             StatusPill(
-              label: 'Overlay',
+              label: ZipBroadcastLocalizations.of(context)!.statusPillOverlay,
               color: outputSettings.overlayEnabled
                   ? Colors.green
                   : Colors.grey,

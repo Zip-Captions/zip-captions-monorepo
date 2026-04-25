@@ -20,8 +20,6 @@ class AudioSourceConfigScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final configs = ref.watch(audioInputConfigNotifierProvider);
     final notifier = ref.read(audioInputConfigNotifierProvider.notifier);
-    final assignedDeviceIds =
-        configs.map((c) => c.deviceId).toSet();
 
     final l10n = ZipBroadcastLocalizations.of(context)!;
 
@@ -71,7 +69,6 @@ class AudioSourceConfigScreen extends ConsumerWidget {
                     key: ValueKey(config.deviceId),
                     config: config,
                     position: index + 1,
-                    allAssignedDeviceIds: assignedDeviceIds,
                     notifier: notifier,
                   );
                 },
@@ -85,14 +82,12 @@ class _InputCard extends ConsumerStatefulWidget {
   const _InputCard({
     required this.config,
     required this.position,
-    required this.allAssignedDeviceIds,
     required this.notifier,
     super.key,
   });
 
   final AudioInputConfig config;
   final int position;
-  final Set<String> allAssignedDeviceIds;
   final AudioInputConfigNotifier notifier;
 
   @override

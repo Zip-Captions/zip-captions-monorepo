@@ -1,17 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/widgets/coming_soon_card.dart';
+
+Widget _wrap(Widget child) => MaterialApp(
+      localizationsDelegates: const [
+        ZipBroadcastLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: ZipBroadcastLocalizations.supportedLocales,
+      home: Scaffold(body: child),
+    );
 
 void main() {
   group('ComingSoonCard', () {
     testWidgets('renders label and Coming soon badge', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ComingSoonCard(
-              icon: Icons.people_outlined,
-              label: 'Remote Viewers',
-            ),
+        _wrap(
+          const ComingSoonCard(
+            icon: Icons.people_outlined,
+            label: 'Remote Viewers',
           ),
         ),
       );
@@ -23,12 +34,10 @@ void main() {
     testWidgets('semantic label contains label and Coming soon',
         (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ComingSoonCard(
-              icon: Icons.people_outlined,
-              label: 'Remote Viewers',
-            ),
+        _wrap(
+          const ComingSoonCard(
+            icon: Icons.people_outlined,
+            label: 'Remote Viewers',
           ),
         ),
       );
@@ -41,12 +50,10 @@ void main() {
     testWidgets('ComingSoonCard ListTile is disabled (not interactive)',
         (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ComingSoonCard(
-              icon: Icons.people_outlined,
-              label: 'Remote Viewers',
-            ),
+        _wrap(
+          const ComingSoonCard(
+            icon: Icons.people_outlined,
+            label: 'Remote Viewers',
           ),
         ),
       );
@@ -59,13 +66,11 @@ void main() {
 
     testWidgets('optional subtitle is shown when provided', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ComingSoonCard(
-              icon: Icons.people_outlined,
-              label: 'Remote Viewers',
-              subtitle: 'Phase 2',
-            ),
+        _wrap(
+          const ComingSoonCard(
+            icon: Icons.people_outlined,
+            label: 'Remote Viewers',
+            subtitle: 'Phase 2',
           ),
         ),
       );

@@ -81,6 +81,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 }
 
+String _obsStatusLabel(
+  ZipBroadcastLocalizations l10n,
+  ObsConnectionStatus status,
+) {
+  return switch (status) {
+    ObsConnectionStatus.connected => l10n.obsStatusConnected,
+    ObsConnectionStatus.connecting => l10n.obsStatusConnecting,
+    ObsConnectionStatus.reconnecting => l10n.obsStatusReconnecting,
+    ObsConnectionStatus.error => l10n.obsStatusError,
+    ObsConnectionStatus.disconnected => l10n.obsStatusDisconnected,
+  };
+}
+
 String _textSizeLabel(ZipBroadcastLocalizations l10n, CaptionTextSize size) {
   return switch (size) {
     CaptionTextSize.xs => l10n.appearanceTextSizeLabelXs,
@@ -154,13 +167,7 @@ class _ListView extends ConsumerWidget {
     bool enabled,
   ) {
     if (!enabled) return l10n.obsStatusDisabled;
-    return switch (status) {
-      ObsConnectionStatus.connected => l10n.obsStatusConnected,
-      ObsConnectionStatus.connecting => l10n.obsStatusConnecting,
-      ObsConnectionStatus.reconnecting => l10n.obsStatusReconnecting,
-      ObsConnectionStatus.error => l10n.obsStatusError,
-      ObsConnectionStatus.disconnected => l10n.obsStatusDisconnected,
-    };
+    return _obsStatusLabel(l10n, status);
   }
 }
 
@@ -342,7 +349,7 @@ class _ObsDetailState extends ConsumerState<_ObsDetail> {
         ),
         const SizedBox(height: 8),
         Text(
-          l10n.settingsObsStatus(obsStatus.name),
+          l10n.settingsObsStatus(_obsStatusLabel(l10n, obsStatus)),
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
@@ -357,7 +364,7 @@ class _ObsDetailState extends ConsumerState<_ObsDetail> {
     final l10n = ZipBroadcastLocalizations.of(context)!;
     final label = status == ObsConnectionStatus.connected
         ? l10n.settingsObsConnectedSuccess
-        : l10n.settingsObsConnectionFailed(status.name);
+        : l10n.settingsObsConnectionFailed(_obsStatusLabel(l10n, status));
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(label)));
   }

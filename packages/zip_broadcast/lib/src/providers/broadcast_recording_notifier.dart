@@ -174,6 +174,7 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
         perEngineStates[s.deviceId] = restarted
             ? const EngineActiveState()
             : const EngineErrorState('Resume failed');
+        if (!restarted) orphaned.add(s);
       } else {
         perEngineStates[s.deviceId] = const EngineActiveState();
       }

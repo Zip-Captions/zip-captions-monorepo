@@ -327,5 +327,33 @@
   "audioSourceNewInputName": "New Input",
   "@audioSourceNewInputName": {
     "description": "Default name given to a newly added audio input"
+  },
+  "statusPillObs": "OBS",
+  "@statusPillObs": {
+    "description": "Label on the OBS status pill in the recording screen status bar"
+  },
+  "statusPillBrowserSource": "Browser Source",
+  "@statusPillBrowserSource": {
+    "description": "Label on the Browser Source status pill in the recording screen status bar"
+  },
+  "statusPillOverlay": "Overlay",
+  "@statusPillOverlay": {
+    "description": "Label on the Caption Overlay status pill in the recording screen status bar"
+  },
+  "recordingControlsPause": "Pause",
+  "@recordingControlsPause": {
+    "description": "Tooltip on the Pause button in the recording controls bar"
+  },
+  "recordingControlsResume": "Resume",
+  "@recordingControlsResume": {
+    "description": "Tooltip on the Resume button in the recording controls bar"
+  },
+  "recordingControlsStop": "Stop",
+  "@recordingControlsStop": {
+    "description": "Tooltip on the Stop button in the recording controls bar"
+  },
+  "comingSoon": "Coming soon",
+  "@comingSoon": {
+    "description": "Badge label on coming-soon output target cards"
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 
 /// A non-interactive output-target card with a "Coming soon" badge.
 ///
@@ -24,8 +25,9 @@ class ComingSoonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ZipBroadcastLocalizations.of(context)!;
     return Semantics(
-      label: '$label — Coming soon',
+      label: '$label — ${l10n.comingSoon}',
       excludeSemantics: true,
       child: Card(
         color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -49,7 +51,7 @@ class ComingSoonCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              'Coming soon',
+              l10n.comingSoon,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color:
                         Theme.of(context).colorScheme.onSecondaryContainer,

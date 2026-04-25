@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/broadcast_session_state.dart';
-import 'package:zip_broadcast/src/screens/recording_screen.dart' show RecordingScreen;
+import 'package:zip_broadcast/src/screens/recording_screen.dart'
+    show RecordingScreen;
 import 'package:zip_core/zip_core.dart' show RecordingState;
 
 /// Bottom control bar for [RecordingScreen] (E9).
@@ -53,6 +55,7 @@ class ZbRecordingControlsBar extends StatelessWidget {
       );
     }
 
+    final l10n = ZipBroadcastLocalizations.of(context)!;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -62,14 +65,14 @@ class ZbRecordingControlsBar extends StatelessWidget {
             if (state is BroadcastActiveState) ...[
               IconButton.filled(
                 icon: const Icon(Icons.pause),
-                tooltip: 'Pause',
+                tooltip: l10n.recordingControlsPause,
                 onPressed: onPause,
               ),
               const SizedBox(width: 16),
             ] else if (state is BroadcastPausedState) ...[
               IconButton.filled(
                 icon: const Icon(Icons.play_arrow),
-                tooltip: 'Resume',
+                tooltip: l10n.recordingControlsResume,
                 onPressed: onResume,
               ),
               const SizedBox(width: 16),
@@ -83,7 +86,7 @@ class ZbRecordingControlsBar extends StatelessWidget {
             ],
             IconButton.filledTonal(
               icon: const Icon(Icons.stop),
-              tooltip: 'Stop',
+              tooltip: l10n.recordingControlsStop,
               onPressed: onStop,
             ),
           ],

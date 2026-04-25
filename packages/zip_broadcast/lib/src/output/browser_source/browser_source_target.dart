@@ -1,8 +1,6 @@
 import 'dart:async';
 
-import 'package:zip_broadcast/src/models/browser_source_start_exception.dart' show BrowserSourceStartException;
 import 'package:zip_broadcast/src/output/browser_source/browser_source_server.dart';
-import 'package:zip_broadcast/zip_broadcast.dart' show BrowserSourceStartException;
 import 'package:zip_core/zip_core.dart';
 
 /// Caption output target that bridges [CaptionEvent]s to [BrowserSourceServer].
@@ -32,10 +30,13 @@ class BrowserSourceTarget implements CaptionOutputTarget {
 
   /// Starts the browser source HTTP server on [port].
   ///
-  /// Throws [BrowserSourceStartException] if the port is already in use.
+  /// Throws `BrowserSourceStartException` if the port is already in use.
   Future<void> start({int port = 8080}) {
-    return _lifecycleLock = _lifecycleLock
-        .then((_) => _server.start(port: port));
+    final next = _lifecycleLock.then((_) => _server.start(port: port));
+    // Reset the lock on failure so the next start() attempt is not
+    // short-circuited by a rejected predecessor.
+    _lifecycleLock = next.catchError((_) {});
+    return next;
   }
 
   /// Stops the server and disconnects all SSE clients.
