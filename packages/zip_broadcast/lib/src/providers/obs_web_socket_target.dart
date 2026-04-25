@@ -15,7 +15,7 @@ class ObsConnectionException implements Exception {
 /// Testable interface for OBS WebSocket connection management.
 ///
 /// The real implementation wraps [ObsWebSocketTarget] from the output layer.
-/// Tests inject [MockObsWebSocketTarget].
+/// Tests inject `MockObsWebSocketTarget`.
 abstract interface class ObsWebSocketTarget {
   /// Initiate a connection using pre-configured settings.
   Future<void> connect();

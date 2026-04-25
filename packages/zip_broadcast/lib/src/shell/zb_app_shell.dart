@@ -21,7 +21,7 @@ import 'package:zip_core/zip_core.dart';
 /// Owns [BrowserSourceTarget] and [CaptionOverlayTarget] as fields and
 /// registers/deregisters them with [CaptionOutputTargetRegistry] as the
 /// user toggles output targets (H1). OBS lifecycle is self-managed by
-/// [ObsConnectionNotifier] (H2).
+/// `ObsConnectionNotifier` (H2).
 class ZbAppShell extends ConsumerStatefulWidget {
   /// Creates a [ZbAppShell].
   const ZbAppShell({required this.child, super.key});
@@ -76,13 +76,16 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
   }
 
   void _syncTargets(OutputTargetSettings settings) {
-    _syncBrowserSource(settings.browserSourceEnabled, settings.browserSourcePort);
+    _syncBrowserSource(
+      settings.browserSourceEnabled,
+      settings.browserSourcePort,
+    );
     _syncOverlay(settings.overlayEnabled);
   }
 
   void _syncBrowserSource(bool enabled, int port) {
     if (enabled && !_browserSourceRegistered && !_browserSourceStarting) {
-      _startBrowserSource(port);
+      unawaited(_startBrowserSource(port));
     } else if (!enabled && _browserSourceRegistered) {
       _registry.remove(_browserSourceTarget);
       _browserSourceRegistered = false;

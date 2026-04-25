@@ -1,3 +1,5 @@
+import 'package:zip_core/zip_core.dart' show AudioInputConfig;
+
 /// State machine for `BroadcastRecordingNotifier`.
 ///
 /// Parallel to the zip_core `RecordingState` hierarchy but extended to carry

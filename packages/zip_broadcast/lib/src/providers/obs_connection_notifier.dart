@@ -28,7 +28,8 @@ class _ObsWebSocketTargetImpl implements ObsWebSocketTarget {
         _connector = connector ?? ObsWebSocket.connect;
 
   final ObsSettings _settings;
-  final Future<ObsWebSocket> Function(String url, {String? password}) _connector;
+  final Future<ObsWebSocket> Function(String url, {String? password})
+      _connector;
 
   ObsWebSocket? _client;
   Timer? _reconnectTimer;
@@ -100,6 +101,7 @@ class _ObsWebSocketTargetImpl implements ObsWebSocketTarget {
     }
   }
 
+  @override
   void dispose() {
     _enabled = false;
     _reconnectTimer?.cancel();
@@ -132,7 +134,7 @@ class _ObsWebSocketTargetImpl implements ObsWebSocketTarget {
         _retryAttempt = 0;
         _retryStartMs = null;
         _emit(ObsConnectionStatus.connected);
-      }).onError<Object>((_, __) {
+      }).onError<Object>((_, _) {
         if (!_enabled || _gen != gen) return;
         _scheduleReconnect();
       }),
@@ -198,7 +200,7 @@ ObsWebSocketTarget obsWebSocketTarget(Ref ref) {
 
 /// Manages the live OBS WebSocket connection and exposes [ObsConnectionStatus].
 ///
-/// Self-manages connection based on [OutputTargetSettingsNotifier.obsEnabled]
+/// Self-manages connection based on `OutputTargetSettingsNotifier.obsEnabled`
 /// (FD H2). Forwards final captions from [CaptionBus] to OBS when connected.
 @Riverpod(keepAlive: true)
 class ObsConnectionNotifier extends _$ObsConnectionNotifier {

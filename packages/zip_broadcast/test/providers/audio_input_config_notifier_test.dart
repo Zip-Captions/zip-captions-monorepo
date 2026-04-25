@@ -12,14 +12,14 @@ import '../helpers/pbt.dart';
 // Generators (PBT-2)
 // ---------------------------------------------------------------------------
 
-final _nonEmptyString = any.letterOrDigits;
+final Generator<String> _nonEmptyString = any.letterOrDigits;
 
-final _audioInputConfigGen = any.combine4(
+final Generator<AudioInputConfig> _audioInputConfigGen = any.combine4(
   _nonEmptyString,
   any.letterOrDigits,
   any.intInRange(0, 4),
   _nonEmptyString,
-  (String deviceId, String speakerLabel, int colorIndex, String name) =>
+  (deviceId, speakerLabel, colorIndex, name) =>
       AudioInputConfig(
     deviceId: deviceId.isEmpty ? 'default' : deviceId,
     name: name.isEmpty ? 'Mic' : name,
@@ -28,7 +28,8 @@ final _audioInputConfigGen = any.combine4(
   ),
 );
 
-final _configListGen = any.listWithLengthInRange(0, 5, _audioInputConfigGen);
+final Generator<List<AudioInputConfig>> _configListGen =
+    any.listWithLengthInRange(0, 5, _audioInputConfigGen);
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -58,7 +59,12 @@ void main() {
     test('removeConfig updates state and persists', () async {
       SharedPreferences.setMockInitialValues({
         'zip_broadcast.audioInputConfigs': jsonEncode([
-          {'deviceId': 'mic-1', 'name': 'Mic 1', 'speakerLabel': '', 'colorIndex': 0},
+          {
+            'deviceId': 'mic-1',
+            'name': 'Mic 1',
+            'speakerLabel': '',
+            'colorIndex': 0,
+          },
         ]),
       });
 
@@ -78,7 +84,12 @@ void main() {
     test('setSpeakerLabel updates state', () async {
       SharedPreferences.setMockInitialValues({
         'zip_broadcast.audioInputConfigs': jsonEncode([
-          {'deviceId': 'mic-1', 'name': 'Mic 1', 'speakerLabel': '', 'colorIndex': 0},
+          {
+            'deviceId': 'mic-1',
+            'name': 'Mic 1',
+            'speakerLabel': '',
+            'colorIndex': 0,
+          },
         ]),
       });
 
@@ -101,7 +112,12 @@ void main() {
     test('setColor updates colorIndex', () async {
       SharedPreferences.setMockInitialValues({
         'zip_broadcast.audioInputConfigs': jsonEncode([
-          {'deviceId': 'mic-1', 'name': 'Mic 1', 'speakerLabel': '', 'colorIndex': 0},
+          {
+            'deviceId': 'mic-1',
+            'name': 'Mic 1',
+            'speakerLabel': '',
+            'colorIndex': 0,
+          },
         ]),
       });
 
@@ -155,7 +171,7 @@ void main() {
   group('PBT-2', () {
     Glados(_configListGen).test(
       'P4: AudioInputConfig JSON round-trip is lossless',
-      (List<AudioInputConfig> configs) {
+      (configs) {
         final json = configs.map((c) => c.toJson()).toList();
         final decoded = json.map(AudioInputConfig.fromJson).toList();
         expect(decoded, equals(configs));

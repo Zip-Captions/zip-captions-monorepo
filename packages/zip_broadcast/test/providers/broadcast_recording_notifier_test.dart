@@ -170,7 +170,7 @@ void main() {
         SttResult(
           text: 'hello',
           isFinal: true,
-          confidence: 1.0,
+          confidence: 1,
           timestamp: DateTime.utc(2025),
           sourceId: 'raw', // overwritten by _handleResult to config.deviceId
         ),
@@ -195,7 +195,7 @@ void main() {
 
     Glados(initOutcomesGen).test(
       'P1+P2: partial failure isolation',
-      (List<bool> outcomes) async {
+      (outcomes) async {
         final deviceIds =
             List.generate(outcomes.length, (i) => 'pbt-mic-$i');
         final engines = List.generate(
@@ -229,7 +229,7 @@ void main() {
 
     Glados(initOutcomesGen).test(
       'P3: perEngineStates count matches configured inputs',
-      (List<bool> outcomes) async {
+      (outcomes) async {
         final deviceIds =
             List.generate(outcomes.length, (i) => 'pbt-mic-$i');
         final engines = List.generate(

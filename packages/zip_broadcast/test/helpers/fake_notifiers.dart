@@ -10,7 +10,8 @@ import 'package:zip_broadcast/src/providers/obs_connection_notifier.dart';
 /// Used in HomeScreen widget tests: Start should be disabled when no audio
 /// inputs are configured (TEST-U6.1).
 ///
-/// Usage: `audioInputConfigNotifierProvider.overrideWith(FakeEmptyAudioInputConfigNotifier.new)`
+/// Usage: `audioInputConfigNotifierProvider
+///   .overrideWith(FakeEmptyAudioInputConfigNotifier.new)`
 class FakeEmptyAudioInputConfigNotifier extends AudioInputConfigNotifier {
   @override
   List<AudioInputConfig> build() => const [];
@@ -18,7 +19,8 @@ class FakeEmptyAudioInputConfigNotifier extends AudioInputConfigNotifier {
 
 /// Fake [AudioInputConfigNotifier] that returns one default input.
 ///
-/// Usage: `audioInputConfigNotifierProvider.overrideWith(FakeOneInputAudioInputConfigNotifier.new)`
+/// Usage: `audioInputConfigNotifierProvider
+///   .overrideWith(FakeOneInputAudioInputConfigNotifier.new)`
 class FakeOneInputAudioInputConfigNotifier
     extends AudioInputConfigNotifier {
   @override
@@ -32,7 +34,8 @@ class FakeOneInputAudioInputConfigNotifier
 
 /// Fake [BroadcastRecordingNotifier] stuck in [BroadcastIdleState].
 ///
-/// Usage: `broadcastRecordingNotifierProvider.overrideWith(FakeIdleBroadcastRecordingNotifier.new)`
+/// Usage: `broadcastRecordingNotifierProvider
+///   .overrideWith(FakeIdleBroadcastRecordingNotifier.new)`
 class FakeIdleBroadcastRecordingNotifier
     extends BroadcastRecordingNotifier {
   @override
@@ -56,7 +59,8 @@ class FakeIdleBroadcastRecordingNotifier
 
 /// Fake [BroadcastRecordingNotifier] stuck in [BroadcastActiveState].
 ///
-/// Usage: `broadcastRecordingNotifierProvider.overrideWith(FakeActiveBroadcastRecordingNotifier.new)`
+/// Usage: `broadcastRecordingNotifierProvider
+///   .overrideWith(FakeActiveBroadcastRecordingNotifier.new)`
 class FakeActiveBroadcastRecordingNotifier
     extends BroadcastRecordingNotifier {
   @override
@@ -83,7 +87,8 @@ class FakeActiveBroadcastRecordingNotifier
 
 /// Fake [ObsConnectionNotifier] returning [ObsConnectionStatus.disconnected].
 ///
-/// Usage: `obsConnectionNotifierProvider.overrideWith(FakeDisconnectedObsConnectionNotifier.new)`
+/// Usage: `obsConnectionNotifierProvider
+///   .overrideWith(FakeDisconnectedObsConnectionNotifier.new)`
 class FakeDisconnectedObsConnectionNotifier extends ObsConnectionNotifier {
   @override
   ObsConnectionStatus build() => ObsConnectionStatus.disconnected;
@@ -97,7 +102,8 @@ class FakeDisconnectedObsConnectionNotifier extends ObsConnectionNotifier {
 
 /// Fake [ObsConnectionNotifier] returning [ObsConnectionStatus.connected].
 ///
-/// Usage: `obsConnectionNotifierProvider.overrideWith(FakeConnectedObsConnectionNotifier.new)`
+/// Usage: `obsConnectionNotifierProvider
+///   .overrideWith(FakeConnectedObsConnectionNotifier.new)`
 class FakeConnectedObsConnectionNotifier extends ObsConnectionNotifier {
   @override
   ObsConnectionStatus build() => ObsConnectionStatus.connected;
@@ -111,7 +117,8 @@ class FakeConnectedObsConnectionNotifier extends ObsConnectionNotifier {
 
 /// Fake [BroadcastRecordingNotifier] stuck in [BroadcastPausedState].
 ///
-/// Usage: `broadcastRecordingNotifierProvider.overrideWith(FakePausedBroadcastRecordingNotifier.new)`
+/// Usage: `broadcastRecordingNotifierProvider
+///   .overrideWith(FakePausedBroadcastRecordingNotifier.new)`
 class FakePausedBroadcastRecordingNotifier extends BroadcastRecordingNotifier {
   @override
   BroadcastSessionState build() => const BroadcastPausedState(
@@ -137,7 +144,8 @@ class FakePausedBroadcastRecordingNotifier extends BroadcastRecordingNotifier {
 
 /// Fake [AudioInputConfigNotifier] that returns two default inputs.
 ///
-/// Usage: `audioInputConfigNotifierProvider.overrideWith(FakeTwoInputAudioInputConfigNotifier.new)`
+/// Usage: `audioInputConfigNotifierProvider
+///   .overrideWith(FakeTwoInputAudioInputConfigNotifier.new)`
 class FakeTwoInputAudioInputConfigNotifier extends AudioInputConfigNotifier {
   @override
   List<AudioInputConfig> build() => const [

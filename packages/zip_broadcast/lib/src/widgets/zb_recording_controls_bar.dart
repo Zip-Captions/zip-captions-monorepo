@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:zip_broadcast/src/models/broadcast_session_state.dart';
+import 'package:zip_broadcast/src/screens/recording_screen.dart' show RecordingScreen;
+import 'package:zip_core/zip_core.dart' show RecordingState;
 
 /// Bottom control bar for [RecordingScreen] (E9).
 ///

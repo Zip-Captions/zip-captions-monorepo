@@ -32,23 +32,23 @@ Widget buildZbApp({
         routes: [
           GoRoute(
             path: '/',
-            builder: (_, __) => const HomeScreen(),
+            builder: (_, _) => const HomeScreen(),
           ),
           GoRoute(
             path: '/recording',
-            builder: (_, __) => const RecordingScreen(),
+            builder: (_, _) => const RecordingScreen(),
           ),
           GoRoute(
             path: '/settings',
-            builder: (_, __) => const SettingsScreen(),
+            builder: (_, _) => const SettingsScreen(),
           ),
           GoRoute(
             path: '/audio-inputs',
-            builder: (_, __) => const AudioSourceConfigScreen(),
+            builder: (_, _) => const AudioSourceConfigScreen(),
           ),
           GoRoute(
             path: '/history',
-            builder: (_, __) => const Scaffold(
+            builder: (_, _) => const Scaffold(
               body: Center(child: Text('HistoryStub')),
             ),
           ),

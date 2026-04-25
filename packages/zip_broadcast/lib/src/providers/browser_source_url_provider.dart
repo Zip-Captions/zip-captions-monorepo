@@ -4,7 +4,8 @@ import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 
 part 'browser_source_url_provider.g.dart';
 
-/// Derives the browser source URL from [OutputTargetSettingsNotifier.browserSourcePort].
+/// Derives the browser source URL from the output target settings browser
+/// source port.
 ///
 /// Returns an empty string when browser source is disabled.
 @riverpod

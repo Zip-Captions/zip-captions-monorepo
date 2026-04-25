@@ -67,7 +67,7 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
       final perEngineStates = <String, EngineSessionState>{};
 
       await Future.wait(
-        configs.map((AudioInputConfig config) async {
+        configs.map((config) async {
           final engine = ref.read(sttEngineFactoryProvider(config.deviceId));
           final session =
               _EngineSession(deviceId: config.deviceId, engine: engine);
@@ -83,7 +83,7 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
 
           final listenOk = await engine.startListening(
             localeId: localeId,
-            onResult: (SttResult result) => _handleResult(result, config),
+            onResult: (result) => _handleResult(result, config),
           );
 
           perEngineStates[config.deviceId] = listenOk
@@ -165,7 +165,7 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
         // Fall back to a fresh startListening.
         final restarted = await s.engine.startListening(
           localeId: localeId,
-          onResult: (SttResult r) => _handleResult(r, config),
+          onResult: (r) => _handleResult(r, config),
         );
         perEngineStates[s.deviceId] = restarted
             ? const EngineActiveState()
@@ -195,7 +195,7 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
 
   /// Transitions any active state → stopped.
   Future<void> stop() async {
-    final String? sessionId = switch (state) {
+    final sessionId = switch (state) {
       BroadcastActiveState(:final sessionId) => sessionId,
       BroadcastPausedState(:final sessionId) => sessionId,
       BroadcastReconnectingState(:final sessionId) => sessionId,

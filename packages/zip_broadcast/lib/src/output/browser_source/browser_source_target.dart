@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:zip_broadcast/src/models/browser_source_start_exception.dart' show BrowserSourceStartException;
 import 'package:zip_broadcast/src/output/browser_source/browser_source_server.dart';
+import 'package:zip_broadcast/zip_broadcast.dart' show BrowserSourceStartException;
 import 'package:zip_core/zip_core.dart';
 
 /// Caption output target that bridges [CaptionEvent]s to [BrowserSourceServer].
@@ -40,7 +42,7 @@ class BrowserSourceTarget implements CaptionOutputTarget {
   Future<void> stop() {
     return _lifecycleLock = _lifecycleLock
         .then((_) => _server.stop())
-        .onError<Object>((_, __) {});
+        .onError<Object>((_, _) {});
   }
 
   @override

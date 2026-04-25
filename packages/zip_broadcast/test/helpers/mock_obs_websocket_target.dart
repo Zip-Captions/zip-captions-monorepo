@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:zip_broadcast/src/models/obs_connection_status.dart';
 import 'package:zip_broadcast/src/providers/obs_web_socket_target.dart';
 
-/// Controllable [ObsWebSocketTarget] for [ObsConnectionNotifier] unit tests
+/// Controllable [ObsWebSocketTarget] for `ObsConnectionNotifier` unit tests
 /// (TEST-U6.3). Injects via `obsWebSocketTargetProvider.overrideWithValue`.
 class MockObsWebSocketTarget implements ObsWebSocketTarget {
   bool shouldFailConnect = false;
@@ -57,6 +57,9 @@ class MockObsWebSocketTarget implements ObsWebSocketTarget {
   /// Push an arbitrary status update to the notifier's listener.
   void pushStatus(ObsConnectionStatus status) =>
       _statusController.add(status);
+
+  @override
+  void dispose() {}
 
   /// Close the status stream.
   void close() => unawaited(_statusController.close());

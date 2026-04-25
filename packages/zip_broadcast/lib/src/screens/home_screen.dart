@@ -32,7 +32,8 @@ class HomeScreen extends ConsumerWidget {
     final canStart = isIdle && configs.isNotEmpty;
 
     // OBS uses the actual connection status; the others use intent toggles as
-    // their runtime state is not exposed via providers without a larger refactor.
+    // their runtime state is not exposed via providers without a larger
+    // refactor.
     final activeTargetCount = [
       outputSettings.onScreenEnabled,
       outputSettings.obsEnabled && obsStatus == ObsConnectionStatus.connected,
@@ -112,7 +113,7 @@ class HomeScreen extends ConsumerWidget {
                       .update(outputSettings.copyWith(overlayEnabled: v)),
                 ),
               ),
-              _TargetCard(
+              const _TargetCard(
                 icon: Icons.description_outlined,
                 label: 'Transcripts',
                 enabled: true,
@@ -178,7 +179,8 @@ class _StatusSummary extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Text(
           'Ready · $inputCount ${inputCount == 1 ? 'input' : 'inputs'} · '
-          '$activeTargetCount ${activeTargetCount == 1 ? 'target' : 'targets'} active',
+          '$activeTargetCount '
+          '${activeTargetCount == 1 ? 'target' : 'targets'} active',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       ),

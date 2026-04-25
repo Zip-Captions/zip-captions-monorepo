@@ -132,7 +132,8 @@ void main() {
       expect(find.text('Text size'), findsOneWidget);
     });
 
-    testWidgets('Output Targets detail contains ComingSoonCard for Remote Viewers',
+    testWidgets(
+        'Output Targets detail contains ComingSoonCard for Remote Viewers',
         (tester) async {
       final prefs = await SharedPreferences.getInstance();
       await tester.pumpWidget(

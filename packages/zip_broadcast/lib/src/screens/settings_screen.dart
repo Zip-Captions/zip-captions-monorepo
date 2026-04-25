@@ -397,9 +397,9 @@ class _OutputTargetsDetail extends ConsumerWidget {
           value: settings.overlayEnabled,
           onChanged: (v) => update(settings.copyWith(overlayEnabled: v)),
         ),
-        SwitchListTile(
-          secondary: const Icon(Icons.description_outlined),
-          title: const Text('Transcripts'),
+        const SwitchListTile(
+          secondary: Icon(Icons.description_outlined),
+          title: Text('Transcripts'),
           value: true,
           onChanged: null, // Always active.
         ),

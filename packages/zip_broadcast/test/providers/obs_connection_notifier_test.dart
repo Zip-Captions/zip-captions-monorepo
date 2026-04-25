@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,10 +34,9 @@ void main() {
 
     test('row 1: enable OBS → connect() called once', () async {
       final mock = MockObsWebSocketTarget();
-      final container = buildContainer(mock);
-
-      // Initialize notifier (fires listener with obsEnabled=false → disconnect).
-      container.read(obsConnectionNotifierProvider);
+      // Initialize notifier; fires settings listener → disconnect.
+      final container = buildContainer(mock)
+        ..read(obsConnectionNotifierProvider);
       await pumpEventQueue();
 
       final disconnectOnInit = mock.disconnectCount;
@@ -53,9 +54,8 @@ void main() {
     test('row 2: status stream disconnect event → state becomes disconnected',
         () async {
       final mock = MockObsWebSocketTarget();
-      final container = buildContainer(mock);
-
-      container.read(obsConnectionNotifierProvider);
+      final container = buildContainer(mock)
+        ..read(obsConnectionNotifierProvider);
 
       // Push connected status.
       mock.pushStatus(ObsConnectionStatus.connected);
@@ -76,9 +76,8 @@ void main() {
 
     test('row 3: testConnection() success returns connected', () async {
       final mock = MockObsWebSocketTarget();
-      final container = buildContainer(mock);
-
-      container.read(obsConnectionNotifierProvider);
+      final container = buildContainer(mock)
+        ..read(obsConnectionNotifierProvider);
 
       final result = await container
           .read(obsConnectionNotifierProvider.notifier)
@@ -105,13 +104,16 @@ void main() {
         container.read(obsConnectionNotifierProvider);
 
         ObsConnectionStatus? result;
-        container
-            .read(obsConnectionNotifierProvider.notifier)
-            .testConnection(timeout: const Duration(seconds: 5))
-            .then((r) => result = r);
+        unawaited(
+          container
+              .read(obsConnectionNotifierProvider.notifier)
+              .testConnection()
+              .then((r) => result = r),
+        );
 
-        fake.elapse(const Duration(seconds: 6));
-        fake.flushMicrotasks();
+        fake
+          ..elapse(const Duration(seconds: 6))
+          ..flushMicrotasks();
 
         expect(result, ObsConnectionStatus.error);
       });
@@ -119,10 +121,9 @@ void main() {
 
     test('row 5: disable OBS while enabled → disconnect() called', () async {
       final mock = MockObsWebSocketTarget();
-      final container = buildContainer(mock);
-
       // Initialize notifier.
-      container.read(obsConnectionNotifierProvider);
+      final container = buildContainer(mock)
+        ..read(obsConnectionNotifierProvider);
       await pumpEventQueue();
 
       // Enable OBS.
@@ -137,7 +138,7 @@ void main() {
       // Disable OBS.
       await container
           .read(outputTargetSettingsNotifierProvider.notifier)
-          .update(const OutputTargetSettings(obsEnabled: false));
+          .update(const OutputTargetSettings());
       await pumpEventQueue();
 
       expect(mock.disconnectCount, greaterThan(disconnectCountBeforeDisable));

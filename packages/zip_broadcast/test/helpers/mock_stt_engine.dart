@@ -1,3 +1,4 @@
+import 'package:zip_broadcast/src/providers/broadcast_recording_notifier.dart' show BroadcastRecordingNotifier;
 import 'package:zip_core/zip_core.dart';
 
 /// Controllable [SttEngine] for unit tests.

@@ -11,7 +11,8 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   group('HomeScreen', () {
-    testWidgets('Start Broadcast button disabled when no audio inputs configured',
+    testWidgets(
+        'Start Broadcast button disabled when no audio inputs configured',
         (tester) async {
       final prefs = await SharedPreferences.getInstance();
       await tester.pumpWidget(

@@ -20,7 +20,8 @@ void main() {
       expect(find.text('Coming soon'), findsOneWidget);
     });
 
-    testWidgets('semantic label contains label and Coming soon', (tester) async {
+    testWidgets('semantic label contains label and Coming soon',
+        (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(

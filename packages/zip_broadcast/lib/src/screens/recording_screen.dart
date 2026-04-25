@@ -58,7 +58,10 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
     final state = ref.read(broadcastRecordingNotifierProvider);
     if (state is BroadcastIdleState && state.lastError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not start broadcast: ${state.lastError}')),
+        SnackBar(
+          content:
+              Text('Could not start broadcast: ${state.lastError}'),
+        ),
       );
       context.go('/');
     }

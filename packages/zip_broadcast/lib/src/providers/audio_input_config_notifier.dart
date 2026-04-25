@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_broadcast/src/models/audio_input_config.dart';
 import 'package:zip_broadcast/src/models/audio_input_visual_style.dart';
+import 'package:zip_broadcast/src/providers/audio_input_settings_provider.dart' show AudioInputSettingsNotifier;
 
 part 'audio_input_config_notifier.g.dart';
 
@@ -20,8 +21,6 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
     AudioInputConfig(
       deviceId: 'default',
       name: 'System Default',
-      speakerLabel: '',
-      colorIndex: 0,
     ),
   ];
 
@@ -62,7 +61,9 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
   Future<void> setSpeakerLabel(String deviceId, String label) async {
     await _loadFuture;
     final updated = state
-        .map((c) => c.deviceId == deviceId ? c.copyWith(speakerLabel: label) : c)
+        .map((c) => c.deviceId == deviceId
+            ? c.copyWith(speakerLabel: label)
+            : c)
         .toList();
     state = updated;
     await _enqueuePersist(updated);
@@ -73,7 +74,9 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
     await _loadFuture;
     final updated = state
         .map(
-          (c) => c.deviceId == deviceId ? c.copyWith(colorIndex: colorIndex) : c,
+          (c) => c.deviceId == deviceId
+              ? c.copyWith(colorIndex: colorIndex)
+              : c,
         )
         .toList();
     state = updated;
@@ -110,7 +113,7 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
   Future<void> _enqueuePersist(List<AudioInputConfig> configs) {
     return _persistQueue = _persistQueue
         .then((_) => _persist(configs))
-        .onError<Object>((_, __) {});
+        .onError<Object>((_, _) {});
   }
 
   Future<void> _persist(List<AudioInputConfig> configs) async {
