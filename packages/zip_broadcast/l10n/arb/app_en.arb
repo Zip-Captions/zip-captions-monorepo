@@ -104,39 +104,17 @@
   "@homeManage": {
     "description": "Button label to navigate to audio input management"
   },
-  "homeStatusSummary": "Ready · {inputCount} {inputLabel} · {targetCount} {targetLabel} active",
+  "homeStatusSummary": "Ready · {inputCount, plural, =1{1 input} other{{inputCount} inputs}} · {targetCount, plural, =1{1 target} other{{targetCount} targets}} active",
   "@homeStatusSummary": {
-    "description": "Status pill text on the home screen showing input and target counts",
+    "description": "Status pill text on the home screen; uses ICU plural for correct singular/plural forms across languages",
     "placeholders": {
       "inputCount": {
         "type": "int"
       },
-      "inputLabel": {
-        "type": "String"
-      },
       "targetCount": {
         "type": "int"
-      },
-      "targetLabel": {
-        "type": "String"
       }
     }
-  },
-  "homeInputSingular": "input",
-  "@homeInputSingular": {
-    "description": "Singular form of 'input' used in home status summary"
-  },
-  "homeInputPlural": "inputs",
-  "@homeInputPlural": {
-    "description": "Plural form of 'input' used in home status summary"
-  },
-  "homeTargetSingular": "target",
-  "@homeTargetSingular": {
-    "description": "Singular form of 'target' used in home status summary"
-  },
-  "homeTargetPlural": "targets",
-  "@homeTargetPlural": {
-    "description": "Plural form of 'target' used in home status summary"
   },
   "recordingPaused": "Paused",
   "@recordingPaused": {
@@ -155,7 +133,7 @@
     "description": "Snackbar message when a broadcast fails to start",
     "placeholders": {
       "error": {
-        "type": "Object"
+        "type": "String"
       }
     }
   },
@@ -355,5 +333,13 @@
   "comingSoon": "Coming soon",
   "@comingSoon": {
     "description": "Badge label on coming-soon output target cards"
+  },
+  "outputTargetsRemoteViewers": "Remote Viewers",
+  "@outputTargetsRemoteViewers": {
+    "description": "Label for the Remote Viewers coming-soon output target card"
+  },
+  "outputTargetsPhase2": "Phase 2",
+  "@outputTargetsPhase2": {
+    "description": "Subtitle for the Remote Viewers card indicating it is planned for Phase 2"
   }
 }

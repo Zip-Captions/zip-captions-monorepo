@@ -87,26 +87,21 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
   String get homeManage => 'Manage';
 
   @override
-  String homeStatusSummary(
-    int inputCount,
-    String inputLabel,
-    int targetCount,
-    String targetLabel,
-  ) {
-    return 'Ready · $inputCount $inputLabel · $targetCount $targetLabel active';
+  String homeStatusSummary(int inputCount, int targetCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      inputCount,
+      locale: localeName,
+      other: '$inputCount inputs',
+      one: '1 input',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      targetCount,
+      locale: localeName,
+      other: '$targetCount targets',
+      one: '1 target',
+    );
+    return 'Ready · $_temp0 · $_temp1 active';
   }
-
-  @override
-  String get homeInputSingular => 'input';
-
-  @override
-  String get homeInputPlural => 'inputs';
-
-  @override
-  String get homeTargetSingular => 'target';
-
-  @override
-  String get homeTargetPlural => 'targets';
 
   @override
   String get recordingPaused => 'Paused';
@@ -118,7 +113,7 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
   String get recordingAppearance => 'Appearance';
 
   @override
-  String recordingStartError(Object error) {
+  String recordingStartError(String error) {
     return 'Could not start broadcast: $error';
   }
 
@@ -260,4 +255,10 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
 
   @override
   String get comingSoon => 'Coming soon';
+
+  @override
+  String get outputTargetsRemoteViewers => 'Remote Viewers';
+
+  @override
+  String get outputTargetsPhase2 => 'Phase 2';
 }

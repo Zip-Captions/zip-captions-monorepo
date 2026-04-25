@@ -436,10 +436,10 @@ class _OutputTargetsDetail extends ConsumerWidget {
           value: true,
           onChanged: null, // Always active.
         ),
-        const ComingSoonCard(
+        ComingSoonCard(
           icon: Icons.people_outlined,
-          label: 'Remote Viewers',
-          subtitle: 'Phase 2',
+          label: l10n.outputTargetsRemoteViewers,
+          subtitle: l10n.outputTargetsPhase2,
         ),
       ],
     );

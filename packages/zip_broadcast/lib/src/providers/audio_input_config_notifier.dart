@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:logging/logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_broadcast/src/models/audio_input_config.dart';
@@ -16,6 +17,7 @@ part 'audio_input_config_notifier.g.dart';
 @Riverpod(keepAlive: true)
 class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
   static const _key = 'zip_broadcast.audioInputConfigs';
+  static final _log = Logger('zip_broadcast.AudioInputConfigNotifier');
 
   static const _defaultConfig = [
     AudioInputConfig(
@@ -113,7 +115,9 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
   Future<void> _enqueuePersist(List<AudioInputConfig> configs) {
     return _persistQueue = _persistQueue
         .then((_) => _persist(configs))
-        .onError<Object>((_, _) {});
+        .onError<Object>((e, st) {
+          _log.warning('AudioInputConfig persist failed', e, st);
+        });
   }
 
   Future<void> _persist(List<AudioInputConfig> configs) async {

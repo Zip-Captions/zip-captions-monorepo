@@ -53,6 +53,7 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
     if (state is! BroadcastIdleState || _starting) return;
     _starting = true;
     try {
+      await ref.read(audioInputConfigNotifierProvider.notifier).loadFuture;
       final configs = ref.read(audioInputConfigNotifierProvider);
       if (configs.isEmpty) {
         state = const BroadcastIdleState(
@@ -127,7 +128,7 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
   Future<void> pause() async {
     final current = state;
     if (current is! BroadcastActiveState) return;
-    for (final s in _sessions) {
+    for (final s in List.of(_sessions)) {
       await s.engine.pause();
     }
     _log.info('Session paused');
@@ -157,7 +158,7 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
     };
 
     final orphaned = <_EngineSession>[];
-    for (final s in _sessions) {
+    for (final s in List.of(_sessions)) {
       final config = configMap[s.deviceId];
       if (config == null) {
         orphaned.add(s);
@@ -235,7 +236,7 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
   }
 
   Future<void> _stopEngines() async {
-    for (final s in _sessions) {
+    for (final s in List.of(_sessions)) {
       try {
         await s.engine.stopListening();
       } on Object catch (e) {
@@ -248,7 +249,7 @@ class BroadcastRecordingNotifier extends _$BroadcastRecordingNotifier {
   }
 
   void _disposeEngines() {
-    for (final s in _sessions) {
+    for (final s in List.of(_sessions)) {
       s.engine.dispose();
     }
     _sessions.clear();

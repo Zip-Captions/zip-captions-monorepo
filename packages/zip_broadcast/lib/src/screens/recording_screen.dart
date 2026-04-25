@@ -44,10 +44,11 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
       if (current is BroadcastStoppedState) {
         notifier.clearSession();
         unawaited(_startAndHandleError(notifier));
-      } else if (current is BroadcastIdleState) {
+      } else if (current is BroadcastIdleState ||
+          current is BroadcastReconnectingState) {
         unawaited(_startAndHandleError(notifier));
       }
-      // active / paused / reconnecting: leave existing session running.
+      // active / paused: leave existing session running.
     });
   }
 
@@ -61,7 +62,7 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
       final l10n = ZipBroadcastLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.recordingStartError(state.lastError!)),
+          content: Text(l10n.recordingStartError(state.lastError!.toString())),
         ),
       );
       context.go('/');
@@ -82,9 +83,18 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
     ref.listen<BroadcastSessionState>(
       broadcastRecordingNotifierProvider,
       (prev, next) {
-        if (next is BroadcastStoppedState && context.mounted) {
-          ref.invalidate(transcriptSessionListProvider);
+        if (!context.mounted) return;
+        if (next is BroadcastStoppedState) {
+          ref.invalidate(transcriptSessionListProvider(''));
           context.go('/history');
+        } else if (next is BroadcastIdleState && next.lastError != null) {
+          final l10n = ZipBroadcastLocalizations.of(context)!;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.recordingStartError(next.lastError!.toString())),
+            ),
+          );
+          context.go('/');
         }
       },
     );

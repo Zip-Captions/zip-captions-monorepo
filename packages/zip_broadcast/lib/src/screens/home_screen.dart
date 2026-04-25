@@ -121,10 +121,10 @@ class HomeScreen extends ConsumerWidget {
                 enabled: true,
                 onToggle: null, // Always active; configured in Settings.
               ),
-              const ComingSoonCard(
+              ComingSoonCard(
                 icon: Icons.people_outlined,
-                label: 'Remote Viewers',
-                subtitle: 'Phase 2',
+                label: l10n.outputTargetsRemoteViewers,
+                subtitle: l10n.outputTargetsPhase2,
               ),
               const SizedBox(height: 24),
               // Audio inputs summary (D4).
@@ -180,21 +180,11 @@ class _StatusSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = ZipBroadcastLocalizations.of(context)!;
-    final inputLabel =
-        inputCount == 1 ? l10n.homeInputSingular : l10n.homeInputPlural;
-    final targetLabel = activeTargetCount == 1
-        ? l10n.homeTargetSingular
-        : l10n.homeTargetPlural;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Text(
-          l10n.homeStatusSummary(
-            inputCount,
-            inputLabel,
-            activeTargetCount,
-            targetLabel,
-          ),
+          l10n.homeStatusSummary(inputCount, activeTargetCount),
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       ),

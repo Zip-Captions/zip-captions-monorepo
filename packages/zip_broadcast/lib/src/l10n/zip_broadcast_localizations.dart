@@ -253,40 +253,11 @@ abstract class ZipBroadcastLocalizations {
   /// **'Manage'**
   String get homeManage;
 
-  /// Status pill text on the home screen showing input and target counts
+  /// Status pill text on the home screen; uses ICU plural for correct singular/plural forms across languages
   ///
   /// In en, this message translates to:
-  /// **'Ready · {inputCount} {inputLabel} · {targetCount} {targetLabel} active'**
-  String homeStatusSummary(
-    int inputCount,
-    String inputLabel,
-    int targetCount,
-    String targetLabel,
-  );
-
-  /// Singular form of 'input' used in home status summary
-  ///
-  /// In en, this message translates to:
-  /// **'input'**
-  String get homeInputSingular;
-
-  /// Plural form of 'input' used in home status summary
-  ///
-  /// In en, this message translates to:
-  /// **'inputs'**
-  String get homeInputPlural;
-
-  /// Singular form of 'target' used in home status summary
-  ///
-  /// In en, this message translates to:
-  /// **'target'**
-  String get homeTargetSingular;
-
-  /// Plural form of 'target' used in home status summary
-  ///
-  /// In en, this message translates to:
-  /// **'targets'**
-  String get homeTargetPlural;
+  /// **'Ready · {inputCount, plural, =1{1 input} other{{inputCount} inputs}} · {targetCount, plural, =1{1 target} other{{targetCount} targets}} active'**
+  String homeStatusSummary(int inputCount, int targetCount);
 
   /// Label shown when the broadcast session is paused
   ///
@@ -310,7 +281,7 @@ abstract class ZipBroadcastLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Could not start broadcast: {error}'**
-  String recordingStartError(Object error);
+  String recordingStartError(String error);
 
   /// Settings list tile title for Appearance detail
   ///
@@ -569,6 +540,18 @@ abstract class ZipBroadcastLocalizations {
   /// In en, this message translates to:
   /// **'Coming soon'**
   String get comingSoon;
+
+  /// Label for the Remote Viewers coming-soon output target card
+  ///
+  /// In en, this message translates to:
+  /// **'Remote Viewers'**
+  String get outputTargetsRemoteViewers;
+
+  /// Subtitle for the Remote Viewers card indicating it is planned for Phase 2
+  ///
+  /// In en, this message translates to:
+  /// **'Phase 2'**
+  String get outputTargetsPhase2;
 }
 
 class _ZipBroadcastLocalizationsDelegate
