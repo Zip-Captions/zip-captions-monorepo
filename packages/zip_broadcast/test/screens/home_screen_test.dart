@@ -31,10 +31,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // FilledButton with 'Start Broadcast' text should be disabled.
-      final button = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Start Broadcast'),
-      );
+      expect(find.text('Start Broadcast'), findsOneWidget);
+      final button = tester.widget<FilledButton>(find.byType(FilledButton));
       expect(button.onPressed, isNull);
     });
 
@@ -57,9 +55,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final button = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Start Broadcast'),
-      );
+      expect(find.text('Start Broadcast'), findsOneWidget);
+      final button = tester.widget<FilledButton>(find.byType(FilledButton));
       expect(button.onPressed, isNotNull);
     });
 
