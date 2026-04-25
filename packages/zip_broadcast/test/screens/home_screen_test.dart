@@ -31,8 +31,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Start Broadcast'), findsOneWidget);
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final buttonFinder = find.ancestor(
+        of: find.text('Start Broadcast'),
+        matching: find.bySubtype<ButtonStyleButton>(),
+      );
+      expect(buttonFinder, findsOneWidget);
+      final button = tester.widget<ButtonStyleButton>(buttonFinder);
       expect(button.onPressed, isNull);
     });
 
@@ -55,8 +59,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Start Broadcast'), findsOneWidget);
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final buttonFinder = find.ancestor(
+        of: find.text('Start Broadcast'),
+        matching: find.bySubtype<ButtonStyleButton>(),
+      );
+      expect(buttonFinder, findsOneWidget);
+      final button = tester.widget<ButtonStyleButton>(buttonFinder);
       expect(button.onPressed, isNotNull);
     });
 
