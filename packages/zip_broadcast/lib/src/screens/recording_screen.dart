@@ -91,7 +91,9 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
           final l10n = ZipBroadcastLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(l10n.recordingStartError(next.lastError!.toString())),
+              content: Text(
+                l10n.recordingStartError(next.lastError!.toString()),
+              ),
             ),
           );
           context.go('/');
