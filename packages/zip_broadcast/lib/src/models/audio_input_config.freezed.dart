@@ -27,10 +27,10 @@ mixin _$AudioInputConfig {
   /// Human-readable device name from the OS.
   String get name => throw _privateConstructorUsedError;
 
-  /// Speaker label assigned by the user (e.g. "Speaker A").
-  String get speakerLabel => throw _privateConstructorUsedError;
+  /// Display label assigned by the user (e.g. "Presenter").
+  String get label => throw _privateConstructorUsedError;
 
-  /// Colour index (0–3) selecting from [AudioInputVisualStyle].
+  /// Colour index (0–3) selecting from AudioInputVisualStyle.
   int get colorIndex => throw _privateConstructorUsedError;
 
   /// Serializes this AudioInputConfig to a JSON map.
@@ -50,12 +50,7 @@ abstract class $AudioInputConfigCopyWith<$Res> {
     $Res Function(AudioInputConfig) then,
   ) = _$AudioInputConfigCopyWithImpl<$Res, AudioInputConfig>;
   @useResult
-  $Res call({
-    String deviceId,
-    String name,
-    String speakerLabel,
-    int colorIndex,
-  });
+  $Res call({String deviceId, String name, String label, int colorIndex});
 }
 
 /// @nodoc
@@ -75,7 +70,7 @@ class _$AudioInputConfigCopyWithImpl<$Res, $Val extends AudioInputConfig>
   $Res call({
     Object? deviceId = null,
     Object? name = null,
-    Object? speakerLabel = null,
+    Object? label = null,
     Object? colorIndex = null,
   }) {
     return _then(
@@ -88,9 +83,9 @@ class _$AudioInputConfigCopyWithImpl<$Res, $Val extends AudioInputConfig>
                 ? _value.name
                 : name // ignore: cast_nullable_to_non_nullable
                       as String,
-            speakerLabel: null == speakerLabel
-                ? _value.speakerLabel
-                : speakerLabel // ignore: cast_nullable_to_non_nullable
+            label: null == label
+                ? _value.label
+                : label // ignore: cast_nullable_to_non_nullable
                       as String,
             colorIndex: null == colorIndex
                 ? _value.colorIndex
@@ -111,12 +106,7 @@ abstract class _$$AudioInputConfigImplCopyWith<$Res>
   ) = __$$AudioInputConfigImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String deviceId,
-    String name,
-    String speakerLabel,
-    int colorIndex,
-  });
+  $Res call({String deviceId, String name, String label, int colorIndex});
 }
 
 /// @nodoc
@@ -135,7 +125,7 @@ class __$$AudioInputConfigImplCopyWithImpl<$Res>
   $Res call({
     Object? deviceId = null,
     Object? name = null,
-    Object? speakerLabel = null,
+    Object? label = null,
     Object? colorIndex = null,
   }) {
     return _then(
@@ -148,9 +138,9 @@ class __$$AudioInputConfigImplCopyWithImpl<$Res>
             ? _value.name
             : name // ignore: cast_nullable_to_non_nullable
                   as String,
-        speakerLabel: null == speakerLabel
-            ? _value.speakerLabel
-            : speakerLabel // ignore: cast_nullable_to_non_nullable
+        label: null == label
+            ? _value.label
+            : label // ignore: cast_nullable_to_non_nullable
                   as String,
         colorIndex: null == colorIndex
             ? _value.colorIndex
@@ -167,7 +157,7 @@ class _$AudioInputConfigImpl implements _AudioInputConfig {
   const _$AudioInputConfigImpl({
     required this.deviceId,
     required this.name,
-    this.speakerLabel = '',
+    this.label = '',
     this.colorIndex = 0,
   });
 
@@ -182,19 +172,19 @@ class _$AudioInputConfigImpl implements _AudioInputConfig {
   @override
   final String name;
 
-  /// Speaker label assigned by the user (e.g. "Speaker A").
+  /// Display label assigned by the user (e.g. "Presenter").
   @override
   @JsonKey()
-  final String speakerLabel;
+  final String label;
 
-  /// Colour index (0–3) selecting from [AudioInputVisualStyle].
+  /// Colour index (0–3) selecting from AudioInputVisualStyle.
   @override
   @JsonKey()
   final int colorIndex;
 
   @override
   String toString() {
-    return 'AudioInputConfig(deviceId: $deviceId, name: $name, speakerLabel: $speakerLabel, colorIndex: $colorIndex)';
+    return 'AudioInputConfig(deviceId: $deviceId, name: $name, label: $label, colorIndex: $colorIndex)';
   }
 
   @override
@@ -205,8 +195,7 @@ class _$AudioInputConfigImpl implements _AudioInputConfig {
             (identical(other.deviceId, deviceId) ||
                 other.deviceId == deviceId) &&
             (identical(other.name, name) || other.name == name) &&
-            (identical(other.speakerLabel, speakerLabel) ||
-                other.speakerLabel == speakerLabel) &&
+            (identical(other.label, label) || other.label == label) &&
             (identical(other.colorIndex, colorIndex) ||
                 other.colorIndex == colorIndex));
   }
@@ -214,7 +203,7 @@ class _$AudioInputConfigImpl implements _AudioInputConfig {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
-      Object.hash(runtimeType, deviceId, name, speakerLabel, colorIndex);
+      Object.hash(runtimeType, deviceId, name, label, colorIndex);
 
   /// Create a copy of AudioInputConfig
   /// with the given fields replaced by the non-null parameter values.
@@ -237,7 +226,7 @@ abstract class _AudioInputConfig implements AudioInputConfig {
   const factory _AudioInputConfig({
     required final String deviceId,
     required final String name,
-    final String speakerLabel,
+    final String label,
     final int colorIndex,
   }) = _$AudioInputConfigImpl;
 
@@ -252,11 +241,11 @@ abstract class _AudioInputConfig implements AudioInputConfig {
   @override
   String get name;
 
-  /// Speaker label assigned by the user (e.g. "Speaker A").
+  /// Display label assigned by the user (e.g. "Presenter").
   @override
-  String get speakerLabel;
+  String get label;
 
-  /// Colour index (0–3) selecting from [AudioInputVisualStyle].
+  /// Colour index (0–3) selecting from AudioInputVisualStyle.
   @override
   int get colorIndex;
 

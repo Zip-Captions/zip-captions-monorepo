@@ -137,7 +137,7 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => context.go('/audio-inputs'),
+                    onPressed: () => context.push('/audio-inputs'),
                     child: Text(l10n.homeManage),
                   ),
                 ],
@@ -239,9 +239,9 @@ class _AudioInputRow extends StatelessWidget {
         ),
       ),
       title: Text(
-        config.speakerLabel.isNotEmpty ? config.speakerLabel : config.name,
+        config.label.isNotEmpty ? config.label : config.name,
       ),
-      subtitle: config.speakerLabel.isNotEmpty ? Text(config.name) : null,
+      subtitle: config.label.isNotEmpty ? Text(config.name) : null,
       dense: true,
     );
   }

@@ -29,11 +29,11 @@ final obsWebSocketTargetProvider = Provider<ObsWebSocketTarget>.internal(
 // ignore: unused_element
 typedef ObsWebSocketTargetRef = ProviderRef<ObsWebSocketTarget>;
 String _$obsConnectionNotifierHash() =>
-    r'83943080b1394e9d81f372456729d25b681ea2c3';
+    r'd6ea4b95e21a68258a0fe72322da0fd2fd86354b';
 
 /// Manages the live OBS WebSocket connection and exposes [ObsConnectionStatus].
 ///
-/// Self-manages connection based on [OutputTargetSettingsNotifier.obsEnabled]
+/// Self-manages connection based on `OutputTargetSettingsNotifier.obsEnabled`
 /// (FD H2). Forwards final captions from [CaptionBus] to OBS when connected.
 ///
 /// Copied from [ObsConnectionNotifier].

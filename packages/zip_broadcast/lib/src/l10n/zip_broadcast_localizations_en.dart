@@ -211,10 +211,10 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
   String get audioSourceAddInput => 'Add Audio Input';
 
   @override
-  String get audioSourceSpeakerLabel => 'Speaker label';
+  String get audioSourceLabel => 'Label';
 
   @override
-  String get audioSourceSpeakerLabelHint => 'e.g. Teacher';
+  String get audioSourceLabelHint => 'e.g. Presenter';
 
   @override
   String get audioSourceColour => 'Colour';

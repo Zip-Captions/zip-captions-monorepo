@@ -29,7 +29,6 @@ enum _SettingsView {
   appearance,
   obs,
   outputTargets,
-  audioInputs,
   transcripts,
 }
 
@@ -61,9 +60,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _SettingsView.appearance => const _AppearanceDetail(),
       _SettingsView.obs => const _ObsDetail(),
       _SettingsView.outputTargets => const _OutputTargetsDetail(),
-      _SettingsView.audioInputs => _AudioInputsDetail(
-          onNavigate: () => context.go('/audio-inputs'),
-        ),
       _SettingsView.transcripts => const _TranscriptsDetail(),
     };
   }
@@ -75,7 +71,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _SettingsView.appearance => l10n.settingsAppearance,
       _SettingsView.obs => l10n.settingsObs,
       _SettingsView.outputTargets => l10n.settingsOutputTargets,
-      _SettingsView.audioInputs => l10n.settingsAudioInputs,
       _SettingsView.transcripts => l10n.settingsTranscripts,
     };
   }
@@ -149,7 +144,7 @@ class _ListView extends ConsumerWidget {
           leading: const Icon(Icons.mic),
           title: Text(l10n.settingsAudioInputs),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => onTap(_SettingsView.audioInputs),
+          onTap: () => context.push('/audio-inputs'),
         ),
         ListTile(
           leading: const Icon(Icons.article_outlined),
@@ -440,32 +435,6 @@ class _OutputTargetsDetail extends ConsumerWidget {
           icon: Icons.people_outlined,
           label: l10n.outputTargetsRemoteViewers,
           subtitle: l10n.outputTargetsPhase2,
-        ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Audio inputs detail (F6)
-// ---------------------------------------------------------------------------
-
-class _AudioInputsDetail extends StatelessWidget {
-  const _AudioInputsDetail({required this.onNavigate});
-
-  final VoidCallback onNavigate;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = ZipBroadcastLocalizations.of(context)!;
-    return ListView(
-      key: const ValueKey('audio-inputs'),
-      children: [
-        ListTile(
-          leading: const Icon(Icons.mic),
-          title: Text(l10n.settingsManageAudioInputs),
-          trailing: const Icon(Icons.open_in_new),
-          onTap: onNavigate,
         ),
       ],
     );

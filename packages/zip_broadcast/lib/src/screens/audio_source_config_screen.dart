@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/audio_input_config.dart';
 import 'package:zip_broadcast/src/models/audio_input_visual_style.dart';
@@ -33,7 +34,21 @@ class AudioSourceConfigScreen extends ConsumerWidget {
         );
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.appTitleAudioInputs),
+        leading: BackButton(
+          onPressed: () {
+            final router = GoRouter.of(context);
+            if (router.canPop()) {
+              router.pop();
+            } else {
+              context.go('/');
+            }
+          },
+        ),
+      ),
       body: SafeArea(
+        bottom: false,
         child: configs.isEmpty
             ? Column(
                 children: [
@@ -100,7 +115,7 @@ class _InputCardState extends ConsumerState<_InputCard> {
   @override
   void initState() {
     super.initState();
-    _labelCtrl = TextEditingController(text: widget.config.speakerLabel);
+    _labelCtrl = TextEditingController(text: widget.config.label);
   }
 
   @override
@@ -149,15 +164,14 @@ class _InputCardState extends ConsumerState<_InputCard> {
               ],
             ),
             const SizedBox(height: 8),
-            // Speaker label field.
             TextField(
               controller: _labelCtrl,
               decoration: InputDecoration(
-                labelText: l10n.audioSourceSpeakerLabel,
-                hintText: l10n.audioSourceSpeakerLabelHint,
+                labelText: l10n.audioSourceLabel,
+                hintText: l10n.audioSourceLabelHint,
               ),
               onChanged: (v) => unawaited(
-                widget.notifier.setSpeakerLabel(config.deviceId, v),
+                widget.notifier.setLabel(config.deviceId, v),
               ),
             ),
             const SizedBox(height: 12),

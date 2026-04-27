@@ -457,17 +457,17 @@ abstract class ZipBroadcastLocalizations {
   /// **'Add Audio Input'**
   String get audioSourceAddInput;
 
-  /// TextField label for the speaker name
+  /// TextField label for the input's display label
   ///
   /// In en, this message translates to:
-  /// **'Speaker label'**
-  String get audioSourceSpeakerLabel;
+  /// **'Label'**
+  String get audioSourceLabel;
 
-  /// Hint text for the speaker label field
+  /// Hint text for the input label field
   ///
   /// In en, this message translates to:
-  /// **'e.g. Teacher'**
-  String get audioSourceSpeakerLabelHint;
+  /// **'e.g. Presenter'**
+  String get audioSourceLabelHint;
 
   /// Label above the colour swatch row
   ///

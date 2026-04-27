@@ -268,13 +268,13 @@
   "@audioSourceAddInput": {
     "description": "Button label to add a new audio input"
   },
-  "audioSourceSpeakerLabel": "Speaker label",
-  "@audioSourceSpeakerLabel": {
-    "description": "TextField label for the speaker name"
+  "audioSourceLabel": "Label",
+  "@audioSourceLabel": {
+    "description": "TextField label for the input's display label"
   },
-  "audioSourceSpeakerLabelHint": "e.g. Teacher",
-  "@audioSourceSpeakerLabelHint": {
-    "description": "Hint text for the speaker label field"
+  "audioSourceLabelHint": "e.g. Presenter",
+  "@audioSourceLabelHint": {
+    "description": "Hint text for the input label field"
   },
   "audioSourceColour": "Colour",
   "@audioSourceColour": {

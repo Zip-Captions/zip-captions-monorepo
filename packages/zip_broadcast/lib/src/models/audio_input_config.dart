@@ -18,8 +18,8 @@ abstract class AudioInputConfig with _$AudioInputConfig {
     /// Human-readable device name from the OS.
     required String name,
 
-    /// Speaker label assigned by the user (e.g. "Speaker A").
-    @Default('') String speakerLabel,
+    /// Display label assigned by the user (e.g. "Presenter").
+    @Default('') String label,
 
     /// Colour index (0–3) selecting from AudioInputVisualStyle.
     @Default(0) int colorIndex,

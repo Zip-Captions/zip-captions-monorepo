@@ -8,7 +8,8 @@ part of 'browser_source_url_provider.dart';
 
 String _$browserSourceUrlHash() => r'd24ba091819628d127b80613a51dfcc9ae1d5a14';
 
-/// Derives the browser source URL from [OutputTargetSettingsNotifier.browserSourcePort].
+/// Derives the browser source URL from the output target settings browser
+/// source port.
 ///
 /// Returns an empty string when browser source is disabled.
 ///
