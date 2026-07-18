@@ -18,6 +18,7 @@ class ObsSettingsNotifier extends _$ObsSettingsNotifier {
   static const _hostKey = 'obs.host';
   static const _portKey = 'obs.port';
   static const _passwordKey = 'obs.password';
+  static const _verifiedKey = 'obs.connectionVerified';
 
   static const _secureStorage = FlutterSecureStorage();
 
@@ -27,25 +28,42 @@ class ObsSettingsNotifier extends _$ObsSettingsNotifier {
     return const ObsSettings();
   }
 
-  /// Updates all OBS connection settings and persists them.
+  /// Updates OBS connection settings and persists them.
+  ///
+  /// Resets [ObsSettings.connectionVerified] to false whenever host, port, or
+  /// password change, forcing the user to re-test before enabling OBS.
   Future<void> update({
     String? host,
     int? port,
     String? password,
   }) async {
+    final credentialsChanged = (host != null && host != state.host) ||
+        (port != null && port != state.port) ||
+        (password != null && password != state.password);
     final next = state.copyWith(
       host: host ?? state.host,
       port: port ?? state.port,
       password: password ?? state.password,
+      connectionVerified: !credentialsChanged && state.connectionVerified,
     );
     state = next;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_hostKey, next.host);
     await prefs.setInt(_portKey, next.port);
+    if (credentialsChanged) {
+      await prefs.setBool(_verifiedKey, false);
+    }
     if (password != null) {
       await _secureStorage.write(key: _passwordKey, value: next.password);
     }
+  }
+
+  /// Marks the current OBS credentials as verified (connection test passed).
+  Future<void> markConnectionVerified() async {
+    state = state.copyWith(connectionVerified: true);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_verifiedKey, true);
   }
 
   Future<void> _loadAsync() async {
@@ -59,7 +77,13 @@ class ObsSettingsNotifier extends _$ObsSettingsNotifier {
     } on Object {
       // Secure storage unavailable — use default empty password.
     }
-    state = ObsSettings(host: host, port: port, password: password);
+    final verified = prefs.getBool(_verifiedKey) ?? false;
+    state = ObsSettings(
+      host: host,
+      port: port,
+      password: password,
+      connectionVerified: verified,
+    );
   }
 }
 

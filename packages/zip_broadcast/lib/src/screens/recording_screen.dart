@@ -7,6 +7,7 @@ import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/broadcast_session_state.dart';
 import 'package:zip_broadcast/src/models/obs_connection_status.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
+import 'package:zip_broadcast/src/providers/audio_input_config_notifier.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_broadcast/src/providers/broadcast_recording_notifier.dart';
 import 'package:zip_broadcast/src/providers/obs_connection_notifier.dart';
@@ -19,9 +20,11 @@ import 'package:zip_core/zip_core.dart';
 
 /// Live captioning screen for Zip Broadcast (E1–E10).
 ///
-/// Starts the broadcast session on navigation (E2). Auto-navigates to
-/// `/history` when [BroadcastRecordingNotifier] transitions to
-/// [BroadcastStoppedState] (E10 / I3).
+/// Displays current broadcast state and exposes Start / Pause / Resume / Stop
+/// controls. Does not alter broadcast state on navigation — the user drives all
+/// lifecycle transitions explicitly. Auto-navigates to `/history` (transcripts
+/// on) or `/` (transcripts off) when [BroadcastRecordingNotifier] transitions
+/// to [BroadcastStoppedState] (E10 / I3).
 class RecordingScreen extends ConsumerStatefulWidget {
   /// Creates a [RecordingScreen].
   const RecordingScreen({super.key});
@@ -36,25 +39,19 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
   @override
   void initState() {
     super.initState();
+    // Clear stale stopped-session display so the screen shows idle state
+    // if the user re-enters after a broadcast has already stopped.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final notifier =
-          ref.read(broadcastRecordingNotifierProvider.notifier);
       final current = ref.read(broadcastRecordingNotifierProvider);
       if (current is BroadcastStoppedState) {
-        notifier.clearSession();
-        unawaited(_startAndHandleError(notifier));
-      } else if (current is BroadcastIdleState ||
-          current is BroadcastReconnectingState) {
-        unawaited(_startAndHandleError(notifier));
+        ref.read(broadcastRecordingNotifierProvider.notifier).clearSession();
       }
-      // active / paused: leave existing session running.
     });
   }
 
-  Future<void> _startAndHandleError(
-    BroadcastRecordingNotifier notifier,
-  ) async {
+  Future<void> _startAndHandleError() async {
+    final notifier = ref.read(broadcastRecordingNotifierProvider.notifier);
     await notifier.start();
     if (!mounted) return;
     final state = ref.read(broadcastRecordingNotifierProvider);
@@ -65,7 +62,6 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
           content: Text(l10n.recordingStartError(state.lastError!.toString())),
         ),
       );
-      context.go('/');
     }
   }
 
@@ -79,6 +75,8 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
         ref.read(broadcastRecordingNotifierProvider.notifier);
     final obsStatus = ref.watch(obsConnectionNotifierProvider);
     final outputSettings = ref.watch(outputTargetSettingsNotifierProvider);
+    final transcriptSettings = ref.watch(transcriptSettingsNotifierProvider);
+    final hasAudioInputs = ref.watch(audioInputConfigNotifierProvider).isNotEmpty;
 
     ref.listen<BroadcastSessionState>(
       broadcastRecordingNotifierProvider,
@@ -86,7 +84,16 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
         if (!context.mounted) return;
         if (next is BroadcastStoppedState) {
           ref.invalidate(transcriptSessionListProvider(''));
-          context.go('/history');
+          final goToHistory = transcriptSettings.captureEnabled;
+          // Reset to idle now — this screen's initState only clears a
+          // stale stopped session on re-entry, which never happens when
+          // navigating home, leaving Home's Start button stuck disabled.
+          recordingNotifier.clearSession();
+          if (goToHistory) {
+            context.go('/history');
+          } else {
+            context.go('/');
+          }
         } else if (next is BroadcastIdleState && next.lastError != null) {
           final l10n = ZipBroadcastLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -96,7 +103,6 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
               ),
             ),
           );
-          context.go('/');
         }
       },
     );
@@ -130,6 +136,9 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
               ),
               ZbRecordingControlsBar(
                 state: sessionState,
+                onStart: hasAudioInputs
+                    ? () => unawaited(_startAndHandleError())
+                    : null,
                 onPause: recordingNotifier.pause,
                 onResume: recordingNotifier.resume,
                 onStop: recordingNotifier.stop,

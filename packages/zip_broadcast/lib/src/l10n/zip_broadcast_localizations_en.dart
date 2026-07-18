@@ -69,6 +69,13 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
   String get obsStatusDisconnected => 'Disconnected';
 
   @override
+  String get obsNotConfigured => 'Test connection in Settings first';
+
+  @override
+  String get obsConnectionError =>
+      'Could not connect to OBS. Check your settings and try again.';
+
+  @override
   String get obsStatusDisabled => 'Disabled';
 
   @override

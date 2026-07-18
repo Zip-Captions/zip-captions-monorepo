@@ -22,5 +22,11 @@ abstract class ObsSettings with _$ObsSettings {
     /// OBS WebSocket password. Persisted to `flutter_secure_storage` key
     /// `obs.password`. Never logged.
     @Default('') String password,
+
+    /// Whether the user has successfully tested the OBS connection at least
+    /// once with the current credentials. Reset to false when host, port, or
+    /// password change. Persisted to `SharedPreferences` key
+    /// `obs.connectionVerified`.
+    @Default(false) bool connectionVerified,
   }) = _ObsSettings;
 }

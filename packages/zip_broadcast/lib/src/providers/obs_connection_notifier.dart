@@ -185,10 +185,21 @@ class _ObsWebSocketTargetImpl implements ObsWebSocketTarget {
 
 /// Singleton [ObsWebSocketTarget] for this app session.
 ///
-/// Re-created when [ObsSettingsNotifier] changes.
+/// Re-created only when connection credentials (host, port, password) change.
+/// [ObsSettings.connectionVerified] changes are intentionally ignored here to
+/// avoid dropping an active connection when the user runs a test in Settings.
 @Riverpod(keepAlive: true)
 ObsWebSocketTarget obsWebSocketTarget(Ref ref) {
-  final settings = ref.watch(obsSettingsNotifierProvider);
+  final host = ref.watch(
+    obsSettingsNotifierProvider.select((s) => s.host),
+  );
+  final port = ref.watch(
+    obsSettingsNotifierProvider.select((s) => s.port),
+  );
+  final password = ref.watch(
+    obsSettingsNotifierProvider.select((s) => s.password),
+  );
+  final settings = ObsSettings(host: host, port: port, password: password);
   final impl = _ObsWebSocketTargetImpl(settings: settings);
   ref.onDispose(impl.dispose);
   return impl;

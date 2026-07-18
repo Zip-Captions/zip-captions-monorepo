@@ -80,6 +80,14 @@
   "@obsStatusDisconnected": {
     "description": "OBS connection status: disconnected"
   },
+  "obsNotConfigured": "Test connection in Settings first",
+  "@obsNotConfigured": {
+    "description": "Subtitle on disabled OBS toggle when connection has not been verified"
+  },
+  "obsConnectionError": "Could not connect to OBS. Check your settings and try again.",
+  "@obsConnectionError": {
+    "description": "Inline error shown below the OBS toggle on the home screen when a connection attempt fails"
+  },
   "obsStatusDisabled": "Disabled",
   "@obsStatusDisabled": {
     "description": "OBS connection status shown when OBS target is disabled"

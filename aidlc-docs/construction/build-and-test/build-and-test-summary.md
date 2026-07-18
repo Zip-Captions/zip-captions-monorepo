@@ -1,17 +1,17 @@
-# Build and Test Summary
+# Build and Test Summary — Phase 1
 
 ## Build Status
 
 | Package | Build Status | Dependencies | Analyze |
 |---------|-------------|-------------|---------|
-| zip_core | Success | 14 direct deps | No issues found |
+| zip_core | Success | 14+ direct deps | No issues found |
 | zip_captions | Success | 3 direct deps | No issues found |
 | zip_broadcast | Success | 3 direct deps | No issues found |
 | zip_supabase | Success | 0 direct deps | No issues found |
 
 - **Build Tool**: Flutter 3.38.7 / Dart 3.8 / Melos 7.5.0
 - **Build Status**: Success
-- **Build Artifacts**: None (Phase 0 scaffold — no compiled artifacts)
+- **Build Artifacts**: macOS `.app` bundles (zip_captions, zip_broadcast)
 
 ## Test Execution Summary
 
@@ -19,39 +19,38 @@
 
 | Package | Total | Passed | Failed | Status |
 |---------|-------|--------|--------|--------|
-| zip_core | 81 | 81 | 0 | Pass |
-| zip_captions | 3 | 3 | 0 | Pass |
-| zip_broadcast | 3 | 3 | 0 | Pass |
-| **Total** | **87** | **87** | **0** | **Pass** |
+| zip_core | 313 | 313 | 0 | Pass |
+| zip_captions | 64 | 64 | 0 | Pass |
+| zip_broadcast | 80 | 80 | 0 | Pass |
+| zip_supabase | 0 (no test dir) | — | — | N/A |
+| **Total** | **457** | **457** | **0** | **Pass** |
 
-- **Coverage**: Not measured (deferred to Phase 1)
+- **Coverage**: Not measured (lcov tooling deferred to Phase 2)
 - **Status**: Pass
 
 ### Integration Tests
-- **Status**: N/A (Phase 0 — no inter-service integration points yet)
+- **Status**: Pending manual execution (see `integration-test-instructions.md`)
+- **Scenarios defined**: 5 (STT↔Audio, OBS WebSocket, Multi-Source, Captions Pipeline, Pause/Resume)
+- **Automated integration tests**: Planned for Phase 2 (flutter_test + integration_test package)
 
 ### Performance Tests
-- **Status**: N/A (Phase 0 — no runtime services)
+- **Status**: N/A — no throughput or latency SLAs defined for Phase 1
 
 ### Additional Tests
-- **Contract Tests**: N/A (no API contracts in Phase 0)
-- **Security Tests**: N/A (security baseline enforced as lint-time constraints; no runtime to scan)
-- **E2E Tests**: N/A (no user-facing flows in Phase 0)
 
-## Issues Encountered and Resolved
-
-| Issue | Resolution |
-|-------|-----------|
-| 6x `public_member_api_docs` lint violations | Added doc comments to factory constructors |
-| 2x `avoid_equals_and_hash_code_on_mutable_classes` | Added `@immutable` annotation (via freezed_annotation re-export) |
-| 2x `avoid_catches_without_on_clauses` | Documented `// ignore:` — `SharedPreferences` throws `TypeError` (extends `Error`, not `Exception`) |
-| 1x `use_setters_to_change_properties` | Documented `// ignore:` — setter triggers `setter_without_getter` lint |
-| 1x `avoid_redundant_argument_values` | Removed redundant `onPrimary` in light theme |
-| Melos 7.x `NoScriptException` | Moved scripts from `melos.yaml` to `pubspec.yaml` under `melos:` key |
-| `melos run test:coverage` interactive prompt crash | Added `--no-select` flag |
+| Type | Status | Notes |
+|------|--------|-------|
+| Contract tests | N/A | No external API contracts in Phase 1 |
+| Security tests | Pass | Security baseline enforced as lint-time constraints (SECURITY-01..15); no runtime scan required for Phase 1 |
+| E2E / UI/UX | Pending manual review | See `e2e-test-instructions.md`; automated E2E (Patrol/Maestro) planned for Phase 2 |
 
 ## Overall Status
 - **Build**: Success (all 4 packages)
 - **Static Analysis**: Pass (0 issues across all packages)
-- **All Tests**: Pass (87/87)
-- **Ready for Operations**: Yes
+- **Unit Tests**: Pass (457/457)
+- **Integration Tests**: Pending manual execution
+- **E2E / UI/UX**: Pending manual review
+- **Ready for Operations**: Yes — automated gates pass; manual validation to confirm before release
+
+## Next Steps
+Address open manual validations (integration scenarios 1–5, UI/UX checklist) then proceed to Documentation Refinement (Unit 7 Doc Refinement gate) and Phase 2 planning.

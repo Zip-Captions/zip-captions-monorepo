@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
+import 'package:zip_broadcast/src/models/broadcast_session_state.dart';
 import 'package:zip_broadcast/src/models/browser_source_start_exception.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
 import 'package:zip_broadcast/src/output/browser_source/browser_source_server.dart';
 import 'package:zip_broadcast/src/output/browser_source/browser_source_target.dart';
 import 'package:zip_broadcast/src/output/overlay/caption_overlay_target.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
+import 'package:zip_broadcast/src/providers/broadcast_recording_notifier.dart';
 import 'package:zip_broadcast/src/shell/zb_nav_drawer.dart';
 import 'package:zip_broadcast/src/shell/zb_nav_rail.dart';
 import 'package:zip_core/zip_core.dart';
@@ -172,15 +174,26 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
 
     final location = GoRouterState.of(context).matchedLocation;
     final width = MediaQuery.of(context).size.width;
+    final broadcastState = ref.watch(broadcastRecordingNotifierProvider);
+    final isBroadcastActive = broadcastState is BroadcastActiveState ||
+        broadcastState is BroadcastPausedState ||
+        broadcastState is BroadcastReconnectingState;
 
     if (width > _desktopBreakpoint) {
       return Row(
         children: [
           ZbNavRail(
             selectedIndex: _railIndex(location),
-            onDestinationSelected: (i) => context.go(_railDestination(i)),
-            onSettingsTap: () => context.go('/settings'),
-            onAudioInputsTap: () => context.go('/audio-inputs'),
+            onDestinationSelected: (i) {
+              final destination = _railDestination(i);
+              if (destination == location) return;
+              context.go(destination);
+            },
+            onSettingsTap: () {
+              if (location == '/settings') return;
+              context.go('/settings');
+            },
+            isBroadcastActive: isBroadcastActive,
           ),
           const VerticalDivider(width: 1),
           Expanded(child: widget.child),
@@ -216,6 +229,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
             context.go(route);
             Navigator.of(context).pop();
           },
+          isBroadcastActive: isBroadcastActive,
         ),
       ),
     );

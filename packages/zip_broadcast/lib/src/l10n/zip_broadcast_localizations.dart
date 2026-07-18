@@ -217,6 +217,18 @@ abstract class ZipBroadcastLocalizations {
   /// **'Disconnected'**
   String get obsStatusDisconnected;
 
+  /// Subtitle on disabled OBS toggle when connection has not been verified
+  ///
+  /// In en, this message translates to:
+  /// **'Test connection in Settings first'**
+  String get obsNotConfigured;
+
+  /// Inline error shown below the OBS toggle on the home screen when a connection attempt fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect to OBS. Check your settings and try again.'**
+  String get obsConnectionError;
+
   /// OBS connection status shown when OBS target is disabled
   ///
   /// In en, this message translates to:

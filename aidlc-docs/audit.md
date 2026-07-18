@@ -898,3 +898,40 @@
 **Context**: Unit 3 Code Generation — COMPLETE. aidlc-state.md updated. Next: Unit 4 (UI Prototypes).
 
 ---
+
+## CONSTRUCTION - State Correction: Units 5 & 6 Retroactively Logged
+**Timestamp**: 2026-04-25T00:00:00Z
+**User Input**: "I want to stick to the correct approach defined in ai-dlc. Let's make sure we update our status documents in the repo, and get the code back on track with that approach."
+**AI Response**: Identified that aidlc-state.md was stale — Units 5 and 6 were merged but not checked off; Build and Test stage had never been executed for Phase 1. Corrected state:
+- Unit 5: Zip Captions App (S-09) — marked COMPLETE (merged PR #14)
+- Unit 6: Zip Broadcast App (S-10) — marked COMPLETE (merged PR #15; 80 tests)
+**Context**: State correction — no code changed; audit record added to reflect real completion order.
+
+---
+
+## CONSTRUCTION - Unit 7: Integration Milestones — Build and Test
+**Timestamp**: 2026-04-25T00:00:01Z
+**User Input**: (continuation of above — executing Build and Test stage for Phase 1)
+**AI Response**: Executed Build and Test stage. Results:
+- Static analysis: 0 issues across all 4 packages (melos run analyze)
+- Unit tests: 457 passed, 0 failed (zip_core 313, zip_captions 64, zip_broadcast 80; zip_supabase N/A)
+- Integration tests: 5 scenarios defined in integration-test-instructions.md; manual execution pending
+- E2E / UI/UX: checklist defined in e2e-test-instructions.md against Phase 1 HTML prototypes; manual execution pending
+- Files generated/updated: build-instructions.md, unit-test-instructions.md, integration-test-instructions.md (new), e2e-test-instructions.md (new), build-and-test-summary.md
+- aidlc-state.md updated: Units 5+6 marked complete, Unit 7 Build and Test marked complete; Doc Refinement pending
+**Context**: Unit 7 Build and Test — COMPLETE. Doc Refinement is the remaining gate before Phase 2 planning.
+
+---
+
+## CONSTRUCTION - Unit 7: Integration Milestones — Documentation Refinement
+**Timestamp**: 2026-04-25T00:00:02Z
+**User Input**: "approve and continue"
+**AI Response**: Executed Documentation Refinement for Phase 1. Changes made:
+- RIVERPOD_CONVENTIONS.md: added "List State Mutation Safety" section (`List.of()` snapshot pattern; ConcurrentModificationError prevention) and "Widget Test — Button Finders" section (`find.bySubtype<ButtonStyleButton>()` for FilledButton.icon variants)
+- ARCHITECTURE.md: version 0.1.0 → 1.0.0; date 2026-03-26 → 2026-04-25; status updated to reflect Phase 1 complete
+- docs/03-roadmap.md: version v0.2 → v0.3; date updated; Phase Overview table updated with Status column (Phase 0 ✓ Complete, Phase 1 ✓ Complete, Phase 2 In planning)
+- docs/TEST_SETUP.md: fixed `melos run test` interactive-prompt issue; added `melos exec --no-fail-fast -- flutter test` as the non-TTY command; added explanatory note
+- aidlc-state.md: Unit 7 marked fully COMPLETE; Current Stage updated to "Phase 1 COMPLETE"
+**Context**: Unit 7 Documentation Refinement — COMPLETE. Phase 1 Construction fully closed. Ready for Phase 2 planning.
+
+---

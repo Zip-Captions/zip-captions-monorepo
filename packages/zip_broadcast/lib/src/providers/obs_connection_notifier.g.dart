@@ -7,11 +7,13 @@ part of 'obs_connection_notifier.dart';
 // **************************************************************************
 
 String _$obsWebSocketTargetHash() =>
-    r'f0d9de4c890ee56a505da5b90190599970ce071c';
+    r'4bdaa1eb428b485d671845e9afac77e6a03e7ec8';
 
 /// Singleton [ObsWebSocketTarget] for this app session.
 ///
-/// Re-created when [ObsSettingsNotifier] changes.
+/// Re-created only when connection credentials (host, port, password) change.
+/// [ObsSettings.connectionVerified] changes are intentionally ignored here to
+/// avoid dropping an active connection when the user runs a test in Settings.
 ///
 /// Copied from [obsWebSocketTarget].
 @ProviderFor(obsWebSocketTarget)
