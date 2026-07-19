@@ -19,11 +19,11 @@ final Generator<AudioInputConfig> _audioInputConfigGen = any.combine4(
   any.letterOrDigits,
   any.intInRange(0, 4),
   _nonEmptyString,
-  (deviceId, speakerLabel, colorIndex, name) =>
+  (deviceId, label, colorIndex, name) =>
       AudioInputConfig(
     deviceId: deviceId.isEmpty ? 'default' : deviceId,
     name: name.isEmpty ? 'Mic' : name,
-    speakerLabel: speakerLabel,
+    label: label,
     colorIndex: colorIndex,
   ),
 );
@@ -62,7 +62,7 @@ void main() {
           {
             'deviceId': 'mic-1',
             'name': 'Mic 1',
-            'speakerLabel': '',
+            'label': '',
             'colorIndex': 0,
           },
         ]),
@@ -81,13 +81,13 @@ void main() {
       expect(state.any((c) => c.deviceId == 'mic-1'), isFalse);
     });
 
-    test('setSpeakerLabel updates state', () async {
+    test('setLabel updates state', () async {
       SharedPreferences.setMockInitialValues({
         'zip_broadcast.audioInputConfigs': jsonEncode([
           {
             'deviceId': 'mic-1',
             'name': 'Mic 1',
-            'speakerLabel': '',
+            'label': '',
             'colorIndex': 0,
           },
         ]),
@@ -100,12 +100,12 @@ void main() {
           container.read(audioInputConfigNotifierProvider.notifier);
       await notifier.loadFuture;
 
-      await notifier.setSpeakerLabel('mic-1', 'Speaker A');
+      await notifier.setLabel('mic-1', 'Presenter');
 
       final state = container.read(audioInputConfigNotifierProvider);
       expect(
-        state.firstWhere((c) => c.deviceId == 'mic-1').speakerLabel,
-        equals('Speaker A'),
+        state.firstWhere((c) => c.deviceId == 'mic-1').label,
+        equals('Presenter'),
       );
     });
 
@@ -115,7 +115,7 @@ void main() {
           {
             'deviceId': 'mic-1',
             'name': 'Mic 1',
-            'speakerLabel': '',
+            'label': '',
             'colorIndex': 0,
           },
         ]),
@@ -143,7 +143,7 @@ void main() {
           {
             'deviceId': 'mic-1',
             'name': 'Mic 1',
-            'speakerLabel': 'Speaker A',
+            'label': 'Presenter',
             'colorIndex': 1,
           },
         ]),
@@ -160,7 +160,7 @@ void main() {
       final state = container.read(audioInputConfigNotifierProvider);
       expect(state.length, equals(1));
       expect(state.first.deviceId, equals('mic-1'));
-      expect(state.first.speakerLabel, equals('Speaker A'));
+      expect(state.first.label, equals('Presenter'));
     });
   });
 

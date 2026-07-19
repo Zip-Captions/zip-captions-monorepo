@@ -7,7 +7,7 @@ part of 'audio_input_config_notifier.dart';
 // **************************************************************************
 
 String _$audioInputConfigNotifierHash() =>
-    r'398e0eca4e8fcc1fd083eb8a1185716d03bdbac0';
+    r'88ad68df48c822b460f1aa670258a7616b38b955';
 
 /// Manages [List<AudioInputConfig>] with SharedPreferences persistence.
 ///

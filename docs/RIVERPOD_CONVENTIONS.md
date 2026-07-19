@@ -204,6 +204,44 @@ Future<void> addConfig(AudioInputConfig config) async {
 
 **Why:** `Notifier.build()` is synchronous; `SharedPreferences.getInstance()` is not. Returning a synchronous default keeps the widget tree rendering while the real data loads. The future fence prevents a mutation that fires immediately after construction (e.g., from a deep-link or widget test) from overwriting freshly loaded state.
 
+## List State Mutation Safety
+
+When a `Notifier` holds a `List` as its state and iterates or removes from it inside an async method, take a defensive snapshot with `List.of()` **before** any `await`. Iterating `state` directly while another async path modifies `state` throws `ConcurrentModificationError`.
+
+```dart
+// CORRECT — snapshot before iteration
+Future<void> _stopEngines() async {
+  final engines = List.of(_sessions); // snapshot
+  for (final session in engines) {
+    await session.engine.stop();
+  }
+}
+
+// WRONG — iterating state while another path may modify it
+Future<void> _stopEngines() async {
+  for (final session in _sessions) { // ConcurrentModificationError risk
+    await session.engine.stop();
+  }
+}
+```
+
+Apply this pattern in any method that loops over list state and contains an `await`, or that is called concurrently from `pause`, `resume`, `stop`, and `dispose` lifecycle methods.
+
+## Widget Test — Button Finders
+
+`FilledButton.icon` creates an internal `_FilledButtonWithIcon` subtype that does not match `find.byType(FilledButton)`. Use `find.bySubtype<ButtonStyleButton>()` instead:
+
+```dart
+// CORRECT
+find.ancestor(
+  of: find.text('Start'),
+  matching: find.bySubtype<ButtonStyleButton>(),
+)
+
+// WRONG — misses FilledButton.icon variants
+find.widgetWithText(FilledButton, 'Start')
+```
+
 ## Code Generation
 
 Run `dart run build_runner build --delete-conflicting-outputs` after modifying any `@riverpod`-annotated file. Generated files (`*.g.dart`) are committed to version control.

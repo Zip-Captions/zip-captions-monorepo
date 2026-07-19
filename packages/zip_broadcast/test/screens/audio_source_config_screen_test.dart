@@ -81,7 +81,7 @@ void main() {
       expect(find.byTooltip('Remove'), findsNWidgets(2));
     });
 
-    testWidgets('each card shows Speaker label text field', (tester) async {
+    testWidgets('each card shows Label text field', (tester) async {
       final prefs = await SharedPreferences.getInstance();
       await tester.pumpWidget(
         buildZbApp(
@@ -95,7 +95,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Speaker label'), findsOneWidget);
+      expect(find.text('Label'), findsOneWidget);
     });
 
     testWidgets('colour swatches rendered per card', (tester) async {

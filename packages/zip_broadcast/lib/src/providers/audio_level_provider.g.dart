@@ -12,7 +12,8 @@ String _$audioLevelHash() => r'c990bcd3b6de25ea6807cde573564e4adc7be422';
 ///
 /// Production: wired to [AudioDeviceService] level stream when that API is
 /// available. Currently returns an empty map (placeholder).
-/// Tests override with a fixed map via [audioLevelProvider.overrideWithValue].
+/// Tests override with a fixed map via
+/// `audioLevelProvider.overrideWithValue`.
 ///
 /// Copied from [audioLevel].
 @ProviderFor(audioLevel)

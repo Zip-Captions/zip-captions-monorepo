@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 
 /// Navigation drawer shown at mobile widths.
 ///
-/// Lists all navigable destinations including Settings and Audio Inputs.
+/// Lists the primary destinations plus Settings (pinned to the bottom, same
+/// grouping as the desktop nav rail). Audio Inputs is reachable only via
+/// Settings, not as its own nav item.
 class ZbNavDrawer extends StatelessWidget {
   /// Creates a [ZbNavDrawer].
   const ZbNavDrawer({
     required this.currentLocation,
     required this.onTap,
+    this.isBroadcastActive = false,
     super.key,
   });
 
@@ -16,6 +19,9 @@ class ZbNavDrawer extends StatelessWidget {
 
   /// Called with the route path when a destination is tapped.
   final ValueChanged<String> onTap;
+
+  /// When true, a live-broadcast indicator is shown on the Broadcast tile.
+  final bool isBroadcastActive;
 
   @override
   Widget build(BuildContext context) {
@@ -52,18 +58,19 @@ class ZbNavDrawer extends StatelessWidget {
               route: '/recording',
               currentLocation: currentLocation,
               onTap: onTap,
+              trailing: isBroadcastActive
+                  ? Badge(
+                      backgroundColor:
+                          Theme.of(context).colorScheme.error,
+                      smallSize: 8,
+                      child: const SizedBox.shrink(),
+                    )
+                  : null,
             ),
             _DrawerTile(
               icon: Icons.history_outlined,
               label: 'History',
               route: '/history',
-              currentLocation: currentLocation,
-              onTap: onTap,
-            ),
-            _DrawerTile(
-              icon: Icons.mic_outlined,
-              label: 'Audio Inputs',
-              route: '/audio-inputs',
               currentLocation: currentLocation,
               onTap: onTap,
             ),
@@ -89,6 +96,7 @@ class _DrawerTile extends StatelessWidget {
     required this.route,
     required this.currentLocation,
     required this.onTap,
+    this.trailing,
   });
 
   final IconData icon;
@@ -96,6 +104,7 @@ class _DrawerTile extends StatelessWidget {
   final String route;
   final String currentLocation;
   final ValueChanged<String> onTap;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -104,8 +113,17 @@ class _DrawerTile extends StatelessWidget {
     return ListTile(
       leading: Icon(icon),
       title: Text(label),
+      trailing: trailing,
       selected: selected,
-      onTap: () => onTap(route),
+      // Already on this route: just close the drawer instead of
+      // re-navigating (avoids growing the back stack with a duplicate).
+      onTap: () {
+        if (selected) {
+          Navigator.of(context).pop();
+          return;
+        }
+        onTap(route);
+      },
     );
   }
 }

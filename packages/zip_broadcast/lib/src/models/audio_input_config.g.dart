@@ -11,7 +11,7 @@ _$AudioInputConfigImpl _$$AudioInputConfigImplFromJson(
 ) => _$AudioInputConfigImpl(
   deviceId: json['deviceId'] as String,
   name: json['name'] as String,
-  speakerLabel: json['speakerLabel'] as String? ?? '',
+  label: json['label'] as String? ?? '',
   colorIndex: (json['colorIndex'] as num?)?.toInt() ?? 0,
 );
 
@@ -20,6 +20,6 @@ Map<String, dynamic> _$$AudioInputConfigImplToJson(
 ) => <String, dynamic>{
   'deviceId': instance.deviceId,
   'name': instance.name,
-  'speakerLabel': instance.speakerLabel,
+  'label': instance.label,
   'colorIndex': instance.colorIndex,
 };

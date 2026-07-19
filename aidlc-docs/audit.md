@@ -898,3 +898,77 @@
 **Context**: Unit 3 Code Generation — COMPLETE. aidlc-state.md updated. Next: Unit 4 (UI Prototypes).
 
 ---
+
+## CONSTRUCTION - State Correction: Units 5 & 6 Retroactively Logged
+**Timestamp**: 2026-04-25T00:00:00Z
+**User Input**: "I want to stick to the correct approach defined in ai-dlc. Let's make sure we update our status documents in the repo, and get the code back on track with that approach."
+**AI Response**: Identified that aidlc-state.md was stale — Units 5 and 6 were merged but not checked off; Build and Test stage had never been executed for Phase 1. Corrected state:
+- Unit 5: Zip Captions App (S-09) — marked COMPLETE (merged PR #14)
+- Unit 6: Zip Broadcast App (S-10) — marked COMPLETE (merged PR #15; 80 tests)
+**Context**: State correction — no code changed; audit record added to reflect real completion order.
+
+---
+
+## CONSTRUCTION - Unit 7: Integration Milestones — Build and Test
+**Timestamp**: 2026-04-25T00:00:01Z
+**User Input**: (continuation of above — executing Build and Test stage for Phase 1)
+**AI Response**: Executed Build and Test stage. Results:
+- Static analysis: 0 issues across all 4 packages (melos run analyze)
+- Unit tests: 457 passed, 0 failed (zip_core 313, zip_captions 64, zip_broadcast 80; zip_supabase N/A)
+- Integration tests: 5 scenarios defined in integration-test-instructions.md; manual execution pending
+- E2E / UI/UX: checklist defined in e2e-test-instructions.md against Phase 1 HTML prototypes; manual execution pending
+- Files generated/updated: build-instructions.md, unit-test-instructions.md, integration-test-instructions.md (new), e2e-test-instructions.md (new), build-and-test-summary.md
+- aidlc-state.md updated: Units 5+6 marked complete, Unit 7 Build and Test marked complete; Doc Refinement pending
+**Context**: Unit 7 Build and Test — COMPLETE. Doc Refinement is the remaining gate before Phase 2 planning.
+
+---
+
+## CONSTRUCTION - Unit 7: Integration Milestones — Documentation Refinement
+**Timestamp**: 2026-04-25T00:00:02Z
+**User Input**: "approve and continue"
+**AI Response**: Executed Documentation Refinement for Phase 1. Changes made:
+- RIVERPOD_CONVENTIONS.md: added "List State Mutation Safety" section (`List.of()` snapshot pattern; ConcurrentModificationError prevention) and "Widget Test — Button Finders" section (`find.bySubtype<ButtonStyleButton>()` for FilledButton.icon variants)
+- ARCHITECTURE.md: version 0.1.0 → 1.0.0; date 2026-03-26 → 2026-04-25; status updated to reflect Phase 1 complete
+- docs/03-roadmap.md: version v0.2 → v0.3; date updated; Phase Overview table updated with Status column (Phase 0 ✓ Complete, Phase 1 ✓ Complete, Phase 2 In planning)
+- docs/TEST_SETUP.md: fixed `melos run test` interactive-prompt issue; added `melos exec --no-fail-fast -- flutter test` as the non-TTY command; added explanatory note
+- aidlc-state.md: Unit 7 marked fully COMPLETE; Current Stage updated to "Phase 1 COMPLETE"
+**Context**: Unit 7 Documentation Refinement — COMPLETE. Phase 1 Construction fully closed. Ready for Phase 2 planning.
+
+---
+## CONSTRUCTION - Unit 7: PR #16 Review Feedback — Code Generation (Planning)
+**Timestamp**: 2026-07-18T18:00:00Z
+**User Input**: "Check PR #16 ... for review status and feedback. Pull any comments/requested changes via gh pr view 16 --comments and gh pr checks 16. If there's feedback, address it and push updates." followed by "Determine why the runner failed, we need to make sure that all actions work properly." followed by "Use the ai-dlc approach to respond to the PR feedback"
+**AI Response**: Pulled PR #16 status via gh pr view/api/checks. Found reviewDecision=CHANGES_REQUESTED (CodeRabbit, 5 actionable comments across 4 files) and 2 failing CI checks (Analyze & Test lint failures; Windows Build Verify MSVC C2338 on local_auth_windows/permission_handler_windows). Root-caused Windows failure: windows-latest runner image now ships MSVC toolset that removed deprecated <experimental/coroutine> support; last green Windows Build Verify run was April 2026 on the same code path, confirming this is a runner/toolchain regression, not caused by this PR's diff. Created code generation plan `aidlc-docs/construction/plans/unit7-pr16-review-fixes-code-generation-plan.md` (9 steps: 6 review-comment fixes, lint fixes, Windows toolchain fix, verification) as a revision within Unit 7's existing Code Generation stage — no new Functional Design/NFR stages needed per Adaptive Workflow Principle.
+**Context**: Unit 7 Code Generation — Planning (revision pass). Awaiting user approval before executing Part 2 (Generation).
+
+---
+## CONSTRUCTION - Unit 7: PR #16 Review Feedback — Code Generation (Approval)
+**Timestamp**: 2026-07-18T18:05:00Z
+**User Input**: "Approve — execute the plan"
+**AI Response**: Plan approved. Proceeding to Part 2 (Generation) of `unit7-pr16-review-fixes-code-generation-plan.md`.
+**Context**: Unit 7 Code Generation — Generation starting.
+
+---
+## CONSTRUCTION - Unit 7: PR #16 Review Feedback — Code Generation (Generation complete)
+**Timestamp**: 2026-07-19T00:00:00Z
+**User Input**: (execution of approved plan; no further user input during generation)
+**AI Response**: Executed all 9 plan steps. Summary:
+- Step 1: Added `_loadFuture` fence to `ObsSettingsNotifier` (broadcast_providers.dart), awaited in `update()`/`markConnectionVerified()`.
+- Step 2: Fixed OBS toggle lockout in output_targets_panel.dart — `onToggle` now allows disabling even when unverified.
+- Step 3: Reordered `_testConnection()` in settings_screen.dart so `markConnectionVerified()` persists before the `mounted` check.
+- Step 4: Localized zb_nav_rail.dart nav labels via `ZipBroadcastLocalizations` (appTitleDefault/appTitleBroadcast/appTitleHistory), matching ZbAppShell's existing pattern.
+- Step 5: SKIPPED as false positive — package imports can't address test/ files; matches 39 other test files' existing relative-import convention.
+- Step 6: Added `sharedPreferencesProvider.overrideWithValue(prefs)` to audio_config_recording_integration_test.dart and caption_bus_flow_test.dart containers.
+- Step 7: Fixed 10 lint infos in recording_pipeline_integration_test.dart (prefer_int_literals, lines_longer_than_80_chars).
+- Step 8: Root-caused Windows CI failure to windows-latest runner's MSVC toolset dropping `<experimental/coroutine>` support. Applied `_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS` compile definition in zip_captions/windows/CMakeLists.txt's `APPLY_STANDARD_SETTINGS` (applies to all targets including local_auth_windows/permission_handler_windows plugins). Did not bump local_auth to 3.x (breaking API change, out of scope) since permission_handler_windows has no newer version anyway.
+- Step 9: Verified — additional pre-existing lint issues surfaced in zip_broadcast test files once zip_captions's failure stopped masking them via fail-fast (obs_settings_connection_integration_test.dart: cascade_invocations, prefer_int_literals, avoid_redundant_argument_values, prefer_const_constructors); fixed via `dart fix --apply` + targeted `// ignore: cascade_invocations` comments (matching existing repo precedent in obs_websocket_target_test.dart). Final state: `melos run analyze` — 0 issues across all 4 packages. `flutter test` — zip_core 313 passed, zip_broadcast 93 passed, zip_captions 71 passed (zip_supabase has no test/ directory, pre-existing, unrelated).
+**Context**: Unit 7 Code Generation (PR #16 revision) — COMPLETE. Ready to commit and push to `feature/phase1-integration-tests`, then re-check CI/CodeRabbit on PR #16.
+
+---
+## CONSTRUCTION - Unit 7: PR #16 Review Feedback — Follow-up nitpick
+**Timestamp**: 2026-07-19T19:50:00Z
+**User Input**: "check the PR again, there's a new reply we need to address"
+**AI Response**: Re-checked PR #16. CI: Analyze & Test, Linux, iOS now passing; 4 of 5 original CodeRabbit findings marked "✅ Addressed in commit b12cb51" (the relative-imports one remains open as intentionally skipped). New CodeRabbit re-review (COMMENTED, not blocking) flagged a nitpick: the Windows coroutine-suppression define was applied globally via APPLY_STANDARD_SETTINGS instead of scoped to the two affected plugins. Fixed by reverting the global function change and instead applying target_compile_definitions directly to the local_auth_windows_plugin and permission_handler_windows_plugin targets (guarded with if(TARGET ...) for safety) after generated_plugins.cmake creates them. Committed (19cf2ca) and pushed.
+**Context**: Unit 7 Code Generation (PR #16 revision) — follow-up nitpick addressed. Awaiting CI re-run.
+
+---

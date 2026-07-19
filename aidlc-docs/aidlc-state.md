@@ -5,7 +5,7 @@
 - **Project Type**: Documentation-Brownfield / Code-Brownfield
 - **Phase 0 Start Date**: 2026-03-26T00:00:00Z
 - **Phase 1 Start Date**: 2026-03-28T00:00:00Z
-- **Current Stage**: CONSTRUCTION - Unit 4 complete; ready for Unit 5 (Zip Captions App, S-09)
+- **Current Stage**: CONSTRUCTION Phase 1 — COMPLETE. Ready for Phase 2 planning.
 
 ## Workspace State
 - **Existing Source Code**: Yes — Phase 0 scaffold complete (zip_core models/providers/theme, app shells, Supabase stack, CI/CD)
@@ -70,9 +70,10 @@
 - [x] Unit 2: Platform STT + Audio (S-02, S-06) — FD, NFR-R, NFR-D, CG — COMPLETE (247 tests passing, 0 errors)
 - [x] Unit 3: Output Targets (S-04, S-05, S-07, S-08) — FD, NFR-R, NFR-D, ID, CG — COMPLETE (all 21 CG steps done; 0 errors, 0 warnings; 7 pre-existing implementation_imports infos)
 - [x] Unit 4: UI Prototypes (Proto-01..09) — CG, Human Review Gate, Implementation Design — COMPLETE
-- [ ] Unit 5: Zip Captions App (S-09) — FD, NFR-R, NFR-D, CG
-- [ ] Unit 6: Zip Broadcast App (S-10) — FD, NFR-R, NFR-D, ID, CG
-- [ ] Unit 7: Integration Milestones — Build and Test + Doc Refinement
+- [x] Unit 5: Zip Captions App (S-09) — FD, NFR-R, NFR-D, CG — COMPLETE (merged PR #14)
+- [x] Unit 6: Zip Broadcast App (S-10) — FD, NFR-R, NFR-D, ID, CG — COMPLETE (merged PR #15; 80 tests)
+- [x] Unit 7: Integration Milestones — Build and Test COMPLETE (457 tests pass, 0 analyze issues); Doc Refinement COMPLETE
+- [x] Phase 1 UI/UX Human Review Gate (Zip Broadcast) — COMPLETE 2026-07-07; sign-off PASS after fixing nav Audio Inputs icon, Start-button gating, stuck-disabled-after-stop, duplicate audio-inputs back-stack push, active-route re-navigation, mobile drawer grouping, Appearance chip→select-box conversion (branch `feature/phase1-integration-tests`)
 
 ### OPERATIONS PHASE
 *(placeholder)*

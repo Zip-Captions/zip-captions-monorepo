@@ -31,11 +31,14 @@ melos run generate    # Runs build_runner for freezed, riverpod_generator, json_
 ### Running Tests
 
 ```bash
-# All packages
-melos run test
+# All packages (non-interactive — use this in CI and non-TTY environments)
+melos exec --no-fail-fast -- flutter test
+
+# All packages via Melos script (requires an interactive TTY — prompts to select package)
+melos run test --no-select
 
 # Single package
-melos run test --scope zip_core
+cd packages/zip_core && flutter test
 
 # Single test file
 cd packages/zip_core
@@ -45,6 +48,10 @@ dart test test/src/stt/stt_engine_registry_test.dart -r expanded
 melos run coverage
 # Coverage reports output to coverage/ in each package
 ```
+
+> **Note:** `melos run test` without `--no-select` shows an interactive package-selection prompt.
+> In non-TTY environments (CI, agent scripts) it throws `StdinException`. Use
+> `melos exec --no-fail-fast -- flutter test` instead.
 
 ### Writing Tests
 

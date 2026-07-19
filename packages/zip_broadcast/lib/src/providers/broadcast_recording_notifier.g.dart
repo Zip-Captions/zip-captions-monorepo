@@ -7,7 +7,7 @@ part of 'broadcast_recording_notifier.dart';
 // **************************************************************************
 
 String _$broadcastRecordingNotifierHash() =>
-    r'68b290d7b4c5fdf84d67a434bb2e57a157032eef';
+    r'd3dff45a269556fb9585f663f66fc4673089b58a';
 
 /// Multi-engine recording state machine for Zip Broadcast (Q1=A, FD B2).
 ///

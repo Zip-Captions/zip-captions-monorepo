@@ -1,8 +1,8 @@
 # Zip Captions v2: System Architecture
 
-**Version:** 0.1.0
-**Last Updated:** 2026-03-26
-**Status:** Design Specification
+**Version:** 1.0.0
+**Last Updated:** 2026-04-25
+**Status:** Phase 1 Complete — Core Captioning implemented (zip_core, zip_captions, zip_broadcast); Phase 2 (Broadcasting & Transport) next
 
 ---
 

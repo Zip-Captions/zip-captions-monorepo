@@ -6,7 +6,7 @@ part of 'stt_engine_factory_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$sttEngineFactoryHash() => r'3bacfb54ebb366c361a8363aafbb654887946f3a';
+String _$sttEngineFactoryHash() => r'1d45dbf64625d03eff3dbaee569a2d2792c17898';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -33,10 +33,10 @@ class _SystemHash {
 ///
 /// Must be overridden at app startup (e.g. in `main.dart`) with a concrete
 /// implementation, typically [PlatformSttEngine]. Tests override with
-/// [MockSttEngine] instances.
+/// `MockSttEngine` instances.
 ///
 /// The returned engine is NOT managed by Riverpod's lifecycle.
-/// [BroadcastRecordingNotifier] owns and disposes engines directly.
+/// `BroadcastRecordingNotifier` owns and disposes engines directly.
 ///
 /// Copied from [sttEngineFactory].
 @ProviderFor(sttEngineFactory)
@@ -46,10 +46,10 @@ const sttEngineFactoryProvider = SttEngineFactoryFamily();
 ///
 /// Must be overridden at app startup (e.g. in `main.dart`) with a concrete
 /// implementation, typically [PlatformSttEngine]. Tests override with
-/// [MockSttEngine] instances.
+/// `MockSttEngine` instances.
 ///
 /// The returned engine is NOT managed by Riverpod's lifecycle.
-/// [BroadcastRecordingNotifier] owns and disposes engines directly.
+/// `BroadcastRecordingNotifier` owns and disposes engines directly.
 ///
 /// Copied from [sttEngineFactory].
 class SttEngineFactoryFamily extends Family<SttEngine> {
@@ -57,10 +57,10 @@ class SttEngineFactoryFamily extends Family<SttEngine> {
   ///
   /// Must be overridden at app startup (e.g. in `main.dart`) with a concrete
   /// implementation, typically [PlatformSttEngine]. Tests override with
-  /// [MockSttEngine] instances.
+  /// `MockSttEngine` instances.
   ///
   /// The returned engine is NOT managed by Riverpod's lifecycle.
-  /// [BroadcastRecordingNotifier] owns and disposes engines directly.
+  /// `BroadcastRecordingNotifier` owns and disposes engines directly.
   ///
   /// Copied from [sttEngineFactory].
   const SttEngineFactoryFamily();
@@ -69,10 +69,10 @@ class SttEngineFactoryFamily extends Family<SttEngine> {
   ///
   /// Must be overridden at app startup (e.g. in `main.dart`) with a concrete
   /// implementation, typically [PlatformSttEngine]. Tests override with
-  /// [MockSttEngine] instances.
+  /// `MockSttEngine` instances.
   ///
   /// The returned engine is NOT managed by Riverpod's lifecycle.
-  /// [BroadcastRecordingNotifier] owns and disposes engines directly.
+  /// `BroadcastRecordingNotifier` owns and disposes engines directly.
   ///
   /// Copied from [sttEngineFactory].
   SttEngineFactoryProvider call(String sourceId) {
@@ -105,10 +105,10 @@ class SttEngineFactoryFamily extends Family<SttEngine> {
 ///
 /// Must be overridden at app startup (e.g. in `main.dart`) with a concrete
 /// implementation, typically [PlatformSttEngine]. Tests override with
-/// [MockSttEngine] instances.
+/// `MockSttEngine` instances.
 ///
 /// The returned engine is NOT managed by Riverpod's lifecycle.
-/// [BroadcastRecordingNotifier] owns and disposes engines directly.
+/// `BroadcastRecordingNotifier` owns and disposes engines directly.
 ///
 /// Copied from [sttEngineFactory].
 class SttEngineFactoryProvider extends AutoDisposeProvider<SttEngine> {
@@ -116,10 +116,10 @@ class SttEngineFactoryProvider extends AutoDisposeProvider<SttEngine> {
   ///
   /// Must be overridden at app startup (e.g. in `main.dart`) with a concrete
   /// implementation, typically [PlatformSttEngine]. Tests override with
-  /// [MockSttEngine] instances.
+  /// `MockSttEngine` instances.
   ///
   /// The returned engine is NOT managed by Riverpod's lifecycle.
-  /// [BroadcastRecordingNotifier] owns and disposes engines directly.
+  /// `BroadcastRecordingNotifier` owns and disposes engines directly.
   ///
   /// Copied from [sttEngineFactory].
   SttEngineFactoryProvider(String sourceId)

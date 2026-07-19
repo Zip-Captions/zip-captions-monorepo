@@ -27,6 +27,12 @@ mixin _$ObsSettings {
   /// `obs.password`. Never logged.
   String get password => throw _privateConstructorUsedError;
 
+  /// Whether the user has successfully tested the OBS connection at least
+  /// once with the current credentials. Reset to false when host, port, or
+  /// password change. Persisted to `SharedPreferences` key
+  /// `obs.connectionVerified`.
+  bool get connectionVerified => throw _privateConstructorUsedError;
+
   /// Create a copy of ObsSettings
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -41,7 +47,7 @@ abstract class $ObsSettingsCopyWith<$Res> {
     $Res Function(ObsSettings) then,
   ) = _$ObsSettingsCopyWithImpl<$Res, ObsSettings>;
   @useResult
-  $Res call({String host, int port, String password});
+  $Res call({String host, int port, String password, bool connectionVerified});
 }
 
 /// @nodoc
@@ -62,6 +68,7 @@ class _$ObsSettingsCopyWithImpl<$Res, $Val extends ObsSettings>
     Object? host = null,
     Object? port = null,
     Object? password = null,
+    Object? connectionVerified = null,
   }) {
     return _then(
       _value.copyWith(
@@ -77,6 +84,10 @@ class _$ObsSettingsCopyWithImpl<$Res, $Val extends ObsSettings>
                 ? _value.password
                 : password // ignore: cast_nullable_to_non_nullable
                       as String,
+            connectionVerified: null == connectionVerified
+                ? _value.connectionVerified
+                : connectionVerified // ignore: cast_nullable_to_non_nullable
+                      as bool,
           )
           as $Val,
     );
@@ -92,7 +103,7 @@ abstract class _$$ObsSettingsImplCopyWith<$Res>
   ) = __$$ObsSettingsImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String host, int port, String password});
+  $Res call({String host, int port, String password, bool connectionVerified});
 }
 
 /// @nodoc
@@ -112,6 +123,7 @@ class __$$ObsSettingsImplCopyWithImpl<$Res>
     Object? host = null,
     Object? port = null,
     Object? password = null,
+    Object? connectionVerified = null,
   }) {
     return _then(
       _$ObsSettingsImpl(
@@ -127,6 +139,10 @@ class __$$ObsSettingsImplCopyWithImpl<$Res>
             ? _value.password
             : password // ignore: cast_nullable_to_non_nullable
                   as String,
+        connectionVerified: null == connectionVerified
+            ? _value.connectionVerified
+            : connectionVerified // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -139,6 +155,7 @@ class _$ObsSettingsImpl implements _ObsSettings {
     this.host = 'localhost',
     this.port = 4455,
     this.password = '',
+    this.connectionVerified = false,
   });
 
   /// OBS WebSocket host. Persisted to `SharedPreferences` key `obs.host`.
@@ -157,9 +174,17 @@ class _$ObsSettingsImpl implements _ObsSettings {
   @JsonKey()
   final String password;
 
+  /// Whether the user has successfully tested the OBS connection at least
+  /// once with the current credentials. Reset to false when host, port, or
+  /// password change. Persisted to `SharedPreferences` key
+  /// `obs.connectionVerified`.
+  @override
+  @JsonKey()
+  final bool connectionVerified;
+
   @override
   String toString() {
-    return 'ObsSettings(host: $host, port: $port, password: $password)';
+    return 'ObsSettings(host: $host, port: $port, password: $password, connectionVerified: $connectionVerified)';
   }
 
   @override
@@ -170,11 +195,14 @@ class _$ObsSettingsImpl implements _ObsSettings {
             (identical(other.host, host) || other.host == host) &&
             (identical(other.port, port) || other.port == port) &&
             (identical(other.password, password) ||
-                other.password == password));
+                other.password == password) &&
+            (identical(other.connectionVerified, connectionVerified) ||
+                other.connectionVerified == connectionVerified));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, host, port, password);
+  int get hashCode =>
+      Object.hash(runtimeType, host, port, password, connectionVerified);
 
   /// Create a copy of ObsSettings
   /// with the given fields replaced by the non-null parameter values.
@@ -190,6 +218,7 @@ abstract class _ObsSettings implements ObsSettings {
     final String host,
     final int port,
     final String password,
+    final bool connectionVerified,
   }) = _$ObsSettingsImpl;
 
   /// OBS WebSocket host. Persisted to `SharedPreferences` key `obs.host`.
@@ -204,6 +233,13 @@ abstract class _ObsSettings implements ObsSettings {
   /// `obs.password`. Never logged.
   @override
   String get password;
+
+  /// Whether the user has successfully tested the OBS connection at least
+  /// once with the current credentials. Reset to false when host, port, or
+  /// password change. Persisted to `SharedPreferences` key
+  /// `obs.connectionVerified`.
+  @override
+  bool get connectionVerified;
 
   /// Create a copy of ObsSettings
   /// with the given fields replaced by the non-null parameter values.

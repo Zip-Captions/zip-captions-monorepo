@@ -1,7 +1,7 @@
 # Zip Captions v2 — Roadmap
 
-> **Document Status:** Draft v0.2
-> **Last Updated:** 2026-03-26
+> **Document Status:** Draft v0.3
+> **Last Updated:** 2026-04-25
 > **Purpose:** Defines the phased development milestones for Zip Captions v2, including dependencies, deliverables, and sequencing. Each phase builds on the previous one. Both apps (Zip Captions and Zip Broadcast) are developed in parallel, with shared work concentrated in `zip_core`.
 > **Repository:** `zip-captions-monorepo`
 
@@ -19,17 +19,17 @@
 
 ## Phase Overview
 
-| Phase | Name | Release | Prerequisites |
-|-------|------|---------|---------------|
-| 0 | Foundation | — | None |
-| 1 | Core Captioning | — | Phase 0 |
-| 2 | Broadcasting & Transport | — | Phase 1 |
-| 3 | Auth, Encryption & Sync | — | Phase 1 |
-| 4 | Entitlements & Payment | — | Phase 3 |
-| 5 | BLE Local Discovery | v2.0 | Phase 1 |
-| 6 | Release & v1 Deprecation | v2.0 | Phases 1–5 |
-| 7 | Observability & Polish | Ongoing | Phases 1–4 |
-| 8 | Translation | v2.1 | Phase 1, Phase 2 |
+| Phase | Name | Release | Prerequisites | Status |
+|-------|------|---------|---------------|--------|
+| 0 | Foundation | — | None | ✓ Complete |
+| 1 | Core Captioning | — | Phase 0 | ✓ Complete |
+| 2 | Broadcasting & Transport | — | Phase 1 | In planning |
+| 3 | Auth, Encryption & Sync | — | Phase 1 | Not started |
+| 4 | Entitlements & Payment | — | Phase 3 | Not started |
+| 5 | BLE Local Discovery | v2.0 | Phase 1 | Not started |
+| 6 | Release & v1 Deprecation | v2.0 | Phases 1–5 | Not started |
+| 7 | Observability & Polish | Ongoing | Phases 1–4 | Not started |
+| 8 | Translation | v2.1 | Phase 1, Phase 2 | Not started |
 
 Phases 2, 3, and 5 can run in parallel after Phase 1 is complete. Phase 4 depends on Phase 3 (auth must exist before entitlements). Phase 6 is the v2.0 release milestone — it requires Phases 1–5 (feature parity with v1). Phase 7 runs alongside later phases. Phase 8 (translation) is v2.1 — new functionality beyond v1 parity, scheduled after v2.0 ships.
 

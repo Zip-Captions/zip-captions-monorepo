@@ -59,12 +59,12 @@ class AudioInputConfigNotifier extends _$AudioInputConfigNotifier {
     await _enqueuePersist(updated);
   }
 
-  /// Updates the speaker label for [deviceId].
-  Future<void> setSpeakerLabel(String deviceId, String label) async {
+  /// Updates the display label for [deviceId].
+  Future<void> setLabel(String deviceId, String label) async {
     await _loadFuture;
     final updated = state
         .map((c) => c.deviceId == deviceId
-            ? c.copyWith(speakerLabel: label)
+            ? c.copyWith(label: label)
             : c)
         .toList();
     state = updated;

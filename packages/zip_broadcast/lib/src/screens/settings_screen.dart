@@ -5,11 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/obs_connection_status.dart';
-import 'package:zip_broadcast/src/models/output_target_settings.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_broadcast/src/providers/obs_connection_notifier.dart';
 import 'package:zip_broadcast/src/providers/settings_notifier.dart';
-import 'package:zip_broadcast/src/widgets/coming_soon_card.dart';
+import 'package:zip_broadcast/src/widgets/output_targets_panel.dart';
 import 'package:zip_core/zip_core.dart';
 
 /// Settings screen with animated drill-down navigation (C6, F1–F7).
@@ -29,7 +28,6 @@ enum _SettingsView {
   appearance,
   obs,
   outputTargets,
-  audioInputs,
   transcripts,
 }
 
@@ -61,9 +59,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _SettingsView.appearance => const _AppearanceDetail(),
       _SettingsView.obs => const _ObsDetail(),
       _SettingsView.outputTargets => const _OutputTargetsDetail(),
-      _SettingsView.audioInputs => _AudioInputsDetail(
-          onNavigate: () => context.go('/audio-inputs'),
-        ),
       _SettingsView.transcripts => const _TranscriptsDetail(),
     };
   }
@@ -75,7 +70,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _SettingsView.appearance => l10n.settingsAppearance,
       _SettingsView.obs => l10n.settingsObs,
       _SettingsView.outputTargets => l10n.settingsOutputTargets,
-      _SettingsView.audioInputs => l10n.settingsAudioInputs,
       _SettingsView.transcripts => l10n.settingsTranscripts,
     };
   }
@@ -149,7 +143,7 @@ class _ListView extends ConsumerWidget {
           leading: const Icon(Icons.mic),
           title: Text(l10n.settingsAudioInputs),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => onTap(_SettingsView.audioInputs),
+          onTap: () => context.push('/audio-inputs'),
         ),
         ListTile(
           leading: const Icon(Icons.article_outlined),
@@ -188,58 +182,65 @@ class _AppearanceDetail extends ConsumerWidget {
       key: const ValueKey('appearance'),
       padding: const EdgeInsets.all(16),
       children: [
-        Text(l10n.appearanceTextSize,
-            style: Theme.of(context).textTheme.labelLarge),
-        Wrap(
-          spacing: 4,
-          children: CaptionTextSize.values.map((size) {
-            return ChoiceChip(
-              label: Text(_textSizeLabel(l10n, size)),
-              selected: settings.captionTextSize == size,
-              onSelected: (_) =>
-                  unawaited(notifier.setCaptionTextSize(size)),
-            );
-          }).toList(),
+        DropdownButtonFormField<CaptionTextSize>(
+          decoration: InputDecoration(
+            labelText: l10n.appearanceTextSize,
+            border: const OutlineInputBorder(),
+          ),
+          initialValue: settings.captionTextSize,
+          items: CaptionTextSize.values
+              .map(
+                (size) => DropdownMenuItem(
+                  value: size,
+                  child: Text(_textSizeLabel(l10n, size)),
+                ),
+              )
+              .toList(),
+          onChanged: (size) {
+            if (size != null) unawaited(notifier.setCaptionTextSize(size));
+          },
         ),
         const SizedBox(height: 16),
-        Text(l10n.appearanceFont,
-            style: Theme.of(context).textTheme.labelLarge),
-        Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          children: CaptionFont.values.map((font) {
-            return ChoiceChip(
-              label: Text(font.fontFamily),
-              selected: settings.captionFont == font,
-              onSelected: (_) => unawaited(notifier.setCaptionFont(font)),
-            );
-          }).toList(),
+        DropdownButtonFormField<CaptionFont>(
+          decoration: InputDecoration(
+            labelText: l10n.appearanceFont,
+            border: const OutlineInputBorder(),
+          ),
+          initialValue: settings.captionFont,
+          items: CaptionFont.values
+              .map(
+                (font) => DropdownMenuItem(
+                  value: font,
+                  child: Text(font.fontFamily),
+                ),
+              )
+              .toList(),
+          onChanged: (font) {
+            if (font != null) unawaited(notifier.setCaptionFont(font));
+          },
         ),
         const SizedBox(height: 16),
-        Text(
-          l10n.appearanceScrollDirection,
-          style: Theme.of(context).textTheme.labelLarge,
-        ),
-        Wrap(
-          spacing: 4,
-          children: [
-            ChoiceChip(
-              label: Text(l10n.appearanceNewAtBottom),
-              selected:
-                  settings.scrollDirection == ScrollDirection.bottomToTop,
-              onSelected: (_) => unawaited(
-                notifier.setScrollDirection(ScrollDirection.bottomToTop),
-              ),
+        DropdownButtonFormField<ScrollDirection>(
+          decoration: InputDecoration(
+            labelText: l10n.appearanceScrollDirection,
+            border: const OutlineInputBorder(),
+          ),
+          initialValue: settings.scrollDirection,
+          items: [
+            DropdownMenuItem(
+              value: ScrollDirection.bottomToTop,
+              child: Text(l10n.appearanceNewAtBottom),
             ),
-            ChoiceChip(
-              label: Text(l10n.appearanceNewAtTop),
-              selected:
-                  settings.scrollDirection == ScrollDirection.topToBottom,
-              onSelected: (_) => unawaited(
-                notifier.setScrollDirection(ScrollDirection.topToBottom),
-              ),
+            DropdownMenuItem(
+              value: ScrollDirection.topToBottom,
+              child: Text(l10n.appearanceNewAtTop),
             ),
           ],
+          onChanged: (direction) {
+            if (direction != null) {
+              unawaited(notifier.setScrollDirection(direction));
+            }
+          },
         ),
         const SizedBox(height: 16),
         SwitchListTile(
@@ -360,6 +361,11 @@ class _ObsDetailState extends ConsumerState<_ObsDetail> {
     final status = await ref
         .read(obsConnectionNotifierProvider.notifier)
         .testConnection();
+    if (status == ObsConnectionStatus.connected) {
+      await ref
+          .read(obsSettingsNotifierProvider.notifier)
+          .markConnectionVerified();
+    }
     if (!mounted) return;
     final l10n = ZipBroadcastLocalizations.of(context)!;
     final label = status == ObsConnectionStatus.connected
@@ -389,85 +395,15 @@ class _ObsDetailState extends ConsumerState<_ObsDetail> {
 // Output targets detail (F5)
 // ---------------------------------------------------------------------------
 
-class _OutputTargetsDetail extends ConsumerWidget {
+class _OutputTargetsDetail extends StatelessWidget {
   const _OutputTargetsDetail();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(outputTargetSettingsNotifierProvider);
-
-    void update(OutputTargetSettings next) => unawaited(
-          ref.read(outputTargetSettingsNotifierProvider.notifier).update(next),
-        );
-
-    final l10n = ZipBroadcastLocalizations.of(context)!;
+  Widget build(BuildContext context) {
     return ListView(
       key: const ValueKey('output-targets'),
-      children: [
-        SwitchListTile(
-          secondary: const Icon(Icons.monitor),
-          title: Text(l10n.settingsOnScreenCaptions),
-          value: settings.onScreenEnabled,
-          onChanged: (v) =>
-              update(settings.copyWith(onScreenEnabled: v)),
-        ),
-        SwitchListTile(
-          secondary: const Icon(Icons.cast),
-          title: Text(l10n.settingsObs),
-          value: settings.obsEnabled,
-          onChanged: (v) => update(settings.copyWith(obsEnabled: v)),
-        ),
-        SwitchListTile(
-          secondary: const Icon(Icons.public),
-          title: Text(l10n.settingsBrowserSource),
-          value: settings.browserSourceEnabled,
-          onChanged: (v) =>
-              update(settings.copyWith(browserSourceEnabled: v)),
-        ),
-        SwitchListTile(
-          secondary: const Icon(Icons.picture_in_picture_alt),
-          title: Text(l10n.settingsCaptionOverlay),
-          value: settings.overlayEnabled,
-          onChanged: (v) => update(settings.copyWith(overlayEnabled: v)),
-        ),
-        SwitchListTile(
-          secondary: const Icon(Icons.description_outlined),
-          title: Text(l10n.settingsTranscriptsTarget),
-          value: true,
-          onChanged: null, // Always active.
-        ),
-        ComingSoonCard(
-          icon: Icons.people_outlined,
-          label: l10n.outputTargetsRemoteViewers,
-          subtitle: l10n.outputTargetsPhase2,
-        ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Audio inputs detail (F6)
-// ---------------------------------------------------------------------------
-
-class _AudioInputsDetail extends StatelessWidget {
-  const _AudioInputsDetail({required this.onNavigate});
-
-  final VoidCallback onNavigate;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = ZipBroadcastLocalizations.of(context)!;
-    return ListView(
-      key: const ValueKey('audio-inputs'),
-      children: [
-        ListTile(
-          leading: const Icon(Icons.mic),
-          title: Text(l10n.settingsManageAudioInputs),
-          trailing: const Icon(Icons.open_in_new),
-          onTap: onNavigate,
-        ),
-      ],
+      padding: const EdgeInsets.all(8),
+      children: const [OutputTargetsPanel()],
     );
   }
 }

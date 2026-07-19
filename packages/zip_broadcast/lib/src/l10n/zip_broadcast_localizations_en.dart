@@ -69,6 +69,13 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
   String get obsStatusDisconnected => 'Disconnected';
 
   @override
+  String get obsNotConfigured => 'Test connection in Settings first';
+
+  @override
+  String get obsConnectionError =>
+      'Could not connect to OBS. Check your settings and try again.';
+
+  @override
   String get obsStatusDisabled => 'Disabled';
 
   @override
@@ -211,10 +218,10 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
   String get audioSourceAddInput => 'Add Audio Input';
 
   @override
-  String get audioSourceSpeakerLabel => 'Speaker label';
+  String get audioSourceLabel => 'Label';
 
   @override
-  String get audioSourceSpeakerLabelHint => 'e.g. Teacher';
+  String get audioSourceLabelHint => 'e.g. Presenter';
 
   @override
   String get audioSourceColour => 'Colour';

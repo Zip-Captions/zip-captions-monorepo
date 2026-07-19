@@ -9,7 +9,7 @@ import 'package:zip_core/zip_core.dart' show RecordingState;
 ///
 /// Uses [BroadcastSessionState] (not [RecordingState]) since Zip Broadcast
 /// manages multi-engine state. State-to-button mapping:
-/// - [BroadcastIdleState] → spinner only (engines initialising)
+/// - [BroadcastIdleState] → Start button
 /// - [BroadcastActiveState] → Pause + Stop
 /// - [BroadcastPausedState] → Resume + Stop
 /// - [BroadcastReconnectingState] → spinner + Stop
@@ -17,6 +17,7 @@ class ZbRecordingControlsBar extends StatelessWidget {
   /// Creates a [ZbRecordingControlsBar].
   const ZbRecordingControlsBar({
     required this.state,
+    required this.onStart,
     required this.onPause,
     required this.onResume,
     required this.onStop,
@@ -25,6 +26,10 @@ class ZbRecordingControlsBar extends StatelessWidget {
 
   /// Current session state driving the button layout.
   final BroadcastSessionState state;
+
+  /// Called when the Start button is tapped (idle state only). Null
+  /// disables the button, e.g. when no audio inputs are configured.
+  final VoidCallback? onStart;
 
   /// Called when the Pause button is tapped.
   final VoidCallback onPause;
@@ -37,17 +42,19 @@ class ZbRecordingControlsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ZipBroadcastLocalizations.of(context)!;
+
     if (state is BroadcastIdleState) {
-      return const SafeArea(
+      return SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 48,
-                height: 48,
-                child: CircularProgressIndicator(),
+              FilledButton.icon(
+                icon: const Icon(Icons.radio),
+                label: Text(l10n.homeStartBroadcast),
+                onPressed: onStart,
               ),
             ],
           ),
@@ -55,7 +62,6 @@ class ZbRecordingControlsBar extends StatelessWidget {
       );
     }
 
-    final l10n = ZipBroadcastLocalizations.of(context)!;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

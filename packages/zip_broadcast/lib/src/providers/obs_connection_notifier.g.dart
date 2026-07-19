@@ -7,11 +7,13 @@ part of 'obs_connection_notifier.dart';
 // **************************************************************************
 
 String _$obsWebSocketTargetHash() =>
-    r'f0d9de4c890ee56a505da5b90190599970ce071c';
+    r'4bdaa1eb428b485d671845e9afac77e6a03e7ec8';
 
 /// Singleton [ObsWebSocketTarget] for this app session.
 ///
-/// Re-created when [ObsSettingsNotifier] changes.
+/// Re-created only when connection credentials (host, port, password) change.
+/// [ObsSettings.connectionVerified] changes are intentionally ignored here to
+/// avoid dropping an active connection when the user runs a test in Settings.
 ///
 /// Copied from [obsWebSocketTarget].
 @ProviderFor(obsWebSocketTarget)
@@ -29,11 +31,11 @@ final obsWebSocketTargetProvider = Provider<ObsWebSocketTarget>.internal(
 // ignore: unused_element
 typedef ObsWebSocketTargetRef = ProviderRef<ObsWebSocketTarget>;
 String _$obsConnectionNotifierHash() =>
-    r'83943080b1394e9d81f372456729d25b681ea2c3';
+    r'd6ea4b95e21a68258a0fe72322da0fd2fd86354b';
 
 /// Manages the live OBS WebSocket connection and exposes [ObsConnectionStatus].
 ///
-/// Self-manages connection based on [OutputTargetSettingsNotifier.obsEnabled]
+/// Self-manages connection based on `OutputTargetSettingsNotifier.obsEnabled`
 /// (FD H2). Forwards final captions from [CaptionBus] to OBS when connected.
 ///
 /// Copied from [ObsConnectionNotifier].
