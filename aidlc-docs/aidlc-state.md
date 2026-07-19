@@ -74,6 +74,9 @@
 - [x] Unit 6: Zip Broadcast App (S-10) — FD, NFR-R, NFR-D, ID, CG — COMPLETE (merged PR #15; 80 tests)
 - [x] Unit 7: Integration Milestones — Build and Test COMPLETE (457 tests pass, 0 analyze issues); Doc Refinement COMPLETE
 - [x] Phase 1 UI/UX Human Review Gate (Zip Broadcast) — COMPLETE 2026-07-07; sign-off PASS after fixing nav Audio Inputs icon, Start-button gating, stuck-disabled-after-stop, duplicate audio-inputs back-stack push, active-route re-navigation, mobile drawer grouping, Appearance chip→select-box conversion (branch `feature/phase1-integration-tests`)
+- [x] PR #16 (`feature/phase1-integration-tests` → `develop`) — MERGED 2026-07-19; CodeRabbit CHANGES_REQUESTED (5 findings) and 2 failing CI checks (lint, Windows Build Verify — MSVC toolchain regression, unrelated to PR diff) resolved across 3 follow-up commits (`b12cb51`, `19cf2ca`, `2a5c987`); see `aidlc-docs/construction/plans/unit7-pr16-review-fixes-code-generation-plan.md`
+
+**Phase 1 Construction — FULLY COMPLETE.**
 
 ### OPERATIONS PHASE
 *(placeholder)*
