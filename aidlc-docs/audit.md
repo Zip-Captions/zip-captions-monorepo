@@ -965,3 +965,10 @@
 **Context**: Unit 7 Code Generation (PR #16 revision) — COMPLETE. Ready to commit and push to `feature/phase1-integration-tests`, then re-check CI/CodeRabbit on PR #16.
 
 ---
+## CONSTRUCTION - Unit 7: PR #16 Review Feedback — Follow-up nitpick
+**Timestamp**: 2026-07-19T19:50:00Z
+**User Input**: "check the PR again, there's a new reply we need to address"
+**AI Response**: Re-checked PR #16. CI: Analyze & Test, Linux, iOS now passing; 4 of 5 original CodeRabbit findings marked "✅ Addressed in commit b12cb51" (the relative-imports one remains open as intentionally skipped). New CodeRabbit re-review (COMMENTED, not blocking) flagged a nitpick: the Windows coroutine-suppression define was applied globally via APPLY_STANDARD_SETTINGS instead of scoped to the two affected plugins. Fixed by reverting the global function change and instead applying target_compile_definitions directly to the local_auth_windows_plugin and permission_handler_windows_plugin targets (guarded with if(TARGET ...) for safety) after generated_plugins.cmake creates them. Committed (19cf2ca) and pushed.
+**Context**: Unit 7 Code Generation (PR #16 revision) — follow-up nitpick addressed. Awaiting CI re-run.
+
+---
