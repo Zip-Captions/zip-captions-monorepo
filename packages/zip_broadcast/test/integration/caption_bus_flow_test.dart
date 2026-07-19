@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_broadcast/src/models/audio_input_config.dart';
-import 'package:zip_broadcast/src/models/broadcast_session_state.dart';
 import 'package:zip_broadcast/src/providers/audio_input_config_notifier.dart';
 import 'package:zip_broadcast/src/providers/broadcast_recording_notifier.dart';
 import 'package:zip_broadcast/src/providers/stt_engine_factory_provider.dart';
@@ -28,9 +28,11 @@ ProviderContainer _buildContainer({
   required MockSttEngine engine0,
   required MockSttEngine engine1,
   required MockCaptionBus bus,
+  required SharedPreferences prefs,
 }) {
   final container = ProviderContainer(
     overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
       captionBusProvider.overrideWithValue(bus),
       wakeLockServiceProvider.overrideWithValue(FakeWakeLockService()),
       resolvedLocaleIdProvider.overrideWithValue('en-US'),
@@ -53,20 +55,30 @@ ProviderContainer _buildContainer({
 // ---------------------------------------------------------------------------
 
 void main() {
+  late SharedPreferences prefs;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+  });
+
   group('INT-ZB-01: BroadcastRecordingNotifier caption bus flow', () {
     test('start → emitted result reaches bus with correct sourceId', () async {
       final e0 = MockSttEngine();
       final e1 = MockSttEngine();
       final bus = MockCaptionBus();
-      final container = _buildContainer(engine0: e0, engine1: e1, bus: bus);
+      final container = _buildContainer(
+        engine0: e0,
+        engine1: e1,
+        bus: bus,
+        prefs: prefs,
+      );
 
       final events = <CaptionEvent>[];
       final sub = bus.stream.listen(events.add);
       addTearDown(sub.cancel);
 
-      await container
-          .read(broadcastRecordingNotifierProvider.notifier)
-          .start();
+      await container.read(broadcastRecordingNotifierProvider.notifier).start();
 
       // Session started — verify SessionStateEvent published.
       expect(
@@ -75,7 +87,15 @@ void main() {
       );
 
       // Engine emits a result; notifier tags it with sourceId.
-      e0.emit(SttResult(text: 'hello', isFinal: true, confidence: 1.0, timestamp: DateTime(2026), sourceId: ''));
+      e0.emit(
+        SttResult(
+          text: 'hello',
+          isFinal: true,
+          confidence: 1,
+          timestamp: DateTime(2026),
+          sourceId: '',
+        ),
+      );
       await pumpEventQueue();
 
       final resultEvents = events.whereType<SttResultEvent>().toList();
@@ -88,19 +108,29 @@ void main() {
       final e0 = MockSttEngine();
       final e1 = MockSttEngine();
       final bus = MockCaptionBus();
-      final container = _buildContainer(engine0: e0, engine1: e1, bus: bus);
+      final container = _buildContainer(
+        engine0: e0,
+        engine1: e1,
+        bus: bus,
+        prefs: prefs,
+      );
 
-      await container
-          .read(broadcastRecordingNotifierProvider.notifier)
-          .start();
-      await container
-          .read(broadcastRecordingNotifierProvider.notifier)
-          .pause();
+      await container.read(broadcastRecordingNotifierProvider.notifier).start();
+      await container.read(broadcastRecordingNotifierProvider.notifier).pause();
 
       final countBeforeEmit = bus.published.whereType<SttResultEvent>().length;
 
-      // Engine callback is still wired but notifier gates on BroadcastActiveState.
-      e0.emit(SttResult(text: 'should not publish', isFinal: true, confidence: 1.0, timestamp: DateTime(2026), sourceId: ''));
+      // Engine callback is still wired but notifier gates on
+      // BroadcastActiveState.
+      e0.emit(
+        SttResult(
+          text: 'should not publish',
+          isFinal: true,
+          confidence: 1,
+          timestamp: DateTime(2026),
+          sourceId: '',
+        ),
+      );
       await pumpEventQueue();
 
       expect(
@@ -110,39 +140,62 @@ void main() {
       );
     });
 
-    test('resume after pause → engine emit → SttResultEvent published again',
-        () async {
-      final e0 = MockSttEngine();
-      final e1 = MockSttEngine();
-      final bus = MockCaptionBus();
-      final container = _buildContainer(engine0: e0, engine1: e1, bus: bus);
+    test(
+      'resume after pause → engine emit → SttResultEvent published again',
+      () async {
+        final e0 = MockSttEngine();
+        final e1 = MockSttEngine();
+        final bus = MockCaptionBus();
+        final container = _buildContainer(
+          engine0: e0,
+          engine1: e1,
+          bus: bus,
+          prefs: prefs,
+        );
 
-      final notifier =
-          container.read(broadcastRecordingNotifierProvider.notifier);
-      await notifier.start();
-      await notifier.pause();
-      await notifier.resume();
+        final notifier = container.read(
+          broadcastRecordingNotifierProvider.notifier,
+        );
+        await notifier.start();
+        await notifier.pause();
+        await notifier.resume();
 
-      final countBeforeEmit =
-          bus.published.whereType<SttResultEvent>().length;
+        final countBeforeEmit = bus.published
+            .whereType<SttResultEvent>()
+            .length;
 
-      e0.emit(SttResult(text: 'after resume', isFinal: false, confidence: 1.0, timestamp: DateTime(2026), sourceId: ''));
-      await pumpEventQueue();
+        e0.emit(
+          SttResult(
+            text: 'after resume',
+            isFinal: false,
+            confidence: 1,
+            timestamp: DateTime(2026),
+            sourceId: '',
+          ),
+        );
+        await pumpEventQueue();
 
-      expect(
-        bus.published.whereType<SttResultEvent>().length,
-        greaterThan(countBeforeEmit),
-      );
-    });
+        expect(
+          bus.published.whereType<SttResultEvent>().length,
+          greaterThan(countBeforeEmit),
+        );
+      },
+    );
 
     test('stop → SessionStateEvent with StoppedState published', () async {
       final e0 = MockSttEngine();
       final e1 = MockSttEngine();
       final bus = MockCaptionBus();
-      final container = _buildContainer(engine0: e0, engine1: e1, bus: bus);
+      final container = _buildContainer(
+        engine0: e0,
+        engine1: e1,
+        bus: bus,
+        prefs: prefs,
+      );
 
-      final notifier =
-          container.read(broadcastRecordingNotifierProvider.notifier);
+      final notifier = container.read(
+        broadcastRecordingNotifierProvider.notifier,
+      );
       await notifier.start();
       await notifier.stop();
 
@@ -155,14 +208,33 @@ void main() {
       final e0 = MockSttEngine();
       final e1 = MockSttEngine();
       final bus = MockCaptionBus();
-      final container = _buildContainer(engine0: e0, engine1: e1, bus: bus);
+      final container = _buildContainer(
+        engine0: e0,
+        engine1: e1,
+        bus: bus,
+        prefs: prefs,
+      );
 
-      await container
-          .read(broadcastRecordingNotifierProvider.notifier)
-          .start();
+      await container.read(broadcastRecordingNotifierProvider.notifier).start();
 
-      e0.emit(SttResult(text: 'from mic-0', isFinal: true, confidence: 1.0, timestamp: DateTime(2026), sourceId: ''));
-      e1.emit(SttResult(text: 'from mic-1', isFinal: true, confidence: 1.0, timestamp: DateTime(2026), sourceId: ''));
+      e0.emit(
+        SttResult(
+          text: 'from mic-0',
+          isFinal: true,
+          confidence: 1,
+          timestamp: DateTime(2026),
+          sourceId: '',
+        ),
+      );
+      e1.emit(
+        SttResult(
+          text: 'from mic-1',
+          isFinal: true,
+          confidence: 1,
+          timestamp: DateTime(2026),
+          sourceId: '',
+        ),
+      );
       await pumpEventQueue();
 
       final results = bus.published

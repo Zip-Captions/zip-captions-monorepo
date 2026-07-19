@@ -22,9 +22,11 @@ class ObsSettingsNotifier extends _$ObsSettingsNotifier {
 
   static const _secureStorage = FlutterSecureStorage();
 
+  Future<void>? _loadFuture;
+
   @override
   ObsSettings build() {
-    unawaited(_loadAsync());
+    _loadFuture = _loadAsync();
     return const ObsSettings();
   }
 
@@ -37,6 +39,7 @@ class ObsSettingsNotifier extends _$ObsSettingsNotifier {
     int? port,
     String? password,
   }) async {
+    await _loadFuture;
     final credentialsChanged = (host != null && host != state.host) ||
         (port != null && port != state.port) ||
         (password != null && password != state.password);
@@ -61,6 +64,7 @@ class ObsSettingsNotifier extends _$ObsSettingsNotifier {
 
   /// Marks the current OBS credentials as verified (connection test passed).
   Future<void> markConnectionVerified() async {
+    await _loadFuture;
     state = state.copyWith(connectionVerified: true);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_verifiedKey, true);

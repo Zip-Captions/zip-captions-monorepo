@@ -46,41 +46,53 @@ void main() {
   });
 
   group('INT-ZB-03: ObsConnectionNotifier settings + caption forwarding', () {
-    test('enable OBS → final caption on bus → forwarded to OBS target',
-        () async {
-      final mockObs = MockObsWebSocketTarget();
-      final bus = MockCaptionBus();
-      final container = _buildContainer(mockObs, bus, prefs);
+    test(
+      'enable OBS → final caption on bus → forwarded to OBS target',
+      () async {
+        final mockObs = MockObsWebSocketTarget();
+        final bus = MockCaptionBus();
+        final container = _buildContainer(mockObs, bus, prefs);
 
-      // Initialize the notifier (triggers fireImmediately ref.listen).
-      container.read(obsConnectionNotifierProvider);
-      await pumpEventQueue();
+        // Initialize the notifier (triggers fireImmediately ref.listen).
+        // ignore: cascade_invocations — awaited update() below can't cascade
+        container.read(obsConnectionNotifierProvider);
+        await pumpEventQueue();
 
-      // Enable OBS — MockObsWebSocketTarget.connect() emits 'connected'.
-      await container
-          .read(outputTargetSettingsNotifierProvider.notifier)
-          .update(const OutputTargetSettings(obsEnabled: true));
-      await pumpEventQueue();
+        // Enable OBS — MockObsWebSocketTarget.connect() emits 'connected'.
+        await container
+            .read(outputTargetSettingsNotifierProvider.notifier)
+            .update(const OutputTargetSettings(obsEnabled: true));
+        await pumpEventQueue();
 
-      expect(
-        container.read(obsConnectionNotifierProvider),
-        equals(ObsConnectionStatus.connected),
-      );
+        expect(
+          container.read(obsConnectionNotifierProvider),
+          equals(ObsConnectionStatus.connected),
+        );
 
-      // Publish a final caption to the bus.
-      bus.publish(
-        SttResultEvent(SttResult(text: 'test caption', isFinal: true, confidence: 1.0, timestamp: DateTime(2026), sourceId: 'default')),
-      );
-      await pumpEventQueue();
+        // Publish a final caption to the bus.
+        bus.publish(
+          SttResultEvent(
+            SttResult(
+              text: 'test caption',
+              isFinal: true,
+              confidence: 1,
+              timestamp: DateTime(2026),
+              sourceId: 'default',
+            ),
+          ),
+        );
+        await pumpEventQueue();
 
-      expect(mockObs.sentCaptions, contains('test caption'));
-    });
+        expect(mockObs.sentCaptions, contains('test caption'));
+      },
+    );
 
     test('partial caption (isFinal=false) → not forwarded to OBS', () async {
       final mockObs = MockObsWebSocketTarget();
       final bus = MockCaptionBus();
       final container = _buildContainer(mockObs, bus, prefs);
 
+      // ignore: cascade_invocations — awaited update() below can't cascade
       container.read(obsConnectionNotifierProvider);
       await pumpEventQueue();
 
@@ -91,7 +103,13 @@ void main() {
 
       bus.publish(
         SttResultEvent(
-          SttResult(text: 'partial', isFinal: false, confidence: 1.0, timestamp: DateTime(2026), sourceId: 'default'),
+          SttResult(
+            text: 'partial',
+            isFinal: false,
+            confidence: 1,
+            timestamp: DateTime(2026),
+            sourceId: 'default',
+          ),
         ),
       );
       await pumpEventQueue();
@@ -104,51 +122,66 @@ void main() {
       final bus = MockCaptionBus();
       final container = _buildContainer(mockObs, bus, prefs);
 
+      // ignore: cascade_invocations — awaited update() below can't cascade
       container.read(obsConnectionNotifierProvider);
       await pumpEventQueue();
 
       // Enable then disable.
-      final settingsNotifier =
-          container.read(outputTargetSettingsNotifierProvider.notifier);
-      await settingsNotifier
-          .update(const OutputTargetSettings(obsEnabled: true));
+      final settingsNotifier = container.read(
+        outputTargetSettingsNotifierProvider.notifier,
+      );
+      await settingsNotifier.update(
+        const OutputTargetSettings(obsEnabled: true),
+      );
       await pumpEventQueue();
-      await settingsNotifier
-          .update(const OutputTargetSettings(obsEnabled: false));
+      await settingsNotifier.update(
+        const OutputTargetSettings(),
+      );
       await pumpEventQueue();
 
       final countBefore = mockObs.sentCaptions.length;
 
       bus.publish(
-        SttResultEvent(SttResult(text: 'should not send', isFinal: true, confidence: 1.0, timestamp: DateTime(2026), sourceId: 'default')),
+        SttResultEvent(
+          SttResult(
+            text: 'should not send',
+            isFinal: true,
+            confidence: 1,
+            timestamp: DateTime(2026),
+            sourceId: 'default',
+          ),
+        ),
       );
       await pumpEventQueue();
 
       expect(mockObs.sentCaptions.length, equals(countBefore));
     });
 
-    test('enable OBS → SessionStateEvent on bus → not forwarded (only SttResult)',
-        () async {
-      final mockObs = MockObsWebSocketTarget();
-      final bus = MockCaptionBus();
-      final container = _buildContainer(mockObs, bus, prefs);
+    test(
+      'enable OBS → SessionStateEvent on bus → not forwarded (only SttResult)',
+      () async {
+        final mockObs = MockObsWebSocketTarget();
+        final bus = MockCaptionBus();
+        final container = _buildContainer(mockObs, bus, prefs);
 
-      container.read(obsConnectionNotifierProvider);
-      await pumpEventQueue();
+        // ignore: cascade_invocations — awaited update() below can't cascade
+        container.read(obsConnectionNotifierProvider);
+        await pumpEventQueue();
 
-      await container
-          .read(outputTargetSettingsNotifierProvider.notifier)
-          .update(const OutputTargetSettings(obsEnabled: true));
-      await pumpEventQueue();
+        await container
+            .read(outputTargetSettingsNotifierProvider.notifier)
+            .update(const OutputTargetSettings(obsEnabled: true));
+        await pumpEventQueue();
 
-      bus.publish(
-        SessionStateEvent(
-          RecordingState.recording(sessionId: 'sid'),
-        ),
-      );
-      await pumpEventQueue();
+        bus.publish(
+          const SessionStateEvent(
+            RecordingState.recording(sessionId: 'sid'),
+          ),
+        );
+        await pumpEventQueue();
 
-      expect(mockObs.sentCaptions, isEmpty);
-    });
+        expect(mockObs.sentCaptions, isEmpty);
+      },
+    );
   });
 }

@@ -361,12 +361,12 @@ class _ObsDetailState extends ConsumerState<_ObsDetail> {
     final status = await ref
         .read(obsConnectionNotifierProvider.notifier)
         .testConnection();
-    if (!mounted) return;
     if (status == ObsConnectionStatus.connected) {
-      unawaited(
-        ref.read(obsSettingsNotifierProvider.notifier).markConnectionVerified(),
-      );
+      await ref
+          .read(obsSettingsNotifierProvider.notifier)
+          .markConnectionVerified();
     }
+    if (!mounted) return;
     final l10n = ZipBroadcastLocalizations.of(context)!;
     final label = status == ObsConnectionStatus.connected
         ? l10n.settingsObsConnectedSuccess

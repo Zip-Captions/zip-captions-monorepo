@@ -59,7 +59,9 @@ class _OutputTargetsPanelState extends ConsumerState<OutputTargetsPanel> {
           label: l10n.settingsObs,
           subtitle: obsSubtitle,
           enabled: outputSettings.obsEnabled,
-          onToggle: obsVerified && !_obsTesting ? _onObsToggle : null,
+          onToggle: (outputSettings.obsEnabled || obsVerified) && !_obsTesting
+              ? _onObsToggle
+              : null,
         ),
         if (_obsError != null)
           Padding(

@@ -131,24 +131,28 @@ void main() {
   });
 
   group('INT-ZC-01: RecordingStateNotifier full pipeline', () {
-    test('start → RecordingActiveState + SessionStateEvent(recording) on bus',
-        () async {
-      final engine = _MockSttEngine();
-      final bus = _RecordingCaptionBus();
-      final container = _buildContainer(engine, bus, prefs);
+    test(
+      'start → RecordingActiveState + SessionStateEvent(recording) on bus',
+      () async {
+        final engine = _MockSttEngine();
+        final bus = _RecordingCaptionBus();
+        final container = _buildContainer(engine, bus, prefs);
 
-      await container.read(recordingStateNotifierProvider.notifier).start();
+        await container.read(recordingStateNotifierProvider.notifier).start();
 
-      expect(
-        container.read(recordingStateNotifierProvider),
-        isA<RecordingActiveState>(),
-      );
+        expect(
+          container.read(recordingStateNotifierProvider),
+          isA<RecordingActiveState>(),
+        );
 
-      final stateEvents = bus.published.whereType<SessionStateEvent>().toList();
-      expect(stateEvents, isNotEmpty);
-      expect(stateEvents.last.state, isA<RecordingActiveState>());
-      expect(engine.isListening, isTrue);
-    });
+        final stateEvents = bus.published
+            .whereType<SessionStateEvent>()
+            .toList();
+        expect(stateEvents, isNotEmpty);
+        expect(stateEvents.last.state, isA<RecordingActiveState>());
+        expect(engine.isListening, isTrue);
+      },
+    );
 
     test('emit final SttResult → SttResultEvent on bus', () async {
       final engine = _MockSttEngine();
@@ -157,7 +161,15 @@ void main() {
 
       await container.read(recordingStateNotifierProvider.notifier).start();
 
-      engine.emit(SttResult(text: 'hello world', isFinal: true, confidence: 1.0, timestamp: DateTime(2026), sourceId: 'default'));
+      engine.emit(
+        SttResult(
+          text: 'hello world',
+          isFinal: true,
+          confidence: 1,
+          timestamp: DateTime(2026),
+          sourceId: 'default',
+        ),
+      );
       await pumpEventQueue();
 
       final resultEvents = bus.published.whereType<SttResultEvent>().toList();
@@ -166,15 +178,23 @@ void main() {
       expect(resultEvents.first.result.isFinal, isTrue);
     });
 
-    test('emit partial SttResult → SttResultEvent on bus + state carries segment',
-        () async {
+    test('emit partial SttResult → SttResultEvent on bus + state carries '
+        'segment', () async {
       final engine = _MockSttEngine();
       final bus = _RecordingCaptionBus();
       final container = _buildContainer(engine, bus, prefs);
 
       await container.read(recordingStateNotifierProvider.notifier).start();
 
-      engine.emit(SttResult(text: 'hel', isFinal: false, confidence: 0.8, timestamp: DateTime(2026), sourceId: 'default'));
+      engine.emit(
+        SttResult(
+          text: 'hel',
+          isFinal: false,
+          confidence: 0.8,
+          timestamp: DateTime(2026),
+          sourceId: 'default',
+        ),
+      );
       await pumpEventQueue();
 
       final state = container.read(recordingStateNotifierProvider);
@@ -201,26 +221,32 @@ void main() {
       expect(engine.isListening, isFalse);
     });
 
-    test('resume → RecordingActiveState + SessionStateEvent(recording) on bus',
-        () async {
-      final engine = _MockSttEngine();
-      final bus = _RecordingCaptionBus();
-      final container = _buildContainer(engine, bus, prefs);
+    test(
+      'resume → RecordingActiveState + SessionStateEvent(recording) on bus',
+      () async {
+        final engine = _MockSttEngine();
+        final bus = _RecordingCaptionBus();
+        final container = _buildContainer(engine, bus, prefs);
 
-      final notifier = container.read(recordingStateNotifierProvider.notifier);
-      await notifier.start();
-      await notifier.pause();
-      await notifier.resume();
+        final notifier = container.read(
+          recordingStateNotifierProvider.notifier,
+        );
+        await notifier.start();
+        await notifier.pause();
+        await notifier.resume();
 
-      expect(
-        container.read(recordingStateNotifierProvider),
-        isA<RecordingActiveState>(),
-      );
+        expect(
+          container.read(recordingStateNotifierProvider),
+          isA<RecordingActiveState>(),
+        );
 
-      final stateEvents = bus.published.whereType<SessionStateEvent>().toList();
-      expect(stateEvents.last.state, isA<RecordingActiveState>());
-      expect(engine.isListening, isTrue);
-    });
+        final stateEvents = bus.published
+            .whereType<SessionStateEvent>()
+            .toList();
+        expect(stateEvents.last.state, isA<RecordingActiveState>());
+        expect(engine.isListening, isTrue);
+      },
+    );
 
     test('stop → StoppedState + SessionStateEvent(stopped) on bus', () async {
       final engine = _MockSttEngine();
@@ -241,44 +267,72 @@ void main() {
       expect(engine.isListening, isFalse);
     });
 
-    test('full lifecycle: start → emit → pause → resume → emit → stop',
-        () async {
-      final engine = _MockSttEngine();
-      final bus = _RecordingCaptionBus();
-      final container = _buildContainer(engine, bus, prefs);
+    test(
+      'full lifecycle: start → emit → pause → resume → emit → stop',
+      () async {
+        final engine = _MockSttEngine();
+        final bus = _RecordingCaptionBus();
+        final container = _buildContainer(engine, bus, prefs);
 
-      final notifier = container.read(recordingStateNotifierProvider.notifier);
+        final notifier = container.read(
+          recordingStateNotifierProvider.notifier,
+        );
 
-      await notifier.start();
-      engine.emit(SttResult(text: 'before pause', isFinal: true, confidence: 1.0, timestamp: DateTime(2026), sourceId: 'default'));
-      await pumpEventQueue();
+        await notifier.start();
+        engine.emit(
+          SttResult(
+            text: 'before pause',
+            isFinal: true,
+            confidence: 1,
+            timestamp: DateTime(2026),
+            sourceId: 'default',
+          ),
+        );
+        await pumpEventQueue();
 
-      await notifier.pause();
+        await notifier.pause();
 
-      // Events while paused must not appear on the bus.
-      engine.emit(SttResult(text: 'during pause', isFinal: true, confidence: 1.0, timestamp: DateTime(2026), sourceId: 'default'));
-      await pumpEventQueue();
+        // Events while paused must not appear on the bus.
+        engine.emit(
+          SttResult(
+            text: 'during pause',
+            isFinal: true,
+            confidence: 1,
+            timestamp: DateTime(2026),
+            sourceId: 'default',
+          ),
+        );
+        await pumpEventQueue();
 
-      await notifier.resume();
-      engine.emit(SttResult(text: 'after resume', isFinal: true, confidence: 1.0, timestamp: DateTime(2026), sourceId: 'default'));
-      await pumpEventQueue();
+        await notifier.resume();
+        engine.emit(
+          SttResult(
+            text: 'after resume',
+            isFinal: true,
+            confidence: 1,
+            timestamp: DateTime(2026),
+            sourceId: 'default',
+          ),
+        );
+        await pumpEventQueue();
 
-      await notifier.stop();
+        await notifier.stop();
 
-      final results = bus.published
-          .whereType<SttResultEvent>()
-          .map((e) => e.result.text)
-          .toList();
+        final results = bus.published
+            .whereType<SttResultEvent>()
+            .map((e) => e.result.text)
+            .toList();
 
-      expect(results, contains('before pause'));
-      expect(results, isNot(contains('during pause')));
-      expect(results, contains('after resume'));
+        expect(results, contains('before pause'));
+        expect(results, isNot(contains('during pause')));
+        expect(results, contains('after resume'));
 
-      final stateEvents = bus.published
-          .whereType<SessionStateEvent>()
-          .map((e) => e.state)
-          .toList();
-      expect(stateEvents.last, isA<StoppedState>());
-    });
+        final stateEvents = bus.published
+            .whereType<SessionStateEvent>()
+            .map((e) => e.state)
+            .toList();
+        expect(stateEvents.last, isA<StoppedState>());
+      },
+    );
   });
 }

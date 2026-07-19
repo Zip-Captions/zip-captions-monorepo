@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 
 /// Persistent navigation rail for desktop (width > 768 px).
 ///
@@ -32,6 +33,7 @@ class ZbNavRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ZipBroadcastLocalizations.of(context)!;
     final broadcastIcon = isBroadcastActive
         ? Badge(
             backgroundColor: Theme.of(context).colorScheme.error,
@@ -71,20 +73,20 @@ class ZbNavRail extends StatelessWidget {
         ),
       ),
       destinations: [
-        const NavigationRailDestination(
-          icon: Icon(Icons.home_outlined),
-          selectedIcon: Icon(Icons.home),
-          label: Text('Home'),
+        NavigationRailDestination(
+          icon: const Icon(Icons.home_outlined),
+          selectedIcon: const Icon(Icons.home),
+          label: Text(l10n.appTitleDefault),
         ),
         NavigationRailDestination(
           icon: broadcastIcon,
           selectedIcon: broadcastSelectedIcon,
-          label: const Text('Broadcast'),
+          label: Text(l10n.appTitleBroadcast),
         ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.history_outlined),
-          selectedIcon: Icon(Icons.history),
-          label: Text('History'),
+        NavigationRailDestination(
+          icon: const Icon(Icons.history_outlined),
+          selectedIcon: const Icon(Icons.history),
+          label: Text(l10n.appTitleHistory),
         ),
       ],
     );

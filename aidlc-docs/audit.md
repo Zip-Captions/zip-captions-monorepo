@@ -935,3 +935,33 @@
 **Context**: Unit 7 Documentation Refinement — COMPLETE. Phase 1 Construction fully closed. Ready for Phase 2 planning.
 
 ---
+## CONSTRUCTION - Unit 7: PR #16 Review Feedback — Code Generation (Planning)
+**Timestamp**: 2026-07-18T18:00:00Z
+**User Input**: "Check PR #16 ... for review status and feedback. Pull any comments/requested changes via gh pr view 16 --comments and gh pr checks 16. If there's feedback, address it and push updates." followed by "Determine why the runner failed, we need to make sure that all actions work properly." followed by "Use the ai-dlc approach to respond to the PR feedback"
+**AI Response**: Pulled PR #16 status via gh pr view/api/checks. Found reviewDecision=CHANGES_REQUESTED (CodeRabbit, 5 actionable comments across 4 files) and 2 failing CI checks (Analyze & Test lint failures; Windows Build Verify MSVC C2338 on local_auth_windows/permission_handler_windows). Root-caused Windows failure: windows-latest runner image now ships MSVC toolset that removed deprecated <experimental/coroutine> support; last green Windows Build Verify run was April 2026 on the same code path, confirming this is a runner/toolchain regression, not caused by this PR's diff. Created code generation plan `aidlc-docs/construction/plans/unit7-pr16-review-fixes-code-generation-plan.md` (9 steps: 6 review-comment fixes, lint fixes, Windows toolchain fix, verification) as a revision within Unit 7's existing Code Generation stage — no new Functional Design/NFR stages needed per Adaptive Workflow Principle.
+**Context**: Unit 7 Code Generation — Planning (revision pass). Awaiting user approval before executing Part 2 (Generation).
+
+---
+## CONSTRUCTION - Unit 7: PR #16 Review Feedback — Code Generation (Approval)
+**Timestamp**: 2026-07-18T18:05:00Z
+**User Input**: "Approve — execute the plan"
+**AI Response**: Plan approved. Proceeding to Part 2 (Generation) of `unit7-pr16-review-fixes-code-generation-plan.md`.
+**Context**: Unit 7 Code Generation — Generation starting.
+
+---
+## CONSTRUCTION - Unit 7: PR #16 Review Feedback — Code Generation (Generation complete)
+**Timestamp**: 2026-07-19T00:00:00Z
+**User Input**: (execution of approved plan; no further user input during generation)
+**AI Response**: Executed all 9 plan steps. Summary:
+- Step 1: Added `_loadFuture` fence to `ObsSettingsNotifier` (broadcast_providers.dart), awaited in `update()`/`markConnectionVerified()`.
+- Step 2: Fixed OBS toggle lockout in output_targets_panel.dart — `onToggle` now allows disabling even when unverified.
+- Step 3: Reordered `_testConnection()` in settings_screen.dart so `markConnectionVerified()` persists before the `mounted` check.
+- Step 4: Localized zb_nav_rail.dart nav labels via `ZipBroadcastLocalizations` (appTitleDefault/appTitleBroadcast/appTitleHistory), matching ZbAppShell's existing pattern.
+- Step 5: SKIPPED as false positive — package imports can't address test/ files; matches 39 other test files' existing relative-import convention.
+- Step 6: Added `sharedPreferencesProvider.overrideWithValue(prefs)` to audio_config_recording_integration_test.dart and caption_bus_flow_test.dart containers.
+- Step 7: Fixed 10 lint infos in recording_pipeline_integration_test.dart (prefer_int_literals, lines_longer_than_80_chars).
+- Step 8: Root-caused Windows CI failure to windows-latest runner's MSVC toolset dropping `<experimental/coroutine>` support. Applied `_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS` compile definition in zip_captions/windows/CMakeLists.txt's `APPLY_STANDARD_SETTINGS` (applies to all targets including local_auth_windows/permission_handler_windows plugins). Did not bump local_auth to 3.x (breaking API change, out of scope) since permission_handler_windows has no newer version anyway.
+- Step 9: Verified — additional pre-existing lint issues surfaced in zip_broadcast test files once zip_captions's failure stopped masking them via fail-fast (obs_settings_connection_integration_test.dart: cascade_invocations, prefer_int_literals, avoid_redundant_argument_values, prefer_const_constructors); fixed via `dart fix --apply` + targeted `// ignore: cascade_invocations` comments (matching existing repo precedent in obs_websocket_target_test.dart). Final state: `melos run analyze` — 0 issues across all 4 packages. `flutter test` — zip_core 313 passed, zip_broadcast 93 passed, zip_captions 71 passed (zip_supabase has no test/ directory, pre-existing, unrelated).
+**Context**: Unit 7 Code Generation (PR #16 revision) — COMPLETE. Ready to commit and push to `feature/phase1-integration-tests`, then re-check CI/CodeRabbit on PR #16.
+
+---

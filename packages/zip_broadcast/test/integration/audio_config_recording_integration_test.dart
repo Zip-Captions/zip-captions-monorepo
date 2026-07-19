@@ -19,9 +19,11 @@ import '../helpers/mock_stt_engine.dart';
 
 ProviderContainer _buildContainer({
   required List<Override> engineOverrides,
+  required SharedPreferences prefs,
 }) {
   final container = ProviderContainer(
     overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
       captionBusProvider.overrideWithValue(MockCaptionBus()),
       wakeLockServiceProvider.overrideWithValue(FakeWakeLockService()),
       resolvedLocaleIdProvider.overrideWithValue('en-US'),
@@ -37,21 +39,25 @@ ProviderContainer _buildContainer({
 // ---------------------------------------------------------------------------
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  late SharedPreferences prefs;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+  });
 
   group('INT-ZB-02: AudioInputConfigNotifier → BroadcastRecordingNotifier', () {
     test('default config → start → one active session', () async {
       // AudioInputConfigNotifier starts with the built-in default: deviceId='default'.
       final engine = MockSttEngine();
       final container = _buildContainer(
+        prefs: prefs,
         engineOverrides: [
           sttEngineFactoryProvider('default').overrideWith((_) => engine),
         ],
       );
 
-      await container
-          .read(broadcastRecordingNotifierProvider.notifier)
-          .start();
+      await container.read(broadcastRecordingNotifierProvider.notifier).start();
 
       final state = container.read(broadcastRecordingNotifierProvider);
       expect(state, isA<BroadcastActiveState>());
@@ -60,46 +66,49 @@ void main() {
       expect(active.perEngineStates.keys, contains('default'));
     });
 
-    test('add custom config, remove default → start → session for custom deviceId',
-        () async {
-      final engine = MockSttEngine();
-      final container = _buildContainer(
-        engineOverrides: [
-          sttEngineFactoryProvider('mic-custom').overrideWith((_) => engine),
-        ],
-      );
+    test(
+      'add custom config, remove default → start → session for custom deviceId',
+      () async {
+        final engine = MockSttEngine();
+        final container = _buildContainer(
+          prefs: prefs,
+          engineOverrides: [
+            sttEngineFactoryProvider('mic-custom').overrideWith((_) => engine),
+          ],
+        );
 
-      // Mutate real AudioInputConfigNotifier via the Riverpod container.
-      final configNotifier =
-          container.read(audioInputConfigNotifierProvider.notifier);
-      await configNotifier.loadFuture;
-      await configNotifier.removeConfig('default');
-      await configNotifier.addConfig(
-        const AudioInputConfig(deviceId: 'mic-custom', name: 'Custom Mic'),
-      );
+        // Mutate real AudioInputConfigNotifier via the Riverpod container.
+        final configNotifier = container.read(
+          audioInputConfigNotifierProvider.notifier,
+        );
+        await configNotifier.loadFuture;
+        await configNotifier.removeConfig('default');
+        await configNotifier.addConfig(
+          const AudioInputConfig(deviceId: 'mic-custom', name: 'Custom Mic'),
+        );
 
-      await container
-          .read(broadcastRecordingNotifierProvider.notifier)
-          .start();
+        await container
+            .read(broadcastRecordingNotifierProvider.notifier)
+            .start();
 
-      final state = container.read(broadcastRecordingNotifierProvider);
-      expect(state, isA<BroadcastActiveState>());
-      final active = state as BroadcastActiveState;
-      expect(active.perEngineStates.keys, contains('mic-custom'));
-      expect(active.perEngineStates.keys, isNot(contains('default')));
-    });
+        final state = container.read(broadcastRecordingNotifierProvider);
+        expect(state, isA<BroadcastActiveState>());
+        final active = state as BroadcastActiveState;
+        expect(active.perEngineStates.keys, contains('mic-custom'));
+        expect(active.perEngineStates.keys, isNot(contains('default')));
+      },
+    );
 
     test('no configs → start → BroadcastIdleState with lastError', () async {
-      final container = _buildContainer(engineOverrides: []);
+      final container = _buildContainer(engineOverrides: [], prefs: prefs);
 
-      final configNotifier =
-          container.read(audioInputConfigNotifierProvider.notifier);
+      final configNotifier = container.read(
+        audioInputConfigNotifierProvider.notifier,
+      );
       await configNotifier.loadFuture;
       await configNotifier.removeConfig('default');
 
-      await container
-          .read(broadcastRecordingNotifierProvider.notifier)
-          .start();
+      await container.read(broadcastRecordingNotifierProvider.notifier).start();
 
       final state = container.read(broadcastRecordingNotifierProvider);
       expect(state, isA<BroadcastIdleState>());
@@ -110,24 +119,26 @@ void main() {
       final e0 = MockSttEngine();
       final e1 = MockSttEngine();
       final container = _buildContainer(
+        prefs: prefs,
         engineOverrides: [
           sttEngineFactoryProvider('mic-a').overrideWith((_) => e0),
           sttEngineFactoryProvider('mic-b').overrideWith((_) => e1),
         ],
       );
 
-      final configNotifier =
-          container.read(audioInputConfigNotifierProvider.notifier);
+      final configNotifier = container.read(
+        audioInputConfigNotifierProvider.notifier,
+      );
       await configNotifier.loadFuture;
       await configNotifier.removeConfig('default');
-      await configNotifier
-          .addConfig(const AudioInputConfig(deviceId: 'mic-a', name: 'A'));
-      await configNotifier
-          .addConfig(const AudioInputConfig(deviceId: 'mic-b', name: 'B'));
+      await configNotifier.addConfig(
+        const AudioInputConfig(deviceId: 'mic-a', name: 'A'),
+      );
+      await configNotifier.addConfig(
+        const AudioInputConfig(deviceId: 'mic-b', name: 'B'),
+      );
 
-      await container
-          .read(broadcastRecordingNotifierProvider.notifier)
-          .start();
+      await container.read(broadcastRecordingNotifierProvider.notifier).start();
 
       final state = container.read(broadcastRecordingNotifierProvider);
       expect(state, isA<BroadcastActiveState>());

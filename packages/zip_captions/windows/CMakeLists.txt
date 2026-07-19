@@ -43,6 +43,12 @@ function(APPLY_STANDARD_SETTINGS TARGET)
   target_compile_options(${TARGET} PRIVATE /EHsc)
   target_compile_definitions(${TARGET} PRIVATE "_HAS_EXCEPTIONS=0")
   target_compile_definitions(${TARGET} PRIVATE "$<$<CONFIG:Debug>:_DEBUG>")
+  # local_auth_windows and permission_handler_windows still use
+  # <experimental/coroutine>, which newer MSVC toolsets (VS 2026 / VC Tools
+  # 14.51+) hard-error on (C2338) unless this is defined. Remove once both
+  # plugins ship C++20 <coroutine>-based implementations.
+  target_compile_definitions(${TARGET} PRIVATE
+    "_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS")
 endfunction()
 
 # Flutter library and tool build rules.
