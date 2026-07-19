@@ -43,12 +43,6 @@ function(APPLY_STANDARD_SETTINGS TARGET)
   target_compile_options(${TARGET} PRIVATE /EHsc)
   target_compile_definitions(${TARGET} PRIVATE "_HAS_EXCEPTIONS=0")
   target_compile_definitions(${TARGET} PRIVATE "$<$<CONFIG:Debug>:_DEBUG>")
-  # local_auth_windows and permission_handler_windows still use
-  # <experimental/coroutine>, which newer MSVC toolsets (VS 2026 / VC Tools
-  # 14.51+) hard-error on (C2338) unless this is defined. Remove once both
-  # plugins ship C++20 <coroutine>-based implementations.
-  target_compile_definitions(${TARGET} PRIVATE
-    "_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS")
 endfunction()
 
 # Flutter library and tool build rules.
@@ -62,6 +56,20 @@ add_subdirectory("runner")
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)
+
+# local_auth_windows and permission_handler_windows still use
+# <experimental/coroutine>, which newer MSVC toolsets (VS 2026 / VC Tools
+# 14.51+) hard-error on (C2338) unless this is defined. Scoped to just these
+# two plugin targets so unrelated targets keep the deprecation diagnostic.
+# Remove once both plugins ship C++20 <coroutine>-based implementations.
+foreach(_coroutine_workaround_target
+    local_auth_windows_plugin
+    permission_handler_windows_plugin)
+  if(TARGET ${_coroutine_workaround_target})
+    target_compile_definitions(${_coroutine_workaround_target} PRIVATE
+      "_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS")
+  endif()
+endforeach()
 
 
 # === Installation ===
