@@ -979,3 +979,115 @@
 **Context**: Unit 7 — CLOSED. Phase 1 Construction — FULLY COMPLETE. Next: Phase 2 Requirements Analysis (Inception phase, switch to Opus).
 
 ---
+
+## PHASE 2 — Workspace Detection + Requirements Analysis (start)
+**Timestamp**: 2026-07-19T21:00:00Z
+**User Input**: "Start Phase 2 planning (Broadcasting & Transport) via the AI-DLC Requirements Analysis stage. Read _current-context.md in the vault first — it points to the Unit 7 handoff and docs/03-roadmap.md's Phase 2 section for scope (WebRTC + Supabase Realtime live broadcast, replacing v1's Socket.IO + PeerJS, stable broadcast URLs). Phase 1 is fully merged and closed; the caption-bus prerequisite is satisfied. Follow ai-dlc/aidlc-rules/aws-aidlc-rules/core-workflow.md for the Inception flow. Note the 3 flagged research spikes (Supabase Realtime channel limits, OBS WebSocket protocol, Coturn/TURN relay) — figure out whether they need to happen before or during Requirements Analysis."
+**AI Response**: Loaded vault _current-context.md, handoffs/unit7-pr-review.md, docs/03-roadmap.md (Phase 2 section), ADR-008/011/006/009, extension opt-in files, aidlc-state.md. Workspace Detection: brownfield; Phase 1 Construction fully complete (PR #16 merged 2026-07-19); caption bus (ADR-008) exists in zip_core; OBS + browser-source output targets already shipped in Phase 1 Unit 6; no reverse engineering needed. Phase 2 is a new Inception cycle. Model: Opus (Inception phase per CLAUDE.md) — confirmed active. Spike-timing assessment: none of the 3 spikes (2.1 Supabase Realtime limits, 2.2 OBS WebSocket CC protocol, 2.3 Coturn/TURN) block Requirements Analysis — they validate feasibility/infra and inform Construction-phase NFR/Infrastructure Design, matching the Phase 1 precedent where spikes 1.1-1.3 ran as early Construction units. Recommended running them as early Phase 2 construction units (option B in the questions file), with Requirements Analysis proceeding now and flagging any requirement whose target depends on a spike outcome (e.g. concurrent-viewer NFR ← Spike 2.1). Determined requirements depth = Comprehensive (system-wide new feature, cross-phase dependencies, security/networking risk). Generated aidlc-docs/inception/requirements/phase2-requirement-verification-questions.md (12 questions incl. 2 extension opt-ins). GATE: awaiting user answers before generating requirements.md.
+**Context**: Phase 2 Inception — Workspace Detection COMPLETE; Requirements Analysis in progress (Step 6 gate).
+
+---
+
+## PHASE 2 — Requirements Analysis (answers review + clarifications)
+**Timestamp**: 2026-09-25T18:54:15Z
+**User Input**: "using ai-dlc, I would like to review the phase 2 requirements verification questions, and begin the next piece of work"
+**AI Response**: Reviewed all 12 answers in phase2-requirement-verification-questions.md (Q1:A, Q2:B, Q3:C, Q4:B, Q5:A, Q6:B, Q7:A, Q8:B, Q9:B, Q10:C with 100-200 viewer target, Q11:A, Q12:A). Accepted Q1, Q5, Q7, Q10, Q11, Q12 as-is; Security Baseline and PBT remain enabled (full rule files deferred to first constraining Construction stage per aidlc-project-rules/common/session-protocol.md). Contradiction/ambiguity analysis per question-format-guide.md found: (1) Q2:B pulled-forward auth vs Q9:B persistence deferred "until auth exists", plus ADR-011 permanent broadcast ID cannot be ephemeral-only; (2) Q2:B "minimal auth" undefined (mechanism; which Zip Broadcast features require sign-in; OAuth is security-critical requiring approach pre-approval); (3) Q8:B optional viewer sign-in has no Phase 2 function defined; (4) Q3:C deferred relay for lack of E2E encryption vs Q4:B local Wi-Fi WebSocket with same plaintext exposure, plus WebRTC host candidates already cover same-network delivery and web cannot host/consume local ws; (5) destination of deferred relay deliverables and exit criterion; (6) with relay deferred, Spike 2.1 no longer measures the 100-200 viewer bottleneck (broadcaster WebRTC fan-out), and at-capacity behaviour undefined; (7) Q6:B external display platform scope and likely new multi-window dependency. Created aidlc-docs/inception/requirements/phase2-clarification-questions.md (8 questions). GATE: awaiting clarification answers before generating phase2-requirements.md.
+**Context**: Phase 2 Inception — Requirements Analysis, Step 6 gate (clarification round 1).
+
+---
+
+## PHASE 2 — Requirements Analysis (clarifications answered; requirements generated)
+**Timestamp**: 2026-09-25T19:12:59Z
+**User Input**: "I've filled in the answers"
+**AI Response**: Read phase2-clarification-questions.md answers: CQ1:A (hybrid persistence: broadcast_id registry in Postgres + RLS, session state ephemeral in Realtime), CQ2:A (GoTrue with provider-agnostic OAuth, 1-2 providers), CQ3:A (sign-in required only for remote broadcasting), CQ4:A (viewer identity protocol-ready only; viewer sign-in UI Phase 3), CQ5:A (local Wi-Fi WebSocket deferred to Phase 5), CQ6:A (relay deliverables and exit criterion move to Phase 3), CQ7:A (Spike 2.1 re-scoped to broadcaster fan-out + signaling load; hard cap with "broadcast is full"), CQ8:A (external display Zip Broadcast desktop only). Re-validated: no remaining contradictions. Step 6 gate passed. Generated aidlc-docs/inception/requirements/phase2-requirements.md (Comprehensive depth: 10 FRs, 8 NFR groups, 3 spikes, deferred-scope table, doc updates, extension compliance, revised exit criteria, 4 assumptions to confirm). Updated aidlc-state.md with Phase 2 section. Next stage recommendation: User Stories (new user-facing features across Jordan and Sam personas). GATE: awaiting requirements approval.
+**Context**: Phase 2 Inception — Requirements Analysis, Step 9 approval gate.
+
+---
+
+## PHASE 2 — Requirements Analysis (approval)
+**Timestamp**: 2026-09-25T19:25:54Z
+**User Input**: "approve and continue"
+**AI Response**: Requirements approved; phase2-requirements.md accepted. Attempted to load User Stories rules and found .aidlc-rule-details (symlink to ai-dlc/aidlc-rules/aws-aidlc-rule-details) is broken: the ai-dlc submodule working tree was fast-forwarded at 2026-09-25 15:14 -0400 from the pinned b7161b66 to 60214a06 (435 commits ahead), and upstream no longer contains aidlc-rules/. Stopped per AGENTS.md "if blocked, stop and document the blocker"; asked user how to proceed.
+**Context**: Phase 2 Inception — Requirements Analysis COMPLETE (approved). User Stories blocked on missing rule files.
+
+---
+
+## PHASE 2 — ai-dlc submodule restore
+**Timestamp**: 2026-09-25T19:29:02Z
+**User Input**: "Restore pinned commit (Recommended)" (answer to: ai-dlc submodule moved 435 commits ahead to 60214a06 and no longer contains aidlc-rules/; how to proceed?)
+**AI Response**: Ran git -C ai-dlc checkout b7161b66 (the commit recorded by the monorepo). Submodule status now clean at b7161b66; .aidlc-rule-details resolves again. Adopting the restructured upstream ai-dlc is left as a separate task.
+**Context**: Phase 2 Inception — blocker resolved.
+
+---
+
+## PHASE 2 — User Stories (Part 1: Planning)
+**Timestamp**: 2026-09-25T19:29:02Z
+**User Input**: (continuation of "approve and continue")
+**AI Response**: Loaded inception/user-stories.md. Assessment: execute (new user features in both apps, multi-persona interaction Jordan/Sam, complex state logic) — aidlc-docs/inception/plans/phase2-user-stories-assessment.md. Created aidlc-docs/inception/plans/phase2-story-generation-plan.md with 7 questions (carry forward Phase 1 conventions; Sam remote-viewer scenario gap / proposed S3.6; milestone selection; prototype scope; security-critical review gates; infrastructure enabler stories; placement of failure-path/security ACs) and 15 generation steps. Phase 2 artifacts use phase2- prefix; story IDs continue from Phase 1 (S-11+, Proto-10+). GATE: awaiting answers.
+**Context**: Phase 2 Inception — User Stories, Part 1 Planning (Step 7-8 gate).
+
+---
+
+## PHASE 2 — User Stories (Part 1: plan approval)
+**Timestamp**: 2026-09-25T21:00:03Z
+**User Input**: "done" (all 7 story-plan answers: A). Then, to approval prompt "Approve the story plan and start generating stories?": "Approve & generate". To "Line 1 of phase2-requirements.md now begins with 'ok' ... sign-off or stray?": "Stray: remove it".
+**AI Response**: Analyzed answers (Step 9): no ambiguity; all match recommended options. Removed stray "ok" prefix from phase2-requirements.md heading. Plan approved; starting Part 2 generation.
+**Context**: Phase 2 Inception — User Stories, Part 1 approved; Part 2 Generation starting.
+
+---
+
+## PHASE 2 — User Stories (Part 2: generation complete)
+**Timestamp**: 2026-09-25T21:20:00Z
+**User Input**: (tool rejection feedback) "Why are you using bash, when you should be able to work with any files in the working directory just by reading them? You keep pausing and waiting for me to grant permission to a bash script that you're using to read a file. That seems wrong"
+**AI Response**: Switched to Read/Edit/Write for all file operations; saved as a feedback memory. Executed all 15 plan steps. Brownfield finding: Phase 1 CaptionOverlayTarget (desktop_multi_window, targetDisplayId) exists but never opens a window and cannot list displays; S-20 completes it, and FR-9.6 was added to phase2-requirements.md recording this. Generated aidlc-docs/inception/user-stories/phase2-stories.md: enablers S-11 (broadcast identity backend), S-12 (Coturn), S-13 (Realtime signaling), S-14 (WebRTC transport); features S-15 (auth), S-16 (remote output target), S-17 (session management), S-18 (capacity), S-19 (viewer), S-20 (external display); security reviews SR-01 (OAuth), SR-02 (RLS + Realtime authorization), SR-03 (server log config); prototypes Proto-10..15; milestones M-S2.2 (completed), M-S2.3 (Phase 2 slice), M-S3.6, M-REG-01; traceability matrix, dependency graph, INVEST table. Generated phase2-personas.md with draft S3.6 scenario for Documentation Refinement. GATE: awaiting user story approval.
+**Context**: Phase 2 Inception — User Stories, Step 20-21 approval gate.
+
+---
+
+## PHASE 2 — User Stories (approval) + Workflow Planning
+**Timestamp**: 2026-09-25T21:35:00Z
+**User Input**: "approve and continue"
+**AI Response**: User stories approved. Loaded inception/workflow-planning.md and phase1-execution-plan.md (format precedent). Generated aidlc-docs/inception/plans/phase2-execution-plan.md: risk High; Application Design EXECUTE (new cross-package components; transport abstraction must accommodate Phase 3/5 transports); Units Generation EXECUTE; Reverse Engineering SKIP; Operations SKIP (Coturn delivered for local stack; VPS/domain hosting out of scope). Preliminary construction: Spikes 2.1-2.3 plus 9 units (1 Prototypes; 2 Auth + SR-01; 3 Identity + Signaling + SR-02; 4 Coturn + SR-03; 5 WebRTC Transport + Remote Output + Capacity; 6 ZB Broadcast UI; 7 ZC Viewer; 8 External Display; 9 Integration Milestones). Package sequence zip_supabase -> local stack -> zip_core -> apps. Noted single-branch workflow (no worktrees) per project memory. Mermaid diagram with text alternative. GATE: awaiting execution plan approval.
+**Context**: Phase 2 Inception — Workflow Planning, Step 9 approval gate.
+
+---
+
+## PHASE 2 — Workflow Planning (approval) + Application Design (plan)
+**Timestamp**: 2026-09-25T21:45:00Z
+**User Input**: "approve and continue"
+**AI Response**: Execution plan approved. Loaded inception/application-design.md, Phase 1 application-design-plan.md and phase1-application-design.md (precedent), zip_captions and zip_core pubspecs (go_router present; supabase_flutter and flutter_webrtc not yet added). Created aidlc-docs/inception/plans/phase2-application-design-plan.md: 12 design steps, 6 mandatory artifacts (phase2- prefix), carried-forward constraints (plain Dart services behind providers, registry-managed targets, explicit side-effect calls, stable contracts unchanged, signaling behind an interface), and 6 questions: package placement; transport abstraction shape; broadcast vs recording lifecycle; viewer session and caption bus; Supabase client ownership; display enumeration dependency. Resolution mechanism, TURN credential issuance and OAuth flow left to Functional/Infrastructure Design under SR-01..03. GATE: awaiting answers.
+**Context**: Phase 2 Inception — Application Design, Step 6-7 gate.
+
+---
+
+## PHASE 2 — Application Design (answers + generation)
+**Timestamp**: 2026-09-25T22:10:00Z
+**User Input**: "proceed" (plan answers: Q1 A, Q2 A, Q4 A, Q5 A, Q6 A; Q3: "It should be independent, so that broadcast can start without starting captions, but there should be a configuration option to provide the coupled start if a user desires. In the case where a broadcast exists but no active caption session is running, the UI for any connected user should render a message similar to the paused message, whereby it informs the user that there is no active text stream because the broadcast has paused captions. The broadcaster should be able to easily see a large notification that the captions are inactive when in an active broadcast with no live captioning sessions yet started.")
+**AI Response**: Analyzed answers: Q3 custom answer is specific (independent lifecycles; opt-in coupled start defaulting off; viewer paused-captions message; broadcaster large captions-inactive notice); no follow-up needed. Read zip_core CaptionBus, CaptionEvent, CaptionOutputTarget, RecordingState, SttResult to align signatures. Generated aidlc-docs/inception/application-design/phase2-components.md, phase2-component-methods.md, phase2-services.md (flows F1-F8), phase2-component-dependency.md, phase2-application-design.md. Introduced CaptionActivity (active/paused/inactive) derived from existing SessionStateEvent and sent as a snapshot on viewer join. Applied Q3 revisions: phase2-requirements.md FR-6.7 (new) and FR-7.4; phase2-stories.md S-16, S-17, S-19, Proto-11, Proto-12, Proto-15. GATE: awaiting application design approval.
+**Context**: Phase 2 Inception — Application Design, Step 12-13 approval gate.
+
+---
+
+## PHASE 2 — Application Design (approval) + Units Generation (Part 1 planning)
+**Timestamp**: 2026-09-25T22:20:00Z
+**User Input**: "proceed"
+**AI Response**: Application design approved. Loaded inception/units-generation.md and Phase 1 unit-of-work-plan.md (precedent). Created aidlc-docs/inception/plans/phase2-unit-of-work-plan.md: 11 decomposition steps for 3 spikes + 9 units, 5 mandatory artifacts (phase2- prefix), and 5 questions: UI unit stage depth (Phase 1 precedent full stages); spike sequencing (per-unit dependencies); PR boundaries (one PR per unit per AGENTS.md vs bundling); Unit 5 size (keep vs split); spike code (throwaway vs seed). GATE: awaiting answers.
+**Context**: Phase 2 Inception — Units Generation, Part 1 Step 5-6 gate.
+
+---
+
+## PHASE 2 — Units Generation (plan approval + generation)
+**Timestamp**: 2026-09-25T22:35:00Z
+**User Input**: "done" (answers Q1-Q5: all A). To approval prompt "Unit of work plan complete ... Ready to generate the unit documents?": "Approve & generate".
+**AI Response**: Answers analyzed; no ambiguity. Generated aidlc-docs/inception/application-design/phase2-unit-of-work.md (Spikes 2.1-2.3 with deliverables/exit criteria, spike code in spikes/phase2/ never merged; Units 1-9 with packages, stories, components, stages; SR-01/02/03 approval gates before Code Generation of U2/U3/U4; stage summary table), phase2-unit-of-work-dependency.md (matrix, graph with text alternative, critical path, suggested single-branch build order, shared resources, testing checkpoints), phase2-unit-of-work-story-map.md (all 10 stories, 3 reviews, 6 prototypes, 4 milestones, 3 spikes assigned exactly once; FR/NFR/exit-criteria and persona mapping). GATE: awaiting units approval; next is CONSTRUCTION (switch to Sonnet per CLAUDE.md).
+**Context**: Phase 2 Inception — Units Generation, Step 16-17 approval gate.
+
+---
+
+## PHASE 2 — Units Generation (approval) — Inception complete
+**Timestamp**: 2026-09-26T01:08:26Z
+**User Input**: "let's mark phase 2 inception as complete before I commit and push"
+**AI Response**: Units approved. Marked Units Generation COMPLETE (approved) in aidlc-state.md, recorded Phase 2 Inception as COMPLETE, and set Current Stage to CONSTRUCTION Phase 2 — not started (next: Unit 1 Prototypes with Proto-10 first, then Spike 2.1, per the suggested build order in phase2-unit-of-work-dependency.md). Construction to run in a new session on Sonnet per CLAUDE.md model selection.
+**Context**: Phase 2 Inception — Units Generation, Step 17 approval recorded; Inception → Construction transition.
+
+---

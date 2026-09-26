@@ -75,3 +75,7 @@ node_modules/
 # Working docs (inception, construction, audit) are tracked in VCS
 # aidlc-docs/ — formerly gitignored, now committed for design traceability
 .claude/settings.json
+
+# ---------- MCP Servers -----------
+# Local mcp servers used for LLM tooling
+.mcp.json
