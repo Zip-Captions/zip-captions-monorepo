@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proto-10: Sign-In — Zip Broadcast</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --surface: #FAFCFF; --surface-low: #FFFFFF; --surface-high: #EEF2F8;
+      --surface-highest: #E4EAF2; --primary: #1A5A8C; --on-primary: #FFFFFF;
+      --secondary-container: #DAE3F0; --on-secondary-container: #0B141D;
+      --on-surface: #0B141D; --on-surface-var: #6B7380;
+      --outline: #6B7380; --outline-var: #C4CAD4; --error: #A8191F;
+      --error-container: #F9DEDC; --on-error-container: #410E0B;
+      --ok: #2E7D32; --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
+    }
+    [data-theme="dark"] {
+      --surface: #0B141D; --surface-low: #060F18; --surface-high: #222B34;
+      --surface-highest: #2D3640; --primary: #9ACBFF; --on-primary: #003355;
+      --secondary-container: #414A54; --on-secondary-container: #E0E8F2;
+      --on-surface: #DAE3F0; --on-surface-var: #8B919A;
+      --outline: #8B919A; --outline-var: #41474F; --error: #FFB4AB;
+      --error-container: #93000A; --on-error-container: #FFDAD6;
+      --ok: #81C784;
+    }
+
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--surface); color: var(--on-surface); }
+
+    /* ── Top bar (theme toggle + brand only; this screen has no nav shell) ── */
+    .top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; max-width: 1920px; margin: 0 auto;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon { width: 32px; height: 32px; border-radius: 9px; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .brand-name { font-size: 14px; font-weight: 600; }
+    .icon-btn {
+      width: 40px; height: 40px; border-radius: 50%; border: none;
+      background: transparent; color: var(--on-surface); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 18px; transition: background 0.15s;
+    }
+    .icon-btn:hover { background: var(--surface-high); }
+
+    /* ── Centered sign-in card ── */
+    .stage {
+      min-height: calc(100vh - 72px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      width: 100%; max-width: 420px;
+      background: var(--surface-low); border: 1px solid var(--outline-var);
+      border-radius: var(--r-lg); padding: 32px 28px;
+      display: flex; flex-direction: column; gap: 20px;
+    }
+    .card-icon { width: 56px; height: 56px; border-radius: var(--r-lg); background: var(--secondary-container); color: var(--on-secondary-container); display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto; }
+    .card-title { font-size: 20px; font-weight: 600; text-align: center; }
+    .card-copy { font-size: 14px; color: var(--on-surface-var); text-align: center; line-height: 1.5; }
+
+    .provider-list { display: flex; flex-direction: column; gap: 10px; }
+    .btn-provider {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 13px 18px; border-radius: var(--r-xl); border: 1.5px solid var(--outline-var);
+      background: var(--surface-low); color: var(--on-surface);
+      font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-provider:hover { background: var(--surface-high); border-color: var(--outline); }
+    .provider-icon { font-size: 18px; }
+
+    .divider { display: flex; align-items: center; gap: 10px; color: var(--on-surface-var); font-size: 12px; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--outline-var); }
+
+    .alert {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px 14px; border-radius: var(--r-md);
+      background: var(--error-container); color: var(--on-error-container);
+      font-size: 13px; line-height: 1.5;
+    }
+    .alert-icon { flex-shrink: 0; font-size: 16px; }
+    .btn-retry {
+      align-self: center; padding: 8px 18px; border-radius: var(--r-xl); border: 1.5px solid var(--outline-var);
+      background: transparent; color: var(--on-surface); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .btn-retry:hover { background: var(--surface-high); }
+
+    /* ── Signed-in state ── */
+    .account-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px; border-radius: var(--r-md); background: var(--surface-high);
+    }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; flex-shrink: 0; }
+    .account-info { flex: 1; min-width: 0; }
+    .account-name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .account-email { font-size: 12px; color: var(--on-surface-var); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--ok); }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+    .btn-signout {
+      width: 100%; padding: 12px; border-radius: var(--r-xl); border: 1.5px solid var(--outline-var);
+      background: transparent; color: var(--on-surface); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .btn-signout:hover { background: var(--surface-high); }
+
+    /* ── State switcher (prototype-only control, not part of the design) ── */
+    .state-switcher {
+      display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+      padding: 12px 20px; max-width: 1920px; margin: 0 auto;
+    }
+    .state-btn {
+      padding: 7px 14px; border-radius: var(--r-xl); border: 1px solid var(--outline-var);
+      background: var(--surface-low); color: var(--on-surface-var);
+      font-family: inherit; font-size: 12px; font-weight: 500; cursor: pointer;
+    }
+    .state-btn.active { background: var(--secondary-container); color: var(--on-secondary-container); border-color: transparent; }
+
+    .desktop-hint {
+      display: none; position: fixed; bottom: 16px; right: 16px;
+      background: var(--surface-highest); color: var(--on-surface-var); font-size: 12px;
+      padding: 8px 12px; border-radius: var(--r-md); border: 1px solid var(--outline-var);
+    }
+    @media (min-width: 768px) { .desktop-hint { display: block; } }
+  </style>
+</head>
+<body>
+
+<header class="top-bar">
+  <div class="brand">
+    <div class="brand-icon">📡</div>
+    <div class="brand-name">Zip Broadcast</div>
+  </div>
+  <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme" data-testid="sign-in-theme-toggle-button"><span id="theme-icon">🌙</span></button>
+</header>
+
+<!-- Prototype-only state switcher -->
+<div class="state-switcher">
+  <button class="state-btn active" onclick="showState('signed-out')" data-testid="sign-in-state-signed-out-button">Signed out</button>
+  <button class="state-btn" onclick="showState('signed-in')" data-testid="sign-in-state-signed-in-button">Signed in</button>
+  <button class="state-btn" onclick="showState('auth-failure')" data-testid="sign-in-state-auth-failure-button">Auth failure</button>
+</div>
+
+<div class="stage">
+
+  <!-- Signed-out state -->
+  <div class="card" id="state-signed-out" data-testid="sign-in-signed-out-card">
+    <div class="card-icon">📡</div>
+    <div class="card-title">Sign in to broadcast</div>
+    <div class="card-copy">Signing in is only needed to broadcast to remote viewers over the internet. Local captioning, on-screen display and your other output targets all work fully signed out.</div>
+    <div class="provider-list">
+      <button class="btn-provider" data-testid="sign-in-google-button"><span class="provider-icon">🔵</span>Continue with Google</button>
+      <button class="btn-provider" data-testid="sign-in-apple-button"><span class="provider-icon">⚫</span>Continue with Apple</button>
+      <button class="btn-provider" data-testid="sign-in-microsoft-button"><span class="provider-icon">🟦</span>Continue with Microsoft</button>
+    </div>
+  </div>
+
+  <!-- Signed-in state -->
+  <div class="card" id="state-signed-in" data-testid="sign-in-signed-in-card" style="display:none">
+    <div class="card-title">Your account</div>
+    <div class="account-row">
+      <div class="avatar">JP</div>
+      <div class="account-info">
+        <div class="account-name">Jordan Park</div>
+        <div class="account-email">jordan.park@example.edu</div>
+      </div>
+    </div>
+    <div class="status-pill" data-testid="sign-in-signed-in-status"><span class="status-dot"></span>Signed in · ready to broadcast remotely</div>
+    <div class="card-copy">You're signed in for remote broadcasting. Local captioning and your other output targets don't require this account.</div>
+    <button class="btn-signout" data-testid="sign-in-sign-out-button">Sign out</button>
+  </div>
+
+  <!-- Auth-failure state -->
+  <div class="card" id="state-auth-failure" data-testid="sign-in-auth-failure-card" style="display:none">
+    <div class="card-icon">📡</div>
+    <div class="card-title">Sign in to broadcast</div>
+    <div class="card-copy">Signing in is only needed to broadcast to remote viewers over the internet. Local captioning, on-screen display and your other output targets all work fully signed out.</div>
+    <div class="alert" data-testid="sign-in-auth-failure-alert">
+      <span class="alert-icon">⚠️</span>
+      <span>Sign-in didn't complete. The provider didn't confirm your identity — check your connection and try again.</span>
+    </div>
+    <button class="btn-retry" onclick="showState('signed-out')" data-testid="sign-in-retry-button">Try again</button>
+    <div class="divider">or choose a different provider</div>
+    <div class="provider-list">
+      <button class="btn-provider" data-testid="sign-in-google-button-retry"><span class="provider-icon">🔵</span>Continue with Google</button>
+      <button class="btn-provider" data-testid="sign-in-apple-button-retry"><span class="provider-icon">⚫</span>Continue with Apple</button>
+      <button class="btn-provider" data-testid="sign-in-microsoft-button-retry"><span class="provider-icon">🟦</span>Continue with Microsoft</button>
+    </div>
+  </div>
+
+</div>
+
+<p class="desktop-hint">Proto-10 · Sign-In · use the state switcher above to view signed-out / signed-in / auth-failure · resize to test web + desktop widths</p>
+
+<script>
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+    document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
+  }
+
+  function showState(state) {
+    ['signed-out', 'signed-in', 'auth-failure'].forEach(s => {
+      document.getElementById('state-' + s).style.display = (s === state) ? 'flex' : 'none';
+    });
+    document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.state-btn[onclick="showState(\'' + state + '\')"]').classList.add('active');
+  }
+</script>
+</body>
+</html>

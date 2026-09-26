@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proto-12: Live Broadcast Dashboard — Zip Broadcast</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --surface: #FAFCFF; --surface-low: #FFFFFF; --surface-high: #EEF2F8;
+      --surface-highest: #E4EAF2; --primary: #1A5A8C; --on-primary: #FFFFFF;
+      --secondary-container: #DAE3F0; --on-secondary-container: #0B141D;
+      --on-surface: #0B141D; --on-surface-var: #6B7380;
+      --outline: #6B7380; --outline-var: #C4CAD4; --error: #A8191F;
+      --error-container: #F9DEDC; --on-error-container: #410E0B;
+      --warn-container: #FDECC8; --on-warn-container: #4A3300;
+      --ok: #2E7D32; --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
+    }
+    [data-theme="dark"] {
+      --surface: #0B141D; --surface-low: #060F18; --surface-high: #222B34;
+      --surface-highest: #2D3640; --primary: #9ACBFF; --on-primary: #003355;
+      --secondary-container: #414A54; --on-secondary-container: #E0E8F2;
+      --on-surface: #DAE3F0; --on-surface-var: #8B919A;
+      --outline: #8B919A; --outline-var: #41474F; --error: #FFB4AB;
+      --error-container: #93000A; --on-error-container: #FFDAD6;
+      --warn-container: #4A3300; --on-warn-container: #FDECC8;
+      --ok: #81C784;
+    }
+
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--surface); color: var(--on-surface); }
+
+    .app { height: 100vh; max-width: 1920px; margin: 0 auto; display: flex; overflow: hidden; border-left: 1px solid var(--outline-var); border-right: 1px solid var(--outline-var); }
+
+    .sidebar { width: 220px; flex-shrink: 0; background: var(--surface-high); border-right: 1px solid var(--outline-var); display: flex; flex-direction: column; padding: 20px 0 16px; }
+    @media (max-width: 640px) { .sidebar { display: none; } }
+    .sidebar-brand { padding: 0 20px 24px; display: flex; align-items: center; gap: 10px; }
+    .brand-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .brand-name { font-size: 15px; font-weight: 600; }
+    .nav-section { padding: 0 8px; flex: 1; }
+    .nav-link { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--r-md); border: none; background: transparent; color: var(--on-surface-var); font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; width: 100%; text-align: left; }
+    .nav-link.active { background: var(--secondary-container); color: var(--on-secondary-container); }
+    .sidebar-footer { padding: 0 8px; border-top: 1px solid var(--outline-var); padding-top: 12px; margin-top: 12px; }
+
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+    .top-bar { flex-shrink: 0; display: flex; align-items: center; padding: 0 20px; height: 60px; border-bottom: 1px solid var(--outline-var); background: var(--surface); gap: 12px; }
+    .top-bar-title { flex: 1; font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+    .live-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--r-xl); background: var(--error-container); color: var(--on-error-container); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--error); animation: pulse 1.4s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .icon-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: transparent; color: var(--on-surface); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .icon-btn:hover { background: var(--surface-high); }
+    .hamburger { display: none; width: 40px; height: 40px; border-radius: 50%; border: none; background: transparent; color: var(--on-surface); cursor: pointer; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+    @media (max-width: 640px) { .hamburger { display: flex; } }
+
+    .content { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px 40px; display: flex; flex-direction: column; gap: 18px; }
+    @media (max-width: 640px) { .content { padding: 16px; } }
+
+    /* ── Banners (captions-inactive: warning; broadcast-full: error) — same shape, non-blocking ── */
+    .banner {
+      display: none; align-items: center; gap: 12px; padding: 16px 18px;
+      border-radius: var(--r-lg); font-size: 14px; font-weight: 600;
+    }
+    .banner.shown { display: flex; }
+    .banner.warn { background: var(--warn-container); color: var(--on-warn-container); }
+    .banner.err { background: var(--error-container); color: var(--on-error-container); }
+    .banner-icon { font-size: 22px; }
+
+    .section-label { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--on-surface-var); margin-bottom: 10px; }
+
+    /* ── Caption preview — highest-priority content, first in the flow and visually largest ── */
+    .caption-preview { background: #000; color: #fff; border-radius: var(--r-lg); padding: 32px; min-height: 130px; display: flex; align-items: center; box-shadow: 0 2px 12px rgba(0,0,0,.15); }
+    .caption-preview-text { font-size: 28px; font-weight: 600; line-height: 1.4; }
+    .caption-preview-text.empty { font-size: 18px; font-weight: 500; font-style: italic; color: rgba(255,255,255,.6); }
+
+    /* ── Stat row ── */
+    .stat-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .stat-card { flex: 1; min-width: 150px; background: var(--surface-low); border: 1px solid var(--outline-var); border-radius: var(--r-lg); padding: 14px 16px; }
+    .stat-label { font-size: 12px; color: var(--on-surface-var); font-weight: 500; }
+    .stat-value { font-size: 22px; font-weight: 700; margin-top: 2px; }
+    .stat-value.at-cap { color: var(--error); }
+    .stat-meter { height: 6px; border-radius: 3px; background: var(--surface-high); overflow: hidden; margin-top: 8px; }
+    .stat-meter-fill { height: 100%; background: var(--ok); border-radius: 3px; }
+
+    /* ── Broadcast + captioning controls ── */
+    .controls-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-end { padding: 12px 20px; border-radius: var(--r-xl); border: none; background: var(--error); color: #fff; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn-end:hover { opacity: 0.9; }
+    .btn-pause { padding: 12px 20px; border-radius: var(--r-xl); border: 1.5px solid var(--outline-var); background: var(--surface-low); color: var(--on-surface); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn-pause:hover { background: var(--surface-high); }
+    .btn-clear { padding: 12px 20px; border-radius: var(--r-xl); border: 1.5px solid var(--outline-var); background: var(--surface-low); color: var(--on-surface); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn-clear:hover { background: var(--surface-high); }
+
+    /* ── Audio inputs list ── */
+    .audio-inputs-list { display: flex; flex-direction: column; gap: 8px; }
+    .audio-input-row { display: flex; align-items: center; gap: 12px; background: var(--surface-low); border: 1px solid var(--outline-var); border-radius: var(--r-md); padding: 10px 14px; }
+    .audio-input-row.disabled { opacity: 0.55; }
+    .audio-input-icon { font-size: 16px; }
+    .audio-input-name { font-size: 13px; font-weight: 500; width: 160px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .audio-meter { flex: 1; height: 6px; border-radius: 3px; background: var(--surface-high); overflow: hidden; }
+    .audio-fill { height: 100%; background: var(--ok); border-radius: 3px; }
+    .audio-input-status { font-size: 11px; font-weight: 600; color: var(--on-surface-var); width: 84px; flex-shrink: 0; }
+    .tgl-sm { width: 36px; height: 21px; border-radius: 11px; background: var(--outline-var); border: none; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; }
+    .tgl-sm.on { background: var(--primary); }
+    .tgl-sm::after { content: ''; position: absolute; top: 2.5px; left: 2.5px; width: 16px; height: 16px; border-radius: 50%; background: white; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+    .tgl-sm.on::after { transform: translateX(15px); }
+
+    /* ── Viewer list — compact, no redundant "Viewer" label ── */
+    .viewer-list { display: flex; flex-direction: column; gap: 4px; }
+    .viewer-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: var(--r-sm); }
+    .viewer-row:hover { background: var(--surface-high); }
+    .viewer-name { flex: 1; font-size: 13px; font-weight: 500; }
+    .conn-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: var(--r-xl); }
+    .conn-p2p { background: var(--surface-high); color: var(--ok); }
+    .conn-turn { background: var(--surface-high); color: var(--primary); }
+    .conn-connecting { background: var(--surface-high); color: var(--on-surface-var); }
+    .conn-disconnected { background: var(--error-container); color: var(--on-error-container); }
+
+    /* ── Blocking full-screen state (start-failure only — precedes going live) ── */
+    .full-state { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 60px 24px; }
+    .full-state.shown { display: flex; }
+    .full-state-icon { font-size: 40px; }
+    .full-state-title { font-size: 19px; font-weight: 600; }
+    .full-state-copy { font-size: 14px; color: var(--on-surface-var); max-width: 380px; line-height: 1.5; }
+    .btn-secondary { padding: 11px 20px; border-radius: var(--r-xl); border: 1.5px solid var(--outline-var); background: transparent; color: var(--on-surface); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+    .dashboard-body { display: flex; flex-direction: column; gap: 18px; }
+
+    .state-switcher { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 24px 0; }
+    .state-btn { padding: 6px 12px; border-radius: var(--r-xl); border: 1px solid var(--outline-var); background: var(--surface-low); color: var(--on-surface-var); font-family: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+    .state-btn.active { background: var(--secondary-container); color: var(--on-secondary-container); border-color: transparent; }
+
+    .desktop-hint { display: none; position: fixed; bottom: 16px; right: 16px; background: var(--surface-highest); color: var(--on-surface-var); font-size: 12px; padding: 8px 12px; border-radius: var(--r-md); border: 1px solid var(--outline-var); }
+    @media (min-width: 768px) { .desktop-hint { display: block; } }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="brand-icon">📡</div><div class="brand-name">Zip Broadcast</div></div>
+    <div class="nav-section">
+      <button class="nav-link active">📊 Live Dashboard</button>
+      <button class="nav-link">📋 History</button>
+      <button class="nav-link">⚙️ Settings</button>
+    </div>
+    <div class="sidebar-footer"><button class="nav-link" onclick="toggleTheme()"><span id="theme-icon-side">🌙</span> Dark Mode</button></div>
+  </aside>
+
+  <div class="main">
+    <header class="top-bar">
+      <button class="hamburger" aria-label="Open menu">☰</button>
+      <span class="top-bar-title">Tuesday Lecture <span class="live-badge" data-testid="dashboard-live-badge"><span class="live-dot"></span>LIVE</span></span>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme"><span id="theme-icon">🌙</span></button>
+    </header>
+
+    <div class="state-switcher">
+      <button class="state-btn active" onclick="showState('live')" data-testid="dashboard-state-live-button">Live</button>
+      <button class="state-btn" onclick="showState('captions-inactive')" data-testid="dashboard-state-captions-inactive-button">Captions inactive</button>
+      <button class="state-btn" onclick="showState('captions-inactive-start')" data-testid="dashboard-state-captions-inactive-start-button">Captions inactive (start)</button>
+      <button class="state-btn" onclick="showState('full')" data-testid="dashboard-state-full-button">Broadcast full</button>
+      <button class="state-btn" onclick="showState('start-failure')" data-testid="dashboard-state-start-failure-button">Start failure</button>
+    </div>
+
+    <div class="content">
+
+      <div class="dashboard-body" id="dashboard-body">
+
+        <div class="banner warn" id="captions-inactive-banner" data-testid="dashboard-captions-inactive-banner">
+          <span class="banner-icon">⚠️</span>
+          <span id="captions-inactive-banner-text">Captions are not running — viewers are connected but won't see any captions until you start captioning.</span>
+        </div>
+
+        <div class="banner err" id="broadcast-full-banner" data-testid="dashboard-broadcast-full-banner">
+          <span class="banner-icon">🚫</span>
+          <span>This broadcast is at its 150-viewer cap — new viewers can't join until someone disconnects.</span>
+        </div>
+
+        <div>
+          <div class="section-label">Live Captions</div>
+          <div class="caption-preview">
+            <div class="caption-preview-text" id="caption-preview-text" data-testid="dashboard-caption-preview">...and that concludes the second section of today's material, moving on to the case study.</div>
+          </div>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="stat-label">Viewers</div>
+            <div class="stat-value" id="viewer-count" data-testid="dashboard-viewer-count">14 / 150</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Duration</div>
+            <div class="stat-value">18:42</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Audio Level</div>
+            <div class="stat-meter" data-testid="dashboard-audio-level-summary"><div class="stat-meter-fill" style="width:62%"></div></div>
+          </div>
+        </div>
+
+        <div class="controls-row">
+          <button class="btn-end" data-testid="dashboard-end-broadcast-button">■ End Broadcast</button>
+          <button class="btn-pause" id="pause-captioning-button" onclick="toggleCaptioning()" data-testid="dashboard-pause-captioning-button">⏸ Pause Captioning</button>
+          <button class="btn-clear" onclick="clearCaptions()" data-testid="dashboard-clear-captions-button">🗑 Clear Caption Text</button>
+        </div>
+
+        <div>
+          <div class="section-label">Audio Inputs</div>
+          <div class="audio-inputs-list" data-testid="dashboard-audio-inputs-list">
+            <div class="audio-input-row" id="audio-input-row-1">
+              <span class="audio-input-icon">🎤</span>
+              <span class="audio-input-name">Built-in Microphone</span>
+              <div class="audio-meter"><div class="audio-fill" style="width:62%"></div></div>
+              <span class="audio-input-status" id="audio-input-status-1">Captioning</span>
+              <button class="tgl-sm on" onclick="toggleAudioInput(1)" aria-label="Toggle captioning from Built-in Microphone" data-testid="dashboard-audio-input-1-toggle"></button>
+            </div>
+            <div class="audio-input-row disabled" id="audio-input-row-2">
+              <span class="audio-input-icon">🎧</span>
+              <span class="audio-input-name">USB Lapel Mic</span>
+              <div class="audio-meter"><div class="audio-fill" style="width:24%"></div></div>
+              <span class="audio-input-status" id="audio-input-status-2">Muted</span>
+              <button class="tgl-sm" onclick="toggleAudioInput(2)" aria-label="Toggle captioning from USB Lapel Mic" data-testid="dashboard-audio-input-2-toggle"></button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label">Viewers</div>
+          <div class="viewer-list" data-testid="dashboard-viewer-list">
+            <div class="viewer-row"><span class="viewer-name">Sam's laptop</span><span class="conn-badge conn-p2p">● P2P direct</span></div>
+            <div class="viewer-row"><span class="viewer-name">Alex's phone</span><span class="conn-badge conn-turn">◆ TURN relayed</span></div>
+            <div class="viewer-row"><span class="viewer-name">Row 3 tablet</span><span class="conn-badge conn-connecting">◌ Connecting…</span></div>
+            <div class="viewer-row"><span class="viewer-name">Casey's laptop</span><span class="conn-badge conn-disconnected">✕ Disconnected</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="full-state" id="start-failure-state" data-testid="dashboard-start-failure-state">
+        <div class="full-state-icon">⚠️</div>
+        <div class="full-state-title">Couldn't start broadcast</div>
+        <div class="full-state-copy">We couldn't reach the signaling service. Check your connection and try again.</div>
+        <button class="btn-secondary" onclick="showState('live')" data-testid="dashboard-retry-start-button">Try again</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<p class="desktop-hint">Proto-12 · Live Broadcast Dashboard · use the state switcher above · broadcast-full is a non-blocking banner</p>
+
+<script>
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+    const icon = isDark ? '🌙' : '☀️';
+    document.getElementById('theme-icon').textContent = icon;
+    if (document.getElementById('theme-icon-side')) document.getElementById('theme-icon-side').textContent = icon;
+  }
+
+  function toggleAudioInput(n) {
+    const row = document.getElementById('audio-input-row-' + n);
+    const btn = row.querySelector('.tgl-sm');
+    const status = document.getElementById('audio-input-status-' + n);
+    const enabled = !btn.classList.contains('on');
+    btn.classList.toggle('on', enabled);
+    row.classList.toggle('disabled', !enabled);
+    status.textContent = enabled ? 'Captioning' : 'Muted';
+  }
+
+  function clearCaptions() {
+    const captionText = document.getElementById('caption-preview-text');
+    captionText.textContent = 'No captions yet — start captioning to show live captions here.';
+    captionText.classList.add('empty');
+  }
+
+  function toggleCaptioning() {
+    const btn = document.getElementById('pause-captioning-button');
+    const paused = btn.textContent.includes('Resume');
+    btn.textContent = paused ? '⏸ Pause Captioning' : '▶ Resume Captioning';
+  }
+
+  function showState(state) {
+    const captionsInactive = (state === 'captions-inactive' || state === 'captions-inactive-start');
+    document.getElementById('dashboard-body').style.display = (state === 'start-failure') ? 'none' : 'flex';
+    document.getElementById('start-failure-state').classList.toggle('shown', state === 'start-failure');
+    document.getElementById('captions-inactive-banner').classList.toggle('shown', captionsInactive);
+    document.getElementById('broadcast-full-banner').classList.toggle('shown', state === 'full');
+
+    const bannerText = document.getElementById('captions-inactive-banner-text');
+    const captionText = document.getElementById('caption-preview-text');
+    const pauseBtn = document.getElementById('pause-captioning-button');
+    if (state === 'captions-inactive-start') {
+      bannerText.textContent = 'Captioning hasn\'t started yet — viewers are connected but won\'t see any captions until you start captioning.';
+      captionText.textContent = 'No captions yet — start captioning to show live captions here.';
+      captionText.classList.add('empty');
+      pauseBtn.textContent = '▶ Start Captioning';
+    } else if (state === 'captions-inactive') {
+      bannerText.textContent = 'Captions are not running — viewers are connected but won\'t see any captions until you start captioning.';
+      captionText.textContent = '...and that concludes the second section of today\'s material, moving on to the case study.';
+      captionText.classList.remove('empty');
+      pauseBtn.textContent = '▶ Resume Captioning';
+    } else {
+      captionText.textContent = '...and that concludes the second section of today\'s material, moving on to the case study.';
+      captionText.classList.remove('empty');
+      pauseBtn.textContent = '⏸ Pause Captioning';
+    }
+
+    document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.state-btn[onclick="showState(\'' + state + '\')"]').classList.add('active');
+  }
+</script>
+</body>
+</html>

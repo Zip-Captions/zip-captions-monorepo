@@ -6,7 +6,7 @@
 - **Phase 0 Start Date**: 2026-03-26T00:00:00Z
 - **Phase 1 Start Date**: 2026-03-28T00:00:00Z
 - **Phase 2 Start Date**: 2026-07-19T21:00:00Z
-- **Current Stage**: CONSTRUCTION Phase 2 — not started (Inception complete; next: Unit 1 Prototypes, Proto-10 first)
+- **Current Stage**: CONSTRUCTION Phase 2 — Unit 1 (UI Prototypes) COMPLETE 2026-09-25; next per build order is Spike 2.1, then Unit 2 (Broadcaster Auth). Awaiting human go-ahead to proceed.
 
 ## Workspace State
 - **Existing Source Code**: Yes — Phase 0 scaffold complete (zip_core models/providers/theme, app shells, Supabase stack, CI/CD)
@@ -98,5 +98,11 @@
 **Phase 2 Inception — COMPLETE 2026-09-26.**
 
 ### CONSTRUCTION PHASE
-*(not started; begin with Unit 1 Prototypes (Proto-10 first), then Spike 2.1, per the suggested build order in phase2-unit-of-work-dependency.md)*
+- [x] Unit 1: UI Prototypes (Proto-10 through Proto-15) — COMPLETE 2026-09-25 (approved 2026-09-25); all 6 prototypes generated and individually approved. Unblocks Unit 2 (Proto-10), and independently unblocks Unit 8 (Proto-13); Units 6 and 7 still need Unit 5 in addition to their approved prototypes. See `aidlc-docs/construction/phase2-unit1-prototypes/code/unit1-summary.md`.
+
+**Current Stage**: CONSTRUCTION Phase 2 — Unit 1 complete; next per the suggested build order is Spike 2.1, then Unit 2 (Broadcaster Auth). Awaiting human go-ahead to proceed.
+
+#### Backlog (Deferred Scope)
+- **Caption attribution / speaker-name prefix on captions**: raised during Proto-12 review 2026-09-25. Phase 1 (S-06) already scopes a per-audio-input `speakerLabel` + visual style (color/indicator) on `AudioInputConfig`, applied by the on-screen renderer (`phase1-services.md` §7). Not yet scoped: whether the speaker label should be *prepended as text* to the caption content itself (e.g. "Teacher: ...") rather than only conveyed via color/indicator, and whether a broadcaster can set a label distinct from the raw input device name specifically for this purpose. Out of scope for Unit 1 (prototypes) and not implemented in `zip-broadcast-dashboard.html`. Revisit at Unit 6 (Zip Broadcast Broadcast UI) Functional Design, since it may touch shared `zip_core` caption rendering (used by both apps), not just zip_broadcast-specific UI.
+- **Pop out live captions into a small floating window (Zip Captions viewer)**: raised during Proto-15 review 2026-09-25. Not in S-19's acceptance criteria, FR-7.1–7.6, or `BroadcastViewerScreen`'s component design (`phase2-components.md`), which renders captions inline only. User clarified intent: a small floating/PiP-style caption window, not a full separate app window — closer to browser Picture-in-Picture than to the desktop multi-window overlay Unit 8 builds for broadcasters (`OverlayWindowApp`). Not implemented in `zip-captions-viewer-states.html`. Revisit at Unit 7 (Zip Captions Viewer) Functional Design: if it needs a new dependency (e.g. a PiP/windowing plugin), FR-9.5 requires human approval and a supply-chain justification before it's added; web (browser Document Picture-in-Picture API) and desktop may need different mechanisms.
 
