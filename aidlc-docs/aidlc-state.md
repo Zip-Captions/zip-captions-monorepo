@@ -5,7 +5,8 @@
 - **Project Type**: Documentation-Brownfield / Code-Brownfield
 - **Phase 0 Start Date**: 2026-03-26T00:00:00Z
 - **Phase 1 Start Date**: 2026-03-28T00:00:00Z
-- **Current Stage**: CONSTRUCTION Phase 1 — COMPLETE. Ready for Phase 2 planning.
+- **Phase 2 Start Date**: 2026-07-19T21:00:00Z
+- **Current Stage**: CONSTRUCTION Phase 2 — not started (Inception complete; next: Unit 1 Prototypes, Proto-10 first)
 
 ## Workspace State
 - **Existing Source Code**: Yes — Phase 0 scaffold complete (zip_core models/providers/theme, app shells, Supabase stack, CI/CD)
@@ -80,3 +81,22 @@
 
 ### OPERATIONS PHASE
 *(placeholder)*
+
+---
+
+## Phase 2: Broadcasting & Transport
+
+### INCEPTION PHASE
+- [x] Workspace Detection — Brownfield; Phase 1 fully merged; caption bus exists; no reverse engineering needed
+- [ ] Reverse Engineering — SKIPPED (codebase built by AI-DLC; design artifacts current)
+- [x] Requirements Analysis — COMPLETE (approved); phase2-requirements.md (10 FRs, 8 NFR groups, 3 spikes as early construction units)
+- [x] User Stories — COMPLETE (approved); phase2-stories.md (10 stories S-11..S-20, 3 security reviews SR-01..03, 6 prototypes Proto-10..15, 4 milestones) + phase2-personas.md (draft S3.6)
+- [x] Workflow Planning — COMPLETE (approved); phase2-execution-plan.md (App Design EXECUTE, Units Generation EXECUTE; 3 spikes + 9 preliminary units; Operations SKIP)
+- [x] Application Design — COMPLETE (approved); phase2-application-design.md + components, component-methods, services, component-dependency (zip_core-centric; role-specific transports; independent broadcast/captioning lifecycles with optional auto-start)
+- [x] Units Generation — COMPLETE (approved); phase2-unit-of-work.md, -dependency.md, -story-map.md (3 spikes + 9 units; SR gates before CG in U2/U3/U4; one PR per unit; spike code throwaway)
+
+**Phase 2 Inception — COMPLETE 2026-09-26.**
+
+### CONSTRUCTION PHASE
+*(not started; begin with Unit 1 Prototypes (Proto-10 first), then Spike 2.1, per the suggested build order in phase2-unit-of-work-dependency.md)*
+
