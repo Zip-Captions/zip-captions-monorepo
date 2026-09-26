@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proto-15: Live Viewer States — Zip Captions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --surface: #FAFCFF; --surface-low: #FFFFFF; --surface-high: #EEF2F8;
+      --surface-highest: #E4EAF2; --primary: #1A5A8C; --on-primary: #FFFFFF;
+      --secondary-container: #DAE3F0; --on-secondary-container: #0B141D;
+      --on-surface: #0B141D; --on-surface-var: #6B7380;
+      --outline: #6B7380; --outline-var: #C4CAD4; --error: #A8191F;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
+    }
+    [data-theme="dark"] {
+      --surface: #0B141D; --surface-low: #060F18; --surface-high: #222B34;
+      --surface-highest: #2D3640; --primary: #9ACBFF; --on-primary: #003355;
+      --secondary-container: #414A54; --on-secondary-container: #E0E8F2;
+      --on-surface: #DAE3F0; --on-surface-var: #8B919A;
+      --outline: #8B919A; --outline-var: #41474F; --error: #FFB4AB;
+    }
+
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--surface); color: var(--on-surface); }
+
+    .app { height: 100vh; max-width: 1920px; margin: 0 auto; display: flex; flex-direction: column; overflow: hidden; border-left: 1px solid var(--outline-var); border-right: 1px solid var(--outline-var); }
+
+    .top-bar { flex-shrink: 0; display: flex; align-items: center; padding: 0 20px; height: 60px; border-bottom: 1px solid var(--outline-var); background: var(--surface); gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; flex: 1; }
+    .brand-icon { width: 32px; height: 32px; border-radius: 9px; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .top-bar-title { font-size: 15px; font-weight: 600; }
+    .top-bar-sub { font-size: 12px; color: var(--on-surface-var); }
+    .status-indicator { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; padding: 4px 10px; border-radius: var(--r-xl); border: 1.5px solid var(--outline-var); }
+    .icon-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: transparent; color: var(--on-surface); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .icon-btn:hover { background: var(--surface-high); }
+
+    .stage { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+    /* ── Caption view (live / paused / reconnecting) ── */
+    .caption-view { flex: 1; min-height: 0; display: none; flex-direction: column; }
+    .caption-view.shown { display: flex; }
+    .inline-notice { flex-shrink: 0; display: none; align-items: center; gap: 10px; padding: 12px 20px; font-size: 13px; font-weight: 600; border-bottom: 1px solid var(--outline-var); }
+    .inline-notice.shown { display: flex; }
+    .inline-notice-icon { font-size: 16px; }
+    .caption-body { flex: 1; min-height: 0; overflow-y: auto; padding: 24px 24px 60px; display: flex; flex-direction: column; gap: 4px; max-width: 760px; margin: 0 auto; width: 100%; }
+    .caption-segment { padding: 10px 4px; line-height: 1.6; font-size: 24px; font-weight: 500; color: var(--on-surface); }
+    .caption-segment.dimmed { opacity: 0.5; }
+    .caption-segment.latest { font-weight: 600; }
+    .caption-body.size-sm .caption-segment { font-size: 18px; }
+    .caption-body.size-md .caption-segment { font-size: 24px; }
+    .caption-body.size-lg .caption-segment { font-size: 32px; }
+    .caption-body.size-xl .caption-segment { font-size: 42px; }
+    .caption-body.font-serif .caption-segment { font-family: Georgia, 'Times New Roman', serif; }
+    /* flow-down (top-down): live segment pinned at the top; DOM order (oldest → live) is visually reversed
+       via column-reverse so the live segment renders first (top), older segments stack downward below it */
+    .caption-body.flow-down { flex-direction: column-reverse; justify-content: flex-end; }
+    /* flow-up (bottom-up): chronological order unchanged (oldest → live, top to bottom); anchored to the
+       bottom of the viewport so the live segment stays at the bottom, older segments stack upward above it */
+    .caption-body.flow-up { flex-direction: column; justify-content: flex-end; }
+
+    /* ── Render controls (FR-7.3: viewer's own text size, font, flow direction) ── */
+    .render-controls { flex-shrink: 0; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 10px 20px; border-bottom: 1px solid var(--outline-var); background: var(--surface-high); }
+    .render-control-group { display: flex; align-items: center; gap: 6px; }
+    .render-control-label { font-size: 11px; font-weight: 600; color: var(--on-surface-var); text-transform: uppercase; letter-spacing: 0.05em; margin-right: 2px; }
+    .render-chip { padding: 5px 10px; border-radius: var(--r-xl); border: 1px solid var(--outline-var); background: var(--surface-low); color: var(--on-surface-var); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .render-chip.selected { background: var(--secondary-container); color: var(--on-secondary-container); border-color: transparent; }
+
+    /* ── Full-screen message states ── */
+    .full-state { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; padding: 40px 24px; }
+    .full-state.shown { display: flex; }
+    .full-state-icon { font-size: 44px; }
+    .full-state-title { font-size: 20px; font-weight: 700; }
+    .full-state-copy { font-size: 14px; color: var(--on-surface-var); max-width: 380px; line-height: 1.55; }
+    .spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--outline-var); border-top-color: var(--primary); animation: spin 0.8s linear infinite; }
+    .spinner-sm { width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid var(--outline-var); border-top-color: currentColor; animation: spin 0.8s linear infinite; display: none; flex-shrink: 0; }
+    .spinner-sm.shown { display: inline-block; }
+    .prototype-only-link { margin-left: auto; background: none; border: none; color: inherit; text-decoration: underline; font-family: inherit; font-size: 11px; font-weight: 500; cursor: pointer; opacity: 0.75; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-secondary { padding: 11px 22px; border-radius: var(--r-xl); border: 1.5px solid var(--outline-var); background: transparent; color: var(--on-surface); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+    .state-switcher { flex-shrink: 0; display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 20px; border-bottom: 1px solid var(--outline-var); background: var(--surface-high); }
+    .state-btn { padding: 6px 12px; border-radius: var(--r-xl); border: 1px solid var(--outline-var); background: var(--surface-low); color: var(--on-surface-var); font-family: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+    .state-btn.active { background: var(--secondary-container); color: var(--on-secondary-container); border-color: transparent; }
+
+    .desktop-hint { display: none; position: fixed; bottom: 16px; right: 16px; background: var(--surface-highest); color: var(--on-surface-var); font-size: 12px; padding: 8px 12px; border-radius: var(--r-md); border: 1px solid var(--outline-var); z-index: 10; }
+    @media (min-width: 768px) { .desktop-hint { display: block; } }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-icon">🎤</div>
+      <div><div class="top-bar-title">Tuesday Lecture</div><div class="top-bar-sub">Jordan Park</div></div>
+    </div>
+    <span class="status-indicator" id="status-indicator" data-testid="viewer-status-indicator">● Live</span>
+    <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme"><span id="theme-icon">🌙</span></button>
+  </header>
+
+  <div class="state-switcher">
+    <button class="state-btn active" onclick="showState('connecting')" data-testid="viewer-state-connecting-button">1. Connecting</button>
+    <button class="state-btn" onclick="showState('live')" data-testid="viewer-state-live-button">2. Live</button>
+    <button class="state-btn" onclick="showState('paused')" data-testid="viewer-state-paused-button">3. Captions paused</button>
+    <button class="state-btn" onclick="showState('reconnecting')" data-testid="viewer-state-reconnecting-button">4. Reconnecting</button>
+    <button class="state-btn" onclick="showState('not-broadcasting')" data-testid="viewer-state-not-broadcasting-button">5. Not broadcasting</button>
+    <button class="state-btn" onclick="showState('ended')" data-testid="viewer-state-ended-button">6. Broadcast ended</button>
+    <button class="state-btn" onclick="showState('full')" data-testid="viewer-state-full-button">7. Broadcast full</button>
+    <button class="state-btn" onclick="showState('cannot-connect')" data-testid="viewer-state-cannot-connect-button">8. Cannot connect</button>
+  </div>
+
+  <div class="stage">
+
+    <!-- Caption view: live / paused / reconnecting -->
+    <div class="caption-view" id="caption-view" data-testid="viewer-caption-view">
+      <div class="render-controls" data-testid="viewer-render-controls">
+        <div class="render-control-group">
+          <span class="render-control-label">Size</span>
+          <button class="render-chip" onclick="setCaptionSize('sm', this)" data-testid="viewer-size-sm-button">S</button>
+          <button class="render-chip selected" onclick="setCaptionSize('md', this)" data-testid="viewer-size-md-button">M</button>
+          <button class="render-chip" onclick="setCaptionSize('lg', this)" data-testid="viewer-size-lg-button">L</button>
+          <button class="render-chip" onclick="setCaptionSize('xl', this)" data-testid="viewer-size-xl-button">XL</button>
+        </div>
+        <div class="render-control-group">
+          <span class="render-control-label">Font</span>
+          <button class="render-chip selected" onclick="setCaptionFont('sans', this)" data-testid="viewer-font-sans-button">Sans</button>
+          <button class="render-chip" onclick="setCaptionFont('serif', this)" data-testid="viewer-font-serif-button">Serif</button>
+        </div>
+        <div class="render-control-group">
+          <span class="render-control-label">Flow</span>
+          <button class="render-chip selected" onclick="setCaptionFlow('down', this)" data-testid="viewer-flow-down-button">↓ Down</button>
+          <button class="render-chip" onclick="setCaptionFlow('up', this)" data-testid="viewer-flow-up-button">↑ Up</button>
+        </div>
+      </div>
+      <div class="inline-notice" id="inline-notice" data-testid="viewer-inline-notice">
+        <span class="inline-notice-icon" id="inline-notice-icon">⏸</span>
+        <span class="spinner-sm" id="inline-notice-spinner" data-testid="viewer-reconnecting-spinner"></span>
+        <span id="inline-notice-text">Captions paused by the broadcaster</span>
+        <button class="prototype-only-link" id="reconnect-timeout-link" style="display:none" onclick="showState('cannot-connect-reconnect-timeout')" data-testid="viewer-simulate-reconnect-timeout-button">(prototype only: simulate reconnection window expiring)</button>
+      </div>
+      <div class="caption-body size-md font-sans flow-down" id="caption-body" data-testid="viewer-caption-body">
+        <div class="caption-segment dimmed">...and that concludes the second section of today's material,</div>
+        <div class="caption-segment latest" id="latest-segment">moving on to the case study.</div>
+      </div>
+    </div>
+
+    <!-- Full-screen states -->
+    <div class="full-state" id="state-connecting" data-testid="viewer-state-connecting">
+      <div class="spinner"></div>
+      <div class="full-state-title">Connecting…</div>
+      <div class="full-state-copy">Joining Tuesday Lecture</div>
+    </div>
+
+    <div class="full-state" id="state-not-broadcasting" data-testid="viewer-state-not-broadcasting">
+      <div class="full-state-icon">🕓</div>
+      <div class="full-state-title">Not currently broadcasting</div>
+      <div class="full-state-copy">Jordan Park hasn't started this broadcast yet. This page will connect automatically once it goes live.</div>
+    </div>
+
+    <div class="full-state" id="state-ended" data-testid="viewer-state-ended">
+      <div class="full-state-icon">🏁</div>
+      <div class="full-state-title">Broadcast ended</div>
+      <div class="full-state-copy">Tuesday Lecture has ended. Thanks for watching.</div>
+    </div>
+
+    <div class="full-state" id="state-full" data-testid="viewer-state-full">
+      <div class="full-state-icon">🚫</div>
+      <div class="full-state-title">Broadcast full</div>
+      <div class="full-state-copy">This broadcast has reached its viewer limit. Try again later — someone may disconnect.</div>
+      <button class="btn-secondary" onclick="showState('connecting')" data-testid="viewer-retry-button">Try again</button>
+    </div>
+
+    <div class="full-state" id="state-cannot-connect" data-testid="viewer-state-cannot-connect">
+      <div class="full-state-icon">⚠️</div>
+      <div class="full-state-title">Can't connect</div>
+      <div class="full-state-copy" id="cannot-connect-reason">We couldn't reach this broadcast — the link may be incorrect, or your network may be blocking the connection.</div>
+      <button class="btn-secondary" onclick="showState('connecting')" data-testid="viewer-retry-button-2">Try again</button>
+    </div>
+
+  </div>
+</div>
+
+<p class="desktop-hint">Proto-15 · Live Viewer States · 8 states via the switcher · each distinguishable by icon + text, not color alone</p>
+
+<script>
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+    document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
+  }
+
+  function setCaptionSize(size, btn) {
+    const body = document.getElementById('caption-body');
+    body.classList.remove('size-sm', 'size-md', 'size-lg', 'size-xl');
+    body.classList.add('size-' + size);
+    btn.parentElement.querySelectorAll('.render-chip').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  function setCaptionFont(font, btn) {
+    const body = document.getElementById('caption-body');
+    body.classList.remove('font-sans', 'font-serif');
+    body.classList.add('font-' + font);
+    btn.parentElement.querySelectorAll('.render-chip').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  function setCaptionFlow(flow, btn) {
+    const body = document.getElementById('caption-body');
+    body.classList.remove('flow-down', 'flow-up');
+    body.classList.add('flow-' + flow);
+    btn.parentElement.querySelectorAll('.render-chip').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  const fullStates = ['connecting', 'not-broadcasting', 'ended', 'full', 'cannot-connect'];
+  const cannotConnectReasons = {
+    'cannot-connect': "We couldn't reach this broadcast — the link may be incorrect, or your network may be blocking the connection.",
+    'cannot-connect-reconnect-timeout': "Lost connection to the broadcast and couldn't reconnect. Check your network and try again."
+  };
+
+  function showState(state) {
+    const isCannotConnect = state.indexOf('cannot-connect') === 0;
+    const displayState = isCannotConnect ? 'cannot-connect' : state;
+    fullStates.forEach(s => document.getElementById('state-' + s).classList.toggle('shown', s === displayState));
+    if (isCannotConnect) {
+      document.getElementById('cannot-connect-reason').textContent = cannotConnectReasons[state];
+    }
+
+    const captionActive = (state === 'live' || state === 'paused' || state === 'reconnecting');
+    document.getElementById('caption-view').classList.toggle('shown', captionActive);
+
+    const notice = document.getElementById('inline-notice');
+    const noticeIcon = document.getElementById('inline-notice-icon');
+    const noticeSpinner = document.getElementById('inline-notice-spinner');
+    const noticeText = document.getElementById('inline-notice-text');
+    const reconnectTimeoutLink = document.getElementById('reconnect-timeout-link');
+    const latest = document.getElementById('latest-segment');
+    const status = document.getElementById('status-indicator');
+
+    notice.classList.remove('shown');
+    noticeIcon.style.display = '';
+    noticeSpinner.classList.remove('shown');
+    reconnectTimeoutLink.style.display = 'none';
+    latest.classList.remove('dimmed');
+
+    if (state === 'live') {
+      status.textContent = '● Live';
+    } else if (state === 'paused') {
+      status.textContent = '⏸ Captions Paused';
+      notice.classList.add('shown');
+      noticeIcon.textContent = '⏸';
+      noticeText.textContent = 'Captions paused by the broadcaster — audio and video (if any) continue';
+      latest.classList.add('dimmed');
+    } else if (state === 'reconnecting') {
+      status.textContent = '↻ Reconnecting';
+      notice.classList.add('shown');
+      noticeIcon.style.display = 'none';
+      noticeSpinner.classList.add('shown');
+      noticeText.textContent = 'Reconnecting… your last captions are shown below';
+      reconnectTimeoutLink.style.display = 'inline';
+      latest.classList.add('dimmed');
+    }
+
+    document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('active'));
+    if (isCannotConnect) {
+      document.querySelector('.state-btn[onclick="showState(\'cannot-connect\')"]').classList.add('active');
+      return;
+    }
+    document.querySelector('.state-btn[onclick="showState(\'' + state + '\')"]').classList.add('active');
+  }
+
+  showState('connecting');
+</script>
+</body>
+</html>

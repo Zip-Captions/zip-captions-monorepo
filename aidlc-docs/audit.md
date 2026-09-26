@@ -1091,3 +1091,182 @@
 **Context**: Phase 2 Inception — Units Generation, Step 17 approval recorded; Inception → Construction transition.
 
 ---
+
+## CONSTRUCTION - Unit 1: UI Prototypes — Code Generation Plan Approval Prompt
+**Timestamp**: 2026-09-25T00:00:00Z
+**AI Response**: Created `feature/phase2-unit1-prototypes` off `phase-2` (not `develop` — Phase 2 inception docs aren't merged to `develop` yet; user chose to branch off `phase-2` and merge to `develop` at a later checkpoint). Wrote `aidlc-docs/construction/plans/unit1-prototypes-code-generation-plan.md`: 7 steps (Proto-10 sign-in, Proto-11 broadcast setup, Proto-12 live dashboard, Proto-13 external display, Proto-14 join, Proto-15 viewer states, doc summary), each a standalone HTML/CSS file at `aidlc-docs/construction/phase2-unit1-prototypes/prototypes/`, following the Phase 1 prototype design precedent (CSS custom properties + `data-theme` dark mode, responsive sidebar/drawer, `data-testid` automation hooks). No FD/NFR stages per the unit-of-work doc (Code Generation only, then per-prototype Human Review Gate). Prompted user for approval of the plan.
+**Context**: Unit 1 Code Generation — Part 1 (Planning). Awaiting user approval before Part 2 (Generation).
+
+---
+
+## CONSTRUCTION - Unit 1: UI Prototypes — Code Generation Plan Approval
+**Timestamp**: 2026-09-25T00:05:00Z
+**User Input**: "approve and proceed"
+**AI Response**: Plan approved. Proceeding to Part 2 (Generation), starting with Proto-10.
+**Context**: Unit 1 Code Generation — Generation starting.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-10 Sign-In — Generated + Approved
+**Timestamp**: 2026-09-25T00:10:00Z
+**AI Response**: Generated `aidlc-docs/construction/phase2-unit1-prototypes/prototypes/zip-broadcast-sign-in.html` — centered card (no nav shell), 3 switchable states (signed-out with provider buttons and remote-broadcasting-only copy, signed-in with account row and sign-out, auth-failure with alert + retry), theme toggle, `data-testid` on all interactive elements.
+**User Input**: "approve"
+**Context**: Unit 1 Code Generation — Step 1 (Proto-10) COMPLETE and approved; unblocks Unit 2 (Broadcaster Auth). Proceeding to Step 2 (Proto-11).
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-11 Broadcast Setup — Generated + Approved
+**Timestamp**: 2026-09-25T00:15:00Z
+**AI Response**: Generated `aidlc-docs/construction/phase2-unit1-prototypes/prototypes/zip-broadcast-setup.html` — app-shell layout, state switcher (default / validation-error / signed-out), session name field with inline validation, output target grid (no relay option), "start captioning when going live" toggle (off by default), stable URL + copy action, signed-out modal overlay.
+**User Input**: "approve and proceed"
+**Context**: Unit 1 Code Generation — Step 2 (Proto-11) COMPLETE and approved. Proceeding to Step 3 (Proto-12).
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-12 Live Dashboard — Generated, Revised
+**Timestamp**: 2026-09-25T00:20:00Z
+**AI Response**: Generated `zip-broadcast-dashboard.html` (stat row, caption preview, single audio-level row, viewer list, blocking full-screen states for broadcast-full and start-failure).
+**User Input (revision 1)**: Move audio level into the stat row as a third card; add a controls row (End Broadcast + pause/resume captioning) below the stat row and above the caption preview; replace the single audio-level row with a per-input list (name + own meter) where it used to sit; trim viewer-row spacing and drop the redundant "Viewer ·" label prefix.
+**User Input (revision 2, mid-turn)**: Give the caption preview more visual priority; broadcast-full must not block the dashboard — show it as a non-blocking error banner like the captions-inactive warning banner, not a full-screen state.
+**AI Response**: Reordered content to Live Captions (larger, bolder caption preview) → stat row (Viewers / Duration / Audio Level meter) → controls row (End Broadcast, Pause/Resume Captioning toggle) → Audio Inputs list (Built-in Microphone, USB Lapel Mic, each with its own meter) → compact Viewers list (no per-row "Viewer" prefix). Broadcast-full is now a `.banner.err` shown above the still-visible dashboard body, matching the captions-inactive `.banner.warn` shape; only start-failure (which precedes going live, so there's no dashboard yet) remains a blocking full-screen state.
+**Context**: Unit 1 Code Generation — Step 3 (Proto-12) revised per feedback; awaiting review/approval.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-12 Live Dashboard — Revision 5 (Clear button)
+**Timestamp**: 2026-09-25T00:35:00Z
+**User Input**: "next to the pause/resume button, the user needs a button that can clear the text from the screen."
+**AI Response**: Added a "🗑 Clear" button to the controls row next to Pause/Resume Captioning. Resets the caption preview to the empty placeholder state ("No captions yet — start captioning to show live captions here.").
+**Context**: Unit 1 Code Generation — Step 3 (Proto-12) revised; awaiting review/approval.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-12 Live Dashboard — Revision 6 (explicit label)
+**Timestamp**: 2026-09-25T00:36:00Z
+**User Input**: "The button needs to be explicit \"Clear caption text\""
+**AI Response**: Relabeled the button "🗑 Clear Caption Text".
+**Context**: Unit 1 Code Generation — Step 3 (Proto-12) revised; awaiting review/approval.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-12 Live Dashboard — Approved
+**Timestamp**: 2026-09-25T00:38:00Z
+**User Input**: "approved"
+**Context**: Unit 1 Code Generation — Step 3 (Proto-12) COMPLETE and approved (unblocks half of Unit 6's prototype dependency, pending Proto-11 which is already approved). Proceeding to Step 4 (Proto-13).
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-13 External Display Controls — Generated
+**Timestamp**: 2026-09-25T00:40:00Z
+**AI Response**: Generated `aidlc-docs/construction/phase2-unit1-prototypes/prototypes/zip-broadcast-external-display.html` — display list (Built-in Display, Dell U2720Q Projector) with per-display enable/disable toggle, active-state pill, caption position selector (top/bottom), and a 16:9 projector mock rendering the borderless caption overlay at projector scale. State switcher: default (no active display, placeholder preview), active (projector enabled, caption preview shown), disconnected (error banner + disconnected meta + placeholder preview).
+**Context**: Unit 1 Code Generation — Step 4 (Proto-13) COMPLETE; awaiting review/approval. Unblocks Unit 8 (External Display) independently of the rest of Unit 1.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-13 External Display Controls — Approved
+**Timestamp**: 2026-09-25T00:42:00Z
+**User Input**: "approve"
+**Context**: Unit 1 Code Generation — Step 4 (Proto-13) COMPLETE and approved; unblocks Unit 8 (External Display). Proceeding to Step 5 (Proto-14).
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-14 Join Broadcast — Generated
+**Timestamp**: 2026-09-25T00:45:00Z
+**AI Response**: Generated `aidlc-docs/construction/phase2-unit1-prototypes/prototypes/zip-captions-join.html` — centered card (zip_captions branding), broadcast ID/URL input, invalid-input state with inline error, connecting state (disabled input, spinner button). Responsive from mobile to desktop widths.
+**Context**: Unit 1 Code Generation — Step 5 (Proto-14) COMPLETE; awaiting review/approval.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-14 Join Broadcast — Approved
+**Timestamp**: 2026-09-25T00:47:00Z
+**User Input**: "approve"
+**Context**: Unit 1 Code Generation — Step 5 (Proto-14) COMPLETE and approved. Proceeding to Step 6 (Proto-15, last prototype).
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-15 Live Viewer States — Generated
+**Timestamp**: 2026-09-25T00:50:00Z
+**AI Response**: Generated `aidlc-docs/construction/phase2-unit1-prototypes/prototypes/zip-captions-viewer-states.html` — all 8 states switchable: connecting (spinner), live, captions-paused-by-broadcaster (inline notice + dimmed last segment), reconnecting (inline notice + dimmed last segment), not-currently-broadcasting, broadcast-ended, broadcast-full (with retry), cannot-connect-with-reason (with retry). Each state distinguishable by icon + status-indicator text + copy, not color alone (per acceptance criteria). Live captions use the Phase 1 caption rendering style from `zip-captions-recording.html` (on-surface text, no black bar) scaled up (24px) since this is the viewer's primary content, not a secondary preview panel.
+**Context**: Unit 1 Code Generation — Step 6 (Proto-15) COMPLETE; awaiting review/approval. This is the last of the 6 Unit 1 prototypes.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-15 — Render controls added; pop-out window backlogged
+**Timestamp**: 2026-09-25T00:55:00Z
+**User Input**: "Live view should have render controls, and user should be able to pop out into a separate window" → asked which to do for the pop-out request (backlog / mock in prototype / other) → "Backlog it (Recommended)" → clarified mid-turn: "I mean the captions should be able to be 'popped out' into a smaller floating window"
+**AI Response**: Render controls are scoped (FR-7.3: viewer's own text size, font, contrast, flow direction) — added a control bar to the caption view in `zip-captions-viewer-states.html` with Size (S/M/L/XL), Font (Sans/Serif), and Flow (Down/Up) chips, wired to restyle the caption body live. Pop-out-to-floating-window is not in S-19/FR-7.1-7.6/`BroadcastViewerScreen`'s design — logged as a Backlog entry in `aidlc-state.md` with the clarified PiP-style intent, flagged for Unit 7 Functional Design (FR-9.5 requires approval + justification if it needs a new dependency). Not implemented in the prototype.
+**Context**: Unit 1 Code Generation — Step 6 (Proto-15) revised; awaiting review/approval.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-15 — Flow-direction stacking corrected (revision 1)
+**Timestamp**: 2026-09-25T01:00:00Z
+**User Input**: "when captions direction is toggled to be bottom-up, the scroll order must show the live results at the bottom of the screen, with the segments shown above it, scrolling up as they arrive." followed mid-turn by: "when caption direction is toggled to be top-down, the live results must be pinned to the top, with segments organized most recent above older"
+**AI Response**: Replaced the initial (incorrect) `column-reverse` up-flow rule with two explicit, named modifiers on `.caption-body`: `.flow-down` (`column-reverse` + `justify-content: flex-end`) puts the live segment at the top with older segments stacking downward below it; `.flow-up` (normal `column` + `justify-content: flex-end`) keeps chronological top-to-bottom order with the live segment pinned at the bottom and older segments stacking upward above it. Set `flow-down` as the caption body's default class (matching the render control's default-selected "↓ Down" chip) and updated `setCaptionFlow()` to swap between the two classes explicitly rather than toggling one class's presence.
+**Context**: Unit 1 Code Generation — Step 6 (Proto-15) revised; awaiting review/approval.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-12 Live Dashboard — Revision 3
+**Timestamp**: 2026-09-25T00:25:00Z
+**User Input**: "add a view where captions are inactive at the start of the broadcast, and thus no live captions text would render"
+**AI Response**: Added a 5th switchable state, "Captions inactive (start)", distinct from the existing captions-inactive (mid-broadcast pause) state: the caption preview shows an empty/placeholder message ("No captions yet — start captioning to show live captions here", italicized/muted) instead of a frozen last-caption, the warning banner text says captioning "hasn't started yet" rather than "is not running", and the captioning control reads "Start Captioning" instead of "Resume Captioning". The existing mid-broadcast captions-inactive state keeps showing the last real caption text (frozen, not italicized) to distinguish "paused after running" from "never started".
+**Context**: Unit 1 Code Generation — Step 3 (Proto-12) revised; awaiting review/approval.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-12 Live Dashboard — Caption attribution deferred to backlog
+**Timestamp**: 2026-09-25T00:32:00Z
+**User Input**: "The user also needs to be able to configure caption attribution, so that the audio input label (or perhaps a different label such as 'speaker name') can be prepended to the text, in order to differentiate speakers." ... "If that's scope creep, let's not worry about it just yet, but put it in a backlog to address in future"
+**AI Response**: Not implemented in the prototype. Logged as a Backlog entry in `aidlc-docs/aidlc-state.md` (Phase 2 Construction section): whether the per-input speaker label should be prepended as caption text (vs. today's Phase 1 scope of color/indicator-only visual distinction) is an open design question for Unit 6 Functional Design, since it may touch shared zip_core caption rendering.
+**Context**: Unit 1 Code Generation — Step 3 (Proto-12); no prototype change from this request. Proceeding with the audio-input enable/disable toggle only.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-12 Live Dashboard — Revision 4 + scope question
+**Timestamp**: 2026-09-25T00:30:00Z
+**User Input**: "Each individual audio input also needs a toggle to enable/disable the audio input from adding captions to the screen. Have we scoped concurrent transcription from multiple inputs?"
+**AI Response**: Confirmed concurrent multi-input transcription is already scoped and built — Phase 1 S-06 (`aidlc-docs/inception/user-stories/stories.md`): each configured audio input runs its own STT engine instance, `SttResult` carries a source identifier, and the caption bus renders captions from each source with a distinct visual style. This is existing zip_core/zip_broadcast functionality (Phase 1 Unit 2, COMPLETE), not new Phase 2 work — the dashboard's Audio Inputs list surfaces already-configured inputs. Added a per-input toggle (small switch + "Captioning"/"Muted" status label) to each row in `zip-broadcast-dashboard.html`; muted rows dim to indicate they're excluded from captioning while still showing their live audio level.
+**Context**: Unit 1 Code Generation — Step 3 (Proto-12) revised; awaiting review/approval.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-15 — Flow direction verified against spec
+**Timestamp**: 2026-09-25T01:03:00Z
+**User Input**: "you can read the requirements for clarification, there's specific detail available in the repo to clarify the correct behaviour I expect to see" ... "that's looking correct now"
+**AI Response**: Found the exact spec at `aidlc-docs/inception/user-stories/stories.md` lines 146-152 (Phase 1 `ScrollDirection`, FR-4.2): "scroll direction bottom-to-top → new text appears at the bottom and older text scrolls upward" / "scroll direction top-to-bottom → new text appears at the top and older text scrolls downward". The current `.flow-down`/`.flow-up` CSS in `zip-captions-viewer-states.html` already matched this exactly (no code change needed): Down = top-to-bottom (live pinned top, older pushed down via `column-reverse` + `justify-content: flex-end`); Up = bottom-to-top (live pinned bottom, older pushed up via normal `column` + `justify-content: flex-end`). User confirmed correct.
+**Context**: Unit 1 Code Generation — Step 6 (Proto-15) — flow-direction behavior confirmed correct against the Phase 1 `ScrollDirection` spec (FR-7.3 reuses it for Phase 2). Awaiting final approval of Proto-15.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-15 — Reconnecting banner uses spinner, not icon
+**Timestamp**: 2026-09-25T01:06:00Z
+**User Input**: "the reconnecting banner shouldn't use an icon, it should show a spinner similar to the connecting screen, to show that it's attempting an action"
+**AI Response**: Added a small spinner variant (`.spinner-sm`, 16px) reusing the connecting screen's spin animation. The reconnecting inline notice now shows this spinner instead of the ↻ icon; the paused notice is unaffected and still shows its ⏸ icon (that's a static state, not an in-progress action). Top-bar status pill text ("↻ Reconnecting") left as-is since the request was specific to the banner.
+**Context**: Unit 1 Code Generation — Step 6 (Proto-15); awaiting review/approval.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-15 — Reconnection failure behavior clarified
+**Timestamp**: 2026-09-25T01:10:00Z
+**User Input**: "what will the user see when reconnection fails?"
+**AI Response**: Checked `phase2-stories.md`: S-19's acceptance criteria (line 477-479) only specify the success path ("if connectivity returns within the reconnection window TBD/Spike 2.1, the viewer rejoins automatically"); the 8 named viewer states are stated as exhaustive, with no separate "reconnection failed" state. Asked the user how to represent this; they chose reusing "cannot connect" with a specific reason. Implemented: added a prototype-only link inside the reconnecting banner ("simulate reconnection window expiring") that transitions to the existing cannot-connect full-state, but with a distinct reason string ("Lost connection to the broadcast and couldn't reconnect...") versus the initial-join failure reason, demonstrating that one state can carry different specific reasons per its acceptance criterion ("'cannot connect' states its specific reason").
+**Context**: Unit 1 Code Generation — Step 6 (Proto-15); awaiting review/approval.
+
+---
+
+## CONSTRUCTION - Unit 1: Proto-15 Approved; All Prototypes Complete
+**Timestamp**: 2026-09-25T01:12:00Z
+**User Input**: "ok, ui approved"
+**AI Response**: Proto-15 approved (last of 6 prototypes). Wrote Step 7 documentation summary at `aidlc-docs/construction/phase2-unit1-prototypes/code/unit1-summary.md` (file mapping, downstream unblocks, notable review outcomes, backlog items, open questions). All 7 plan steps in `unit1-prototypes-code-generation-plan.md` now marked complete.
+**Context**: Unit 1 Code Generation — all steps COMPLETE. Presenting unit completion message; awaiting Step 15 human approval to close Unit 1 and move to Unit 2 (Broadcaster Auth).
+
+---
+
+## CONSTRUCTION - Unit 1: Complete — Approved, holding for permission to proceed
+**Timestamp**: 2026-09-25T01:15:00Z
+**User Input**: "yes, unit 1 complete. update the status, but wait to proceed until i give you permission"
+**AI Response**: Unit 1 (UI Prototypes) approved and marked COMPLETE in `aidlc-docs/aidlc-state.md` (top-level Current Stage and the Phase 2 Construction checklist). Per explicit instruction, holding here — not starting Spike 2.1 or Unit 2 until the user gives the go-ahead.
+**Context**: Unit 1 — CLOSED. Awaiting user permission to begin the next work item (Spike 2.1, per the suggested build order in phase2-unit-of-work-dependency.md).
+
+---

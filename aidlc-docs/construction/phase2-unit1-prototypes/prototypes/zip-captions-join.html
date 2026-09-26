@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proto-14: Join Broadcast — Zip Captions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --surface: #FAFCFF; --surface-low: #FFFFFF; --surface-high: #EEF2F8;
+      --surface-highest: #E4EAF2; --primary: #1A5A8C; --on-primary: #FFFFFF;
+      --secondary-container: #DAE3F0; --on-secondary-container: #0B141D;
+      --on-surface: #0B141D; --on-surface-var: #6B7380;
+      --outline: #6B7380; --outline-var: #C4CAD4; --error: #A8191F;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
+    }
+    [data-theme="dark"] {
+      --surface: #0B141D; --surface-low: #060F18; --surface-high: #222B34;
+      --surface-highest: #2D3640; --primary: #9ACBFF; --on-primary: #003355;
+      --secondary-container: #414A54; --on-secondary-container: #E0E8F2;
+      --on-surface: #DAE3F0; --on-surface-var: #8B919A;
+      --outline: #8B919A; --outline-var: #41474F; --error: #FFB4AB;
+    }
+
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--surface); color: var(--on-surface); }
+
+    .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; max-width: 1920px; margin: 0 auto; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon { width: 32px; height: 32px; border-radius: 9px; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .brand-name { font-size: 14px; font-weight: 600; }
+    .icon-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: transparent; color: var(--on-surface); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .icon-btn:hover { background: var(--surface-high); }
+
+    .stage { min-height: calc(100vh - 72px); display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .card { width: 100%; max-width: 400px; background: var(--surface-low); border: 1px solid var(--outline-var); border-radius: var(--r-lg); padding: 32px 28px; display: flex; flex-direction: column; gap: 18px; }
+    .card-icon { width: 56px; height: 56px; border-radius: var(--r-lg); background: var(--secondary-container); color: var(--on-secondary-container); display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto; }
+    .card-title { font-size: 20px; font-weight: 600; text-align: center; }
+    .card-copy { font-size: 14px; color: var(--on-surface-var); text-align: center; line-height: 1.5; }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field-label { font-size: 13px; font-weight: 600; }
+    .field-input { padding: 13px 14px; border-radius: var(--r-md); border: 1.5px solid var(--outline-var); background: var(--surface-low); color: var(--on-surface); font-family: inherit; font-size: 15px; }
+    .field-input:focus { outline: none; border-color: var(--primary); }
+    .field-input.invalid { border-color: var(--error); }
+    .field-error { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--error); }
+
+    .btn-primary { padding: 14px 20px; border-radius: var(--r-xl); border: none; background: var(--primary); color: var(--on-primary); font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.6; cursor: default; }
+
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,.4); border-top-color: #fff; animation: spin 0.8s linear infinite; display: none; }
+    .spinner.shown { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .state-switcher { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 12px 20px; max-width: 1920px; margin: 0 auto; }
+    .state-btn { padding: 7px 14px; border-radius: var(--r-xl); border: 1px solid var(--outline-var); background: var(--surface-low); color: var(--on-surface-var); font-family: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+    .state-btn.active { background: var(--secondary-container); color: var(--on-secondary-container); border-color: transparent; }
+
+    .desktop-hint { display: none; position: fixed; bottom: 16px; right: 16px; background: var(--surface-highest); color: var(--on-surface-var); font-size: 12px; padding: 8px 12px; border-radius: var(--r-md); border: 1px solid var(--outline-var); }
+    @media (min-width: 768px) { .desktop-hint { display: block; } }
+  </style>
+</head>
+<body>
+
+<header class="top-bar">
+  <div class="brand"><div class="brand-icon">🎤</div><div class="brand-name">Zip Captions</div></div>
+  <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme" data-testid="join-theme-toggle-button"><span id="theme-icon">🌙</span></button>
+</header>
+
+<div class="state-switcher">
+  <button class="state-btn active" onclick="showState('default')" data-testid="join-state-default-button">Default</button>
+  <button class="state-btn" onclick="showState('invalid')" data-testid="join-state-invalid-button">Invalid input</button>
+  <button class="state-btn" onclick="showState('connecting')" data-testid="join-state-connecting-button">Connecting</button>
+</div>
+
+<div class="stage">
+  <div class="card">
+    <div class="card-icon">🎤</div>
+    <div class="card-title">Join a broadcast</div>
+    <div class="card-copy">Enter the broadcast ID or paste the link your broadcaster shared. No account needed.</div>
+
+    <div class="field">
+      <label class="field-label" for="broadcast-id">Broadcast ID or URL</label>
+      <input class="field-input" id="broadcast-id" type="text" placeholder="e.g. jordan-tuesday-lecture" data-testid="join-broadcast-id-input">
+      <div class="field-error" id="broadcast-id-error" style="display:none" data-testid="join-broadcast-id-error">⚠️ That doesn't look like a valid broadcast ID or URL — check it and try again</div>
+    </div>
+
+    <button class="btn-primary" id="join-button" onclick="showState('connecting')" data-testid="join-button">
+      <span class="spinner" id="join-spinner"></span>
+      <span id="join-button-label">Join</span>
+    </button>
+  </div>
+</div>
+
+<p class="desktop-hint">Proto-14 · Join Broadcast · use the state switcher above · resize to test mobile + desktop widths</p>
+
+<script>
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+    document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
+  }
+
+  function showState(state) {
+    const input = document.getElementById('broadcast-id');
+    const error = document.getElementById('broadcast-id-error');
+    const button = document.getElementById('join-button');
+    const spinner = document.getElementById('join-spinner');
+    const label = document.getElementById('join-button-label');
+
+    input.classList.remove('invalid');
+    error.style.display = 'none';
+    button.disabled = false;
+    spinner.classList.remove('shown');
+    label.textContent = 'Join';
+    input.disabled = false;
+
+    if (state === 'invalid') {
+      input.value = '???not-a-real-id';
+      input.classList.add('invalid');
+      error.style.display = 'flex';
+    } else if (state === 'connecting') {
+      input.value = input.value || 'jordan-tuesday-lecture';
+      input.disabled = true;
+      button.disabled = true;
+      spinner.classList.add('shown');
+      label.textContent = 'Connecting…';
+    }
+
+    document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.state-btn[onclick="showState(\'' + state + '\')"]').classList.add('active');
+  }
+</script>
+</body>
+</html>
