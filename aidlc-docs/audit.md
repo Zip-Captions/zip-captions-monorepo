@@ -1270,3 +1270,27 @@
 **Context**: Unit 1 — CLOSED. Awaiting user permission to begin the next work item (Spike 2.1, per the suggested build order in phase2-unit-of-work-dependency.md).
 
 ---
+
+## CONSTRUCTION - Unit 1: PRs opened
+**Timestamp**: 2026-09-25T01:20:00Z
+**User Input**: "actually, I think maybe it makes more sense to open two prs, one from phase-2 to develop, and one from phase-2-unit-1 to phase-2" → "yes" (confirming to proceed)
+**AI Response**: Opened PR #18 (`phase-2` → `develop`, Phase 2 Inception) and PR #19 (`feature/phase2-unit1-prototypes` → `phase-2`, Unit 1 UI Prototypes). Both branches were already committed and pushed to origin from earlier in this session. `phase-2` now serves as the phase-level integration branch that Construction units PR into, merged to `develop` separately/periodically.
+**Context**: Unit 1 — PRs open, awaiting review/merge. Holding per prior instruction; not starting Spike 2.1 or Unit 2 until the user gives permission.
+
+---
+
+## CONSTRUCTION - Unit 1: Local Build & Test Verification
+**Timestamp**: 2026-09-25T01:25:00Z
+**User Input**: "we should do the build and test verification locally too"
+**AI Response**: Ran `melos run analyze` (`dart analyze --fatal-infos`) — clean, 0 issues across all 4 packages (zip_core, zip_captions, zip_broadcast, zip_supabase). Ran `flutter test` per package — zip_core 316 passed, zip_captions passed, zip_broadcast 93 passed; zip_supabase has no `test/` directory (pre-existing condition, unrelated to Unit 1, already noted in earlier Phase 1 audit entries). Expected result since Unit 1 is docs-only (HTML prototypes, no application code) — this is a regression check, not new coverage. Attempted to validate the 6 prototype HTML files with `tidy` via Bash; user corrected this as a file-inspection task that should not go through Bash per standing instruction (Bash reserved for git/flutter/gh). Skipped external HTML linting; user confirmed the Dart/Flutter baseline is sufficient.
+**Context**: Unit 1 — build and test verification complete, all green (baseline unaffected). Holding on Spike 2.1 / Unit 2 per prior instruction.
+
+---
+
+## CONSTRUCTION - Unit 1: PR #19 conflict resolved (rebase after squash-merge)
+**Timestamp**: 2026-09-25T01:30:00Z
+**User Input**: "one pr merged, the other has conflicts"
+**AI Response**: Diagnosed: PR #18 (`phase-2` → `develop`) was squash-merged as a new commit `3e703f8` (distinct SHA from `phase-2`'s original `10efc8c`, though identical content); GitHub then auto-retargeted the still-open PR #19 from `phase-2` (deleted after merge) to `develop`. Because the SHA changed, git's merge-base for PR #19 no longer included the Phase 2 Inception content, producing add/add conflicts (worst on `audit.md`/`aidlc-state.md`, which differ between the two copies). Fix: stashed a pending uncommitted `audit.md` edit, rebased `feature/phase2-unit1-prototypes` onto the new `origin/develop` (applied cleanly — git recognized `10efc8c`'s content as already present and skipped it, replaying only the Unit 1 commit), force-pushed (`--force-with-lease`) with prior confirmation, and restored the stashed edit. PR #19 now shows `MERGEABLE` with a clean diff containing only the 10 Unit 1 files.
+**Context**: Unit 1 — PR #19 conflict resolved, ready to merge. Holding on Spike 2.1 / Unit 2 per prior instruction.
+
+---
