@@ -1,0 +1,23 @@
+name: spike_2_1_broadcaster
+description: >
+  Throwaway Spike 2.1 fan-out measurement harness. Not part of any package,
+  never merged (see phase2-unit-of-work.md, Q5:A). Opens one WebRTC data
+  channel per connecting synthetic viewer and self-reports memory and
+  join-to-first-message latency.
+publish_to: 'none'
+version: 0.0.0
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_webrtc: ^0.11.7
+  web_socket_channel: ^3.0.1
+
+dev_dependencies:
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

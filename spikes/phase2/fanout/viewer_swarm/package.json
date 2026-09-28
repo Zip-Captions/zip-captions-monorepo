@@ -1,0 +1,15 @@
+{
+  "name": "spike-2.1-viewer-swarm",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Throwaway synthetic WebRTC viewer swarm for Spike 2.1 broadcaster fan-out load testing.",
+  "type": "commonjs",
+  "main": "swarm.js",
+  "scripts": {
+    "start": "node swarm.js"
+  },
+  "dependencies": {
+    "node-datachannel": "^0.33.4",
+    "ws": "^8.18.0"
+  }
+}

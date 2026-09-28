@@ -1,0 +1,14 @@
+{
+  "name": "spike-2.1-realtime-load",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Throwaway Supabase Realtime signaling/presence load test for Spike 2.1.",
+  "type": "commonjs",
+  "main": "load_test.js",
+  "scripts": {
+    "start": "node load_test.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

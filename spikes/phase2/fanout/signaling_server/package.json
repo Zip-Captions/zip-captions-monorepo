@@ -1,0 +1,14 @@
+{
+  "name": "spike-2.1-signaling-server",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Throwaway WebSocket signaling relay for Spike 2.1. Not a design proposal for the real SignalingService.",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
