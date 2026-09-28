@@ -1364,3 +1364,11 @@
 **Context**: Spike 2.1 work committed and pushed. Not yet PR'd — per `phase2-unit-of-work.md`, each spike gets its own **docs-only** PR (report only), and spike code under `spikes/phase2/` is never merged (Q5:A), so the eventual PR(s) from this branch should exclude `spikes/phase2/`; the `zip_supabase` infra fixes are also arguably a separate concern from the spike report and may warrant their own PR rather than bundling with the docs-only spike PR. Flagged for whenever PRs are opened. Next: Unit 2 (Broadcaster Auth).
 
 ---
+
+## CONSTRUCTION - Spike 2.1: PRs opened (split per convention)
+**Timestamp**: 2026-09-27T02:30:00Z
+**User Input**: "let's open those prs now"
+**AI Response**: Split the work as flagged: created `fix/zip-supabase-local-stack-bootstrap` off `develop`, cherry-picked just the infra-fix commit (dropping the stray `spikes/phase2/.gitignore` it had picked up), pushed, opened PR #20. Created `docs/spike-2.1-report` off `develop`, checked out only `aidlc-docs/construction/spikes/spike-2.1-report.md`, `aidlc-state.md`, and `audit.md` from the spike branch (excluding all `spikes/phase2/` code per Q5:A), committed, pushed, opened PR #21 (docs-only, referencing #20). The spike branch (`spike/2.1-broadcaster-fanout-signaling`) itself remains pushed as-is, holding the full history plus the throwaway harness code, per convention that spike code is never merged but the branch is kept for reference.
+**Context**: PR #20 (infra fixes) and PR #21 (docs-only spike report) open against `develop`, awaiting review/merge. Next: Unit 2 (Broadcaster Auth), once these are merged or in parallel.
+
+---
