@@ -1,0 +1,17 @@
+# Throwaway spike harness — never merged into any package (Q5:A), but kept on the spike
+# branch for reference if this investigation resumes. Exclude generated/dependency artifacts.
+
+# Node.js
+node_modules/
+results-*.json
+
+# Flutter
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.idea/
+**/macos/Pods/
+**/macos/Flutter/ephemeral/
+**/linux/flutter/ephemeral/
+**/windows/flutter/ephemeral/
