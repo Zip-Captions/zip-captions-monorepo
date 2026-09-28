@@ -1356,3 +1356,11 @@
 **Context**: Spike 2.1 — all four interim values (`maxViewers`, `presenceTimeout`, `reconnectWindow`, NFR-1.3 timings) now recorded, unblocking Unit 3 fully. Remaining if resumed: statistically-powered pacing trials or libwebrtc DCEP logging (fan-out root cause), `--dwellMs` fix, N=100/150/200, Windows/Linux leg, web leg, and resolving the Realtime JWT issue before any real Realtime measurement is possible. Next: Unit 2 (Broadcaster Auth), per the build order.
 
 ---
+
+## CONSTRUCTION - Spike 2.1: Committed and pushed
+**Timestamp**: 2026-09-27T02:15:00Z
+**User Input**: "yes, let's commit and push all this work"
+**AI Response**: Added `spikes/phase2/.gitignore` (excludes `node_modules/`, Flutter build artifacts, `.idea/`, and regenerable `results-*.json`) and removed a leftover Supabase CLI temp cache dir before staging. Committed in two logical commits on `spike/2.1-broadcaster-fanout-signaling`: (1) `58b98c3` — the 7 real `zip_supabase` infrastructure fixes; (2) `a6481d6` — the spike harness (`spikes/phase2/`), the report, and the `aidlc-state.md`/`audit.md` updates. Pushed both to origin.
+**Context**: Spike 2.1 work committed and pushed. Not yet PR'd — per `phase2-unit-of-work.md`, each spike gets its own **docs-only** PR (report only), and spike code under `spikes/phase2/` is never merged (Q5:A), so the eventual PR(s) from this branch should exclude `spikes/phase2/`; the `zip_supabase` infra fixes are also arguably a separate concern from the spike report and may warrant their own PR rather than bundling with the docs-only spike PR. Flagged for whenever PRs are opened. Next: Unit 2 (Broadcaster Auth).
+
+---
