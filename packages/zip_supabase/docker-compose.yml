@@ -9,13 +9,19 @@ services:
   # ──────────────────────────────────────────────
   db:
     container_name: supabase-db
-    image: supabase/postgres:15.8.1.085
+    image: supabase/postgres:15.14.1.177_arm64
     restart: unless-stopped
     ports:
       - "127.0.0.1:54322:5432"
     volumes:
       - supabase_db_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
+      # Mount custom migrations as individual files, not the whole directory — the
+      # supabase/postgres image ships its own bootstrap logic (migrate.sh, init-scripts/,
+      # migrations/) at /docker-entrypoint-initdb.d/, which a directory-level bind mount here
+      # would silently replace, breaking base schema/role setup (extensions, authenticator,
+      # auth/realtime schemas). The "zz-" prefix ensures alphabetical ordering runs ours after
+      # the image's own migrate.sh.
+      - ./migrations/20260326000000_initial.sql:/docker-entrypoint-initdb.d/zz-20260326000000_initial.sql
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
@@ -115,7 +121,8 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/ready"]
+      # postgrest/postgrest ships neither curl nor wget; use bash's /dev/tcp instead.
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/3000' || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -134,7 +141,9 @@ services:
       DB_USER: supabase_admin
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       DB_NAME: ${POSTGRES_DB:-postgres}
-      DB_AFTER_CONNECT_QUERY: "SET search_path TO _realtime"
+      # Schema is "realtime" (no underscore) — created by the base image's
+      # 20211118015519_create-realtime-schema.sql migration.
+      DB_AFTER_CONNECT_QUERY: "SET search_path TO realtime"
       DB_ENC_KEY: supabaserealtime
       API_JWT_SECRET: ${JWT_SECRET}
       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
@@ -146,6 +155,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      default:
+        # kong.yml proxies to this exact hostname — Realtime resolves the tenant
+        # ("realtime-dev", auto-seeded by SEED_SELF_HOST) from the request's Host header,
+        # so this alias must exist for both DNS resolution and tenant lookup to work.
+        aliases:
+          - realtime-dev.supabase-realtime
 
   # ──────────────────────────────────────────────
   # Storage — File storage API
@@ -174,7 +190,8 @@ services:
       rest:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/status"]
+      # "localhost" resolves to ::1 first in this image, but the server only binds IPv4.
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:5000/status"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -197,7 +214,8 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      # supabase/postgres-meta ships neither wget nor curl; use node (which it does ship).
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8080/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 5s
       timeout: 5s
       retries: 5
