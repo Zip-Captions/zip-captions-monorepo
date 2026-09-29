@@ -1472,3 +1472,11 @@
 **Context**: PR #22 has both CodeRabbit findings addressed and replied to; awaiting the remaining CI jobs to finish.
 
 ---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): PR #22 merged — Unit 2 fully complete
+**Timestamp**: 2026-09-29T14:00:31Z
+**User Input**: "PR approved and merged, proceed"
+**AI Response**: Confirmed the merge (`gh pr view 22`: state MERGED, squash commit `6a757fd`). Fetched with prune (confirmed the remote already auto-deleted `feature/broadcaster-auth` and several other stale branches), fast-forwarded local `develop` to `origin/develop`, and force-deleted the local `feature/broadcaster-auth` branch (git reported it "not fully merged" only because of the squash merge's history rewrite — the fast-forward diff onto `develop` confirmed the content matches exactly what was reviewed).
+**Context**: Unit 2 (Broadcaster Auth) is fully complete and merged. Per the dependency matrix, Unit 3 (Broadcast Identity + Signaling) depends on Unit 2 (done) and Spike 2.1 (paused, interim values already accepted). Next unit not yet started — awaiting user direction.
+
+---
