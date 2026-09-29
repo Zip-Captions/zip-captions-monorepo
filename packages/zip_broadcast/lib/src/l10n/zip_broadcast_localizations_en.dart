@@ -268,4 +268,36 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
 
   @override
   String get outputTargetsPhase2 => 'Phase 2';
+
+  @override
+  String get signInTitle => 'Sign in to broadcast';
+
+  @override
+  String get signInCopy =>
+      'Signing in is only needed to broadcast to remote viewers over the internet. Local captioning, on-screen display and your other output targets all work fully signed out.';
+
+  @override
+  String signInContinueWith(String providerLabel) {
+    return 'Continue with $providerLabel';
+  }
+
+  @override
+  String get signInAccountTitle => 'Your account';
+
+  @override
+  String get signInAccountStatus => 'Signed in · ready to broadcast remotely';
+
+  @override
+  String get signInAccountCopy =>
+      'You\'re signed in for remote broadcasting. Local captioning and your other output targets don\'t require this account.';
+
+  @override
+  String get signInSignOut => 'Sign out';
+
+  @override
+  String get signInFailureAlert =>
+      'Sign-in didn\'t complete. The provider didn\'t confirm your identity — check your connection and try again.';
+
+  @override
+  String get signInRetry => 'Try again';
 }

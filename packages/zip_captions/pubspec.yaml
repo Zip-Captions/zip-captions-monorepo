@@ -22,6 +22,11 @@ dependencies:
   riverpod_annotation: ^2.6.1
   share_plus: ^11.0.0
   shared_preferences: ^2.5.0
+  # supabase_flutter: Supabase.initialize + client, wired identically to
+  # zip_broadcast for Phase 3 auth reuse readiness (Unit 2, FR-1.1). No
+  # sign-in UI in Phase 2 — this app never calls AuthNotifier.signIn.
+  # Already pre-approved (technical-specification.md Section 6).
+  supabase_flutter: ^2.17.2
   zip_core:
     path: ../zip_core
 

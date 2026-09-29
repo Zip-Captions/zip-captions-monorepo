@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zip_captions/src/app.dart';
 import 'package:zip_core/zip_core.dart';
 
@@ -32,9 +33,23 @@ void main() async {
   _initLogging();
   final prefs = await SharedPreferences.getInstance();
 
+  // Wired identically to zip_broadcast for Phase 3 auth reuse readiness
+  // (Unit 2, FR-1.1) — this app has no sign-in UI in Phase 2 and never
+  // calls AuthNotifier.signIn.
+  await Supabase.initialize(
+    url: supabaseUrl,
+    publishableKey: supabaseAnonKey,
+    authOptions: kIsWeb
+        ? const FlutterAuthClientOptions()
+        : const FlutterAuthClientOptions(
+            localStorage: SecureDesktopLocalStorage(),
+          ),
+  );
+
   final container = ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
+      supabaseClientProvider.overrideWithValue(Supabase.instance.client),
     ],
   );
 
