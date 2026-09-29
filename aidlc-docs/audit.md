@@ -1464,3 +1464,11 @@
 **Context**: Pushing these fixes as a new commit on `feature/broadcaster-auth`, updating PR #22.
 
 ---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): Replied to CodeRabbit review threads; Linux CI now passing
+**Timestamp**: 2026-09-29T13:50:23Z
+**User Input**: "respond to the comments on the PR please"
+**AI Response**: Posted inline replies on both CodeRabbit review threads on PR #22, confirming each finding was real and pointing to the fixing commit (64bda28); noted for the `AccountSection` finding that the actual fix nests it as its own `SettingsScreen` drill-down view rather than the suggested inline placement, matching the screen's existing pattern for every other category. Checked `gh pr checks 22`: the Linux build-verify job now passes (confirming the earlier `libsecret-1-dev` fix); Analyze & Test, Android, iOS, macOS, Windows still pending/running.
+**Context**: PR #22 has both CodeRabbit findings addressed and replied to; awaiting the remaining CI jobs to finish.
+
+---
