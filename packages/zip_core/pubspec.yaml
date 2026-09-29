@@ -9,6 +9,14 @@ environment:
   sdk: '>=3.10.0 <4.0.0'
 
 dependencies:
+  # app_links: already a transitive dependency via supabase_flutter (which
+  # subscribes to it internally for the automatic OAuth-callback session
+  # exchange). Declared directly here too because SupabaseAuthService also
+  # runs its own parallel subscription to observe OAuth failures
+  # supabase_flutter's internal handler doesn't surface (see
+  # supabase_auth_service.dart's doc comment; SR-01 Section 3, approved
+  # 2026-09-28).
+  app_links: ^7.0.0
   archive: ^3.6.1
   crypto: ^3.0.6
   dio: ^5.7.0
@@ -17,6 +25,10 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_riverpod: ^2.6.1
+  # flutter_secure_storage: backs SecureDesktopLocalStorage's session-token
+  # storage override (Unit 2, S-15/SR-01 §4). Already pre-approved
+  # (docs/04-technical-specification.md Section 6).
+  flutter_secure_storage: ^9.2.2
   freezed_annotation: ^2.4.4
   google_fonts: ^6.1.0
   json_annotation: ^4.9.0
@@ -30,6 +42,9 @@ dependencies:
   speech_to_text: ^7.0.0
   sqlite3: ^2.9.4
   sqlite3_flutter_libs: ^0.5.0
+  # supabase_flutter: broadcaster auth backend (Unit 2, S-15/SR-01, FR-1.1).
+  # Already pre-approved (docs/04-technical-specification.md Section 6).
+  supabase_flutter: ^2.17.2
   uuid: ^4.5.1
   wakelock_plus: ^1.2.8
 

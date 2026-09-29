@@ -1,4 +1,5 @@
 export 'audio/audio.dart';
+export 'auth/auth.dart';
 export 'caption/caption.dart';
 export 'catalog/catalog.dart';
 export 'stt/stt.dart';

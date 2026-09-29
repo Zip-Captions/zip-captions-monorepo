@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zip_broadcast/src/app.dart';
+import 'package:zip_broadcast/src/auth/auth_provider_config.dart';
 import 'package:zip_core/zip_core.dart';
 
 void _initLogging() {
@@ -30,10 +32,29 @@ void main() async {
   _initLogging();
   final prefs = await SharedPreferences.getInstance();
 
+  // Desktop uses SecureDesktopLocalStorage for session storage (SR-01 §4);
+  // web keeps the SDK's default storage.
+  await Supabase.initialize(
+    url: supabaseUrl,
+    publishableKey: supabaseAnonKey,
+    authOptions: kIsWeb
+        ? const FlutterAuthClientOptions()
+        : const FlutterAuthClientOptions(
+            localStorage: SecureDesktopLocalStorage(),
+          ),
+  );
+
   runApp(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        supabaseClientProvider.overrideWithValue(Supabase.instance.client),
+        authServiceProvider.overrideWithValue(
+          SupabaseAuthService(
+            client: Supabase.instance.client,
+            providerConfig: zipBroadcastAuthProviderConfig,
+          ),
+        ),
       ],
       child: const ZipBroadcastApp(),
     ),

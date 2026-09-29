@@ -3,7 +3,10 @@
 // Centralized Generator<T> instances for all domain types.
 // Imported by PBT test files.
 
+import 'dart:math';
+
 import 'package:zip_core/src/models/audio_device.dart';
+import 'package:zip_core/src/models/auth_failure.dart';
 import 'package:zip_core/src/models/caption_event.dart';
 import 'package:zip_core/src/models/display_settings.dart';
 import 'package:zip_core/src/models/enums.dart';
@@ -279,3 +282,84 @@ final Generator<TranscriptSearchResult> arbitraryTranscriptSearchResult =
     relevanceScore: score,
   ),
 );
+
+// --- Auth domain generators ---
+
+/// A command in a simulated AuthNotifier session, for the stateful PBT in
+/// auth_state_machine_properties_test.dart (not yet written).
+sealed class AuthCommand {
+  const AuthCommand();
+}
+
+/// Attempt to sign in with [providerId]; the fake AuthService will resolve
+/// this attempt with [outcome] (null = success, otherwise the AuthFailure
+/// reason).
+final class SignInCommand extends AuthCommand {
+  const SignInCommand({required this.providerId, this.outcome});
+  final String providerId;
+  final AuthFailure? outcome;
+}
+
+/// Sign out.
+final class SignOutCommand extends AuthCommand {
+  const SignOutCommand();
+}
+
+/// Simulate a passive background session loss (e.g. refresh token
+/// rejected) — the fake AuthService should emit a signedOut transition
+/// without any preceding user-initiated signOut() call.
+final class PassiveSessionLossCommand extends AuthCommand {
+  const PassiveSessionLossCommand();
+}
+
+/// Realistic sign-in provider IDs, including a made-up one to exercise
+/// mismatched-provider handling.
+const List<String> _authProviderIds = [
+  'google',
+  'github',
+  'unknown-provider',
+];
+
+/// Simulated sign-in outcome: mostly success (null), occasionally one of
+/// the [AuthFailure] reasons (weighted list, PBT-07).
+final Generator<AuthFailure?> _arbitrarySignInOutcome = any.choose([
+  null,
+  null,
+  null,
+  AuthFailure.cancelled,
+  AuthFailure.denied,
+  AuthFailure.network,
+  AuthFailure.providerError,
+  AuthFailure.sessionExpired,
+]);
+
+/// A [SignInCommand] with a realistic provider ID and outcome.
+final Generator<SignInCommand> _arbitrarySignInCommand = any.combine2(
+  any.choose(_authProviderIds),
+  _arbitrarySignInOutcome,
+  (providerId, outcome) => SignInCommand(
+    providerId: providerId,
+    outcome: outcome,
+  ),
+);
+
+/// A single [AuthCommand] weighted toward realistic usage: sign-in (~55%),
+/// sign-out (~30%), passive session loss (~15%).
+AuthCommand _arbitraryAuthCommand(Random r) {
+  final kind = r.nextInt(20);
+  if (kind < 11) {
+    return _arbitrarySignInCommand(r);
+  }
+  if (kind < 17) {
+    return const SignOutCommand();
+  }
+  return const PassiveSessionLossCommand();
+}
+
+/// Weighted sequence of [AuthCommand]s for the stateful AuthNotifier PBT:
+/// realistic flows (sign-in, sign-in then sign-out) are common, while
+/// adversarial orderings (back-to-back sign-ins, sign-out before
+/// resolution, session loss with no prior sign-in) and the empty sequence
+/// remain reachable.
+final Generator<List<AuthCommand>> arbitraryAuthCommandSequence =
+    any.listWithLengthInRange(0, 20, _arbitraryAuthCommand);

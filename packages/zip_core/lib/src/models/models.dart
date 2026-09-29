@@ -1,5 +1,8 @@
 export 'audio_device.dart';
 export 'audio_input_config.dart';
+export 'auth_failure.dart';
+export 'auth_provider_option.dart';
+export 'auth_state.dart';
 export 'caption_display_entry.dart';
 export 'caption_event.dart';
 export 'display_settings.dart';

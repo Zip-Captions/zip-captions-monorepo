@@ -349,5 +349,54 @@
   "outputTargetsPhase2": "Phase 2",
   "@outputTargetsPhase2": {
     "description": "Subtitle for the Remote Viewers card indicating it is planned for Phase 2"
+  },
+  "signInTitle": "Sign in to broadcast",
+  "@signInTitle": {
+    "description": "Title on the sign-in card (signed-out and auth-failure states)"
+  },
+  "signInCopy": "Signing in is only needed to broadcast to remote viewers over the internet. Local captioning, on-screen display and your other output targets all work fully signed out.",
+  "@signInCopy": {
+    "description": "Explanatory copy on the sign-in card (signed-out and auth-failure states)"
+  },
+  "signInContinueWith": "Continue with {providerLabel}",
+  "@signInContinueWith": {
+    "description": "Provider sign-in button label",
+    "placeholders": {
+      "providerLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "signInAccountTitle": "Your account",
+  "@signInAccountTitle": {
+    "description": "Title on the signed-in account card"
+  },
+  "signInAccountStatus": "Signed in · ready to broadcast remotely",
+  "@signInAccountStatus": {
+    "description": "Status line on the signed-in account card"
+  },
+  "signInAccountCopy": "You're signed in for remote broadcasting. Local captioning and your other output targets don't require this account.",
+  "@signInAccountCopy": {
+    "description": "Explanatory copy on the signed-in account card"
+  },
+  "signInSignOut": "Sign out",
+  "@signInSignOut": {
+    "description": "Sign-out button label"
+  },
+  "signInFailureAlert": "Sign-in didn't complete. The provider didn't confirm your identity — check your connection and try again.",
+  "@signInFailureAlert": {
+    "description": "Generic auth-failure alert message, shown for every failure reason"
+  },
+  "signInRetry": "Try again",
+  "@signInRetry": {
+    "description": "Retry button label on the auth-failure card"
+  },
+  "settingsAccount": "Account",
+  "@settingsAccount": {
+    "description": "Settings list entry title for the account/sign-in section"
+  },
+  "settingsAccountSubtitle": "Sign in for remote broadcasting",
+  "@settingsAccountSubtitle": {
+    "description": "Settings list entry subtitle for the account/sign-in section"
   }
 }

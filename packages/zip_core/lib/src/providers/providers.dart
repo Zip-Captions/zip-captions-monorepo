@@ -1,6 +1,8 @@
 export 'active_engine_id_provider.dart';
 export 'active_locale_id_provider.dart';
 export 'audio_device_service_provider.dart';
+export 'auth_notifier.dart';
+export 'auth_service_provider.dart';
 export 'base_settings_notifier.dart';
 export 'caption_bus_provider.dart';
 export 'caption_output_target_registry_provider.dart';
@@ -15,6 +17,7 @@ export 'speech_locale_provider.dart';
 export 'stt_engine_provider.dart';
 export 'stt_engine_registry_provider.dart';
 export 'stt_session_manager_provider.dart';
+export 'supabase_client_provider.dart';
 export 'transcript_providers.dart';
 export 'transcript_writer_target_provider.dart';
 export 'wake_lock_service_provider.dart';

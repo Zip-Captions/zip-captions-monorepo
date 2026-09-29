@@ -2,15 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_broadcast/src/providers/obs_connection_notifier.dart';
+import 'package:zip_core/zip_core.dart';
 
 import '../helpers/fake_notifiers.dart';
 import '../helpers/zb_test_harness.dart';
+
+class _FakeSignedOutAuthNotifier extends AuthNotifier {
+  @override
+  AuthState build() => const AuthState.signedOut();
+}
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   group('SettingsScreen', () {
-    testWidgets('shows all 5 category rows in list view', (tester) async {
+    testWidgets('shows all 6 category rows in list view', (tester) async {
       final prefs = await SharedPreferences.getInstance();
       await tester.pumpWidget(
         buildZbApp(
@@ -30,9 +36,32 @@ void main() {
         'Output Targets',
         'Audio Inputs',
         'Transcripts & Behaviour',
+        'Account',
       ]) {
         expect(find.text(label), findsOneWidget, reason: '$label not found');
       }
+    });
+
+    testWidgets('tapping Account shows the sign-in card (S-15)',
+        (tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      await tester.pumpWidget(
+        buildZbApp(
+          prefs: prefs,
+          initialLocation: '/settings',
+          overrides: [
+            obsConnectionNotifierProvider
+                .overrideWith(FakeDisconnectedObsConnectionNotifier.new),
+            authNotifierProvider.overrideWith(_FakeSignedOutAuthNotifier.new),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Account'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('sign-in-signed-out-card')), findsOneWidget);
     });
 
     testWidgets('tapping OBS WebSocket shows OBS detail view', (tester) async {

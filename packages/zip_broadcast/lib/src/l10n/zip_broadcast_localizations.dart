@@ -564,6 +564,72 @@ abstract class ZipBroadcastLocalizations {
   /// In en, this message translates to:
   /// **'Phase 2'**
   String get outputTargetsPhase2;
+
+  /// Title on the sign-in card (signed-out and auth-failure states)
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to broadcast'**
+  String get signInTitle;
+
+  /// Explanatory copy on the sign-in card (signed-out and auth-failure states)
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in is only needed to broadcast to remote viewers over the internet. Local captioning, on-screen display and your other output targets all work fully signed out.'**
+  String get signInCopy;
+
+  /// Provider sign-in button label
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with {providerLabel}'**
+  String signInContinueWith(String providerLabel);
+
+  /// Title on the signed-in account card
+  ///
+  /// In en, this message translates to:
+  /// **'Your account'**
+  String get signInAccountTitle;
+
+  /// Status line on the signed-in account card
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in · ready to broadcast remotely'**
+  String get signInAccountStatus;
+
+  /// Explanatory copy on the signed-in account card
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re signed in for remote broadcasting. Local captioning and your other output targets don\'t require this account.'**
+  String get signInAccountCopy;
+
+  /// Sign-out button label
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get signInSignOut;
+
+  /// Generic auth-failure alert message, shown for every failure reason
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in didn\'t complete. The provider didn\'t confirm your identity — check your connection and try again.'**
+  String get signInFailureAlert;
+
+  /// Retry button label on the auth-failure card
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get signInRetry;
+
+  /// Settings list entry title for the account/sign-in section
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get settingsAccount;
+
+  /// Settings list entry subtitle for the account/sign-in section
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in for remote broadcasting'**
+  String get settingsAccountSubtitle;
 }
 
 class _ZipBroadcastLocalizationsDelegate

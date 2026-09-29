@@ -1364,3 +1364,111 @@
 **Context**: Spike 2.1 work committed and pushed. Not yet PR'd — per `phase2-unit-of-work.md`, each spike gets its own **docs-only** PR (report only), and spike code under `spikes/phase2/` is never merged (Q5:A), so the eventual PR(s) from this branch should exclude `spikes/phase2/`; the `zip_supabase` infra fixes are also arguably a separate concern from the spike report and may warrant their own PR rather than bundling with the docs-only spike PR. Flagged for whenever PRs are opened. Next: Unit 2 (Broadcaster Auth).
 
 ---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): Functional Design + SR-01 approved
+**Timestamp**: 2026-09-28T20:12:07Z
+**User Input**: Answered all 7 questions in `broadcaster-auth-functional-design-plan.md` (all "A" — recommended options); requested two changes after initial completion: (1) carry the attempted `providerId` on `AuthState.SigningIn`/`AuthFailed` ahead of Phase 3; (2) block sign-out during an active broadcast. Pushed back on widening the sign-out block to "any active captioning session" (asked whether that would be more consistent) — agreed to narrow it to "`BroadcastSessionState` non-idle" after discussing that local captioning is deliberately decoupled from auth (FR-1.4/F-BA-5) and widening would add friction with no corresponding risk; also agreed to close the mid-`goLive()` transition race by keying off "non-idle" rather than strictly "live". Then: "approved, proceed."
+**AI Response**: Generated Functional Design artifacts at `aidlc-docs/construction/broadcaster-auth/functional-design/`: `sr-01-oauth-approach.md` (Google-only for Phase 2; `app_links` + custom URL scheme for desktop OAuth redirect; `flutter_secure_storage`-backed session storage on desktop, SDK default on web; SDK-managed refresh; global-scope sign-out; 5-value `AuthFailure` mapping with a logged-not-swallowed catch-all; static-list config-only provider addition), `business-logic-model.md` (9 orchestration flows F-BA-1..9 mapped to S-15's acceptance criteria), `business-rules.md` (9 rules, including Rule 9 added for the sign-out guard), `domain-entities.md`, `frontend-components.md`, and `handoff-summary.md`. Revised per user feedback: `AuthState` now carries `providerId` on `SigningIn`/`AuthFailed`; added Rule 9 (sign-out unreachable, not just discouraged, while `BroadcastSessionState` is non-idle — enforced in Unit 6's `ZbAppShell`, the sole call path to `AuthNotifier.signOut()`, since `zip_core`'s `AuthNotifier` must stay reusable by Zip Captions per FR-1.1 and can't itself know about broadcast state). Added a Backlog entry to `aidlc-state.md` carrying Rule 9's requirement forward to Unit 6 Functional Design. SR-01 (Section 10) and the overall Functional Design approved by James Petersen, 2026-09-28.
+**Context**: Unit 2 (Broadcaster Auth) Functional Design COMPLETE and approved, including the SR-01 security-critical approach gate. Next: NFR Requirements — first Construction stage to load the Security Baseline and Property-Based Testing extension rule files, per `aidlc-state.md`'s Extension Configuration and `session-protocol.md` Rule 2.
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): PBT-01 addendum to Functional Design
+**Timestamp**: 2026-09-28T20:20:00Z
+**AI Response**: Before starting NFR Requirements, loaded the Security Baseline and Property-Based Testing extension rule files (first Unit 2 stage they apply, per `aidlc-state.md` Extension Configuration and `session-protocol.md` Rule 2). PBT-01 requires testable-property identification to live in the Functional Design artifacts, which were already approved before these rules were loaded. Added `aidlc-docs/construction/broadcaster-auth/functional-design/testable-properties.md` as a non-decision-changing addendum: 1 invariant (failure-mapping totality), 1 idempotence (signOut), 1 stateful property (AuthNotifier state machine vs. a reference model, PBT-06), 1 invariant (sign-in view button list), with round-trip/oracle/commutativity/induction marked N/A with rationale. Did not reopen the Functional Design or SR-01 approval, since this supplements rather than changes approved content.
+**Context**: Unit 2 Functional Design remains approved as-is; PBT-01 now satisfied retroactively. Proceeding to NFR Requirements.
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): NFR Requirements approved
+**Timestamp**: 2026-09-28T21:00:00Z
+**User Input**: Asked what a crash-reporting SDK would add over the local `logging` package (answered: production aggregation, breadcrumbs/context, alerting — vs. local-only visibility); decided to keep it out of this unit's scope but explicitly recorded in the Backlog rather than dropped. Answered Q1–Q4 in `broadcaster-auth-nfr-requirements-plan.md` (all "A" — recommended options). Then: "NFR requirements approved, proceed."
+**AI Response**: Generated `aidlc-docs/construction/broadcaster-auth/nfr-requirements/nfr-requirements.md` (performance/reliability/testability/platform requirements, full Security Baseline compliance table — 8 Compliant, 6 N/A as infra-owned by `zip_supabase` units, 1 N/A-with-Backlog-note for SECURITY-14 — and full PBT compliance table, all 10 rules Compliant or Compliant-planned), `tech-stack-decisions.md` (`app_links ^7.1.1` new dependency, `flutter_secure_storage ^9.2.2` matching the existing app-wide pin, PBT framework reuses the existing Dart-3-compatible shim rather than the incompatible real `glados` package, mocktail + hand-written fake `AuthService` for testing), and `handoff-summary.md`. No blocking Security or PBT findings. Added a Backlog entry to `aidlc-state.md` for a project-wide crash-reporting SDK decision (not unit-scoped). NFR Requirements approved by James Petersen, 2026-09-28.
+**Context**: Unit 2 (Broadcaster Auth) NFR Requirements COMPLETE and approved. Next: NFR Design.
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): NFR Design approved
+**Timestamp**: 2026-09-28T21:30:00Z
+**User Input**: Answered Q1–Q3 in `broadcaster-auth-nfr-design-plan.md` (all "A" — recommended options). Then: "approve and proceed."
+**AI Response**: Generated `aidlc-docs/construction/broadcaster-auth/nfr-design/nfr-design-patterns.md` (dual abandoned-sign-in resolution mechanism — 2s foreground-resume grace window + 3-minute hard timeout, both cancellable by the other or by a real SDK outcome; scalability N/A; synchronous-state-before-await performance pattern; storage Strategy pattern placed in `zip_core`; single no-credentials-logging chokepoint; provider-addition-as-Strategy-list), `logical-components.md` (full component table, dependency-direction diagram confirming `zip_broadcast → zip_core` one-way), and `handoff-summary.md`. NFR Design approved by James Petersen, 2026-09-28.
+**Context**: Unit 2 (Broadcaster Auth) NFR Design COMPLETE and approved. Next: Code Generation Part 1 (plan), then Part 2 (Qwen-orchestrated generation per `CLAUDE.local.md`/`delegation-protocol.md`).
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): Code Generation Part 1 plan presented for approval
+**Timestamp**: 2026-09-28T20:48:11Z
+**AI Response**: Generated `aidlc-docs/construction/plans/broadcaster-auth-code-generation-plan.md` — 22 numbered steps across `zip_core` (domain models, `AuthService`/`SupabaseAuthService`, `SecureDesktopLocalStorage`, `AuthNotifier`, test doubles/generators, PBT tests), `zip_broadcast` (provider config, sign-in view + tests, `main.dart` init, desktop redirect registration), and `zip_captions` (`main.dart` init only, no sign-in UI, per FR-1.1 reuse readiness), plus pubspec updates and a documentation step. Every step cites the design artifact that already fixed its content (Functional Design/SR-01/NFR Requirements/NFR Design) — no new decisions made in this plan. Per `CLAUDE.local.md`, also wrote the Claude/Qwen delegation split to `~/Documents/qwen-orchestrator/runs/zip-captions/broadcaster-auth/unit-plan-delegation.md` (2 Qwen-delegated steps — the PBT command generator and the sign-in view + its tests + provider config batch; 20 steps kept by Claude, mostly security-sensitive or cross-package-contract work). Presented the plan for approval.
+**Context**: Awaiting explicit user approval of the Code Generation Part 1 plan before Part 2 (generation) begins.
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): Code Generation Part 1 plan approved
+**Timestamp**: 2026-09-28T20:52:55Z
+**User Input**: "approve and proceed"
+**AI Response**: Code Generation Part 1 (planning) marked complete. Beginning Part 2 (generation) per `broadcaster-auth-code-generation-plan.md`'s step order, delegating Steps 8 and 15-17 to Qwen per `unit-plan-delegation.md`, keeping the remaining steps.
+**Context**: Unit 2 (Broadcaster Auth) Code Generation Part 2 starting.
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): Design correction found during Code Generation API verification
+**Timestamp**: 2026-09-28T21:01:00Z
+**User Input**: "Use the docs-mcp server to check the flutter library" (mid-verification, prompting the use of docs-mcp alongside WebFetch/WebSearch).
+**AI Response**: While verifying `supabase_flutter`'s actual API before writing Step 9 (`SupabaseAuthService`), found that `supabase_flutter` already bundles `app_links` internally and subscribes to its `uriLinkStream` on every non-web platform (confirmed by reading the real source, `supabase_auth.dart`: `if (!kIsWeb) { _appLinks.uriLinkStream.listen(...) }`, feeding into an automatic `getSessionFromUrl` call), gated by `FlutterAuthClientOptions.detectSessionInUri` (default `true`). This contradicts SR-01 §3/§9, NFR Requirements' tech-stack-decisions.md, NFR Design's Q3, and Code Generation Steps 9/21, all of which treated `app_links` as a new direct dependency this unit adds and wires itself — based on WebSearch summaries at the time that didn't surface this, rather than the SDK's actual source. Corrected in place: `sr-01-oauth-approach.md` (§3, §9), `nfr-requirements.md`/`tech-stack-decisions.md` (SECURITY-10, dependency table), `nfr-design-patterns.md`/`logical-components.md` (Q3, dependency diagram), all three stage handoff-summary.md files, `aidlc-state.md`'s Unit 2 entries, and the Code Generation plan (Steps 9, 21) — no `app_links` line goes into any `pubspec.yaml`; the OS-level custom-URL-scheme registration (Step 20) remains necessary and unaffected. Also pinned `supabase_flutter: ^2.17.2` (verified current stable) and confirmed the exact `LocalStorage`/`GotrueAsyncStorage`/`signInWithOAuth` signatures needed for Steps 5 and 9 from the SDK's real API docs. Started indexing `supabase_flutter` into docs-mcp (job `81895443-458a-4578-8f5e-c5316e024d1c`, running in background) for future authoritative lookups, per the user's request to use docs-mcp.
+**Context**: This is exactly the kind of error the delegation protocol's "never trust the report's claims, verify every API usage" discipline is meant to catch — caught here before any Qwen delegation or code was written, not after. Did not proceed with Code Generation until these corrections were made and reported. Awaiting user acknowledgment before resuming Part 2.
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): Second correction — SupabaseAuthService needs its own app_links subscription for failure visibility
+**Timestamp**: 2026-09-28T21:12:54Z
+**AI Response**: While implementing `SupabaseAuthService`, found that `supabase_flutter`'s automatic deep-link handling (confirmed in the prior correction) only surfaces *successful* sign-ins via `onAuthStateChange` — failures after the browser opens (declined consent, rejected PKCE exchange) are caught inside its own internal handler and passed to an undocumented, non-public `notifyException`, never reaching any documented public stream (confirmed against `GoTrueClient`'s full public property/method listing via the newly-indexed docs-mcp `supabase_flutter` library, per the user's request to use it). Presented this to the user as a choice: accept a coarser failure signal (collapsing the approved `cancelled`/`denied`/`network`/`providerError` distinction into one generic reason for anything post-browser-open), or have `SupabaseAuthService` run its own parallel `app_links` subscription to inspect the callback URI's `error` query parameter directly. User chose the latter. Implemented it to avoid racing the SDK's one-shot PKCE code: the app's own subscription only reads `error`/`access_denied` from the URI, never calls `getSessionFromUrl` itself — that call stays exclusively the SDK's, so there is no double-consumption of the one-shot authorization code. This reinstates `app_links` as a **direct** `zip_core` dependency (was removed entirely in the first correction) — justified now for a different, correct reason (own API usage for failure visibility) rather than the original mistaken reason (thinking it was needed to receive the callback at all). Corrected: `sr-01-oauth-approach.md` (§3 Correction 2, §9), `tech-stack-decisions.md`, `nfr-requirements.md` (SECURITY-10), and the Code Generation plan (Steps 9, 21). Also confirmed via docs-mcp: `GoTrueClient.signOut()` defaults to `SignOutScope.local`, not global — `SupabaseAuthService.signOut()` must pass `scope: SignOutScope.global` explicitly to match SR-01 §6 (this was already the plan's intent; docs-mcp confirmed the default would have silently produced the wrong behavior if left unspecified). `AuthState.signOutReason` (`userInitiated`/`sessionExpired`/`sessionMissing`) confirmed as the precise mechanism realizing Rule 3 (any `signedOut` event, any reason, maps to our own `signedOut`, never `authFailed`).
+**Context**: `SupabaseAuthService` (Code Generation Step 9) implemented with this corrected design. Continuing Code Generation Part 2.
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): Code Generation Part 2 complete (with two flagged platform gaps)
+**Timestamp**: 2026-09-29T12:59:20Z
+**AI Response**: Completed all 22 Code Generation plan steps. `zip_core`: domain models (`AuthState` as a plain sealed class matching `RecordingState`'s convention, not `freezed`), `AuthService`/`SupabaseAuthService`/`SecureDesktopLocalStorage`, `AuthNotifier`, `supabaseClientProvider`/`authServiceProvider` (the latter a small structural gap-fill not named as its own plan step), full unit/PBT test coverage (361 zip_core tests passing). `zip_broadcast`: `AuthProviderConfig`, `AccountSection` sign-in view (localized via `app_en.arb`), widget tests (100 zip_broadcast tests passing) — Steps 15–17 were delegated to Qwen, which crashed twice with an identical internal backend error before producing any output; escalated per the delegation protocol and implemented directly rather than retry a third time. Both apps' `main.dart` wired with `Supabase.initialize` (71 zip_captions tests passing). Two real bugs found and fixed via actually running tests, not just `dart analyze`: (1) `authStateChanges`'s `async*` implementation had a subscribe race, fixed with `Stream.multi`; (2) `signInWithOAuth` is an unmockable extension method, tests stub the underlying `getOAuthSignInUrl` instead. Platform redirect registration (Step 20): macOS complete (`Info.plist` `CFBundleURLTypes`, confirmed no `AppDelegate.swift` change needed for custom schemes); Windows partial (`main.cpp`'s documented `app_links` integration point added, but the actual registry key registration is not implemented — needs a new `win32_registry` dependency decision and a Windows build to verify); Linux not attempted (the GTK runner patch was only described narratively in the fetched docs, not shown verbatim — guessing at unverifiable native C code was judged too risky to attempt blind). Generated `aidlc-docs/construction/broadcaster-auth/code/unit2-summary.md`. Full `dart analyze --fatal-infos` clean across all three packages.
+**Context**: Unit 2 (Broadcaster Auth) Code Generation substantially complete — S-15's Dart-level acceptance criteria are implemented and tested on macOS/web; the Windows/Linux OAuth redirect path needs platform-specific follow-up before it's usable there. Awaiting user review before Build and Test / approval.
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): Code Generation approved
+**Timestamp**: 2026-09-29T13:04:39Z
+**User Input**: "approve and proceed"
+**AI Response**: Code Generation marked complete and approved, including the disclosed Windows/Linux platform gap. Proceeding to Build and Test.
+**Context**: Unit 2 (Broadcaster Auth) Code Generation COMPLETE and approved.
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): Committed and PR opened
+**Timestamp**: 2026-09-29T13:14:02Z
+**User Input**: Asked what should happen now given Phase 2 has Units 3-9 remaining and Build and Test/Documentation Refinement are phase-level per AGENTS.md and Phase 1 precedent, not per-unit — user chose "commit and open a PR for Unit 2 now, then move to Unit 3."
+**AI Response**: Committed all Unit 2 work (73 files) on `feature/broadcaster-auth` with a Conventional Commits message documenting the implementation and the disclosed Windows/Linux platform gap. Pushed the branch and opened PR #22 (`feature/broadcaster-auth` -> `develop`): https://github.com/Zip-Captions/zip-captions-monorepo/pull/22.
+**Context**: Unit 2 (Broadcaster Auth) fully complete: Functional Design, SR-01, NFR Requirements, NFR Design, Code Generation all approved; PR #22 open against `develop`, not yet merged. Per the dependency matrix, Unit 3 (Broadcast Identity + Signaling) depends on Unit 2 (now done) and Spike 2.1 (paused, interim `presenceTimeout`/`maxViewers` values already accepted). Next unit not yet started — awaiting user direction.
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): PR #22 Linux build-verify CI failure fixed
+**Timestamp**: 2026-09-29T13:18:40Z
+**User Input**: "PR 22 build/verify linux check failed."
+**AI Response**: Checked `gh pr checks 22` and the actual job log: `flutter build linux` failed at CMake configure time — `flutter_secure_storage_linux`'s `CMakeLists.txt` requires `libsecret-1>=0.18.4` via `pkg_check_modules`, not installed on the CI runner. This is the first PR to actually wire `SecureDesktopLocalStorage` into a real build path (via `main.dart` in all three apps), so it's the first to hit this pre-existing gap in `.github/workflows/build-verify.yml`'s Linux job (Unit 5's CI pipeline, not this unit's own scope, but the fix belongs here since this PR is what surfaces it). Confirmed with the user before pushing (a shared CI config change). Added `libsecret-1-dev` to the job's `apt-get install` step and pushed as a new commit on `feature/broadcaster-auth`, updating PR #22.
+**Context**: Awaiting CI re-run on PR #22 to confirm the fix.
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): CodeRabbit CHANGES_REQUESTED — two findings fixed
+**Timestamp**: 2026-09-29T13:47:25Z
+**User Input**: "PR has changes requested from coderabbit automatic review"
+**AI Response**: Read CodeRabbit's two actionable findings on PR #22 and confirmed both against the current code before fixing. (1) **Real bug**: `SupabaseAuthService._handleIncomingUri` mapped any callback error other than `access_denied` to `AuthFailure.denied` — contradicting the unit's own approved SR-01 §7 design, where `denied` is reserved for provider-configuration rejection (surfaced via `AuthException` from the pre-browser call) and the callback-URI catch-all should be `providerError`. Fixed the mapping and added three tests directly exercising `_handleIncomingUri` (via an injected mock `AppLinks`) that weren't there before — the gap in coverage is exactly how this shipped uncaught. (2) **Real gap**: `authServiceProvider` was never overridden in `zip_broadcast/lib/main.dart`, so any code reading `authNotifierProvider` would hit the provider's `UnimplementedError` and crash; also, `AccountSection` was built but not composed into any reachable screen. Fixed both: added the `authServiceProvider.overrideWithValue(SupabaseAuthService(...))` override, and added an "Account" entry to `SettingsScreen`'s existing drill-down navigation (new `_AccountDetail` view, localized via `app_en.arb`), plus tests for both the new entry and its sign-in-card rendering. `zip_captions`' `main.dart` intentionally left without an `authServiceProvider` override, since it has no sign-in UI in Phase 2 and nothing there reads it (the throw-unless-overridden provider is a deliberate fail-fast if that ever changes without updating the wiring). Full regression: 364 zip_core tests, 101 zip_broadcast tests, all passing; both packages `dart analyze --fatal-infos` clean.
+**Context**: Pushing these fixes as a new commit on `feature/broadcaster-auth`, updating PR #22.
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): Replied to CodeRabbit review threads; Linux CI now passing
+**Timestamp**: 2026-09-29T13:50:23Z
+**User Input**: "respond to the comments on the PR please"
+**AI Response**: Posted inline replies on both CodeRabbit review threads on PR #22, confirming each finding was real and pointing to the fixing commit (64bda28); noted for the `AccountSection` finding that the actual fix nests it as its own `SettingsScreen` drill-down view rather than the suggested inline placement, matching the screen's existing pattern for every other category. Checked `gh pr checks 22`: the Linux build-verify job now passes (confirming the earlier `libsecret-1-dev` fix); Analyze & Test, Android, iOS, macOS, Windows still pending/running.
+**Context**: PR #22 has both CodeRabbit findings addressed and replied to; awaiting the remaining CI jobs to finish.
+
+---
