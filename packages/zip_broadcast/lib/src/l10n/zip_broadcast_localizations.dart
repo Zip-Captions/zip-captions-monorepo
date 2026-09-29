@@ -618,6 +618,18 @@ abstract class ZipBroadcastLocalizations {
   /// In en, this message translates to:
   /// **'Try again'**
   String get signInRetry;
+
+  /// Settings list entry title for the account/sign-in section
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get settingsAccount;
+
+  /// Settings list entry subtitle for the account/sign-in section
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in for remote broadcasting'**
+  String get settingsAccountSubtitle;
 }
 
 class _ZipBroadcastLocalizationsDelegate

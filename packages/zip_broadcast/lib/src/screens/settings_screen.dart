@@ -8,6 +8,7 @@ import 'package:zip_broadcast/src/models/obs_connection_status.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_broadcast/src/providers/obs_connection_notifier.dart';
 import 'package:zip_broadcast/src/providers/settings_notifier.dart';
+import 'package:zip_broadcast/src/screens/account_section.dart';
 import 'package:zip_broadcast/src/widgets/output_targets_panel.dart';
 import 'package:zip_core/zip_core.dart';
 
@@ -29,6 +30,7 @@ enum _SettingsView {
   obs,
   outputTargets,
   transcripts,
+  account,
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
@@ -60,6 +62,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _SettingsView.obs => const _ObsDetail(),
       _SettingsView.outputTargets => const _OutputTargetsDetail(),
       _SettingsView.transcripts => const _TranscriptsDetail(),
+      _SettingsView.account => const _AccountDetail(),
     };
   }
 
@@ -71,6 +74,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _SettingsView.obs => l10n.settingsObs,
       _SettingsView.outputTargets => l10n.settingsOutputTargets,
       _SettingsView.transcripts => l10n.settingsTranscripts,
+      _SettingsView.account => l10n.settingsAccount,
     };
   }
 }
@@ -150,6 +154,13 @@ class _ListView extends ConsumerWidget {
           title: Text(l10n.settingsTranscripts),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => onTap(_SettingsView.transcripts),
+        ),
+        ListTile(
+          leading: const Icon(Icons.account_circle_outlined),
+          title: Text(l10n.settingsAccount),
+          subtitle: Text(l10n.settingsAccountSubtitle),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => onTap(_SettingsView.account),
         ),
       ],
     );
@@ -453,6 +464,23 @@ class _TranscriptsDetail extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Account detail (S-15)
+// ---------------------------------------------------------------------------
+
+class _AccountDetail extends StatelessWidget {
+  const _AccountDetail();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      key: const ValueKey('account'),
+      padding: const EdgeInsets.all(16),
+      children: const [AccountSection()],
     );
   }
 }

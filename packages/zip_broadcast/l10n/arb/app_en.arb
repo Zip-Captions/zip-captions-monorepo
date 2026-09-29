@@ -390,5 +390,13 @@
   "signInRetry": "Try again",
   "@signInRetry": {
     "description": "Retry button label on the auth-failure card"
+  },
+  "settingsAccount": "Account",
+  "@settingsAccount": {
+    "description": "Settings list entry title for the account/sign-in section"
+  },
+  "settingsAccountSubtitle": "Sign in for remote broadcasting",
+  "@settingsAccountSubtitle": {
+    "description": "Settings list entry subtitle for the account/sign-in section"
   }
 }

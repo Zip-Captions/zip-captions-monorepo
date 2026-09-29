@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app_links/app_links.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +15,8 @@ import 'package:zip_core/src/services/auth/supabase_auth_service.dart';
 class _MockSupabaseClient extends Mock implements sb.SupabaseClient {}
 
 class _MockGoTrueClient extends Mock implements sb.GoTrueClient {}
+
+class _MockAppLinks extends Mock implements AppLinks {}
 
 sb.User _testUser(String id) => sb.User(
       id: id,
@@ -42,7 +45,9 @@ const _config = AuthProviderConfig(
 void main() {
   late _MockSupabaseClient client;
   late _MockGoTrueClient gotrue;
+  late _MockAppLinks appLinks;
   late StreamController<sb.AuthState> authChanges;
+  late StreamController<Uri> incomingLinks;
 
   setUpAll(() {
     registerFallbackValue(sb.OAuthProvider.google);
@@ -52,19 +57,27 @@ void main() {
   setUp(() {
     client = _MockSupabaseClient();
     gotrue = _MockGoTrueClient();
+    appLinks = _MockAppLinks();
     authChanges = StreamController<sb.AuthState>.broadcast();
+    incomingLinks = StreamController<Uri>.broadcast();
     when(() => client.auth).thenReturn(gotrue);
     when(() => gotrue.currentUser).thenReturn(null);
     when(() => gotrue.onAuthStateChange)
         .thenAnswer((_) => authChanges.stream);
+    when(() => appLinks.uriLinkStream)
+        .thenAnswer((_) => incomingLinks.stream);
   });
 
   tearDown(() async {
     await authChanges.close();
+    await incomingLinks.close();
   });
 
-  SupabaseAuthService buildService() =>
-      SupabaseAuthService(client: client, providerConfig: _config);
+  SupabaseAuthService buildService() => SupabaseAuthService(
+        client: client,
+        providerConfig: _config,
+        appLinks: appLinks,
+      );
 
   // `signInWithOAuth` is an extension method (GoTrueClientSignInProvider) —
   // it cannot be stubbed directly on a mock, since extension methods are
@@ -218,6 +231,65 @@ void main() {
       for (final record in records) {
         expect(record.message, isNot(contains('secret-token-shaped-message')));
       }
+      service.dispose();
+    });
+  });
+
+  group('SupabaseAuthService — desktop callback URI (SR-01 §3, Rule 9)', () {
+    test('error=access_denied on the callback URI maps to cancelled',
+        () async {
+      stubOAuthUrlNeverCompletes();
+      final service = buildService();
+      final failedState = service.authStateChanges
+          .firstWhere((s) => s is AuthFailedState)
+          .timeout(const Duration(seconds: 1));
+
+      unawaited(service.signIn('google'));
+      await pumpEventQueue();
+      incomingLinks.add(
+        Uri.parse('io.zipcaptions.broadcast://login-callback?error=access_denied'),
+      );
+      final failed = await failedState as AuthFailedState;
+
+      expect(failed.reason, AuthFailure.cancelled);
+      service.dispose();
+    });
+
+    test(
+        'any other callback error (e.g. server_error) maps to '
+        'providerError, never denied', () async {
+      stubOAuthUrlNeverCompletes();
+      final service = buildService();
+      final failedState = service.authStateChanges
+          .firstWhere((s) => s is AuthFailedState)
+          .timeout(const Duration(seconds: 1));
+
+      unawaited(service.signIn('google'));
+      await pumpEventQueue();
+      incomingLinks.add(
+        Uri.parse('io.zipcaptions.broadcast://login-callback?error=server_error'),
+      );
+      final failed = await failedState as AuthFailedState;
+
+      expect(failed.reason, AuthFailure.providerError);
+      service.dispose();
+    });
+
+    test('a callback URI with no error param is ignored (success path left '
+        'to the SDK)', () async {
+      stubOAuthUrlNeverCompletes();
+      final service = buildService();
+      final states = <AuthState>[];
+      service.authStateChanges.listen(states.add);
+
+      unawaited(service.signIn('google'));
+      await pumpEventQueue();
+      incomingLinks.add(
+        Uri.parse('io.zipcaptions.broadcast://login-callback?code=abc123'),
+      );
+      await pumpEventQueue();
+
+      expect(states.whereType<AuthFailedState>(), isEmpty);
       service.dispose();
     });
   });

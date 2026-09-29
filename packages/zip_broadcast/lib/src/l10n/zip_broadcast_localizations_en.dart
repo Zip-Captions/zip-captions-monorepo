@@ -300,4 +300,10 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
 
   @override
   String get signInRetry => 'Try again';
+
+  @override
+  String get settingsAccount => 'Account';
+
+  @override
+  String get settingsAccountSubtitle => 'Sign in for remote broadcasting';
 }

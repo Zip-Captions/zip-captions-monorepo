@@ -1440,3 +1440,27 @@
 **Context**: Unit 2 (Broadcaster Auth) Code Generation COMPLETE and approved.
 
 ---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): Committed and PR opened
+**Timestamp**: 2026-09-29T13:14:02Z
+**User Input**: Asked what should happen now given Phase 2 has Units 3-9 remaining and Build and Test/Documentation Refinement are phase-level per AGENTS.md and Phase 1 precedent, not per-unit — user chose "commit and open a PR for Unit 2 now, then move to Unit 3."
+**AI Response**: Committed all Unit 2 work (73 files) on `feature/broadcaster-auth` with a Conventional Commits message documenting the implementation and the disclosed Windows/Linux platform gap. Pushed the branch and opened PR #22 (`feature/broadcaster-auth` -> `develop`): https://github.com/Zip-Captions/zip-captions-monorepo/pull/22.
+**Context**: Unit 2 (Broadcaster Auth) fully complete: Functional Design, SR-01, NFR Requirements, NFR Design, Code Generation all approved; PR #22 open against `develop`, not yet merged. Per the dependency matrix, Unit 3 (Broadcast Identity + Signaling) depends on Unit 2 (now done) and Spike 2.1 (paused, interim `presenceTimeout`/`maxViewers` values already accepted). Next unit not yet started — awaiting user direction.
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): PR #22 Linux build-verify CI failure fixed
+**Timestamp**: 2026-09-29T13:18:40Z
+**User Input**: "PR 22 build/verify linux check failed."
+**AI Response**: Checked `gh pr checks 22` and the actual job log: `flutter build linux` failed at CMake configure time — `flutter_secure_storage_linux`'s `CMakeLists.txt` requires `libsecret-1>=0.18.4` via `pkg_check_modules`, not installed on the CI runner. This is the first PR to actually wire `SecureDesktopLocalStorage` into a real build path (via `main.dart` in all three apps), so it's the first to hit this pre-existing gap in `.github/workflows/build-verify.yml`'s Linux job (Unit 5's CI pipeline, not this unit's own scope, but the fix belongs here since this PR is what surfaces it). Confirmed with the user before pushing (a shared CI config change). Added `libsecret-1-dev` to the job's `apt-get install` step and pushed as a new commit on `feature/broadcaster-auth`, updating PR #22.
+**Context**: Awaiting CI re-run on PR #22 to confirm the fix.
+
+---
+
+## CONSTRUCTION - Unit 2 (Broadcaster Auth): CodeRabbit CHANGES_REQUESTED — two findings fixed
+**Timestamp**: 2026-09-29T13:47:25Z
+**User Input**: "PR has changes requested from coderabbit automatic review"
+**AI Response**: Read CodeRabbit's two actionable findings on PR #22 and confirmed both against the current code before fixing. (1) **Real bug**: `SupabaseAuthService._handleIncomingUri` mapped any callback error other than `access_denied` to `AuthFailure.denied` — contradicting the unit's own approved SR-01 §7 design, where `denied` is reserved for provider-configuration rejection (surfaced via `AuthException` from the pre-browser call) and the callback-URI catch-all should be `providerError`. Fixed the mapping and added three tests directly exercising `_handleIncomingUri` (via an injected mock `AppLinks`) that weren't there before — the gap in coverage is exactly how this shipped uncaught. (2) **Real gap**: `authServiceProvider` was never overridden in `zip_broadcast/lib/main.dart`, so any code reading `authNotifierProvider` would hit the provider's `UnimplementedError` and crash; also, `AccountSection` was built but not composed into any reachable screen. Fixed both: added the `authServiceProvider.overrideWithValue(SupabaseAuthService(...))` override, and added an "Account" entry to `SettingsScreen`'s existing drill-down navigation (new `_AccountDetail` view, localized via `app_en.arb`), plus tests for both the new entry and its sign-in-card rendering. `zip_captions`' `main.dart` intentionally left without an `authServiceProvider` override, since it has no sign-in UI in Phase 2 and nothing there reads it (the throw-unless-overridden provider is a deliberate fail-fast if that ever changes without updating the wiring). Full regression: 364 zip_core tests, 101 zip_broadcast tests, all passing; both packages `dart analyze --fatal-infos` clean.
+**Context**: Pushing these fixes as a new commit on `feature/broadcaster-auth`, updating PR #22.
+
+---

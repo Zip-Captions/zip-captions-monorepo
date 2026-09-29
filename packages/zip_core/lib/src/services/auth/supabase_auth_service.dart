@@ -174,8 +174,14 @@ class SupabaseAuthService implements AuthService {
     final error = uri.queryParameters['error'];
     if (error == null) return; // no failure signal — let the SDK finish
     _disarmResilience();
-    final reason =
-        error == 'access_denied' ? AuthFailure.cancelled : AuthFailure.denied;
+    // `denied` is reserved for GoTrue/provider-configuration rejection
+    // (surfaced via AuthException from _mapException, not this callback
+    // param) — SR-01 §7. Any callback error other than the user declining
+    // consent is an unrecognized outcome, mapped to the providerError
+    // catch-all, not `denied`.
+    final reason = error == 'access_denied'
+        ? AuthFailure.cancelled
+        : AuthFailure.providerError;
     _setState(
       AuthState.authFailed(providerId: current.providerId, reason: reason),
     );
