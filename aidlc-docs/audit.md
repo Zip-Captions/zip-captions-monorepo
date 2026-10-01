@@ -1674,3 +1674,11 @@
 **Context**: Awaiting CI re-run and further review on PR #24.
 
 ---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): second CodeRabbit review pass found a real edge case in the first fix
+**Timestamp**: 2026-10-01T20:37:50Z
+**User Input**: "check again" / "respond to and resolve open conversations on the PR where they've been addressed" (requesting a fresh CodeRabbit review after the first round, then handling its result)
+**AI Response**: Requested a fresh CodeRabbit review (the prior formal review's CHANGES_REQUESTED verdict doesn't clear just because its conversations were resolved — confirmed `develop` has an active GitHub ruleset requiring reviews, which was blocking merge). The new review found one more real issue in the fix just shipped: if the channel errors or closes *after* `subscribed` but *before* any presence sync, nothing settled `_initialPresenceSync`, so `watch()` would hang forever. Fixing it correctly required a `_terminated` flag distinguishing a transient failure (give it a fresh wait, so the channel's own automatic rejoin stays observable) from a terminal one (`closed`/explicit `close()` — never hand out a fresh wait, nothing will ever complete it). The first attempt at this fix didn't make that distinction and introduced a real hang in its own new regression test — caught immediately by running the test, not by assuming the fix was correct. Also hit a Dart-specific test-timing gotcha (materializing `.first` before anything awaits it can report a false "unhandled error") and fixed it by using `expectLater(stream, emitsError(...))` directly. `dart analyze --fatal-infos` clean; full suite now 401 tests passing, no regressions. Replied to and resolved the review thread; requested another fresh CodeRabbit review.
+**Context**: Awaiting the next CodeRabbit review result on PR #24.
+
+---

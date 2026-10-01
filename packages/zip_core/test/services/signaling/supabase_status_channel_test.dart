@@ -40,6 +40,7 @@ void main() {
         .thenAnswer((_) async => ChannelResponse.ok);
     when(() => channel.track(any(), any()))
         .thenAnswer((_) async => ChannelResponse.ok);
+    when(() => channel.unsubscribe(any())).thenAnswer((_) async => 'ok');
   });
 
   void subscribeSucceeds() {
@@ -54,6 +55,18 @@ void main() {
       presenceSyncCallback(
         const RealtimePresenceSyncPayload(event: PresenceEvent.sync),
       );
+      return channel;
+    });
+  }
+
+  /// Like [subscribeSucceeds], but deliberately never fires the presence
+  /// sync — for exercising what happens while a [watch()] call is still
+  /// waiting on it.
+  void subscribeSucceedsWithoutPresenceSync() {
+    when(() => channel.subscribe(any())).thenAnswer((invocation) {
+      final callback =
+          invocation.positionalArguments[0] as _SubscribeCallback;
+      callback(RealtimeSubscribeStatus.subscribed, null);
       return channel;
     });
   }
@@ -129,6 +142,26 @@ void main() {
         );
 
         verify(() => channel.subscribe(any())).called(1);
+      },
+    );
+
+    test(
+      'watch() does not hang forever if the channel closes before any '
+      'presence sync ever arrives',
+      () async {
+        subscribeSucceedsWithoutPresenceSync();
+        final statusChannel = SupabaseStatusChannel(
+          client: client,
+          broadcastIdValue: 'K7M9X2',
+        );
+
+        final expectation = expectLater(
+          statusChannel.watch(),
+          emitsError(isA<StateError>()),
+        );
+        await statusChannel.close();
+
+        await expectation;
       },
     );
 
