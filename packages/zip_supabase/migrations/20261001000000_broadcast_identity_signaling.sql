@@ -231,7 +231,21 @@ CREATE POLICY "Any peer may track its own presence on a signaling session"
     AND realtime.messages.topic LIKE 'signaling:%'
   );
 
-CREATE POLICY "Only the broadcaster reads presence on a signaling session"
+-- NOTE: NOT actually restricted to the broadcaster, despite the original
+-- intent — RLS cannot check "does auth.uid() own this session" without a
+-- persisted session-owner mapping, and FR-2.6 explicitly rules out
+-- persisting session records in Postgres (SR-02 §1 cites this directly: no
+-- table holds per-session rows, only one permanent row per broadcaster).
+-- CodeRabbit flagged this gap on PR #24 (2026-10-01): the policy's name
+-- and `SessionSignalingChannel.presence`'s doc comment both falsely
+-- claimed RLS enforces broadcaster-only reads. Fixed by being honest
+-- instead: open to any authenticated caller (anon excluded — the viewer
+-- count is still not a fully public signal), with per-session viewer-count
+-- privacy left to the application layer (Unit 5's transport authorization,
+-- the same RLS-can't-express-it split SR-02 §4 already uses for
+-- message-type authorization) rather than claiming an RLS guarantee that
+-- doesn't exist.
+CREATE POLICY "Authenticated users may read presence on a signaling session"
   ON realtime.messages
   FOR SELECT
   TO authenticated

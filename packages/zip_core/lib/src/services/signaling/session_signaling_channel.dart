@@ -22,10 +22,17 @@ abstract interface class SessionSignalingChannel {
   /// Rule 4), never surfaced as an error.
   Stream<SignalingMessage> get messages;
 
-  /// Presence-derived viewer count. Broadcaster role only — enforced
-  /// server-side (SR-02 §4); a viewer-opened channel's `presence` stream
-  /// never emits (RLS blocks the read entirely rather than this interface
-  /// filtering it client-side).
+  /// Presence-derived viewer count.
+  ///
+  /// **Not restricted to the broadcaster at the RLS layer** — RLS cannot
+  /// check "does this caller own this session" without a persisted
+  /// session-owner mapping, which FR-2.6 rules out (no session records in
+  /// Postgres). Any authenticated caller on this session can read this
+  /// stream (anon cannot). Per-role viewer-count privacy, if needed, is
+  /// Unit 5's transport-layer responsibility, the same RLS-can't-express-it
+  /// split SR-02 §4 already uses for message-type authorization — this
+  /// interface does not enforce it. (Corrected 2026-10-01, PR #24 review —
+  /// the previous doc comment claimed an RLS guarantee that never existed.)
   Stream<PresenceSnapshot> get presence;
 
   /// Leaves the channel and releases its underlying Realtime subscription.

@@ -1661,3 +1661,16 @@
 **Context**: Awaiting CI results and human review on PR #24.
 
 ---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): CodeRabbit review findings fixed on PR #24
+**Timestamp**: 2026-10-01T17:31:20Z
+**User Input**: "Read the feedback on the PR and address the changes"
+**AI Response**: All 6 CI checks passed; CodeRabbit posted 4 actionable findings, all independently verified against the actual code before fixing (not taken on faith):
+1. `_looksRateLimited` only matched `code == null`, but `postgrest` actually passes Kong's HTTP 429 through as `PostgrestException.code == '429'` — fixed to match both, added a regression test.
+2. `_ensureSubscribed()` permanently cached a subscribe failure forever, ignoring that `RealtimeChannel.subscribe()` can only be called once and the client's own automatic rejoin re-invokes the same callback later — fixed to track channel-start state separately from the per-attempt wait, so a later successful rejoin un-sticks future callers instead of replaying the first failure forever. Added a regression test exercising exactly this recovery path.
+3. `watch()` could read `_currentStatus()` immediately after `subscribed`, but the Realtime protocol sends the presence snapshot as a separate message, not guaranteed bundled with the join reply — an already-live topic could be misread as offline. Fixed by waiting for the first presence sync before computing the initial value. Added a regression test simulating the sync arriving after `subscribed`.
+4. **Major, security**: the `"Only the broadcaster reads presence on a signaling session"` RLS policy never actually checked ownership — any authenticated user could read any session's viewer-presence data, contradicting both the policy's name and `SessionSignalingChannel.presence`'s documented contract. CodeRabbit's suggested fix (a persisted `broadcast_sessions` table with `owner_id`) directly contradicts FR-2.6, which SR-02 itself cites as the reason no session records exist in Postgres — flagged this conflict to the user rather than unilaterally picking a fix. User chose: open the policy honestly (`authenticated`, matching its own `INSERT` policy, anon still excluded) and correct the misleading policy name and all three places that claimed an RLS guarantee that never existed (`SessionSignalingChannel.presence`'s doc comment, `SupabaseSessionSignalingChannel`'s class doc comment, and SR-02 §4's table) to say viewer-count privacy is deferred to Unit 5's transport-layer authorization — the same RLS-can't-express-it split SR-02 §4 already uses for message-type authorization.
+`dart analyze --fatal-infos` clean; full suite now 400 tests passing (+3 regression tests), 1 integration suite correctly skipped by default, no regressions. Committed and pushed to PR #24.
+**Context**: Awaiting CI re-run and further review on PR #24.
+
+---

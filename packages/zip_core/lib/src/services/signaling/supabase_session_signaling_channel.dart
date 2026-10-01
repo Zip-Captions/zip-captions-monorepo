@@ -12,11 +12,13 @@ import 'package:zip_core/src/services/signaling/signaling_service.dart';
 /// (SR-02 §4).
 ///
 /// Every peer (broadcaster or viewer) tracks its own (empty) presence entry
-/// on open, which is what makes the broadcaster's viewer-count read
-/// possible — RLS, not [role], is what actually restricts who may read that
-/// presence stream back (broadcaster only); a viewer-opened instance simply
-/// never receives any `presence` events, since the server-side read is
-/// rejected before anything reaches this client.
+/// on open, which is what makes the viewer-count read possible. [role] is
+/// carried for the caller's own bookkeeping only — RLS restricts the
+/// `presence` read to `authenticated` callers (anon cannot read it), but
+/// **not** to the broadcaster specifically (see `SessionSignalingChannel
+/// .presence`'s doc comment for why: no persisted session-owner mapping
+/// exists to check against, per FR-2.6). A viewer-opened instance does
+/// receive `presence` events.
 class SupabaseSessionSignalingChannel implements SessionSignalingChannel {
   /// Creates a [SupabaseSessionSignalingChannel] for [sessionId], opened in
   /// [role].

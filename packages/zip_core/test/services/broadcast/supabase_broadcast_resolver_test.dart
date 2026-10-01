@@ -153,6 +153,24 @@ void main() {
     });
 
     test(
+      "resolves to rateLimited for Kong's actual 429 code (not code-less)",
+      () async {
+        stubRpc(
+          _ImmediateBuilder<bool>.error(
+            const PostgrestException(
+              message: 'API rate limit exceeded',
+              code: '429',
+            ),
+          ),
+        );
+
+        final result = await resolver.resolve(id);
+
+        expect(result, isA<BroadcastRateLimited>());
+      },
+    );
+
+    test(
       'resolves to resolutionFailed for any other step-1 PostgrestException',
       () async {
         stubRpc(

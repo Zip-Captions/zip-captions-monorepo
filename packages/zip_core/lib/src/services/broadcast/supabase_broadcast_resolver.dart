@@ -73,18 +73,19 @@ class SupabaseBroadcastResolver implements BroadcastResolver {
     }
   }
 
-  /// Best-effort detection of a Kong rate-limit rejection: Kong's
-  /// `rate-limiting` plugin returns a plain HTTP 429 outside PostgREST's
-  /// own error-response shape, which `postgrest-dart` surfaces as a
-  /// [PostgrestException] with no Postgres `code` (unlike a genuine
-  /// database error, which always has one). **Not yet verified against the
-  /// real Kong + local Supabase stack** — Step 12's integration tests
-  /// against the actual rate-limited route must confirm this heuristic
-  /// before Unit 3 ships; if it's wrong, HTTP 429 would currently resolve
-  /// to [BroadcastResolution.resolutionFailed] instead of
-  /// [BroadcastResolution.rateLimited], which is a safe (if less precise)
-  /// fallback either way.
+  /// Best-effort detection of a Kong rate-limit rejection. **Corrected at
+  /// PR #24 review (2026-10-01)**: `postgrest` (the package
+  /// `supabase_flutter` depends on) actually passes the HTTP status
+  /// straight through to `PostgrestException.code` when the response body
+  /// has no explicit `code` field — so a 429 from Kong surfaces as
+  /// `code: '429'`, not `code: null` as originally assumed here. Checks
+  /// both: a `null` code (in case some other proxy layer produces an even
+  /// less structured rejection) and the literal `'429'` code, alongside the
+  /// existing rate-limit-shaped message check. If this is ever still wrong
+  /// for some response shape, it fails safe to
+  /// [BroadcastResolution.resolutionFailed] rather than a false
+  /// `notFound`/`offline`.
   static bool _looksRateLimited(PostgrestException error) =>
-      error.code == null &&
+      (error.code == null || error.code == '429') &&
       error.message.toLowerCase().contains('rate limit');
 }

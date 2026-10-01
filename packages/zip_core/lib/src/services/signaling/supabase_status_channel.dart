@@ -23,38 +23,74 @@ class SupabaseStatusChannel implements StatusChannel {
           'status:$broadcastIdValue',
           opts: const RealtimeChannelConfig(private: true),
         ) {
-    _channel.onPresenceSync((_) => _emitCurrentStatus());
+    _channel.onPresenceSync((_) {
+      if (!_initialPresenceSync.isCompleted) _initialPresenceSync.complete();
+      _emitCurrentStatus();
+    });
   }
 
   final RealtimeChannel _channel;
   final _statusController = StreamController<BroadcastStatus>.broadcast();
-  Completer<void>? _subscribed;
 
+  /// Completes on the channel's first presence sync — the server-sent
+  /// snapshot fires once on join regardless of whether any presence is
+  /// tracked yet, and arrives as a separate message from the `subscribed`
+  /// callback, not necessarily bundled with it (PR #24 review,
+  /// 2026-10-01). `watch()` waits on this before computing its first value
+  /// so an already-live topic is never misread as offline from a stale,
+  /// pre-sync `presenceState()` snapshot.
+  final _initialPresenceSync = Completer<void>();
+
+  Completer<void>? _subscribeWait;
+  bool _subscribeCalled = false;
+  RealtimeSubscribeStatus? _lastSubscribeStatus;
+
+  /// `RealtimeChannel.subscribe()` may only ever be called once per channel
+  /// instance (it throws on a second call) — its own timeout/error handling
+  /// can automatically rejoin and re-invoke the *same* callback later with
+  /// `subscribed`. The original version of this method cached the first
+  /// outcome forever, so a transient failure permanently broke every later
+  /// call even after the channel silently recovered (PR #24 review,
+  /// 2026-10-01). Fixed: `subscribe()` is invoked exactly once; a failed
+  /// wait is replaced with a fresh one for later callers instead of being
+  /// replayed, so they pick up the channel's eventual recovery.
   Future<void> _ensureSubscribed() {
-    final existing = _subscribed;
-    if (existing != null) return existing.future;
-
+    if (!_subscribeCalled) {
+      _subscribeCalled = true;
+      final completer = Completer<void>();
+      _subscribeWait = completer;
+      _channel.subscribe(_handleSubscribeStatus);
+      return completer.future;
+    }
+    if (_lastSubscribeStatus == RealtimeSubscribeStatus.subscribed) {
+      return Future.value();
+    }
+    final existing = _subscribeWait;
+    if (existing != null && !existing.isCompleted) return existing.future;
     final completer = Completer<void>();
-    _subscribed = completer;
-    _channel.subscribe((status, error) {
-      if (completer.isCompleted) return;
-      switch (status) {
-        case RealtimeSubscribeStatus.subscribed:
-          completer.complete();
-        case RealtimeSubscribeStatus.channelError:
-          completer.completeError(
-            BroadcastAuthorizationException(
-              error?.toString() ?? 'status channel subscription rejected',
-            ),
-          );
-        case RealtimeSubscribeStatus.timedOut:
-        case RealtimeSubscribeStatus.closed:
-          completer.completeError(
-            StateError('status channel subscription $status'),
-          );
-      }
-    });
+    _subscribeWait = completer;
     return completer.future;
+  }
+
+  void _handleSubscribeStatus(RealtimeSubscribeStatus status, Object? error) {
+    _lastSubscribeStatus = status;
+    final completer = _subscribeWait;
+    if (completer == null || completer.isCompleted) return;
+    switch (status) {
+      case RealtimeSubscribeStatus.subscribed:
+        completer.complete();
+      case RealtimeSubscribeStatus.channelError:
+        completer.completeError(
+          BroadcastAuthorizationException(
+            error?.toString() ?? 'status channel subscription rejected',
+          ),
+        );
+      case RealtimeSubscribeStatus.timedOut:
+      case RealtimeSubscribeStatus.closed:
+        completer.completeError(
+          StateError('status channel subscription $status'),
+        );
+    }
   }
 
   BroadcastStatus _currentStatus() {
@@ -92,6 +128,7 @@ class SupabaseStatusChannel implements StatusChannel {
       ) async {
         try {
           await _ensureSubscribed();
+          await _initialPresenceSync.future;
         } on Object catch (error, stackTrace) {
           controller.addError(error, stackTrace);
           return;
