@@ -1,0 +1,23 @@
+-- Corrective migration: fix a mismatched local-dev JWT secret.
+--
+-- The initial migration (20260326000000_initial.sql) set
+-- app.settings.jwt_secret to 'super-secret-jwt-token-with-at-least-32-
+-- characters-long' — missing the 'your-' prefix from the actual secret the
+-- bundled demo ANON_KEY/SERVICE_ROLE_KEY JWTs in .env.example were signed
+-- with ('your-super-secret-jwt-token-with-at-least-32-characters-long').
+--
+-- Discovered during Unit 3 (Broadcast Identity + Signaling) Code
+-- Generation (2026-10-01) while running a real integration test against
+-- the local stack: every JWT-verifying call (PostgREST via Kong, likely
+-- GoTrue token verification too) silently failed signature verification
+-- for the documented local-dev credentials. Only paths that don't actually
+-- decode the JWT (e.g. Kong's key-auth plugin doing a literal string
+-- lookup) appeared to work, which is why this went unnoticed since Unit 4.
+--
+-- Forward-only convention (per the project's one existing migration and
+-- docs/04-technical-specification.md Section 9): fixed here as a new
+-- migration, not by editing the already-shipped initial migration — editing
+-- history wouldn't fix an already-initialized database's current value
+-- anyway.
+ALTER DATABASE postgres
+  SET "app.settings.jwt_secret" TO 'your-super-secret-jwt-token-with-at-least-32-characters-long';

@@ -1480,3 +1480,176 @@
 **Context**: Unit 2 (Broadcaster Auth) is fully complete and merged. Per the dependency matrix, Unit 3 (Broadcast Identity + Signaling) depends on Unit 2 (done) and Spike 2.1 (paused, interim values already accepted). Next unit not yet started — awaiting user direction.
 
 ---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Starting
+**Timestamp**: 2026-09-29T14:06:28Z
+**User Input**: "merge 23 and proceed with unit 3, we can accept the interim results from spike 2.1 until we've got a functional MVP with actual users"
+**AI Response**: Merged PR #23. Recorded the user's Spike 2.1 acceptance decision in `aidlc-state.md` (interim values stand through to a functional MVP with real users, at which point Spike 2.1 is revisited with real usage data). Created `feature/broadcast-identity-signaling` off `develop` (no worktree, per standing preference). Starting Unit 3 Functional Design.
+**Context**: Unit 3 (S-11, S-13, gated by SR-02) — packages zip_supabase, zip_core. Depends on Unit 2 (done, merged) and Spike 2.1 (paused, interim values now explicitly accepted for MVP scope).
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Functional Design plan drafted
+**Timestamp**: 2026-09-29T14:20:00Z
+**AI Response**: Researched Supabase's actual Realtime Authorization mechanism (RLS policies on `realtime.messages`, scoped by `extension = 'broadcast'`/`'presence'` and `topic`, requiring `private: true` channels — confirmed via Supabase's current docs, not in docs-mcp's index) before drafting recommendations, same discipline as Unit 2's SR-01 research. Saved `aidlc-docs/construction/plans/broadcast-identity-signaling-functional-design-plan.md` with 7 multiple-choice questions covering: registry table name/columns (FR-2.2, avoiding the misleading `broadcast_sessions` example name given FR-2.6 rules out session records), broadcast ID alphabet/length (Crockford Base32, FR-2.3), the anonymous resolution mechanism split (a `SECURITY DEFINER` RPC only resolves existence, not live status — live status resolution is a client-side presence read, not this RPC's job), enumeration control (deferring the actual rate-limit config to Infrastructure Design, via Kong), Realtime channel authorization (Supabase's native `realtime.messages` RLS mechanism), viewer join abuse control (explicitly Unit 5's `ViewerAdmission` scope, not this unit's), and how `BroadcastResolution.RateLimited` reconciles with the enumeration-control answer. This stage's output includes the SR-02 security-critical approach document, same gate structure as Unit 2's SR-01.
+**Context**: Awaiting user answers to the 7 questions before generating the Functional Design artifacts.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Functional Design + SR-02 generated
+**Timestamp**: 2026-09-29T14:35:00Z
+**User Input**: Answered all 7 questions in `broadcast-identity-signaling-functional-design-plan.md` (all "A" — recommended options). Then: "proceed."
+**AI Response**: Generated Functional Design artifacts at `aidlc-docs/construction/broadcast-identity-signaling/functional-design/`: `sr-02-rls-realtime-policy.md` (the `broadcast_identities` table with owner-unique/broadcast_id-unique constraints and owner-only RLS, no `anon` policy at all on the table; a boolean-only `SECURITY DEFINER` `resolve_broadcast_id` RPC for anonymous existence checks, explicitly split from live-status resolution which is a client-side Realtime presence read; Kong-based rate limiting deferred to this unit's own Infrastructure Design stage; Supabase's native `realtime.messages` RLS for channel authorization with a documented RLS-vs-application-logic defense-in-depth split for message-type authorization), `business-logic-model.md` (5 flows mapped to S-11/S-13 ACs), `business-rules.md` (8 rules), `domain-entities.md`, `testable-properties.md` (5 pure-Dart PBT properties plus 2 explicitly-flagged stateful/integration properties that need the local Supabase stack, not the in-process PBT shim), and `handoff-summary.md`.
+**Context**: Unit 3 Functional Design complete, awaiting the user's Functional Design + SR-02 approval.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Functional Design + SR-02 approved
+**Timestamp**: 2026-09-30T01:40:59Z
+**User Input**: "approve and proceed"
+**AI Response**: Functional Design and SR-02 (`sr-02-rls-realtime-policy.md` §6) approved by James Petersen, 2026-09-30. Proceeding to NFR Requirements.
+**Context**: Unit 3 (Broadcast Identity + Signaling) Functional Design COMPLETE and approved, including the SR-02 security-critical approach gate.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): NFR Requirements plan drafted
+**Timestamp**: 2026-09-30T01:48:00Z
+**AI Response**: Saved `aidlc-docs/construction/plans/broadcast-identity-signaling-nfr-requirements-plan.md` with 2 open questions (a concrete Kong rate-limit threshold for `resolve_broadcast_id`, and whether `get_or_create_my_broadcast_id`'s retry bound needs a latency NFR beyond its existing fail-safe retry cap) plus a preliminary Security Baseline pass — more rules apply here than for Unit 2's client-only scope, since this unit owns real Postgres/RLS/Realtime infrastructure.
+**Context**: Awaiting user answers before generating the NFR Requirements artifacts.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): NFR Requirements generated
+**Timestamp**: 2026-09-30T01:55:00Z
+**User Input**: Answered Q1 (Kong rate limit, 30/min + burst) and Q2 (no formal latency NFR, retry bound is a fail-safe) both "A" in `broadcast-identity-signaling-nfr-requirements-plan.md`. Then: "proceed."
+**AI Response**: Generated `nfr-requirements.md` (performance/reliability/testability requirements; full Security Baseline compliance table — 8 Compliant, 6 N/A as platform/other-unit-owned, 1 N/A-with-Backlog-note; full PBT compliance table, 7 Compliant/Compliant-planned, 3 N/A with rationale for the database-constraint-dependent stateful properties), `tech-stack-decisions.md` (no new dependencies; `resolve_broadcast_id` as `sql`-language, `get_or_create_my_broadcast_id` as `plpgsql`; Kong rate-limit target 30/min+burst; hand-written Dart-side fakes + real Supabase-stack integration tests for RLS/constraint behavior), and `handoff-summary.md`. No blocking Security or PBT findings.
+**Context**: Unit 3 NFR Requirements COMPLETE, awaiting approval.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): NFR Requirements approved
+**Timestamp**: 2026-09-30T15:35:54Z
+**User Input**: "approve and proceed"
+**AI Response**: NFR Requirements marked complete and approved. Proceeding to NFR Design.
+**Context**: Unit 3 (Broadcast Identity + Signaling) NFR Requirements COMPLETE and approved.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): NFR Design plan drafted
+**Timestamp**: 2026-09-30T15:40:00Z
+**AI Response**: Saved `aidlc-docs/construction/plans/broadcast-identity-signaling-nfr-design-plan.md` with 2 questions (a new `BroadcastAuthorizationException` for RLS-rejection handling; treating a resolution step-2 failure the same as `Offline` rather than inventing a new caller-facing state Unit 7's approved UI has nowhere to render) plus the package-placement clarification (mirroring Unit 2: all Dart code in `zip_core`, `zip_supabase` gets only the SQL migration, since it's not a Dart package).
+**Context**: Awaiting user answers before generating the NFR Design artifacts.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): NFR Design generated, including a design correction
+**Timestamp**: 2026-09-30T15:52:00Z
+**User Input**: Answered Q1 (`BroadcastAuthorizationException`) "A" and Q2 "B" — deviating from the recommended option, choosing a distinct `ResolutionFailed` variant over folding a resolution-step-2 failure into `Offline`.
+**AI Response**: Since Q2's answer extends `BroadcastResolution` (a shape fixed at Application Design) with a new `ResolutionFailed` variant, retroactively updated the already-approved Functional Design artifacts to match: `domain-entities.md` (new variant + rationale), `sr-02-rls-realtime-policy.md` §2 (updated resolution description), `business-logic-model.md` F-BIS-2 (step-2 failure now maps to `ResolutionFailed`, not folded into `Offline`). Generated `nfr-design-patterns.md`, `logical-components.md` (package placement confirming all Dart code lives in `zip_core`, `zip_supabase` gets only the migration — mirrors Unit 2's `SupabaseAuthService` exactly), and `handoff-summary.md`. Added a Backlog entry to `aidlc-state.md` flagging that Unit 7's `BroadcastViewerScreen` has no approved rendering for `ResolutionFailed` yet — that unit's own Functional Design must decide (new state vs. folding into an existing "cannot connect" state).
+**Context**: Unit 3 NFR Design COMPLETE, awaiting approval. The retroactive Functional Design edits don't reopen that stage's overall approval (SR-02's substance is unchanged) but are called out here for traceability.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): NFR Design approved
+**Timestamp**: 2026-09-30T23:49:21Z
+**User Input**: "approve and proceed"
+**AI Response**: NFR Design marked complete and approved. Proceeding to Infrastructure Design (this unit's own stage, per `phase2-unit-of-work.md` — migration, resolution endpoint, Realtime authorization configuration).
+**Context**: Unit 3 (Broadcast Identity + Signaling) NFR Design COMPLETE and approved.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Infrastructure Design plan generated
+**Timestamp**: 2026-09-30T23:55:00Z
+**User Input**: (implicit, continuing from NFR Design approval)
+**AI Response**: Read the generic Infrastructure Design stage rule and Unit 4's existing Infrastructure Design document as a style/scope precedent, then read the project's actual current Kong config (`packages/zip_supabase/volumes/api/kong.yml`) and migrations directory before drafting any questions, per the NFR Design handoff summary's explicit constraint not to invent a new Kong config format. Saved `aidlc-docs/construction/plans/broadcast-identity-signaling-infrastructure-design-plan.md` with 2 questions: (Q1) how to scope the Kong rate limit to exactly `resolve_broadcast_id` rather than all REST traffic — recommended splitting a new, more specific service/route out of the catch-all `rest-v1` route; (Q2) whether the migration needs a down/rollback script — recommended no, matching the project's existing forward-only convention (confirmed by inspecting the one existing migration file).
+**Context**: Awaiting user answers before generating the Infrastructure Design artifacts.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Infrastructure Design approved
+**Timestamp**: 2026-10-01T00:23:40Z
+**User Input**: "approved"
+**AI Response**: Both plan questions approved as recommended (A/A). Generated `aidlc-docs/construction/broadcast-identity-signaling/infrastructure-design/infrastructure-design.md`: a new `rest-v1-resolve-broadcast-id` Kong service/route (split from `rest-v1`, same `cors`/`key-auth`/`acl` plugins plus a new `rate-limiting` plugin — `limit_by: ip`, `minute: 30`, `second: 2`, `policy: local`, `fault_tolerant: true` — approximating NFR Requirements Q1's 30/min + ~10-in-5s burst target), and confirmation of no down-migration script. Generated `handoff-summary.md` for Code Generation. Updated `aidlc-state.md` (Unit 3's Infrastructure Design marked complete; Current Stage line advanced to "starting Code Generation next").
+**Context**: Unit 3 (Broadcast Identity + Signaling) Infrastructure Design COMPLETE and approved. Next: Code Generation (Part 1 plan, then Part 2 generation).
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Code Generation Part 1 plan generated
+**Timestamp**: 2026-10-01T00:40:00Z
+**User Input**: "I want to try delegating to qwen for code generation... let's do one as a test to see the quality we get back"
+**AI Response**: Saved `aidlc-docs/construction/plans/broadcast-identity-signaling-code-generation-plan.md` — 14 steps covering the migration/Kong config, pure-Dart models, repository layer, resolution layer, signaling service layer, provider wiring, and both unit and integration tests, per the approved Functional Design/NFR Design/Infrastructure Design artifacts. Resolved one previously-undocumented ambiguity before planning further: SR-02 §3 says IDs are stored/compared case-sensitively (uppercase alphabet) but displayed lowercase — decided `BroadcastId.parse`/`tryParse` normalize to canonical uppercase so pasted lowercase viewer input actually resolves, keeping display-casing a presentation-only concern. Logged this decision directly in the plan rather than leaving it for whoever generates Step 2 to guess.
+**Context**: Awaiting user approval of the plan before Part 2 generation begins (requesting approval of Step 2 specifically as a first delegation test, per local delegation protocol — mechanics not detailed here per that protocol's own logging rule).
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Code Generation Steps 2–3 complete
+**Timestamp**: 2026-10-01T01:05:00Z
+**User Input**: "proceed building it yourself" (after a delegation test attempt produced zero usable output)
+**AI Response**: Completed Step 2 (pure-Dart models: `BroadcastId`, `BroadcastLink`, `BroadcastResolution`, `SignalingMessage` + `SignalingCodec`, `PresenceSnapshot`, `BroadcastStatus`, all in `packages/zip_core/lib/src/models/`, exported via `models.dart`) and Step 3 (PBT generators and the 5 round-trip/invariant tests from `testable-properties.md`, in `packages/zip_core/test/pbt/` and `test/helpers/generators.dart`). Added `meta` as a direct `zip_core` dependency (small, standard, needed for `@immutable`). `dart analyze --fatal-infos` clean; full `zip_core` suite now 369 tests, all passing, no regressions.
+**Context**: Unit 3 Code Generation Steps 1–3 of 14 complete (Step 1, the migration + Kong config, still pending). Continuing with Step 4 (repository layer) next.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Code Generation Steps 1, 4, 5 complete
+**Timestamp**: 2026-10-01T01:35:00Z
+**User Input**: "proceed"
+**AI Response**: Completed Step 1 (migration `20261001000000_broadcast_identity_signaling.sql` — `broadcast_identities` table + RLS, `resolve_broadcast_id`, `get_or_create_my_broadcast_id`, and the full `realtime.messages` authorization policy set per SR-02 §1–§4; plus the Kong `rest-v1-resolve-broadcast-id` rate-limited route). Verified the migration against the actual local Supabase stack rather than by inspection alone: spun up `supabase-db`, applied it, confirmed `get_or_create_my_broadcast_id()` idempotence and cross-user uniqueness, `resolve_broadcast_id`'s anon-safe boolean-only behavior, and RLS correctly blocking both direct anon table reads and one authenticated user inserting/reading another's row — then tore the stack back down. Completed Step 4 (`BroadcastIdentityRepository`/`SupabaseBroadcastIdentityRepository`/`BroadcastAuthorizationException`) and Step 5 (exception-mapping unit tests). `dart analyze --fatal-infos` clean; full `zip_core` suite now 372 tests passing.
+**Context**: Unit 3 Code Generation Steps 1–5 of 14 complete. Continuing with Step 6 (resolution layer) next.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): SR-02 §4 correction (presence SELECT scope)
+**Timestamp**: 2026-10-01T02:05:00Z
+**User Input**: "Open presence SELECT to anon+authenticated (Recommended)" (in response to a flagged inconsistency)
+**AI Response**: Found a genuine internal contradiction in the already-approved SR-02 while preparing to build the signaling layer (Step 8): §4's policy table restricted `presence` SELECT on `status:{broadcast_id}` to the broadcaster only, but §2's anonymous resolution explicitly reads that same presence state to determine live/offline for *any* caller, including anonymous viewers — the two cannot both be true, and as drafted the restriction would have made anonymous resolution never see "live" at all. Root cause: the original draft copied `SessionSignalingChannel.presence`'s intentionally-private viewer-count pattern by mistake. Corrected per the user's direction: `status:{broadcast_id}` presence SELECT is now `anon, authenticated` (matching its own `broadcast`-extension SELECT row); INSERT (tracking) stays broadcaster-only. Updated the already-applied migration (`20261001000000_broadcast_identity_signaling.sql`) and `sr-02-rls-realtime-policy.md` §4's table with an inline note explaining the correction. Re-verified the migration still applies cleanly.
+**Context**: Also discovered and disclosed a process issue during this verification: `docker compose down -v` after the Step 1 verification had removed a Supabase volume that may have pre-dated this session (a prior full-stack run's data) rather than a certainly-empty one created by this session — user confirmed no real data was lost. Added a standing local-only lesson (not a tracked-file change) to check Docker volume state before any future teardown in this package.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Code Generation Steps 8, 9 complete (out of plan order)
+**Timestamp**: 2026-10-01T02:40:00Z
+**User Input**: (continuing from "proceed")
+**AI Response**: Built the signaling service layer (Step 8) before the resolution layer (Step 6), since `BroadcastResolver`'s implementation composes a `StatusChannel` per `logical-components.md`'s own dependency graph — Step 6 cannot be built first as originally sequenced. Added `SignalingService`/`SignalingRole`, `StatusChannel`/`SessionSignalingChannel` (signatures copied verbatim from Application Design's fixed `phase2-component-methods.md` §3), and their Supabase Realtime implementations (private channels, presence-based live/offline for status, broadcast-message signaling + presence-based viewer count for sessions). Verified every non-trivial Realtime API call (`channel`, `onPresenceSync`, `onBroadcast`, `track`/`untrack`, `sendBroadcastMessage`, `subscribe`, `presenceState`) against `supabase_flutter`'s actual docs via docs-mcp rather than assuming signatures. Wrote Step 9's mocktail-based unit tests and, in the process, found and fixed a real bug: `SupabaseStatusChannel.watch()`'s initial status emission was being silently dropped (routed through an internal broadcast stream before any listener existed on it) — every subscriber would see only later updates, never the current status on first watch. Fixed and re-verified. `dart analyze --fatal-infos` clean; full suite now 382 tests passing, no regressions.
+**Context**: Unit 3 Code Generation Steps 1, 2, 3, 4, 5, 8, 9 of 14 complete. Continuing with Step 6 (resolution layer, now unblocked) next.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Code Generation Steps 6, 7 complete
+**Timestamp**: 2026-10-01T03:05:00Z
+**User Input**: (continuing from "proceed")
+**AI Response**: Completed `BroadcastResolver`/`SupabaseBroadcastResolver` (Step 6): two-step resolution per SR-02 §2, composing the Step 4 RPC call and a Step 8 `StatusChannel`. Flagged one open item transparently rather than guessing silently and moving on: the exact way Kong's rate-limiting plugin's HTTP 429 surfaces through `postgrest-dart` isn't pinned down anywhere in the approved docs (Infrastructure Design fixed the Kong config, not this client-side detection detail), so implemented a best-effort heuristic (`PostgrestException` with no Postgres `code` and a rate-limit-shaped message) that fails safe to `resolutionFailed` if wrong, and noted it needs confirming against the real stack at Step 12. Completed Step 7's tests (all 5 outcomes), reusing the `Fake`-override-`then` technique for `PostgrestFilterBuilder` already established for Unit 2's `signInWithOAuth` problem. `dart analyze --fatal-infos` clean; full suite now 391 tests passing, no regressions.
+**Context**: Unit 3 Code Generation Steps 1–9 of 14 complete. Continuing with Step 10 (Riverpod provider wiring) next.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Code Generation Steps 10, 11 complete
+**Timestamp**: 2026-10-01T03:20:00Z
+**User Input**: (continuing from "proceed")
+**AI Response**: Added `broadcastIdentityRepositoryProvider`, `signalingServiceProvider`, `broadcastResolverProvider` (Step 10) — all three construct their real `Supabase*` implementation directly from `supabaseClientProvider` rather than requiring an app-startup override, since (unlike `authServiceProvider`) nothing app-specific is needed, matching `sttEngineRegistryProvider`'s existing "construct directly" precedent over the "throw unless overridden" one. Ran `build_runner` to generate the `.g.dart` files. Added Step 11's wiring tests. `dart analyze --fatal-infos` clean; full suite now 397 tests passing, no regressions.
+**Context**: Unit 3 Code Generation Steps 1–11 of 14 complete. Remaining: Step 12 (integration tests against the local Supabase stack — including confirming the resolver's rate-limit-detection heuristic flagged at Step 6/7), Step 13 (code summary doc), Step 14 (Documentation Refinement flag note).
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Code Generation Step 12 complete — found and fixed two pre-existing Unit 4 infra bugs
+**Timestamp**: 2026-10-01T04:00:00Z
+**User Input**: (continuing from "proceed"); separately, "Fix it now as a separate, clearly-labeled change" when asked how to handle the first discovered Kong bug; "No real data lost, continue" when asked about a Docker volume concern raised earlier in this unit.
+**AI Response**: Wrote `packages/zip_core/test/integration/broadcast_identity_supabase_test.dart` — the project's first real-backend integration test, covering exactly `testable-properties.md`'s "Stateful / Integration-Level Properties" (idempotence, uniqueness, anon RLS boundary). Added `packages/zip_core/dart_test.yaml` to tag and skip it by default (no CI/stack-availability wiring exists for this yet) — confirmed skip behavior matches the project's real `melos exec -- flutter test` per-package invocation. Actually running it against the local stack surfaced two genuine, pre-existing bugs in Unit 4's infrastructure, unrelated to Unit 3's own deliverables: (1) Kong's `KONG_PLUGINS` allowlist in `docker-compose.yml` never included `rate-limiting`, which only surfaced because Unit 3's own Kong route now references that plugin (fixed: added it to the allowlist); (2) Kong's `kong.yml` `${ANON_KEY}`/`${SERVICE_ROLE_KEY}` placeholders were never actually substituted by Kong itself — confirmed via direct `curl` that Kong registered the literal string `"${ANON_KEY}"` as the credential (fixed: added a `sed`-based render step to the `kong` service's `entrypoint`, writing to `/tmp/kong.yml` since `/home/kong` isn't writable by the Kong user). Diagnosing a THIRD failure after fixing those two (`PGRST301: None of the keys was able to decode the JWT`) found a one-word typo in `packages/zip_supabase/.env.example`: `JWT_SECRET` was missing the `your-` prefix from Supabase's actual canonical local-dev default, so the bundled demo `ANON_KEY`/`SERVICE_ROLE_KEY` JWTs never verified against it — independently confirmed via a manual HMAC-SHA256 computation in Python before touching any file. Fixed via a new corrective migration (`20261001000001_fix_jwt_secret_mismatch.sql`, forward-only convention, since editing the already-shipped initial migration wouldn't fix an already-initialized database) plus the `.env.example` correction, and updated Unit 4's own `infrastructure-design.md` table for consistency. All three fixes verified end-to-end via direct `curl` before re-running the Dart test. Final result: all 5 integration tests pass against the real stack (confirmed with a clean repeat run); one unrelated intermittent 502 from Kong→PostgREST under rapid sequential requests was observed on some runs (reproduced via `curl` too, affects the pre-existing catch-all route as well — not a Unit 3 bug) and logged to `aidlc-state.md`'s Backlog rather than chased further, since Unit 3's own logic was already independently confirmed correct via deterministic `psql` checks earlier at Step 1. Tore the stack down cleanly afterward (checked for pre-existing volume state first this time, per the lesson recorded earlier in this unit). `dart analyze --fatal-infos` clean; normal `flutter test` run (matching CI's invocation) is 397 passing + 1 correctly skipped.
+**Context**: Unit 3 Code Generation Steps 1–12 of 14 complete. Two new Backlog items added (the intermittent 502 flakiness; the unverified rate-limit-detection heuristic). Continuing with Step 13 (code summary doc) and Step 14 (Documentation Refinement flag note) next — the last two steps of this unit's Code Generation.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Code Generation COMPLETE (Steps 13, 14)
+**Timestamp**: 2026-10-01T04:15:00Z
+**User Input**: (continuing from "proceed")
+**AI Response**: Wrote the Code Generation summary (`unit3-summary.md`) covering all files created/modified, test coverage, and 8 logged deviations from the plan (execution reordering, the case-normalization clarification, the dropped-emission bug, the SR-02 presence-scope correction, the Fake-builder testing technique, the integration-test scope split, the unverified rate-limit heuristic, and the three Unit 4 infra bug fixes). Logged Step 14's Documentation Refinement flag (not edited now, per the phase-level stage): `docs/RIVERPOD_CONVENTIONS.md` should document this unit's "construct directly from another provider" pattern alongside the existing "throw unless overridden" one. Updated `aidlc-state.md`: Unit 3's Code Generation Part 1 and Part 2 both marked complete, duplicate stray "Code Generation" checkbox line removed, Current Stage advanced to "Code Generation COMPLETE; awaiting human review/approval before PR."
+**Context**: Unit 3 (Broadcast Identity + Signaling) Code Generation is fully complete — all 14 plan steps done, 397 tests passing, `dart analyze --fatal-infos` clean across `zip_core`. Awaiting the user's review and explicit approval (per the standard Code Generation Step 15 gate) before PR.
+
+---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): Code Generation approved
+**Timestamp**: 2026-10-01T14:21:27Z
+**User Input**: "approve and continue"
+**AI Response**: Code Generation marked complete and approved for Unit 3. Proceeding to commit and open a PR against `develop` for this unit, matching Unit 2's precedent (each unit ships as its own PR immediately after Code Generation approval).
+**Context**: Unit 3 (Broadcast Identity + Signaling) Code Generation COMPLETE and approved. Next: commit, push, open PR.
+
+---

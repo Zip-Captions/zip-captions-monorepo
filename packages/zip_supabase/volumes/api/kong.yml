@@ -47,6 +47,36 @@ services:
             - anon
             - admin
 
+  ## PostgREST — resolve_broadcast_id (rate-limited; split out of rest-v1 so
+  ## the limit applies to exactly this RPC, not all REST/RPC traffic —
+  ## Unit 3 Infrastructure Design, NFR Requirements Q1)
+  - name: rest-v1-resolve-broadcast-id
+    url: http://rest:3000/rpc/resolve_broadcast_id
+    routes:
+      - name: rest-v1-resolve-broadcast-id-route
+        strip_path: true
+        paths:
+          - /rest/v1/rpc/resolve_broadcast_id
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: false
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow:
+            - anon
+            - admin
+      - name: rate-limiting
+        config:
+          limit_by: ip
+          minute: 30
+          second: 2
+          policy: local
+          fault_tolerant: true
+          hide_client_headers: false
+
   ## PostgREST — GraphQL
   - name: graphql-v1
     url: http://rest:3000/rpc/graphql

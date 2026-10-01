@@ -116,7 +116,7 @@ Only variables required by the included services. Grouped by section with descri
 | Variable | Default | Description |
 |---|---|---|
 | `POSTGRES_PASSWORD` | `your-super-secret-and-long-postgres-password` | Postgres superuser password |
-| `JWT_SECRET` | `super-secret-jwt-token-with-at-least-32-characters-long` | JWT signing secret (min 32 chars) |
+| `JWT_SECRET` | `your-super-secret-jwt-token-with-at-least-32-characters-long` | JWT signing secret (min 32 chars). **Corrected 2026-10-01** (Unit 3 Code Generation): the original value here was missing the `your-` prefix, silently breaking all JWT verification against the bundled demo `ANON_KEY`/`SERVICE_ROLE_KEY` — see `packages/zip_supabase/migrations/20261001000001_fix_jwt_secret_mismatch.sql`. |
 | `ANON_KEY` | *(Supabase demo JWT)* | Public anonymous API key |
 | `SERVICE_ROLE_KEY` | *(Supabase demo JWT)* | Service role key (bypasses RLS) |
 | `DASHBOARD_USERNAME` | `supabase` | Studio login username |

@@ -1,0 +1,7 @@
+tags:
+  integration-supabase:
+    skip: >-
+      Requires the local Supabase stack running (docker compose up -d in
+      packages/zip_supabase, migrations applied) — not run by default or in
+      CI. Run explicitly with:
+      flutter test --tags integration-supabase --run-skipped
