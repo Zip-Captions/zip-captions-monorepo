@@ -1690,3 +1690,11 @@
 **Context**: Fix pushed; replying to and resolving this review's comment, then confirming final PR state.
 
 ---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): PR #24 merged, unit complete
+**Timestamp**: 2026-10-02T01:56:35Z
+**User Input**: "Pr approved, squashed and merged, what's next?"
+**AI Response**: Confirmed via `gh pr view 24` — merged to `develop` as squash commit `4f6fbeb`. Switched to `develop`, pulled (fast-forwarded `98ffeb0..4f6fbeb`), deleted the local and remote `feature/broadcast-identity-signaling` branches. Updated `aidlc-state.md`: Unit 3 marked fully COMPLETE with the PR/merge details and a summary of all three CodeRabbit review rounds; Current Stage line advanced past Unit 3.
+**Context**: Unit 3 (Broadcast Identity + Signaling) is fully shipped. Per the Phase 2 dependency matrix, Unit 4 (Coturn Infrastructure, gated by SR-03) is next — presenting this to the user for confirmation before starting, per the standing per-unit check-in pattern.
+
+---
