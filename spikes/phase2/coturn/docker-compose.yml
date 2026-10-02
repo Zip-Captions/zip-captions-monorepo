@@ -1,0 +1,87 @@
+# Spike 2.3 throwaway stack: Coturn standing next to a local Supabase
+# instance, plus a simulated symmetric-NAT client for relay-traversal
+# testing. NEVER merged into packages/zip_supabase — see README.md.
+#
+# Run from this directory. Does not touch packages/zip_supabase at all;
+# this is a fully separate, disposable stack for measurement purposes.
+
+services:
+  coturn:
+    image: coturn/coturn:4.6.2
+    container_name: spike-coturn
+    # NOTE: switched from network_mode: host to a fixed address on the
+    # bridge network for the relay-through-NAT test specifically. Found
+    # (2026-10-02) that on Docker Desktop for Mac, a host-networked
+    # container binds into the LinuxKit VM's own network namespace, which
+    # is NOT reachable from bridge-networked containers via
+    # host.docker.internal/192.168.65.254 — that address only routes to the
+    # real macOS host, not to other processes inside the same VM. Confirmed
+    # via tcpdump: the client's request left the gateway correctly and
+    # coturn never responded, reproduced identically with no NAT simulation
+    # in the path at all (gateway talking to coturn directly). This is a
+    # macOS-dev-environment-specific Docker Desktop limitation, not a
+    # concern for the real Linux deployment target — see README.md.
+    networks:
+      default:
+        ipv4_address: 172.28.0.100
+    volumes:
+      # Swapped to turnserver.test.conf for the relay-through-NAT
+      # validation (all reachable test peers here are private addresses,
+      # which the real config correctly denies — see README.md). Swap back
+      # to turnserver.conf to re-confirm the production denial behavior.
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
+      - ./logs:/var/log/turnserver
+    command: ["-c", "/etc/coturn/turnserver.conf"]
+    restart: unless-stopped
+
+  # NAT gateway simulating symmetric NAT (random, fully-random port
+  # mapping) between `nat-client` and everything else, including coturn.
+  nat-gateway:
+    build:
+      context: ./nat_sim
+      dockerfile: gateway.Dockerfile
+    container_name: spike-nat-gateway
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      net.ipv4.ip_forward: 1
+    environment:
+      INTERNAL_SUBNET: 10.200.1.0/24
+    networks:
+      nat_internal:
+        ipv4_address: 10.200.1.2
+      default: {}
+
+  # The "client" sitting behind the simulated symmetric NAT — only attached
+  # to the internal network, with no route out except through nat-gateway.
+  nat-client:
+    build:
+      context: ./nat_sim
+      dockerfile: client.Dockerfile
+    container_name: spike-nat-client
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      - nat-gateway
+    networks:
+      nat_internal:
+        ipv4_address: 10.200.1.10
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+  # Deliberately NOT internal: true — that flag makes Docker itself enforce
+  # host-level isolation against exactly the kind of manual cross-network
+  # forwarding this spike needs (confirmed: with it set, packets destined
+  # beyond the gateway never appeared in a tcpdump capture on the gateway's
+  # own internal-facing interface at all, even though direct traffic to the
+  # gateway itself worked fine — Docker was dropping it before it ever
+  # reached any container's namespace). `nat-client` has no automatic route
+  # out of this network regardless, since its own routing table is
+  # overridden by hand to go via nat-gateway specifically.
+  nat_internal:
+    ipam:
+      config:
+        - subnet: 10.200.1.0/24
