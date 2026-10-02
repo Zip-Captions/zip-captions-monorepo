@@ -1682,3 +1682,11 @@
 **Context**: Awaiting the next CodeRabbit review result on PR #24.
 
 ---
+
+## CONSTRUCTION - Unit 3 (Broadcast Identity + Signaling): third CodeRabbit finding fixed, PR #24 approved and clean
+**Timestamp**: 2026-10-02T01:43:03Z
+**User Input**: linked a specific review (https://github.com/Zip-Captions/zip-captions-monorepo/pull/24#pullrequestreview-5386967786) the user noticed was still open.
+**AI Response**: That review had posted an "outside diff range" comment (on `signaling_codec.dart`, untouched by either prior fix commit, so it never surfaced in the inline review-thread listing used to track the earlier rounds). Verified it against the actual code: `_approximateEncodedBytes` only summed top-level string values' UTF-16 code-unit length and ignored nested maps/lists entirely, so a message with a large nested field a given variant's decoder doesn't read (e.g. `broadcastEnded` with a 20 KiB `extra.blob`) would pass the 16 KiB check despite being many times over — a real violation of Rule 4's oversized-input contract. Fixed by computing the actual UTF-8 byte length of the full `jsonEncode`d payload instead of the cheap heuristic. Added a regression test matching the exact example from the review. `dart analyze --fatal-infos` clean; full suite now 402 tests passing, no regressions. Separately confirmed PR #24's overall state: CodeRabbit's latest formal review (00:08:43Z, before this finding was reported) was APPROVED, all 6 CI checks pass, and `mergeStateStatus: CLEAN` — this finding was a leftover from an earlier review round's "outside diff" comment, not a new blocker.
+**Context**: Fix pushed; replying to and resolving this review's comment, then confirming final PR state.
+
+---

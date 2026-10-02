@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:zip_core/src/models/signaling_message.dart';
 
 /// Encodes and decodes [SignalingMessage]s to/from the wire JSON shape.
@@ -83,7 +85,7 @@ abstract final class SignalingCodec {
 
   static SignalingMessage? _decode(Object? json) {
     if (json is! Map) return null;
-    if (_approximateEncodedBytes(json) > maxEncodedBytes) return null;
+    if (_encodedByteLength(json) > maxEncodedBytes) return null;
 
     final type = json['type'];
     final version = json['version'];
@@ -189,16 +191,19 @@ abstract final class SignalingCodec {
     }
   }
 
-  static int _approximateEncodedBytes(Map<Object?, Object?> json) {
-    // Cheap size bound: sum of string-valued lengths rather than a full JSON
-    // encode, which would defeat the point of rejecting oversized input
-    // before doing real work on it.
-    var total = 0;
-    for (final entry in json.entries) {
-      total += entry.key.toString().length;
-      final value = entry.value;
-      if (value is String) total += value.length;
-    }
-    return total;
-  }
+  /// The actual UTF-8 byte length of the complete encoded payload,
+  /// including nested maps/lists and multibyte characters.
+  ///
+  /// **Corrected (PR #24 review, 2026-10-02)**: the original version only
+  /// summed top-level string values' `.length` (UTF-16 code units, not
+  /// bytes) and ignored nested structures entirely — a message with a large
+  /// nested field (e.g. an unrecognized `extra` key some decoder branch
+  /// ignores) could pass this check while its real encoded size was many
+  /// times over the limit, violating the oversized-input contract (Rule 4).
+  /// `jsonEncode`'s cost here is acceptable: it only runs after the
+  /// top-level shape has already passed the earlier cheap `is! Map` check,
+  /// and oversized/malformed input is exactly the adversarial case worth
+  /// spending real work to reject correctly.
+  static int _encodedByteLength(Map<Object?, Object?> json) =>
+      utf8.encode(jsonEncode(json)).length;
 }
