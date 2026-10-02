@@ -7,6 +7,7 @@ import 'dart:math';
 
 import 'package:zip_core/src/models/audio_device.dart';
 import 'package:zip_core/src/models/auth_failure.dart';
+import 'package:zip_core/src/models/broadcast_id.dart';
 import 'package:zip_core/src/models/caption_event.dart';
 import 'package:zip_core/src/models/display_settings.dart';
 import 'package:zip_core/src/models/enums.dart';
@@ -14,6 +15,7 @@ import 'package:zip_core/src/models/recording_state.dart';
 import 'package:zip_core/src/models/sherpa_model_catalog.dart';
 import 'package:zip_core/src/models/sherpa_model_download_progress.dart';
 import 'package:zip_core/src/models/sherpa_model_info.dart';
+import 'package:zip_core/src/models/signaling_message.dart';
 import 'package:zip_core/src/models/stt_result.dart';
 import 'package:zip_core/src/models/transcript_search_result.dart';
 import 'package:zip_core/src/models/transcript_segment.dart';
@@ -363,3 +365,163 @@ AuthCommand _arbitraryAuthCommand(Random r) {
 /// remain reachable.
 final Generator<List<AuthCommand>> arbitraryAuthCommandSequence =
     any.listWithLengthInRange(0, 20, _arbitraryAuthCommand);
+
+// --- Broadcast identity + signaling domain generators (Unit 3) ---
+
+const String _crockfordAlphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+/// Generates a valid 6-character Crockford-Base32 string, randomly
+/// upper- or lower-cased, for exercising [BroadcastId]'s case-insensitive
+/// parsing.
+final Generator<String> arbitraryValidBroadcastIdString = any.combine2(
+  any.listWithLengthInRange(6, 6, any.choose(_crockfordAlphabet.split(''))),
+  any.boolGen,
+  (chars, lower) {
+    final s = chars.join();
+    return lower ? s.toLowerCase() : s;
+  },
+);
+
+/// Generates valid [BroadcastId] instances.
+BroadcastId arbitraryBroadcastId(Random random) =>
+    BroadcastId.parse(arbitraryValidBroadcastIdString(random));
+
+/// Generates arbitrary strings for `BroadcastLink.parseInput`'s
+/// never-throws property: empty, garbage ASCII, non-ASCII, very long, and
+/// strings that look almost-but-not-quite like a valid link.
+final Generator<String> arbitraryLinkInput = any.choose([
+  '',
+  ' ',
+  'not a link at all',
+  'https://',
+  'https://zipcaptions.app/b/',
+  'zipcaptions.app/b/',
+  'zipcaptions.app/b/too-long-to-be-valid',
+  'zipcaptions.app/b/k7m9x2/extra',
+  'ftp://zipcaptions.app/b/k7m9x2',
+  '💥💥💥💥💥💥',
+  '日本語のコード',
+  'a' * 10000,
+  'K7M9X!',
+  'K7M9XX2',
+  'K7M9X',
+]);
+
+/// Realistic-looking peer id strings (short alphanumeric tokens, as a real
+/// Realtime presence/channel peer id would be).
+final Generator<String> arbitraryPeerId = any.combine2(
+  any.letterOrDigits,
+  any.letterOrDigits,
+  (a, b) => 'peer-${a.isEmpty ? "x" : a}${b.isEmpty ? "y" : b}',
+);
+
+/// A realistic-looking SDP body placeholder (not a real SDP parser's worth
+/// of structure — just non-empty, multi-line, SDP-shaped text).
+final Generator<String> arbitrarySdp = any.choose([
+  'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n',
+  'v=0\r\no=- 2 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=sendrecv\r\n',
+]);
+
+/// A realistic-looking ICE candidate line placeholder.
+final Generator<String> arbitraryIceCandidateLine = any.choose([
+  'candidate:1 1 UDP 2122260223 192.168.1.5 54400 typ host',
+  'candidate:2 1 UDP 1685987071 203.0.113.5 54401 typ srflx',
+]);
+
+/// Generates a [JoinRequest] with `viewerIdentity` always `null` (Rule 7 —
+/// inert in Phase 2).
+JoinRequest arbitraryJoinRequest(Random random) =>
+    JoinRequest(fromPeerId: arbitraryPeerId(random));
+
+/// Generates a [JoinAccepted].
+JoinAccepted arbitraryJoinAccepted(Random random) =>
+    JoinAccepted(toPeerId: arbitraryPeerId(random));
+
+/// Generates a [JoinRejected] across both [JoinRejection] reasons.
+final Generator<JoinRejected> arbitraryJoinRejected = any.combine2(
+  arbitraryPeerId,
+  any.choose(JoinRejection.values),
+  (toPeerId, reason) => JoinRejected(toPeerId: toPeerId, reason: reason),
+);
+
+/// Generates an [SdpOffer].
+final Generator<SdpOffer> arbitrarySdpOffer = any.combine3(
+  arbitraryPeerId,
+  arbitraryPeerId,
+  arbitrarySdp,
+  (from, to, sdp) => SdpOffer(fromPeerId: from, toPeerId: to, sdp: sdp),
+);
+
+/// Generates an [SdpAnswer].
+final Generator<SdpAnswer> arbitrarySdpAnswer = any.combine3(
+  arbitraryPeerId,
+  arbitraryPeerId,
+  arbitrarySdp,
+  (from, to, sdp) => SdpAnswer(fromPeerId: from, toPeerId: to, sdp: sdp),
+);
+
+/// Generates an [IceCandidate].
+IceCandidate arbitraryIceCandidate(Random random) => IceCandidate(
+      fromPeerId: arbitraryPeerId(random),
+      toPeerId: arbitraryPeerId(random),
+      candidate: arbitraryIceCandidateLine(random),
+      sdpMid: any.choose(['0', '1', 'audio', 'video'])(random),
+      sdpMLineIndex: any.intInRange(0, 3)(random),
+    );
+
+/// Generates an [IceRestart].
+final Generator<IceRestart> arbitraryIceRestart = any.combine2(
+  arbitraryPeerId,
+  arbitraryPeerId,
+  (from, to) => IceRestart(fromPeerId: from, toPeerId: to),
+);
+
+/// Generates a [Leave].
+Leave arbitraryLeave(Random random) =>
+    Leave(fromPeerId: arbitraryPeerId(random));
+
+/// Generates a [SignalingMessage] covering every one of the 9 sealed
+/// variants (round-robin by random choice, not just one variant).
+SignalingMessage arbitrarySignalingMessage(Random random) =>
+    switch (random.nextInt(9)) {
+      0 => arbitraryJoinRequest(random),
+      1 => arbitraryJoinAccepted(random),
+      2 => arbitraryJoinRejected(random),
+      3 => arbitrarySdpOffer(random),
+      4 => arbitrarySdpAnswer(random),
+      5 => arbitraryIceCandidate(random),
+      6 => arbitraryIceRestart(random),
+      7 => arbitraryLeave(random),
+      _ => const BroadcastEnded(),
+    };
+
+/// Generates deliberately malformed/adversarial JSON-shaped input for
+/// `SignalingCodec.decode`'s never-throws property. A separate generator
+/// from [arbitrarySignalingMessage] — this one targets broken shapes, not
+/// valid messages.
+Object? arbitraryMalformedSignalingJson(Random random) =>
+    switch (random.nextInt(10)) {
+      0 => null,
+      1 => 'not a map',
+      2 => 42,
+      3 => <String, Object?>{},
+      4 => <String, Object?>{'type': 'joinRequest'}, // missing version
+      5 => <String, Object?>{'version': 1}, // missing type
+      6 => <String, Object?>{'type': 42, 'version': 1}, // wrong type
+      7 => <String, Object?>{
+          'type': 'joinRequest',
+          'version': 999, // unsupported version
+          'fromPeerId': 'peer-1',
+        },
+      8 => <String, Object?>{
+          'type': 'totallyUnknownType',
+          'version': 1,
+        },
+      _ => <String, Object?>{
+          'type': 'sdpOffer',
+          'version': 1,
+          'fromPeerId': 'peer-1',
+          'toPeerId': 'peer-2',
+          'sdp': 'x' * 20000, // oversized field
+        },
+    };

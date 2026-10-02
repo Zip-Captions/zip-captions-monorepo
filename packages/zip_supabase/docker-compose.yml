@@ -43,15 +43,30 @@ services:
       - "127.0.0.1:54321:8000"
     environment:
       KONG_DATABASE: "off"
-      KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+      KONG_DECLARATIVE_CONFIG: /tmp/kong.yml
       KONG_DNS_ORDER: LAST,A,CNAME
-      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth,rate-limiting
       KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
       KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
       ANON_KEY: ${ANON_KEY}
       SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
     volumes:
-      - ./volumes/api/kong.yml:/home/kong/kong.yml:ro
+      - ./volumes/api/kong.yml:/home/kong/kong.yml.template:ro
+    # kong.yml's ${ANON_KEY}/${SERVICE_ROLE_KEY} placeholders are NOT
+    # substituted by Kong itself (KONG_DECLARATIVE_CONFIG loads the file
+    # verbatim, registering the literal "${ANON_KEY}" string as the anon
+    # consumer's key if nothing renders the template first — confirmed via
+    # direct curl against a running stack, Unit 3 Code Generation
+    # 2026-10-01). Render the template into the real, non-mounted config
+    # path before starting Kong.
+    entrypoint:
+      - bash
+      - -c
+      - |
+        sed -e "s|\$${ANON_KEY}|$${ANON_KEY}|g" \
+            -e "s|\$${SERVICE_ROLE_KEY}|$${SERVICE_ROLE_KEY}|g" \
+            /home/kong/kong.yml.template > /tmp/kong.yml
+        exec /entrypoint.sh kong docker-start
     depends_on:
       auth:
         condition: service_healthy
