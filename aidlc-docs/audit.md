@@ -1851,3 +1851,23 @@ Both fixes re-verified against the real stack: an authenticated call through Kon
 **Context**: Code Generation COMPLETE. Awaiting approval before PR.
 
 ---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): Code Generation approved, PR #27 opened
+**Timestamp**: 2026-10-04T00:05:00Z
+**User Input**: "approved, proceed"
+**AI Response**: Code Generation accepted. Staged and committed all Unit 4 files (migration, `turnserver.conf`, `docker-compose.yml` `coturn` service, `.env.example` entry, `zip_core` models/services/providers, tests, and the full `aidlc-docs/construction/coturn-infrastructure/` design history) — commit `3369da0`. Confirmed `.env` stayed gitignored and out of the commit. Pushed `feature/coturn-infrastructure` and opened PR #27 against `develop` (gitflow convention), summarizing the design decisions, the SR-03 sign-off, and the two defects found and fixed while verifying against the real stack.
+**Context**: Awaiting CI and CodeRabbit review on PR #27.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): PR #27 CodeRabbit review round 1 — 2 findings fixed
+**Timestamp**: 2026-10-04T19:40:00Z
+**User Input**: "use the gh cli to check for review"
+**AI Response**: CI all green (6/6 checks). CodeRabbit left 2 actionable comments, both genuine:
+1. `get_turn_credentials()`'s `current_setting()` ran in the `DECLARE` block, before the `auth.uid()` check — an anonymous caller in a misconfigured deployment would see a raw Postgres error instead of `42501`. Fixed: moved the lookup after the auth check, used `current_setting(..., true)`, raised a clear exception on an unset secret.
+2. `.coderabbit.yaml`'s path instructions require every `zip_supabase/**` service to bind `127.0.0.1` only; `network_mode: host` with no `listening-ip` set meant Coturn's control port was actually bound on every local interface (confirmed via `/proc/net/udp`). Fixed with `listening-ip=127.0.0.1` — deliberately left `relay-ip` unset, since restricting relay sockets to loopback would break relaying to any real peer, which is the service's entire purpose; `denied-peer-ip` is the correct, already-existing control on relay targets.
+
+Both fixes re-verified against the live local Supabase stack (not just read): the 2 integration test cases still pass; `/proc/net/udp` confirms the control port moved to loopback-only; a full `turnutils_uclient` allocate/refresh/channel-bind run through the loopback control port still works, with its self-targeted channel-bind still correctly rejected (`403 Forbidden IP`) exactly as before — confirming `denied-peer-ip` is unaffected. `dart analyze --fatal-infos` clean, 406 tests passing. Full account in `unit4-summary.md`.
+**Context**: Committing fixes and pushing to PR #27; will reply to CodeRabbit's review thread.
+
+---

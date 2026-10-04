@@ -49,15 +49,27 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
-  secret text := current_setting('app.settings.turn_shared_secret');
+  secret text;
   credential_ttl integer := 3600; -- 1 hour (NFR Requirements Q5)
   expiry bigint := extract(epoch FROM now())::bigint + credential_ttl;
   computed_username text := expiry::text;
   computed_credential text;
 BEGIN
+  -- CodeRabbit (PR #27): current_setting() was originally in the DECLARE
+  -- block, which runs before this check -- an anonymous caller with no
+  -- shared secret configured would have seen a raw "unrecognized
+  -- configuration parameter" error instead of the intended 42501. Moved
+  -- here, after the auth check, with missing_ok=true so a genuinely unset
+  -- secret raises a clear exception instead of leaking Postgres's own
+  -- error text to an unauthenticated caller.
   IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'get_turn_credentials: authentication required'
       USING ERRCODE = '42501';
+  END IF;
+
+  secret := current_setting('app.settings.turn_shared_secret', true);
+  IF secret IS NULL THEN
+    RAISE EXCEPTION 'get_turn_credentials: app.settings.turn_shared_secret is not configured';
   END IF;
 
   computed_credential := encode(hmac(computed_username, secret, 'sha1'), 'base64');

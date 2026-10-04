@@ -74,6 +74,12 @@ All three deviations are reflected directly in
 `20261003000000_coturn_turn_credentials.sql`'s own comments and in
 `infrastructure-design.md`.
 
+## PR #27 — CodeRabbit Review Round 1 (2 findings, both fixed)
+
+1. **Unset-secret error leaked to anonymous callers**: `current_setting('app.settings.turn_shared_secret')` was in the `DECLARE` block, which runs *before* the `auth.uid()` check in `BEGIN` — an anonymous caller in a misconfigured deployment (secret never set) would see a raw Postgres "unrecognized configuration parameter" error instead of the intended `42501`. Fixed: moved the lookup after the auth check, switched to `current_setting(..., true)` (`missing_ok`), and raised a clear exception if still unset. Re-verified against the live stack (both integration test cases still pass).
+
+2. **Coturn exposed on all host interfaces, not just loopback**: `.coderabbit.yaml`'s path instructions for `packages/zip_supabase/**` require "ports bind to 127.0.0.1 only" — true for every other service via its compose `ports:` mapping, but `network_mode: host` has no such mapping, and Coturn with no `listening-ip` set auto-binds its control port to every local interface (confirmed via `/proc/net/udp`: entries for the host's real LAN IP, Docker bridge gateways, etc., not just `127.0.0.1`). Fixed by adding `listening-ip=127.0.0.1`. **Deliberately did not** restrict `relay-ip` the same way — relay sockets must stay reachable by real (non-loopback) peers, or the TURN server can't do the one thing it exists for; `denied-peer-ip` is the correct, already-existing control on relay *targets*. Re-verified against the live stack: control port now binds loopback-only (`/proc/net/udp` before/after), a loopback STUN request still succeeds, the health check passes, and a full `turnutils_uclient` allocate/refresh/channel-bind run through the loopback-restricted control port still works correctly — its self-targeted channel-bind is still rejected with `403 Forbidden IP`, exactly as before this change (that rejection is `denied-peer-ip` correctly refusing a loopback peer target, not a regression).
+
 ## Not Yet Wired (Unit 5's responsibility, per `logical-components.md`)
 
 `PeerConnectionFactory`/`WebRtcBroadcastTransport`/`WebRtcViewerTransport` (anything that
