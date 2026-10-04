@@ -279,8 +279,28 @@ services:
       db:
         condition: service_healthy
 
+  # ──────────────────────────────────────────────
+  # Coturn — STUN/TURN server (NAT traversal for WebRTC)
+  # ──────────────────────────────────────────────
+  coturn:
+    container_name: supabase-coturn
+    image: coturn/coturn:4.6.2
+    restart: unless-stopped
+    network_mode: host
+    command: ["--static-auth-secret=${TURN_SHARED_SECRET}"]
+    volumes:
+      - ./volumes/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+      - coturn_logs:/var/log/turnserver
+    healthcheck:
+      test: ["CMD", "turnutils_stunclient", "-p", "3478", "127.0.0.1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 volumes:
   supabase_db_data:
     name: supabase_db_data
   supabase_storage_data:
     name: supabase_storage_data
+  coturn_logs:
+    name: supabase_coturn_logs
