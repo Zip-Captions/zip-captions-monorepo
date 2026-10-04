@@ -1871,3 +1871,11 @@ Both fixes re-verified against the live local Supabase stack (not just read): th
 **Context**: Committing fixes and pushing to PR #27; will reply to CodeRabbit's review thread.
 
 ---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): PR #27 CodeRabbit review round 2 — 1 finding fixed
+**Timestamp**: 2026-10-04T22:50:00Z
+**User Input**: "check now"
+**AI Response**: Round 2 review (triggered by the `@coderabbitai review` reply) came back `COMMENTED` with one new outside-diff finding: `SupabaseIceServerProvider` read its STUN/TURN URLs straight from `TurnCredentials.urls` (hardcoded `localhost` in the migration), which an Android emulator can't reach (it needs the `10.0.2.2` host-loopback alias, not `localhost`) — the server has no way to know which hostname a given client can actually reach it at. This was a genuine regression from `logical-components.md`'s original design ("constructed with those URLs at app startup, mirrors how `supabaseClientProvider`'s URL is provided"), which a Code Generation Step 11 simplification had drifted away from. Fixed by reverting to construction-time URL injection: added `iceServerUrls` to `zip_core/lib/src/constants/turn_config.dart`, mirroring `supabaseUrl`'s existing `--dart-define`-overridable pattern exactly (same mechanism this project already uses for the identical "server can't guess the client's reachable hostname" problem with Supabase's own URL). `SupabaseIceServerProvider` now takes `urls` as a constructor parameter instead of reading `TurnCredentials.urls`. Updated the unit test to use deliberately different values for the injected urls vs. `TurnCredentials.urls`, so it would fail if the old (wrong) behavior regressed. `dart analyze --fatal-infos` clean, 406 tests passing. Full account in `unit4-summary.md`.
+**Context**: Committing and pushing the fix, then requesting another CodeRabbit review.
+
+---

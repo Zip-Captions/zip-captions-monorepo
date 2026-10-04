@@ -49,10 +49,14 @@ Dart types/services that issue and shape ICE server credentials. No business log
 10. [x] `lib/src/services/webrtc/ice_server_provider.dart` — abstract interface
     `IceServerProvider.iceServersFor(String sessionId) -> Future<List<IceServer>>`.
 11. [x] `lib/src/services/webrtc/supabase_ice_server_provider.dart` — impl, composes
-    `SupabaseTurnCredentialService`'s result with Coturn's known STUN/TURN URLs (read
-    straight from `TurnCredentials.urls`, since `get_turn_credentials()` already returns
-    them — simpler than the original construction-time-injected-URLs sketch) into a
-    2-entry `IceServer` list.
+    `SupabaseTurnCredentialService`'s credentials with a construction-time-injected
+    `urls` list (`iceServerUrls`, `zip_core/lib/src/constants/turn_config.dart`,
+    `--dart-define`-overridable mirroring `supabaseUrl`'s pattern) into a 2-entry
+    `IceServer` list. An initial version read urls straight from
+    `TurnCredentials.urls` instead — reverted after CodeRabbit (PR #27, round 2) pointed
+    out the server can't know which hostname a given client can actually reach it at
+    (e.g. an Android emulator needs `10.0.2.2`, not `localhost`); this restores
+    `logical-components.md`'s original construction-time-injection design.
 12. [x] Riverpod providers: `turnCredentialServiceProvider`, `iceServerProviderProvider`.
 13. [x] Barrel export updates (`models.dart`, `services.dart`, `providers.dart`).
 

@@ -6,16 +6,14 @@ part of 'ice_server_provider_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$iceServerProviderHash() => r'4fd3f887d6f387b803bdf8285eca4c881900d0ca';
+String _$iceServerProviderHash() => r'b1455469d0ba666e5b795a0aab9cffd4f52dca69';
 
 /// Provides the app's [IceServerProvider].
 ///
 /// No app-startup override needed — the real implementation needs only
-/// [turnCredentialServiceProvider]. Unlike `logical-components.md`'s
-/// original sketch, no separately-injected STUN/TURN URL list is needed
-/// here: `get_turn_credentials()` already returns them as part of
-/// [TurnCredentials.urls], so [SupabaseIceServerProvider] reads them
-/// straight from the fetched credentials.
+/// [turnCredentialServiceProvider] and [iceServerUrls] (the
+/// `--dart-define`-overridable STUN/TURN URL list, matching
+/// `supabaseUrl`'s pattern).
 ///
 /// Copied from [iceServerProvider].
 @ProviderFor(iceServerProvider)

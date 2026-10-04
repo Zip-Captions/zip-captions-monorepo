@@ -15,20 +15,23 @@ void main() {
     turnCredentialService = _MockTurnCredentialService();
     provider = SupabaseIceServerProvider(
       turnCredentialService: turnCredentialService,
+      urls: const ['turn:localhost:3478', 'stun:localhost:3478'],
     );
   });
 
   group('SupabaseIceServerProvider.iceServersFor', () {
     test(
-      'composes a fetched TurnCredentials into one STUN-only IceServer '
-      '(no username/credential) and one TURN IceServer (with them)',
+      'composes injected urls with a fetched TurnCredentials into one '
+      'STUN-only IceServer (no username/credential) and one TURN IceServer '
+      '(with them) — not from TurnCredentials.urls (CodeRabbit, PR #27: the '
+      'server cannot know which hostname a given client can reach it at)',
       () async {
         when(() => turnCredentialService.fetch('session-1')).thenAnswer(
           (_) async => TurnCredentials(
             username: '1735689600',
             credential: 'abc123==',
             expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
-            urls: const ['turn:localhost:3478', 'stun:localhost:3478'],
+            urls: const ['turn:ignored-server-url:3478'],
           ),
         );
 
