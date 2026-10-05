@@ -1887,3 +1887,11 @@ Both fixes re-verified against the live local Supabase stack (not just read): th
 **Context**: Awaiting the user's own timing for the next CodeRabbit check, to avoid the hourly rate limit.
 
 ---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): PR #27 approved, squashed and merged — Unit 4 COMPLETE
+**Timestamp**: 2026-10-05T04:10:00Z
+**User Input**: "pr approved, squashed and merged, we are ready to proceed"
+**AI Response**: Confirmed via `gh pr view 27` — merged (squash commit `6bf3da6`, 2026-10-05T04:04:44Z). Switched to `develop`, pulled the merge, deleted the local and remote `feature/coturn-infrastructure` branches. Marked Unit 4 (Coturn Infrastructure, S-12, SR-03) COMPLETE in `aidlc-state.md`, summarizing all three CodeRabbit review rounds. Checked the dependency matrix (`phase2-unit-of-work.md`): Unit 5 (WebRTC Transport + Remote Output + Capacity, S-14/S-16/S-18) depends on Unit 3 (done), Unit 4 (now done), and Spike 2.1 (paused, interim values already accepted 2026-09-29) — all satisfied.
+**Context**: Unit 4 fully complete and merged. Proceeding to Unit 5, starting with Functional Design (unlike Unit 4, Unit 5 has business logic and does not skip this stage).
+
+---
