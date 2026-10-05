@@ -1879,3 +1879,11 @@ Both fixes re-verified against the live local Supabase stack (not just read): th
 **Context**: Committing and pushing the fix, then requesting another CodeRabbit review.
 
 ---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): PR #27 CodeRabbit review round 3 — 1 finding fixed
+**Timestamp**: 2026-10-05T00:10:00Z
+**User Input**: "another review comment, do not re-request a review, we get rate-limited by coderabbit"
+**AI Response**: Round 3 (auto-triggered by the round-2 reply before this instruction) found one minor issue: `iceServerUrls.split(',')` left leading/trailing whitespace in each URL if a `--dart-define` override had spaces around its commas. Fixed with `.map((url) => url.trim())`. `dart analyze --fatal-infos` clean, 406 tests passing. Per the user's instruction, did **not** post another `@coderabbitai review` trigger comment this time — committed and pushed only.
+**Context**: Awaiting the user's own timing for the next CodeRabbit check, to avoid the hourly rate limit.
+
+---

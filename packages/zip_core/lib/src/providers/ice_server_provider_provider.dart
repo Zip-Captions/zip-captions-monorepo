@@ -17,6 +17,6 @@ part 'ice_server_provider_provider.g.dart';
 IceServerProvider iceServerProvider(Ref ref) {
   return SupabaseIceServerProvider(
     turnCredentialService: ref.watch(turnCredentialServiceProvider),
-    urls: iceServerUrls.split(','),
+    urls: iceServerUrls.split(',').map((url) => url.trim()).toList(),
   );
 }

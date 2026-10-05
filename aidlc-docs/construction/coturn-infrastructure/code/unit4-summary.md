@@ -84,6 +84,10 @@ All three deviations are reflected directly in
 
 **ICE URLs weren't client-reachable from every platform**: `SupabaseIceServerProvider` read its STUN/TURN URLs straight from `TurnCredentials.urls` (the hardcoded `turn:localhost:3478`/`stun:localhost:3478` the migration returns). CodeRabbit pointed out that `localhost` inside an Android emulator refers to the emulator itself, not the host running Coturn (Android's documented `10.0.2.2` host-loopback alias is the standard fix) — the server has no way to know which hostname a given *client* can actually reach it at. Fixed by reverting to `logical-components.md`'s original design (which a Code Generation Step 11 simplification had drifted from): `SupabaseIceServerProvider` now takes a construction-time-injected `urls` list instead, sourced from a new `iceServerUrls` constant (`zip_core/lib/src/constants/turn_config.dart`) that mirrors `supabaseUrl`'s existing `--dart-define`-overridable pattern (same file resolves `SUPABASE_URL`, with the identical localhost-default/override shape) — exactly how this project already handles the same class of problem for Supabase's own URL. `TurnCredentials.urls` is unused by the client now (the fixed Application Design shape keeps the field; the migration still returns it for completeness/future use) but is no longer the source of truth for ICE server addresses. Updated the test to assert the provider uses the injected `urls`, not `TurnCredentials.urls` (using a deliberately different value for each, so the test would fail if the old behavior regressed).
 
+## PR #27 — CodeRabbit Review Round 3 (1 finding, fixed)
+
+**Unsplit whitespace in `ICE_SERVER_URLS`**: `iceServerUrls.split(',')` left leading/trailing whitespace in each entry if a `--dart-define=ICE_SERVER_URLS=...` override had spaces around its commas (e.g. `"turn:host:3478, stun:host:3478"`), which would then build a malformed `IceServer.urls` entry. Fixed with `.map((url) => url.trim())`.
+
 ## Not Yet Wired (Unit 5's responsibility, per `logical-components.md`)
 
 `PeerConnectionFactory`/`WebRtcBroadcastTransport`/`WebRtcViewerTransport` (anything that
