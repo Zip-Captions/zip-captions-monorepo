@@ -1895,3 +1895,46 @@ Both fixes re-verified against the live local Supabase stack (not just read): th
 **Context**: Unit 4 fully complete and merged. Proceeding to Unit 5, starting with Functional Design (unlike Unit 4, Unit 5 has business logic and does not skip this stage).
 
 ---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): branch created, cleanup, Functional Design plan generated
+**Timestamp**: 2026-10-05T04:20:00Z
+**User Input**: "proceed" (preceded by a branch/session/model cleanup check — confirmed no new session or model switch needed, Construction phase stays on Sonnet)
+**AI Response**: Cleaned up all merged local branches (7 stale branches confirmed squash-merged into `develop` under their matching PR numbers, then force-deleted; remote already clean after `git fetch --prune`). Created `feature/webrtc-transport-remote-output-capacity` off `develop`. Read Application Design's fixed contracts for this unit (`phase2-component-methods.md` §4–5: `BroadcastTransport`, `ViewerTransport`, `PeerConnectionFactory`, `TransportSelector`, `CaptionWireMessage`/`CaptionWireCodec`, `RemoteBroadcastTarget`, `RemoteCaptionReceiver`, `BroadcastLimits`, `ViewerAdmission`) and the relevant FR/NFR text (FR-4.x/5.x/6.6-7/7.x/8.x, NFR-1.3/4.x/6.2/7.3/8.3, PBT-03). Re-read Spike 2.1's full report for this unit's load-bearing finding: at N=50, 74–84% join success while the broadcaster reports 100% channels "open" — narrowed to an SCTP/DCEP-layer stall, not ICE/STUN (ruled out directly), not confirmed/fixed. Generated `webrtc-transport-remote-output-capacity-functional-design-plan.md` with 8 questions: Q1 (recommended) an application-level join-ack + timeout so `WebRtcBroadcastTransport` gets real visibility into Spike 2.1's exact failure mode instead of trusting the native "open" event it showed is unreliable; Q2 unbounded exponential-backoff reconnection (matching FR-7.4's distinct "reconnecting" vs "cannot connect" states); Q3 `ConnectFailure` variants (`broadcastFull`/`iceFailed`/`signalingRejected`/`timeout`); Q4 `PeerConnectionHandle`'s minimal fakeable surface (NFR-7.3); Q5 `BroadcastTransportContext`/`ViewerTransportContext` fields (literal reading of the existing inline comments); Q6 (recommended) `ViewerAdmission` becomes reconnection-aware, reserving a disconnected peer's slot for `reconnectWindow` rather than releasing it immediately — the only reading that makes `reconnectWindow` do anything for the one component that owns capacity; Q7 wire-format version 1, null-decode dropped silently (exact precedent match with Unit 3's `SignalingCodec`); Q8 join-snapshot sequencing (exactly one `captionActivity` message on viewer-joined, no backlog). PBT carry-forward properties (wire round-trip, cap invariant, in-order delivery) restated without a new question.
+**Context**: Functional Design Step 1-4 complete. Awaiting the user's answers to all 8 questions before proceeding to artifact generation.
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): Functional Design plan approved
+**Timestamp**: 2026-10-05T04:25:00Z
+**User Input**: "approved"
+**AI Response**: All 8 questions approved as answered (A throughout): Q1 application-level join-ack + broadcaster-side timeout; Q2 unbounded exponential-backoff reconnection; Q3 `ConnectFailure` 4-variant shape; Q4 `PeerConnectionHandle`'s minimal fakeable surface; Q5 transport context fields; Q6 reconnection-aware `ViewerAdmission`; Q7 wire-format version 1 with silent-drop on bad decode; Q8 single-message join snapshot. Generating `business-logic-model.md`, `business-rules.md`, `domain-entities.md`.
+**Context**: Proceeding to generate Unit 5's Functional Design artifacts.
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): Functional Design artifacts generated
+**Timestamp**: 2026-10-05T04:35:00Z
+**User Input**: (none — generation phase, continuing from the approved plan)
+**AI Response**: Generated all 3 Functional Design artifacts in `aidlc-docs/construction/webrtc-transport-remote-output-capacity/functional-design/` (no `frontend-components.md` — this unit is `zip_core` only, no UI):
+- `domain-entities.md` — fixes `ConnectFailure` (4 variants), `PeerConnectionHandle` (minimal fakeable seam), `BroadcastTransportContext`/`ViewerTransportContext` fields, restates `ConnectionType`/`ViewerConnectionInfo`/`ConnectionStatus`/`CaptionWireMessage`/`BroadcastLimits` with this unit's own invariants, fixes wire-format version 1.
+- `business-logic-model.md` — `WebRtcBroadcastTransport`'s per-viewer lifecycle (join-ack confirmation per Q1, per-viewer isolation), `WebRtcViewerTransport`'s reconnection loop (Q2's unbounded backoff), `TransportSelector` (trivial in Phase 2), `RemoteBroadcastTarget`/`RemoteCaptionReceiver` message flows, Q8's single-message join snapshot.
+- `business-rules.md` — 8 numbered rules, most load-bearing: Rule 1 (5s join-ack timer, closes Spike 2.1's SCTP/DCEP gap), Rule 4 (message-type sender-role authorization — a carried-forward obligation from Unit 3's Business Rule 5, which explicitly scoped this to Unit 5 rather than RLS), Rule 5 (ordered+reliable data channels as the actual mechanism behind PBT-03's in-order-delivery property, not an assumption), Rule 6 (the full `ViewerAdmission`/`reconnectWindow` reservation state machine, written precisely enough to double as the PBT reference model for the cap invariant).
+**Context**: Functional Design artifacts complete. Presenting the "Functional Design Complete" summary and awaiting approval before proceeding to NFR Requirements.
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): Functional Design approved
+**Timestamp**: 2026-10-05T04:45:00Z
+**User Input**: "approve and proceed"
+**AI Response**: Functional Design marked complete and approved for Unit 5. Proceeding to NFR Requirements.
+**Context**: Unit 5 Functional Design COMPLETE and approved.
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): NFR Requirements plan generated
+**Timestamp**: 2026-10-05T04:50:00Z
+**User Input**: (none — automatic, continuing from Functional Design approval)
+**AI Response**: Created `webrtc-transport-remote-output-capacity-nfr-requirements-plan.md` with 7 questions. The one genuinely unusual question (Q5): since `flutter_webrtc` requires native platform channels that don't exist in a plain `flutter test` run, this unit's test suite can construct **zero** real `PeerConnectionHandle`/`RTCPeerConnection` objects, even in an `integration-supabase`-style tagged test — unlike every prior unit, there is no real-backend test possible here at all. Recommended answer: hand-written fakes that wire two sides directly in memory (bypassing SDP/ICE negotiation entirely), with real two-device/TURN/native-WebRTC verification remaining entirely Unit 9's job, stated explicitly so it isn't later mistaken for a coverage gap. Other questions: Q1 a plain `const BroadcastLimits` constant (Spike 2.1's own stated intent); Q2 this unit validates logical correctness only, not NFR-1.3's wall-clock targets (asserting a timing target against a fake with no real latency would be tautological); Q3 a uniform catch-and-map exception boundary at the `PeerConnectionHandle` seam; Q4 no new logging policy, restates the existing project-wide caption/identity redaction rule against this unit's new types; Q6 `flutter_webrtc: ^1.6.2+hotfix.3`, confirmed as the current latest stable release via a direct pub.dev check, not assumed; Q7 `glados` + the existing model-based-PBT pattern (Units 2–3), no new framework.
+**Context**: NFR Requirements plan complete. Awaiting the user's answers before proceeding to artifact generation.
+
+---
