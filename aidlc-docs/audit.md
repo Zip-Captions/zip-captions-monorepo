@@ -1706,3 +1706,184 @@
 **Context**: Spike 2.3 is complete. Unit 4 (Coturn Infrastructure, gated by SR-03) can now start — awaiting the docs PR's review/merge and the user's go-ahead to begin it.
 
 ---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): started, NFR Requirements plan generated
+**Timestamp**: 2026-10-02T15:54:49Z
+**User Input**: "PR 26 approved and merged, let's proceed with unit 4"
+**AI Response**: Confirmed PR #26 and PR #25 both merged; pulled `develop`, deleted the now-merged `docs/spike-2.3-report` and `chore/log-unit3-merge` branches. Branched `feature/coturn-infrastructure` off `develop`. Unit 4 skips Functional Design (no business logic, per `phase2-unit-of-work.md`) — read Application Design's fixed component list and interface signatures (`IceServerProvider`, `TurnCredentialService`) plus Spike 2.3's report as this unit's inputs instead. Saved `aidlc-docs/construction/plans/coturn-infrastructure-nfr-requirements-plan.md` with 10 questions covering the items Spike 2.3 explicitly left open (relay port range sizing, credential-issuer placement) plus the standard NFR categories, each recommending the option matching this project's own existing precedent where one exists (Unit 3's `resolve_broadcast_id` pattern for the credential issuer, Unit 4/Supabase-Local-Dev's `127.0.0.1`-only posture for metrics, Unit 2's crash-reporting-deferral reasoning for alerting).
+**Context**: Awaiting user answers before generating the NFR Requirements artifacts.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): Q5 corrected after user question
+**Timestamp**: 2026-10-02T16:05:00Z
+**User Input**: "For Q5, what happens if a TURN credential's TTL expires while a viewer is connected and receiving data? Will it renew automatically, or would the viewer get cut off?"
+**AI Response**: Explained the actual TURN protocol mechanics: TTL only gates the credential, not the allocation itself; an active allocation is kept alive by periodic `Refresh` requests which must re-authenticate, so once the credential expires the next refresh is rejected (401) and the allocation is torn down shortly after — a real disconnection, not a graceful degradation, and TURN has no automatic renewal built in. Updated Q5 to keep the 1-hour TTL but make proactive `setConfiguration()`-based credential refresh a **hard requirement of Unit 5** (the component that owns long-lived WebRTC sessions), per the user's explicit choice, rather than leaving it an optional/deferred Backlog item.
+**Context**: Plan corrected; awaiting the user's review of the rest of the plan before generating NFR Requirements artifacts.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): alerting-infrastructure Backlog entry added (Q9)
+**Timestamp**: 2026-10-02T16:06:56Z
+**User Input**: "For Q9, we need to ensure we've added the required alerting infrastructure to the backlog."
+**AI Response**: Checked `aidlc-state.md`'s Backlog — only Unit 2's crash-reporting-SDK deferral existed, a distinct concern (client-side error visibility, not operational/infrastructure monitoring). Added a new, separate Backlog entry for operational/infrastructure alerting (project-wide, not yet adopted), and updated Q9's plan text to reference it explicitly so the two deferrals don't get conflated later.
+**Context**: Awaiting the user's final approval of the full plan before generating NFR Requirements artifacts.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): NFR Requirements plan approved
+**Timestamp**: 2026-10-02T16:09:18Z
+**User Input**: "approve coturn infrastructure nfr requirements plan, proceed"
+**AI Response**: All 10 questions approved as answered (Q1-A, Q2-A, Q3-A, Q4-A, Q5-A as corrected, Q6-A, Q7-A, Q8-A, Q9-A as corrected, Q10-A). Generating `nfr-requirements.md` and `tech-stack-decisions.md`.
+**Context**: Proceeding to generate Unit 4's NFR Requirements artifacts.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): NFR Requirements approved
+**Timestamp**: 2026-10-02T16:31:34Z
+**User Input**: "approve and proceed"
+**AI Response**: NFR Requirements marked complete and approved for Unit 4. Proceeding to NFR Design.
+**Context**: Unit 4 (Coturn Infrastructure) NFR Requirements COMPLETE and approved.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): NFR Design plan generated
+**Timestamp**: 2026-10-02T16:32:49Z
+**User Input**: (implicit, continuing from NFR Requirements approval)
+**AI Response**: Saved `aidlc-docs/construction/plans/coturn-infrastructure-nfr-design-plan.md` with 2 questions: (Q1) credential-fetch failure handling — recommended fail-fast/propagate rather than a silent STUN-only fallback, since that would just defer the same problem to a more confusing later ICE-timeout failure for exactly the symmetric-NAT users TURN exists to serve; (Q2) `IceServer`'s concrete shape, left unfixed by Application Design — recommended the standard `RTCIceServer`-equivalent shape (`urls`, nullable `username`/`credential`). Scalability/Performance restated from NFR Requirements with no new question (already fully covered there). Logical Components section lays out the full component list and dependency direction.
+**Context**: Awaiting user answers before generating the NFR Design artifacts.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): NFR Design plan approved
+**Timestamp**: 2026-10-03T00:41:11Z
+**User Input**: "approve and proceed"
+**AI Response**: Both questions approved as answered (Q1-A fail-fast propagation, Q2-A standard `IceServer` shape). Generating `nfr-design-patterns.md` and `logical-components.md`.
+**Context**: Proceeding to generate Unit 4's NFR Design artifacts.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): NFR Design approved
+**Timestamp**: 2026-10-03T00:45:38Z
+**User Input**: "approve"
+**AI Response**: NFR Design marked complete and approved for Unit 4. Proceeding to Infrastructure Design (this unit's SR-03 approval gate — the log configuration document, per `phase2-unit-of-work.md`).
+**Context**: Unit 4 (Coturn Infrastructure) NFR Design COMPLETE and approved.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): Infrastructure Design plan generated
+**Timestamp**: 2026-10-03T00:48:02Z
+**User Input**: (implicit, continuing from NFR Design approval)
+**AI Response**: Saved `aidlc-docs/construction/plans/coturn-infrastructure-infrastructure-design-plan.md` with 3 questions. Q1 (networking mode for the real, committed `packages/zip_supabase/docker-compose.yml`) needed empirical verification before recommending an answer — ran a minimal host-networked Coturn container directly and confirmed via `nc`/`turnutils_stunclient` that the native macOS shell (outside any container, the same path a locally-run Flutter app uses) successfully reaches it via `localhost` over UDP with a real STUN binding response. This confirms Spike 2.3's found Docker-Desktop-for-Mac limitation is specific to *container-to-container* traffic (`host.docker.internal`), not host-to-container — so `network_mode: host` is recommended for the real committed config after all, since nothing inside this Docker stack needs to reach Coturn directly, only the app from outside it. Q2 (shared-secret storage) and Q3 (migration placement) both recommend direct reuse of this project's existing `JWT_SECRET`/Unit-3-migration patterns.
+**Context**: Awaiting user answers before generating the Infrastructure Design artifacts (including the SR-03 log-configuration approval-gate document).
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): Q1 verified against official Coturn documentation
+**Timestamp**: 2026-10-03T00:51:22Z
+**User Input**: "For question 1, I want you to check the coturn documentation, use the docs-mcp server, and determine the correct approach to deploying and connecting to it from other containers in the docker network. There's likely a proper approach documented"
+**AI Response**: Indexed Coturn's official Docker documentation (`docker/coturn/README` from the `coturn/coturn` GitHub repo) into docs-mcp (not previously indexed). Confirmed host networking is Coturn's own explicitly documented recommendation — their docs cite Docker performing badly with large published port ranges as the reason, which directly applies here given NFR Requirements already widened the relay range to ~16,384 ports. Their documentation does not address container-to-container reachability (out of Coturn's own scope, a Docker-orchestration concern). Updated Q1's rationale in the plan to cite this primary source directly alongside the project's own already-completed empirical verification (a native macOS process reaching a host-networked Coturn container via `localhost`, matching the real connection path this stack needs). No change to the recommended answer (A) — now backed by both official documentation and direct verification rather than inference alone.
+**Context**: Awaiting the user's approval of the plan before generating the Infrastructure Design artifacts.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): Infrastructure Design plan approved
+**Timestamp**: 2026-10-03T00:51:59Z
+**User Input**: "proceed"
+**AI Response**: All 3 questions approved as answered (Q1-A host networking, confirmed via official Coturn docs and direct empirical test; Q2-A shared-secret storage mirroring JWT_SECRET; Q3-A new forward-only migration). Generating `sr-03-log-configuration.md`, `infrastructure-design.md`, and `handoff-summary.md`.
+**Context**: Proceeding to generate Unit 4's Infrastructure Design artifacts, including the SR-03 approval-gate document.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): Infrastructure Design artifacts generated
+**Timestamp**: 2026-10-03T01:05:00Z
+**User Input**: (none — generation phase, continuing from the approved plan)
+**AI Response**: Generated all 3 Infrastructure Design artifacts in `aidlc-docs/construction/coturn-infrastructure/infrastructure-design/`:
+- `sr-03-log-configuration.md` — the SR-03 approval-gate document, scoped specifically to Coturn's logging configuration per `phase2-unit-of-work.md`. Documents the `simple-log`/`no-stdout-log`/no-verbose-flag config, cites Spike 2.3's empirical verification (every allocate/refresh/channel-bind/relay test run against this exact config produced no payload content in the resulting log), and notes the TURN shared secret never passes through Coturn's own logging path. Ends with an unchecked `## 6. Approval` checkbox awaiting the user's sign-off, matching SR-01/SR-02's exact format.
+- `infrastructure-design.md` — the real `packages/zip_supabase/docker-compose.yml` Coturn service addition (`network_mode: host`, `restart: unless-stopped`, `turnutils_stunclient`-based health check), `TURN_SHARED_SECRET` env var wiring (mirroring `JWT_SECRET`'s `.env.example` + `ALTER DATABASE ... SET app.settings.*` pattern, including the Kong-style `${VAR}` substitution fix), the new `get_turn_credentials()` migration (SQL sketched, `SECURITY DEFINER`, no table/RLS needed), confirmation that no Kong/`kong.yml` change is needed (same `/rest/v1/rpc/` path as Unit 3), and a Security Compliance table.
+- `handoff-summary.md` — fixed contracts restated for Code Generation, full file list for both `zip_supabase` (migration, compose service, `turnserver.conf`, `.env.example`) and `zip_core` (models, services, providers), the mocktail + `integration-supabase`-tagged testing approach, and an explicit flag that SR-03 approval is required before this unit's PR can merge.
+**Context**: Infrastructure Design artifacts complete. Presenting the "Infrastructure Design Complete" summary and awaiting the user's approval, including sign-off on SR-03, before proceeding to Code Generation.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): Infrastructure Design approved, SR-03 signed off
+**Timestamp**: 2026-10-03T01:15:00Z
+**User Input**: "approved"
+**AI Response**: Infrastructure Design stage approved, including the SR-03 log-configuration security gate. Checked the SR-03 approval checkbox in `sr-03-log-configuration.md` (Approved by: James Petersen, Date: 2026-10-03). Proceeding to Code Generation Part 1 (plan).
+**Context**: Unit 4 Infrastructure Design stage complete and approved. Next: Code Generation Part 1 (implementation plan).
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): Code Generation Part 1 (Plan Created)
+**Timestamp**: 2026-10-03T01:20:00Z
+**User Input**: (none — automatic, continuing from Infrastructure Design approval)
+**AI Response**: Created `coturn-infrastructure-code-generation-plan.md` with 18 steps: infra (migration, `turnserver.conf`, compose service, `.env.example`, secret substitution), `zip_core` Dart (`TurnCredentials`, `IceServer` models; `TurnCredentialService`/`SupabaseTurnCredentialService`, `IceServerProvider`/`SupabaseIceServerProvider`; Riverpod providers; barrel exports), tests (mocktail unit tests + one `integration-supabase`-tagged real-backend test), and verification steps. Full FR/NFR traceability table included.
+**Context**: Code Generation Part 1 complete. Awaiting approval before Part 2 (generation).
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): Code Generation Part 1 approved
+**Timestamp**: 2026-10-03T01:25:00Z
+**User Input**: "approve and proceed"
+**AI Response**: Code Generation plan approved. Proceeding to Part 2 (generation).
+**Context**: Executing the 18-step plan.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): Infrastructure Design correction found during Code Generation
+**Timestamp**: 2026-10-03T01:28:00Z
+**User Input**: (none — found while implementing Step 1/2/3)
+**AI Response**: The approved Infrastructure Design assumed Coturn's `turnserver.conf` supports Kong-style `${VAR}` substitution for the shared secret, requiring a custom entrypoint. Verified against the official Coturn documentation (docs-mcp, already indexed from the earlier Q1 check) that Coturn has no such feature — the documented way to inject a secret is a CLI flag. Corrected the design in place: the `coturn` service now uses a `command: ["--static-auth-secret=${TURN_SHARED_SECRET}"]` override (substituted by Docker Compose itself from `.env`, same interpolation mechanism Kong's `environment:` block already uses, just applied to `command:`), `turnserver.conf` drops its `static-auth-secret` line entirely, and the migration sets `app.settings.turn_shared_secret` to a literal placeholder value (not a shell variable — confirmed Postgres migrations have no templating, matching how `jwt_secret` is already set literally). Updated `infrastructure-design.md` and dropped the now-unnecessary entrypoint step from the Code Generation plan. No change to the recommended networking mode, migration placement, or SR-03 log configuration — this correction is scoped only to how the secret reaches each component.
+**Context**: Proceeding with Code Generation using the corrected secret-delivery mechanism.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): Code Generation complete, two real issues found and fixed by testing
+**Timestamp**: 2026-10-04T00:00:00Z
+**User Input**: (none — generation and verification phase)
+**AI Response**: Completed all 18 Code Generation plan steps. Shipped: the migration (`20261003000000_coturn_turn_credentials.sql`), the real `turnserver.conf` and `docker-compose.yml` `coturn` service, `.env.example` entry, and `zip_core`'s `TurnCredentials`/`IceServer` models, `TurnCredentialService`/`SupabaseTurnCredentialService`, `IceServerProvider`/`SupabaseIceServerProvider`, Riverpod providers, and barrel exports. 406 `zip_core` tests passing (2 skipped-by-default integration), `dart analyze --fatal-infos` clean.
+
+Rather than only reading the migration for correctness, brought up a real local Supabase stack (fresh, no pre-existing volumes) and exercised the actual RPC path end-to-end. This surfaced two real defects the design/plan review hadn't caught:
+1. **Anonymous access gap**: this project's Postgres bootstrap grants `EXECUTE` on every new `public`-schema function to `anon` by default (`ALTER DEFAULT PRIVILEGES`, confirmed via `pg_default_acl`). `get_or_create_my_broadcast_id()` (Unit 3) is protected from this by its table's RLS, but `get_turn_credentials()` has no table — `SET ROLE anon; SELECT * FROM get_turn_credentials();` **succeeded** before a fix. Fixed with an explicit `auth.uid() IS NULL` guard inside the function body (a `REVOKE`/`GRANT` pair alone would not have survived a future `CREATE OR REPLACE`, since the default privileges re-grant on every redeploy). Re-verified: anon now gets `42501`.
+2. **Missing `search_path`**: `hmac()` lives in the `extensions` schema in this project's Postgres image, not `public`. A direct `psql` session's default search_path found it; PostgREST's own connections did not, failing with `function hmac(...) does not exist` on the real Kong/PostgREST path. Fixed with `set search_path = public, extensions`, matching the identical clause `get_or_create_my_broadcast_id()` already carries for `gen_random_bytes()`.
+
+Both fixes re-verified against the real stack: an authenticated call through Kong/PostgREST (genuine signed-up user JWT) returns a credential whose HMAC-SHA1 was independently recomputed in Python and matched exactly; the new `integration-supabase`-tagged test (2 cases) passes against this live stack. `infrastructure-design.md` and the Code Generation plan updated in place; full account in `aidlc-docs/construction/coturn-infrastructure/code/unit4-summary.md`.
+**Context**: Code Generation COMPLETE. Awaiting approval before PR.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): Code Generation approved, PR #27 opened
+**Timestamp**: 2026-10-04T00:05:00Z
+**User Input**: "approved, proceed"
+**AI Response**: Code Generation accepted. Staged and committed all Unit 4 files (migration, `turnserver.conf`, `docker-compose.yml` `coturn` service, `.env.example` entry, `zip_core` models/services/providers, tests, and the full `aidlc-docs/construction/coturn-infrastructure/` design history) — commit `3369da0`. Confirmed `.env` stayed gitignored and out of the commit. Pushed `feature/coturn-infrastructure` and opened PR #27 against `develop` (gitflow convention), summarizing the design decisions, the SR-03 sign-off, and the two defects found and fixed while verifying against the real stack.
+**Context**: Awaiting CI and CodeRabbit review on PR #27.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): PR #27 CodeRabbit review round 1 — 2 findings fixed
+**Timestamp**: 2026-10-04T19:40:00Z
+**User Input**: "use the gh cli to check for review"
+**AI Response**: CI all green (6/6 checks). CodeRabbit left 2 actionable comments, both genuine:
+1. `get_turn_credentials()`'s `current_setting()` ran in the `DECLARE` block, before the `auth.uid()` check — an anonymous caller in a misconfigured deployment would see a raw Postgres error instead of `42501`. Fixed: moved the lookup after the auth check, used `current_setting(..., true)`, raised a clear exception on an unset secret.
+2. `.coderabbit.yaml`'s path instructions require every `zip_supabase/**` service to bind `127.0.0.1` only; `network_mode: host` with no `listening-ip` set meant Coturn's control port was actually bound on every local interface (confirmed via `/proc/net/udp`). Fixed with `listening-ip=127.0.0.1` — deliberately left `relay-ip` unset, since restricting relay sockets to loopback would break relaying to any real peer, which is the service's entire purpose; `denied-peer-ip` is the correct, already-existing control on relay targets.
+
+Both fixes re-verified against the live local Supabase stack (not just read): the 2 integration test cases still pass; `/proc/net/udp` confirms the control port moved to loopback-only; a full `turnutils_uclient` allocate/refresh/channel-bind run through the loopback control port still works, with its self-targeted channel-bind still correctly rejected (`403 Forbidden IP`) exactly as before — confirming `denied-peer-ip` is unaffected. `dart analyze --fatal-infos` clean, 406 tests passing. Full account in `unit4-summary.md`.
+**Context**: Committing fixes and pushing to PR #27; will reply to CodeRabbit's review thread.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): PR #27 CodeRabbit review round 2 — 1 finding fixed
+**Timestamp**: 2026-10-04T22:50:00Z
+**User Input**: "check now"
+**AI Response**: Round 2 review (triggered by the `@coderabbitai review` reply) came back `COMMENTED` with one new outside-diff finding: `SupabaseIceServerProvider` read its STUN/TURN URLs straight from `TurnCredentials.urls` (hardcoded `localhost` in the migration), which an Android emulator can't reach (it needs the `10.0.2.2` host-loopback alias, not `localhost`) — the server has no way to know which hostname a given client can actually reach it at. This was a genuine regression from `logical-components.md`'s original design ("constructed with those URLs at app startup, mirrors how `supabaseClientProvider`'s URL is provided"), which a Code Generation Step 11 simplification had drifted away from. Fixed by reverting to construction-time URL injection: added `iceServerUrls` to `zip_core/lib/src/constants/turn_config.dart`, mirroring `supabaseUrl`'s existing `--dart-define`-overridable pattern exactly (same mechanism this project already uses for the identical "server can't guess the client's reachable hostname" problem with Supabase's own URL). `SupabaseIceServerProvider` now takes `urls` as a constructor parameter instead of reading `TurnCredentials.urls`. Updated the unit test to use deliberately different values for the injected urls vs. `TurnCredentials.urls`, so it would fail if the old (wrong) behavior regressed. `dart analyze --fatal-infos` clean, 406 tests passing. Full account in `unit4-summary.md`.
+**Context**: Committing and pushing the fix, then requesting another CodeRabbit review.
+
+---
+
+## CONSTRUCTION - Unit 4 (Coturn Infrastructure): PR #27 CodeRabbit review round 3 — 1 finding fixed
+**Timestamp**: 2026-10-05T00:10:00Z
+**User Input**: "another review comment, do not re-request a review, we get rate-limited by coderabbit"
+**AI Response**: Round 3 (auto-triggered by the round-2 reply before this instruction) found one minor issue: `iceServerUrls.split(',')` left leading/trailing whitespace in each URL if a `--dart-define` override had spaces around its commas. Fixed with `.map((url) => url.trim())`. `dart analyze --fatal-infos` clean, 406 tests passing. Per the user's instruction, did **not** post another `@coderabbitai review` trigger comment this time — committed and pushed only.
+**Context**: Awaiting the user's own timing for the next CodeRabbit check, to avoid the hourly rate limit.
+
+---

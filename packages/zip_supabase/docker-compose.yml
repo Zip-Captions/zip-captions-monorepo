@@ -279,8 +279,43 @@ services:
       db:
         condition: service_healthy
 
+  # ──────────────────────────────────────────────
+  # Coturn — STUN/TURN server (NAT traversal for WebRTC)
+  #
+  # network_mode: host, unlike every other service here (which bind
+  # 127.0.0.1 only via `ports:`), per Coturn's own documented
+  # recommendation -- Docker performs badly publishing the full
+  # ~16,384-port relay range individually. This is a deliberate,
+  # function-specific exception, not an oversight (CodeRabbit, PR #27):
+  # the control port is restricted back to loopback via
+  # `listening-ip=127.0.0.1` in turnserver.conf, matching every other
+  # service's convention as closely as this one functionally can. Relay
+  # sockets (the actual TURN media path) are deliberately NOT restricted
+  # to loopback -- that would make relaying to any real (non-loopback)
+  # peer impossible, which is the entire reason this service exists;
+  # `denied-peer-ip` in turnserver.conf is the real control on *which*
+  # peer addresses may be relayed to (confirmed it still rejects loopback
+  # peer targets after this change).
+  # ──────────────────────────────────────────────
+  coturn:
+    container_name: supabase-coturn
+    image: coturn/coturn:4.6.2
+    restart: unless-stopped
+    network_mode: host
+    command: ["--static-auth-secret=${TURN_SHARED_SECRET}"]
+    volumes:
+      - ./volumes/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+      - coturn_logs:/var/log/turnserver
+    healthcheck:
+      test: ["CMD", "turnutils_stunclient", "-p", "3478", "127.0.0.1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 volumes:
   supabase_db_data:
     name: supabase_db_data
   supabase_storage_data:
     name: supabase_storage_data
+  coturn_logs:
+    name: supabase_coturn_logs

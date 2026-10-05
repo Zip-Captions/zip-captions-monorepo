@@ -6,3 +6,4 @@ export 'catalog/catalog.dart';
 export 'signaling/signaling.dart';
 export 'stt/stt.dart';
 export 'wake_lock/wake_lock.dart';
+export 'webrtc/webrtc.dart';
