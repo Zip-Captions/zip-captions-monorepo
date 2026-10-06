@@ -116,6 +116,54 @@ Spike reports go in `aidlc-docs/construction/spikes/`. Spike code lives in `spik
 
 ---
 
+### Unit 3.1: Signaling Channel Privacy
+
+**Inserted into the roadmap 2026-10-05**, after Units 3 and 4 shipped. Corrects a real
+privacy gap discovered while scoping Unit 5: Unit 3's `signaling:{session_id}` channel
+puts the broadcaster and every viewer on one shared Realtime topic. Confirmed by reading
+the shipped code (not assumed): every participant's own official `SessionSignalingChannel
+.presence` returns the full presence list of everyone on the channel, and `onBroadcast`
+forwards every `SignalingMessage` — including another viewer's `SdpOffer`/`IceCandidate`,
+which carries real network-address metadata — to every subscriber, with no recipient
+filtering. A viewer can see exactly how many other viewers are connected, when they
+join/leave, and real connection metadata belonging to connections that aren't theirs.
+This does **not** modify or reopen Unit 3's merged PR/artifacts — it ships as new code
+in a new unit, the same precedent as `20261001000001_fix_jwt_secret_mismatch.sql`
+(a corrective migration, never an edit to the original).
+
+**Packages**: zip_supabase (migration), zip_core (signaling)
+**Stories**: S-13.1, gated by SR-04
+**Stages**: Functional Design (produces the SR-04 policy document: the per-viewer
+channel/topic scheme and its authorization basis; **approval gate**), NFR Requirements,
+NFR Design, Code Generation
+
+**Design direction** (confirmed against Supabase's own documentation and an established
+industry precedent — AWS Kinesis Video Streams WebRTC's "master/viewer" signaling model,
+where "a viewer cannot discover or interact with other viewers" by construction, not by
+convention): split the single shared channel into (1) a broadcaster-only "lobby" topic
+that viewers may only publish a `JoinRequest` to, never subscribe/read, and (2) a private
+per-viewer topic (`signaling:{session_id}:{peerId}`) that only that one viewer and the
+broadcaster ever subscribe to. Privacy comes from the per-peer topic name's own
+unguessability (a random value, known only to the broadcaster and that one viewer once
+exchanged) — not from a persisted session-owner table, keeping this compatible with
+FR-2.6's "no session records" constraint the same way Unit 3's own RLS already does.
+
+**Components**: new migration adjusting the Realtime RLS topic-pattern match for the
+`signaling:{session_id}:lobby` and `signaling:{session_id}:{peerId}` patterns;
+`SignalingService`/`SessionSignalingChannel` redesign in `zip_core` (the per-viewer
+channel lifecycle, and the lobby-channel `JoinRequest` hand-off); `SignalingMessage`'s
+existing shape is unaffected (same sealed type, same wire codec) — only which channel
+topic carries which message type changes.
+
+**Dependencies**: Unit 3 (extends, does not reopen).
+
+**Blocks**: Unit 5, which was paused mid-Functional-Design when this gap was found —
+its `BroadcastTransportContext`/`ViewerTransportContext` and join-handshake design
+assumed the old single-channel topology and need to be revisited once this unit's
+Functional Design fixes the real channel/topic shape.
+
+---
+
 ### Unit 4: Coturn Infrastructure
 
 **Packages**: local dev stack (Supabase Docker Compose area in zip_supabase), zip_core (client configuration)

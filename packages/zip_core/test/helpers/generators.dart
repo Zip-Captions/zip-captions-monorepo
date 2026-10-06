@@ -505,20 +505,20 @@ Object? arbitraryMalformedSignalingJson(Random random) =>
       1 => 'not a map',
       2 => 42,
       3 => <String, Object?>{},
-      4 => <String, Object?>{'type': 'joinRequest'}, // missing version
-      5 => <String, Object?>{'version': 1}, // missing type
-      6 => <String, Object?>{'type': 42, 'version': 1}, // wrong type
+      4 => <String, Object?>{'messageType': 'joinRequest'}, // missing version
+      5 => <String, Object?>{'version': 1}, // missing messageType
+      6 => <String, Object?>{'messageType': 42, 'version': 1}, // wrong type
       7 => <String, Object?>{
-          'type': 'joinRequest',
+          'messageType': 'joinRequest',
           'version': 999, // unsupported version
           'fromPeerId': 'peer-1',
         },
       8 => <String, Object?>{
-          'type': 'totallyUnknownType',
+          'messageType': 'totallyUnknownType',
           'version': 1,
         },
       _ => <String, Object?>{
-          'type': 'sdpOffer',
+          'messageType': 'sdpOffer',
           'version': 1,
           'fromPeerId': 'peer-1',
           'toPeerId': 'peer-2',

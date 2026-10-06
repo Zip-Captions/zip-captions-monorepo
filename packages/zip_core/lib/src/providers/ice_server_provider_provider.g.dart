@@ -6,7 +6,7 @@ part of 'ice_server_provider_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$iceServerProviderHash() => r'b1455469d0ba666e5b795a0aab9cffd4f52dca69';
+String _$iceServerProviderHash() => r'7eeccdc21551f13e0127e890c24927d86c133fb3';
 
 /// Provides the app's [IceServerProvider].
 ///

@@ -7,6 +7,7 @@
 | S-11 | Broadcast Identity Backend | U3 | SR-02 |
 | S-12 | Coturn STUN/TURN Service | U4 | SR-03; Spike 2.3 |
 | S-13 | Realtime Signaling | U3 | SR-02; Spike 2.1 |
+| S-13.1 | Signaling Channel Privacy | U3.1 | SR-04; inserted 2026-10-05, corrects a viewer-to-viewer presence/signaling leak found while scoping U5 |
 | S-14 | WebRTC Transport | U5 | Spike 2.1 |
 | S-15 | Broadcaster Authentication | U2 | SR-01; Proto-10 |
 | S-16 | Remote Broadcast Output Target | U5 | — |
@@ -17,6 +18,7 @@
 | SR-01 | OAuth Flow Approach Review | U2 (Functional Design) | Blocks U2 Code Generation |
 | SR-02 | RLS and Realtime Authorization Policy Review | U3 (Functional Design) | Blocks U3 Code Generation |
 | SR-03 | Server-Side Log Configuration Review | U4 (Infrastructure Design) | Blocks U4 Code Generation |
+| SR-04 | Signaling Channel Isolation Review | U3.1 (Functional Design) | Blocks U3.1 Code Generation; inserted 2026-10-05 |
 | Proto-10 | ZB Sign-In | U1 | Blocks U2 |
 | Proto-11 | ZB Broadcast Setup | U1 | Blocks U6 |
 | Proto-12 | ZB Live Dashboard | U1 | Blocks U6 |
@@ -31,7 +33,7 @@
 | Spike 2.2 | OBS closed-caption confirmation | Spike | Feeds FR-10 / exit criterion 7 |
 | Spike 2.3 | Coturn alongside Supabase | Spike | Feeds U4 |
 
-**Coverage:** 10 of 10 stories, 3 of 3 security reviews, 6 of 6 prototypes, 4 of 4 milestones and 3 of 3 spikes are assigned. Each item appears in exactly one unit.
+**Coverage:** 11 of 11 stories, 4 of 4 security reviews, 6 of 6 prototypes, 4 of 4 milestones and 3 of 3 spikes are assigned. Each item appears in exactly one unit. (S-13.1/SR-04 added 2026-10-05, after Units 3/4 shipped — see Unit 3.1.)
 
 ## Unit to Requirements and Exit Criteria
 
@@ -40,6 +42,7 @@
 | U1 | FR-1.5, FR-6, FR-7, FR-9 (UI) | NFR-5.2 | — |
 | U2 | FR-1 | NFR-3.8 | 1, 9 |
 | U3 | FR-2, FR-3 | NFR-3.4, 3.5, 3.6 | 1 |
+| U3.1 | — (corrective; FR-7.1/7.2 discovery unaffected) | NFR-3.9 | 1 |
 | U4 | FR-4.3, FR-4.4 | NFR-3.1, 3.7, 6.1 | 3 |
 | U5 | FR-4, FR-5, FR-8 | NFR-1.1, 1.2, 2.1, 3.2, 4.2 | 1, 2, 3, 5 |
 | U6 | FR-6 (incl. FR-6.7) | NFR-1.4, 4.3 | 1 |

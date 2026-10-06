@@ -6,9 +6,27 @@ import 'package:zip_core/src/models/signaling_message.dart';
 ///
 /// `decode` is the sole boundary between raw, untrusted JSON (from any peer
 /// — broadcaster or viewer) and the typed [SignalingMessage] model. It never
-/// throws: malformed structure, an unknown `type`, an unsupported `version`,
-/// a wrong field type, or an oversized payload all resolve to `null` (FR-3.2,
-/// Rule 4 of `business-rules.md`).
+/// throws: malformed structure, an unknown `messageType`, an unsupported
+/// `version`, a wrong field type, or an oversized payload all resolve to
+/// `null` (FR-3.2, Rule 4 of `business-rules.md`).
+///
+/// **The wire key is `messageType`, not `type`** — found and fixed during
+/// Unit 3.1 (Signaling Channel Privacy) Code Generation, 2026-10-06, by
+/// testing the real `onBroadcast` payload against a live Realtime server,
+/// not by inspecting documentation. Supabase Realtime's own broadcast
+/// envelope injects a top-level `type: 'broadcast'` into every payload a
+/// callback receives, alongside the caller's own fields — confirmed
+/// directly: `onBroadcast`'s `payload` argument for a message sent as
+/// `{'hello': 'world'}` arrives as `{event: signal, hello: world, type:
+/// broadcast}`. This codec's original version 1 used `'type'` as its own
+/// variant discriminator, which the envelope's `'type': 'broadcast'`
+/// silently overwrote on every single message — `decode` therefore never
+/// matched any real variant through a real Realtime delivery, only in unit
+/// tests that fabricate the callback payload directly (bypassing the real
+/// envelope). This wire format has never actually worked end-to-end before
+/// this fix; renaming the key at version 1 rather than bumping to version 2,
+/// since there was never a working version 1 payload in production to stay
+/// compatible with.
 abstract final class SignalingCodec {
   /// The only wire protocol version this codec currently accepts.
   static const int supportedVersion = 1;
@@ -21,7 +39,7 @@ abstract final class SignalingCodec {
   /// Encodes [message] to its wire JSON shape.
   static Map<String, Object?> encode(SignalingMessage message) {
     final base = <String, Object?>{
-      'type': message.type,
+      'messageType': message.type,
       'version': message.version,
     };
     return switch (message) {
@@ -87,7 +105,7 @@ abstract final class SignalingCodec {
     if (json is! Map) return null;
     if (_encodedByteLength(json) > maxEncodedBytes) return null;
 
-    final type = json['type'];
+    final type = json['messageType'];
     final version = json['version'];
     if (type is! String || version is! int) return null;
     if (version != supportedVersion) return null;
