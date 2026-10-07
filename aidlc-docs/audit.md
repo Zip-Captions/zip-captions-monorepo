@@ -2140,3 +2140,11 @@ Both fixes re-verified against the live local Supabase stack (not just read): th
 **Context**: Committing and pushing the second round of fixes.
 
 ---
+
+## CONSTRUCTION - Unit 3.1 (Signaling Channel Privacy): PR #29 merged, unit complete
+**Timestamp**: 2026-10-07T05:35:00Z
+**User Input**: "I approved, squashed and merged and deleted the branch on remote. let's proceed"
+**AI Response**: Confirmed the merge directly (`gh pr view 29` showed `state: MERGED`, merge commit `fa755ce`) rather than taking the report at face value. Checked git status (clean), switched to `develop`, fetched with `--prune` (confirmed the remote branch was indeed gone), and fast-forward pulled the merge. Force-deleted the local feature branch (`-D`, not `-d` — expected for a squash merge, since the squashed commit's SHA differs from anything on the local branch, so git's merge-detection doesn't recognize it as safe to delete with the normal flag; content was independently confirmed merged via the `develop` diff before deleting). Updated `aidlc-state.md`: marked Unit 3.1 complete, and un-paused Unit 5 (WebRTC Transport), flagging that Unit 5's own Functional Design/NFR Requirements plan need a pass to confirm they don't still reference the superseded `LobbyChannel`/`SignalingRole` shape before resuming.
+**Context**: Unit 3.1 shipped. Next: review Unit 5's existing artifacts for staleness against Unit 3.1's final `SignalingService` shape before resuming its own Code Generation.
+
+---
