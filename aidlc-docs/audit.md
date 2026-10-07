@@ -2132,3 +2132,11 @@ Both fixes re-verified against the live local Supabase stack (not just read): th
 **Context**: Fixes complete and verified; cannot trigger another CodeRabbit review for an hour (plan limit) — committing and pushing now, review will pick up on its own schedule.
 
 ---
+
+## CONSTRUCTION - Unit 3.1 (Signaling Channel Privacy): second CodeRabbit review pass addressed
+**Timestamp**: 2026-10-07T01:30:00Z
+**User Input**: "check the PR again, there's more feedback"
+**AI Response**: The 1-hour included-review window had elapsed since the first review, so a second automated pass ran on its own and posted 2 more findings. Both genuine, neither needed a remediation-choice question this time — they closed a hole in the fix just shipped rather than opening a new design decision. (1) Major: the open INSERT policy on `broadcast_join_requests` wasn't actually sufficient, because this project's Postgres image grants `anon`/`authenticated` default table INSERT regardless of any RLS policy — a client could hit the table directly through PostgREST's generic REST route, bypassing `submit_join_request`'s cap/cleanup/rate-limit entirely. Fixed by revoking the table-level INSERT privilege outright; confirmed via a raw `curl POST` to the REST route (now `42501`) and to the RPC route (still succeeds). (2) Minor: the pending-row cap wasn't atomic — two concurrent submissions could each pass the count check before either committed. Fixed with a per-`broadcast_id` Postgres advisory transaction lock. Applied both fixes to the live DB without dropping the table this time; hit the same self-inflicted Realtime-tenant-reinitializing race as before right after the DDL change (confirmed via `docker logs`, not a regression) — clean on retry. Replied inline on both new review threads, updated SR-04/`business-rules.md` with a second amendment, re-ran the full gate (408 tests, `dart analyze --fatal-infos` clean, all real-backend integration tests passing).
+**Context**: Committing and pushing the second round of fixes.
+
+---

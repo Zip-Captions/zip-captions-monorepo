@@ -66,18 +66,20 @@ CREATE TABLE broadcast_join_requests (
 
 ALTER TABLE broadcast_join_requests ENABLE ROW LEVEL SECURITY;
 
--- Open INSERT, documenting the intended access shape even though
--- submit_join_request (below) now runs SECURITY DEFINER and bypasses this
--- policy for its own insert -- no client code issues a raw table INSERT,
--- only ever through that function. Kept for defense-in-depth and so the
--- table's own policy set still reads as a complete, honest description of
--- who may do what, independent of how the one sanctioned function happens
--- to be implemented today.
-CREATE POLICY "Anyone may submit a join request"
-  ON broadcast_join_requests
-  FOR INSERT
-  TO anon, authenticated
-  WITH CHECK (true);
+-- No INSERT policy for anon/authenticated at all, and their table-level
+-- INSERT privilege is explicitly revoked below -- PR #29 review correctly
+-- flagged that an earlier "WITH CHECK (true)" INSERT policy, combined with
+-- this project's Postgres image granting anon/authenticated default INSERT
+-- on every public table, let a client bypass submit_join_request entirely
+-- via PostgREST's generic /rest/v1/ REST route: a raw table INSERT, with
+-- none of that function's 20-row cap, stale-row cleanup, or Kong rate
+-- limit. REVOKE closes this at the privilege-check layer, which runs
+-- before RLS is ever consulted -- an RLS policy alone could not have
+-- fixed this, since the hole was "has INSERT privilege at all," not
+-- "the policy's condition is too permissive." submit_join_request
+-- (below) is unaffected: it runs SECURITY DEFINER as the table owner,
+-- which this REVOKE does not touch.
+REVOKE INSERT ON TABLE public.broadcast_join_requests FROM anon, authenticated;
 
 CREATE POLICY "Only the broadcast owner may read their own join requests"
   ON broadcast_join_requests
@@ -127,6 +129,17 @@ AS $$
 DECLARE
   v_pending_count int;
 BEGIN
+  -- Serializes concurrent calls for the same broadcast_id (PR #29 review):
+  -- without this, two callers could each count 19 pending rows before
+  -- either inserts, both pass the <20 check, and leave 21 rows -- Postgres's
+  -- default READ COMMITTED isolation does not make a count-then-insert
+  -- sequence atomic on its own. pg_advisory_xact_lock blocks a second
+  -- concurrent call for the same broadcast_id until the first's
+  -- transaction ends, and releases automatically at commit/rollback --
+  -- never needs an explicit unlock. Different broadcast_ids hash to
+  -- (almost certainly) different lock keys and proceed independently.
+  PERFORM pg_advisory_xact_lock(hashtext(p_broadcast_id));
+
   DELETE FROM broadcast_join_requests
   WHERE broadcast_id = p_broadcast_id
     AND created_at < now() - interval '5 minutes';

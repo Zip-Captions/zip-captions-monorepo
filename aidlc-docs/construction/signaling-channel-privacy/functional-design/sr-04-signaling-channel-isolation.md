@@ -131,6 +131,18 @@ user's explicit choice of remediation approach ("Kong rate limit + pending cap +
 opportunistic cleanup") over the alternatives offered, rather than a separate written
 sign-off — Section 3's table above reflects the approved shape.
 
+**Second amendment, 2026-10-07** (PR #29's follow-up review pass, business-rules.md
+Rules 2.2/2.3): the table's INSERT privilege for `anon`/`authenticated` is now
+explicitly revoked (not just RLS-restricted) — the open policy alone let a client
+bypass `submit_join_request` entirely via PostgREST's generic REST route, since this
+project's Postgres image grants default table INSERT to those roles regardless of any
+policy. Confirmed closed directly (`42501` on a raw REST insert; the RPC still
+succeeds). `submit_join_request` also now takes a per-`broadcast_id` advisory lock
+before its cleanup/count/insert sequence, closing a race where two concurrent calls
+could each pass the 20-row check before either committed. Treated as a direct
+continuation of the same remediation the user already chose, not a new decision
+requiring separate confirmation.
+
 ---
 *Superseded approval, retained for the audit trail:*
 - [x] Approved (original Broadcast-extension lobby design) — James Petersen, 2026-10-05

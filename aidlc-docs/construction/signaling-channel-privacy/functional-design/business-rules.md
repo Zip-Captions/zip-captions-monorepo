@@ -29,6 +29,30 @@ stale), then rejects the insert outright if 20 requests are already pending for 
 with a real or guessed `broadcast_id` could grow this table without bound, especially
 if the owner is offline to consume anything.
 
+**Rule 2.2 (added 2026-10-07, second PR #29 review pass) — the table itself grants no
+INSERT privilege to `anon`/`authenticated`; the only path in is the function.**
+A second review pass found that an open `WITH CHECK (true)` INSERT *policy* (the first
+version of this rule) was not enough on its own: this project's Postgres image grants
+`anon`/`authenticated` default INSERT on every `public` table, so a client could hit
+`broadcast_join_requests` directly through PostgREST's generic REST route, bypassing
+`submit_join_request` entirely — no cap, no cleanup, no rate limit. The privilege
+check happens *before* RLS is ever consulted, so no policy could have closed this; the
+table-level grant itself had to be revoked (`REVOKE INSERT ... FROM anon,
+authenticated`). Confirmed directly: a raw REST `POST` to the table now returns
+`42501 permission denied`, while the RPC path still succeeds (`SECURITY DEFINER` runs
+as the table owner, unaffected by the revoke).
+
+**Rule 2.3 (added 2026-10-07, same review pass) — the pending-request cap is
+serialized per `broadcast_id`, not just checked.**
+Without this, two concurrent `submit_join_request` calls for the same `broadcast_id`
+could each count 19 pending rows before either inserts, both pass the `< 20` check,
+and leave 21 — Postgres's default READ COMMITTED isolation does not make a
+count-then-insert sequence atomic by itself. `submit_join_request` now takes
+`pg_advisory_xact_lock(hashtext(p_broadcast_id))` before the cleanup/count/insert
+sequence, serializing concurrent calls for the same `broadcast_id` while leaving
+different broadcasts' calls independent; the lock releases automatically at the
+transaction's end.
+
 **Rule 2 (revised 2026-10-06) — `broadcast_join_requests` SELECT is restricted to the
 real broadcast owner, checked against the existing `broadcast_identities` table — never
 a new persisted mapping; rows are deleted once consumed.**
