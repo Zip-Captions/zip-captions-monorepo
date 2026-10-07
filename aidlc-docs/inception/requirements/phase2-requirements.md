@@ -198,6 +198,8 @@
 
 **NFR-3.8**: Auth tokens are never logged and are stored only via the SDK's secure mechanism. The OAuth approach needs pre-approval (FR-1.7).
 
+**NFR-3.9** (added 2026-10-05, Unit 3.1): A viewer has no visibility into whether any other viewer is connected to the same broadcast — not the count, not join/leave timing, not any other viewer's connection metadata (ICE candidates, SDP). Distinct from NFR-3.6 (which covers impersonation and control-channel abuse, not visibility of co-viewers) and NFR-3.5 (which scopes what broadcast-ID resolution exposes, not the signaling channel's own presence/message visibility). The mechanism is decided in Unit 3.1's design (SR-04); peers must still be able to discover and connect to an existing broadcast (FR-7.1, FR-7.2) — this requirement is about other *viewers* becoming visible to each other, not about discovering the broadcast itself.
+
 ### NFR-4: Reliability
 
 **NFR-4.1**: Transport, signaling and auth failures never crash either app. Each surfaces a specific, user-understandable state (FR-7.4).
