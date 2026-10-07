@@ -18,7 +18,7 @@ uses (`lib/src/services/signaling/`) — no new directory for this unit.
 | `SupabaseSessionSignalingChannel` (revised) | `zip_core` | impl | Drops the `track()`/`onPresenceSync` wiring entirely (Q5/Rule 6 — presence never reintroduced). |
 | `SignalingService` (revised) | `zip_core` | interface | Gains `lobbyChannel(BroadcastId)`; `sessionChannel` signature changes to `(String sessionId, String peerId)`. |
 | `SupabaseSignalingService` (revised) | `zip_core` | impl | Constructs the two revised channel types above; `statusChannel` unchanged. |
-| `peerId` generation | `zip_core` | utility function | A single function generating a 128-bit-entropy random `String` — not a validated value-object class (domain-entities.md: no canonical format to enforce beyond entropy). |
+| `peerId` generation | `zip_core` | utility function | A single function generating a 122-bit-entropy random `String` (v4 UUID; corrected 2026-10-07 from an earlier, overstated "128 bits") — not a validated value-object class (domain-entities.md: no canonical format to enforce beyond entropy). |
 
 ## Integration Points
 

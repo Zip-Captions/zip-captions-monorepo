@@ -13,8 +13,9 @@
 -- unworkable by direct testing -- Realtime's subscribe() rejects the entire
 -- channel join for any client lacking a SELECT grant, regardless of
 -- whether it ever wires a receive callback, so a send-only viewer could
--- never open that channel at all. Replaced below with a table + two
--- SECURITY INVOKER functions + a Postgres Changes subscription, mirroring
+-- never open that channel at all. Replaced below with a table + two RPC
+-- functions (one DEFINER, one INVOKER -- see each function's own comment)
+-- + a Postgres Changes subscription, mirroring
 -- get_or_create_my_broadcast_id/resolve_broadcast_id (Unit 3) rather than
 -- Broadcast-extension RLS.
 --
@@ -48,21 +49,30 @@ DROP POLICY IF EXISTS "Authenticated users may read presence on a signaling sess
 -- realtime.messages).
 -- ---------------------------------------------------------------------------
 
+-- No FK from broadcast_id to broadcast_identities.broadcast_id (PR #29
+-- review flagged this as tempting since the column is UNIQUE): a FK
+-- constraint violation on insert would let an anonymous caller distinguish
+-- "this broadcast_id exists" from "it doesn't" just from the error shape,
+-- recreating the exact existence-oracle problem resolve_broadcast_id's own
+-- separate rate limit exists to contain. This table accepts any
+-- broadcast_id text at face value, same as the lobby design it replaced.
 CREATE TABLE broadcast_join_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   broadcast_id text NOT NULL,
   peer_id text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 ALTER TABLE broadcast_join_requests ENABLE ROW LEVEL SECURITY;
 
--- Open INSERT, same posture as Unit 3's other anon-writable surfaces -- a
--- viewer needs no proof beyond having already resolved the broadcast_id.
--- submit_join_request is still the only path callers actually use (no
--- client code issues a raw INSERT), but the policy itself is what lets a
--- SECURITY INVOKER function succeed at all -- least privilege over
--- SECURITY DEFINER, since no privileged lookup is needed for an insert.
+-- Open INSERT, documenting the intended access shape even though
+-- submit_join_request (below) now runs SECURITY DEFINER and bypasses this
+-- policy for its own insert -- no client code issues a raw table INSERT,
+-- only ever through that function. Kept for defense-in-depth and so the
+-- table's own policy set still reads as a complete, honest description of
+-- who may do what, independent of how the one sanctioned function happens
+-- to be implemented today.
 CREATE POLICY "Anyone may submit a join request"
   ON broadcast_join_requests
   FOR INSERT
@@ -93,21 +103,46 @@ CREATE POLICY "Only the broadcast owner may delete their own join requests"
     )
   );
 
--- SECURITY INVOKER: the open INSERT policy above already permits this
--- insert for any caller, so no elevated privilege is needed -- least
--- privilege, matching get_or_create_my_broadcast_id's own reasoning for
--- using INVOKER wherever a privileged lookup isn't actually required.
+-- SECURITY DEFINER (revised from an earlier INVOKER draft, PR #29 review):
+-- bounding and cleaning up requires reading every pending row for
+-- p_broadcast_id, which an anonymous/non-owner caller's own SELECT RLS
+-- would filter to zero -- the same class of problem resolve_broadcast_id's
+-- own DEFINER already solves (crossing the owner boundary deliberately,
+-- inside a function that returns nothing identifying back to the caller).
+-- Bounded by construction, not by caller trust: deletes this broadcast_id's
+-- stale rows (TTL matches the order of magnitude of Unit 5's own join-ack
+-- timeout -- a real broadcaster response arrives in seconds, not minutes),
+-- then rejects the insert outright once 20 requests are already pending
+-- for this broadcast_id, so an anonymous flood cannot grow this table
+-- without bound even if the owner never consumes anything.
 CREATE OR REPLACE FUNCTION public.submit_join_request(
   p_broadcast_id text,
   p_peer_id text
 )
 RETURNS void
-LANGUAGE sql
-SECURITY INVOKER
+LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  v_pending_count int;
+BEGIN
+  DELETE FROM broadcast_join_requests
+  WHERE broadcast_id = p_broadcast_id
+    AND created_at < now() - interval '5 minutes';
+
+  SELECT count(*) INTO v_pending_count
+  FROM broadcast_join_requests
+  WHERE broadcast_id = p_broadcast_id;
+
+  IF v_pending_count >= 20 THEN
+    RAISE EXCEPTION
+      'submit_join_request: too many pending join requests for this broadcast';
+  END IF;
+
   INSERT INTO broadcast_join_requests (broadcast_id, peer_id)
   VALUES (p_broadcast_id, p_peer_id);
+END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.submit_join_request(text, text) TO anon, authenticated;

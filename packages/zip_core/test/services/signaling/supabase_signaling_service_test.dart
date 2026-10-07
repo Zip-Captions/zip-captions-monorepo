@@ -148,5 +148,61 @@ void main() {
         expect(filter.value, 'K7M9X2');
       },
     );
+
+    test(
+      'joinRequests calls consume_join_request with the delivered row id',
+      () {
+        late void Function(PostgresChangePayload) capturedCallback;
+        when(
+          () => channel.onPostgresChanges(
+            event: any(named: 'event'),
+            schema: any(named: 'schema'),
+            table: any(named: 'table'),
+            filter: any(named: 'filter'),
+            callback: any(named: 'callback'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedCallback = invocation.namedArguments[#callback]
+              as void Function(PostgresChangePayload);
+          return channel;
+        });
+        when(() => channel.subscribe()).thenReturn(channel);
+        when(() => channel.unsubscribe()).thenAnswer((_) async => 'ok');
+        when(
+          () => client.rpc<void>(
+            'consume_join_request',
+            params: any(named: 'params'),
+          ),
+        ).thenAnswer((_) => _ImmediateBuilder<void>.value(null));
+
+        final subscription = SupabaseSignalingService(client: client)
+            .joinRequests(BroadcastId.parse('K7M9X2'))
+            .listen((_) {});
+        addTearDown(subscription.cancel);
+
+        capturedCallback(
+          PostgresChangePayload(
+            schema: 'public',
+            table: 'broadcast_join_requests',
+            commitTimestamp: DateTime(2026),
+            eventType: PostgresChangeEvent.insert,
+            newRecord: const {
+              'id': 'request-1',
+              'broadcast_id': 'K7M9X2',
+              'peer_id': 'peer-abc',
+            },
+            oldRecord: const {},
+            errors: null,
+          ),
+        );
+
+        verify(
+          () => client.rpc<void>(
+            'consume_join_request',
+            params: {'p_request_id': 'request-1'},
+          ),
+        ).called(1);
+      },
+    );
   });
 }

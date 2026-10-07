@@ -43,6 +43,7 @@ class SupabaseSignalingService implements SignalingService {
   @override
   Stream<JoinRequest> joinRequests(BroadcastId broadcastId) =>
       Stream<JoinRequest>.multi((controller) {
+        var cancelled = false;
         final channel = _client.channel(
           'broadcast_join_requests:${broadcastId.value}',
         );
@@ -61,16 +62,29 @@ class SupabaseSignalingService implements SignalingService {
                 final requestId = row['id'] as String;
                 final peerId = row['peer_id'] as String;
                 controller.add(JoinRequest(fromPeerId: peerId));
+                // Fire-and-forget by design (the broadcaster doesn't need to
+                // wait on cleanup to proceed with the join), but a bare
+                // `unawaited` would let a failed RPC become an unhandled
+                // async error — routed through the stream instead, unless
+                // the stream has already been cancelled (PR #29 review).
                 unawaited(
                   _client.rpc<void>(
                     'consume_join_request',
                     params: {'p_request_id': requestId},
+                  ).then<void>(
+                    (_) {},
+                    onError: (Object error, StackTrace stackTrace) {
+                      if (!cancelled) controller.addError(error, stackTrace);
+                    },
                   ),
                 );
               },
             )
             .subscribe();
-        controller.onCancel = channel.unsubscribe;
+        controller.onCancel = () {
+          cancelled = true;
+          unawaited(channel.unsubscribe());
+        };
       });
 
   @override

@@ -75,7 +75,8 @@ abstract interface class SignalingService {
 
 Not a validated value type like `BroadcastId` (no canonical format to enforce beyond
 "sufficient entropy") — a plain `String`, client-generated once per connection attempt
-via a cryptographically-random v4-UUID-equivalent generator (128 bits). Never derived
+via a cryptographically-random v4-UUID-equivalent generator (122 bits — RFC 9562 §5.4;
+corrected 2026-10-07 from an earlier, overstated "128 bits," per PR #29 review). Never derived
 from account identity, never reused across connection attempts (a fresh `peerId` on
 every `connect()`/`restart()` re-signal per Unit 5's own reconnection design — the old
 channel's `peerId` is abandoned, a new one generated and subscribed to before the next

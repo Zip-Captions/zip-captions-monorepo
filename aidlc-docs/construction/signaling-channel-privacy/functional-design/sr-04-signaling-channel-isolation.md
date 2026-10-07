@@ -50,12 +50,30 @@ forward-only migration extending Unit 3's package — the same precedent as
 Broadcast-extension channel, authorized via `realtime.messages` RLS. Confirmed
 unworkable by direct testing — `subscribe()` rejects any client lacking SELECT,
 regardless of receive intent, so a send-only viewer could never open that channel.
-Replaced with ordinary table RLS plus two `SECURITY INVOKER` functions, governing a
-Postgres Changes subscription instead of a Broadcast-extension one.
+Replaced with ordinary table RLS plus two functions, governing a Postgres Changes
+subscription instead of a Broadcast-extension one.
+
+**Revised again 2026-10-07 (PR #29 review, three findings)**: (1) `submit_join_request`
+is `SECURITY DEFINER`, not `INVOKER` as first implemented — bounding/cleaning up
+pending requests (below) means reading every row for a `broadcast_id`, which a
+non-owner's own SELECT RLS would otherwise filter to nothing, silently defeating the
+bound; this mirrors `resolve_broadcast_id`'s own existing `DEFINER` use for the same
+class of problem. (2) The RPC is now Kong-rate-limited (ip-based, same shape as
+`resolve_broadcast_id`), and the function itself deletes this `broadcast_id`'s pending
+rows older than 5 minutes before rejecting the insert outright once 20 are already
+pending — confirmed directly: 20 succeed, a 21st raises; aging rows past the TTL and
+retrying leaves exactly the fresh row. Without this, an anonymous caller could grow the
+table without bound, especially against an offline owner. (3) No foreign key from
+`broadcast_join_requests.broadcast_id` to `broadcast_identities.broadcast_id` was
+added, despite the column being `UNIQUE` and a natural-looking FK target — a
+constraint violation would let a caller distinguish "this broadcast_id exists" from
+"it doesn't" purely from the error shape, recreating the exact existence-oracle problem
+`resolve_broadcast_id`'s own separate rate limit exists to contain. This table accepts
+any `broadcast_id` text at face value, same as the lobby design it replaced.
 
 | Resource | Policy | Role | Condition |
 |---|---|---|---|
-| `broadcast_join_requests` | `INSERT` | — | not granted directly; all inserts go through `submit_join_request(broadcast_id, peer_id)`, callable by `anon`/`authenticated` — a viewer needs no proof beyond having already resolved the `broadcast_id`, matching this project's existing posture for anonymous viewer actions |
+| `broadcast_join_requests` | `INSERT` | — | not granted directly; all inserts go through `submit_join_request(broadcast_id, peer_id)` — `SECURITY DEFINER`, Kong-rate-limited, callable by `anon`/`authenticated`. Bounds pending requests to 20 per `broadcast_id` and opportunistically deletes rows older than 5 minutes before inserting |
 | `broadcast_join_requests` | `SELECT` | `authenticated` | `EXISTS (SELECT 1 FROM broadcast_identities WHERE broadcast_id = broadcast_join_requests.broadcast_id AND owner_id = auth.uid())` — **the one identity check in this unit's authorization**, reusing the already-existing `broadcast_identities` table (built by Unit 3 for a different purpose) rather than requiring any new persisted session-ownership mapping, keeping FR-2.6 ("no session records in Postgres") fully satisfied. Governs both direct SELECT and the broadcaster's Postgres Changes subscription (Realtime's Postgres Changes feature enforces the table's own RLS, not a separate Broadcast-extension policy) |
 | `broadcast_join_requests` | `DELETE` | `authenticated` | same ownership check as SELECT; exercised only via `consume_join_request(request_id)`, called by the broadcaster after acting on a request, so no row outlives its own handshake |
 | `signaling:{session_id}:{peerId}` | `broadcast` `INSERT` (send) | `anon`, `authenticated` | always true — deliberately symmetric and open, same posture as Unit 3's original policy for this extension — **unaffected by this revision** |
@@ -105,6 +123,13 @@ table + RPC + Postgres Changes mechanism.
 - [x] **Approved** — this revised approach may proceed to Code Generation for S-13.1.
 
 Approved by: James Petersen  Date: 2026-10-06
+
+**Amendment approved 2026-10-07** (PR #29 review remediation — `submit_join_request`
+switched to `SECURITY DEFINER`, Kong rate limit added, 20-request pending cap +
+5-minute stale-row cleanup added, no FK to `broadcast_identities`): approved via the
+user's explicit choice of remediation approach ("Kong rate limit + pending cap +
+opportunistic cleanup") over the alternatives offered, rather than a separate written
+sign-off — Section 3's table above reflects the approved shape.
 
 ---
 *Superseded approval, retained for the audit trail:*

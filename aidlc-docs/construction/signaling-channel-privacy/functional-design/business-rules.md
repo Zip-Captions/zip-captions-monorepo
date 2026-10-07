@@ -7,9 +7,27 @@ grant for *any* client joining a topic, regardless of whether that client wires 
 receive callback — there is no send-only subscription mode. The original "subscribe
 with zero callbacks wired" fallback (previously documented here) does not work either,
 since the rejection happens at `subscribe()` itself, before any callback would matter.
-`submit_join_request(broadcast_id, peer_id)` — a `SECURITY INVOKER` RPC — replaces the
-lobby channel's send side entirely: a viewer calls it and is done, with no channel
-object and no subscribe step at all.
+`submit_join_request(broadcast_id, peer_id)` replaces the lobby channel's send side
+entirely: a viewer calls it and is done, with no channel object and no subscribe step
+at all. **Revised again 2026-10-07 (PR #29 review)**: the function is `SECURITY
+DEFINER`, not `INVOKER` — bounding submissions and cleaning up stale rows (Rule 2.1)
+requires reading every pending row for a `broadcast_id`, which a non-owner caller's own
+SELECT RLS would otherwise filter to nothing, defeating the bound. Also rate-limited at
+Kong (ip-based, same shape as `resolve_broadcast_id`'s existing limit) — an
+unauthenticated caller could otherwise flood the RPC itself, independent of the
+per-broadcast cap.
+
+**Rule 2.1 (added 2026-10-07, PR #29 review) — `submit_join_request` bounds pending
+requests per `broadcast_id` and opportunistically deletes stale ones; it never trusts
+caller identity to self-limit.**
+Before inserting, it deletes this `broadcast_id`'s own rows older than 5 minutes (TTL
+set well above Unit 5's own join-ack timeout, so a real response is never mistaken for
+stale), then rejects the insert outright if 20 requests are already pending for that
+`broadcast_id`. Confirmed directly: 20 submissions for one `broadcast_id` succeed, the
+21st raises; aging 20 rows past the TTL and submitting again leaves exactly 1 row
+(every stale row cleaned, the fresh one inserted). Without this, an anonymous caller
+with a real or guessed `broadcast_id` could grow this table without bound, especially
+if the owner is offline to consume anything.
 
 **Rule 2 (revised 2026-10-06) — `broadcast_join_requests` SELECT is restricted to the
 real broadcast owner, checked against the existing `broadcast_identities` table — never

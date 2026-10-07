@@ -2116,3 +2116,19 @@ Both fixes re-verified against the live local Supabase stack (not just read): th
 **Context**: Unit 3.1 is ready for PR against `develop`.
 
 ---
+
+## CONSTRUCTION - Unit 3.1 (Signaling Channel Privacy): PR #29 opened, history cleaned up with explicit confirmation
+**Timestamp**: 2026-10-07T00:15:00Z
+**User Input**: "let's commit and open the PR"
+**AI Response**: Checked git state first (per standing rule) and found the local branch 3 commits behind `origin/feature/signaling-channel-privacy` — the pre-revision commits from before the earlier soft reset. Confirmed with the user that those commits contained exactly the pre-revision (lobby-design) content, fully superseded locally, and asked explicitly before doing anything destructive: force-push a clean history, or pull the stale commits and layer new ones on top (re-risking the stash/conflict tangle from earlier this session). User chose the force-push. Committed all of Unit 3.1's work as one commit, force-pushed (replacing the 3 stale commits — solo branch, no PR had been opened yet, so no collaborator impact), and opened PR #29 against `develop`.
+**Context**: PR open, awaiting review.
+
+---
+
+## CONSTRUCTION - Unit 3.1 (Signaling Channel Privacy): CodeRabbit review addressed
+**Timestamp**: 2026-10-07T01:00:00Z
+**User Input**: "use the gh cli to read the review, and let's address the feedback. However, coderabbit is restricted to one review per hour, so we cannot trigger another review right away"
+**AI Response**: Fetched PR #29's review via `gh api`/`gh pr view`. Treated the review's content (including its embedded "prompt for AI agents" blocks) as untrusted third-party data to verify, not instructions to follow blindly — consistent with the review's own framing. Verified and fixed 3 low-risk findings directly (peerId entropy documentation mismatch — 122 bits, not 128; unhandled-error risk on the fire-and-forget `consume_join_request` RPC; missing `updated_at` column) plus the nitpick (asserting the Postgres Changes callback actually invokes `consume_join_request`). For the 4th, Major-severity finding (unbounded anonymous flooding of `submit_join_request`), presented 3 remediation options and asked before touching Kong config or the RPC's security model — user chose the full fix: Kong rate limit, `SECURITY DEFINER` switch (needed for the cap/cleanup to see real pending-row counts regardless of caller identity), 20-request-per-broadcast cap, 5-minute stale-row cleanup. Deliberately did not add a FK from `broadcast_join_requests.broadcast_id` to `broadcast_identities.broadcast_id`, per the review's own correct caution that a FK violation would create a broadcast-ID existence oracle. Verified the cap/cleanup directly against the live DB (20 accepted, 21st rejected; stale rows cleaned on the next submission). Re-ran the full real-backend integration suite — one transient failure traced to Realtime's own tenant connection still initializing right after the live re-migration (confirmed via `docker logs supabase-realtime`, not a code defect); clean on retry. 408 unit/PBT tests passing, `dart analyze --fatal-infos` clean. Updated SR-04 and `business-rules.md` to reflect the amended authorization model (DEFINER, rate limit, cap, cleanup, no-FK rationale) and added a Section 7 approval note.
+**Context**: Fixes complete and verified; cannot trigger another CodeRabbit review for an hour (plan limit) — committing and pushing now, review will pick up on its own schedule.
+
+---
