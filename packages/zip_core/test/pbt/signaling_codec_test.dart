@@ -25,11 +25,11 @@ void main() {
       'decode rejects a payload oversized only in a nested field the '
       "variant doesn't read (PR #24 review, 2026-10-02)",
       () {
-        // broadcastEnded ignores every field but type/version — the
+        // broadcastEnded ignores every field but messageType/version — the
         // oversized-input check must still look at the full encoded
         // payload, not just the fields a given variant happens to read.
         final oversized = <String, Object?>{
-          'type': 'broadcastEnded',
+          'messageType': 'broadcastEnded',
           'version': 1,
           'extra': {'blob': 'x' * 20000},
         };

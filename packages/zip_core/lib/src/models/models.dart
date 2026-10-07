@@ -14,6 +14,7 @@ export 'enums.dart';
 export 'export_format.dart';
 export 'ice_server.dart';
 export 'pause_event.dart';
+export 'peer_id.dart';
 export 'presence_snapshot.dart';
 export 'recording_error.dart';
 export 'recording_error_factories.dart';

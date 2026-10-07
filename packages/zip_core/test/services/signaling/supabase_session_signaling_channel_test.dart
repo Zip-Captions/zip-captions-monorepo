@@ -1,10 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:zip_core/src/models/presence_snapshot.dart';
 import 'package:zip_core/src/models/signaling_codec.dart';
 import 'package:zip_core/src/models/signaling_message.dart';
-import 'package:zip_core/src/services/signaling/signaling_service.dart';
 import 'package:zip_core/src/services/signaling/supabase_session_signaling_channel.dart';
 
 class _MockSupabaseClient extends Mock implements SupabaseClient {}
@@ -15,7 +13,6 @@ void main() {
   late _MockSupabaseClient client;
   late _MockRealtimeChannel channel;
   late void Function(Map<String, dynamic>) broadcastCallback;
-  late void Function(RealtimePresenceSyncPayload) presenceSyncCallback;
 
   setUpAll(() {
     registerFallbackValue(const RealtimeChannelConfig());
@@ -36,12 +33,6 @@ void main() {
           as void Function(Map<String, dynamic>);
       return channel;
     });
-    when(() => channel.onPresenceSync(any())).thenAnswer((invocation) {
-      presenceSyncCallback = invocation.positionalArguments[0]
-          as void Function(RealtimePresenceSyncPayload);
-      return channel;
-    });
-    when(() => channel.presenceState()).thenReturn(const []);
     when(() => channel.sendBroadcastMessage(
           event: any(named: 'event'),
           payload: any(named: 'payload'),
@@ -53,7 +44,7 @@ void main() {
       final sessionChannel = SupabaseSessionSignalingChannel(
         client: client,
         sessionId: 'session-1',
-        role: SignalingRole.viewer,
+        peerId: 'peer-1',
       );
 
       final received = <SignalingMessage>[];
@@ -70,14 +61,16 @@ void main() {
       final sessionChannel = SupabaseSessionSignalingChannel(
         client: client,
         sessionId: 'session-1',
-        role: SignalingRole.viewer,
+        peerId: 'peer-1',
       );
 
       final received = <SignalingMessage>[];
       sessionChannel.messages.listen(received.add);
 
       expect(
-        () => broadcastCallback({'type': 'totallyUnknown', 'version': 1}),
+        () => broadcastCallback(
+          {'messageType': 'totallyUnknown', 'version': 1},
+        ),
         returnsNormally,
       );
 
@@ -86,37 +79,12 @@ void main() {
     });
   });
 
-  group('SupabaseSessionSignalingChannel.presence', () {
-    test('reflects presenceState() peer keys on sync', () async {
-      final sessionChannel = SupabaseSessionSignalingChannel(
-        client: client,
-        sessionId: 'session-1',
-        role: SignalingRole.broadcaster,
-      );
-
-      final snapshots = <PresenceSnapshot>[];
-      sessionChannel.presence.listen(snapshots.add);
-
-      when(() => channel.presenceState()).thenReturn(const [
-        SinglePresenceState(key: 'peer-a', presences: []),
-        SinglePresenceState(key: 'peer-b', presences: []),
-      ]);
-      presenceSyncCallback(
-        const RealtimePresenceSyncPayload(event: PresenceEvent.sync),
-      );
-
-      await Future<void>.delayed(Duration.zero);
-      expect(snapshots.single.peerIds, ['peer-a', 'peer-b']);
-      expect(snapshots.single.count, 2);
-    });
-  });
-
   group('SupabaseSessionSignalingChannel.send', () {
     test('encodes the message onto the signal broadcast event', () async {
       final sessionChannel = SupabaseSessionSignalingChannel(
         client: client,
         sessionId: 'session-1',
-        role: SignalingRole.viewer,
+        peerId: 'peer-1',
       );
 
       const message = Leave(fromPeerId: 'peer-1');
