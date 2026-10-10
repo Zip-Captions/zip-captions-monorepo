@@ -54,6 +54,14 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
   // a stale attempt tear down a newer one's session, or install its own
   // session/send a stale offer after already being superseded.
   final _pendingAttempts = <String, Object>{};
+  // Tracks which attempt most recently succeeded `tryAdmit` for a given
+  // peerId (CodeRabbit PR #31 review, round 3): `ViewerAdmission` itself
+  // has no notion of "whose" reservation it's holding, so a stale
+  // attempt that's since been superseded must not call `release` after
+  // a *newer* attempt has already reclaimed the same peerId — that
+  // would incorrectly start the newer attempt's *live* reservation's
+  // reconnect-window countdown.
+  final _admittedAttempts = <String, Object>{};
   BroadcastTransportContext? _context;
   StreamSubscription<JoinRequest>? _joinRequestsSub;
 
@@ -115,13 +123,16 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
       if (isCurrent()) _pendingAttempts.remove(peerId);
       return;
     }
+    _admittedAttempts[peerId] = attemptId;
 
     try {
       final connection = await _peerConnectionFactory.create(
         context.iceServers,
       );
       if (!isCurrent()) {
-        context.admission.release(peerId);
+        if (_admittedAttempts[peerId] == attemptId) {
+          context.admission.release(peerId);
+        }
         unawaited(connection.close());
         unawaited(channel.close());
         return;

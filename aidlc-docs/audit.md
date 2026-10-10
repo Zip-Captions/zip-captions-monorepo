@@ -2303,3 +2303,17 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 **Context**: PR #31's CodeRabbit review round 2 addressed. Awaiting CI and human review.
 
 ---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): PR #31 CodeRabbit review round 3 addressed
+**Timestamp**: 2026-10-10T21:30:00Z
+**User Input**: "check the PR again, we have more feedback" → (mid-fix) "Delegate the build for fixing to qwen"
+**AI Response**: A third CodeRabbit review found one more real bug building on round 2's fix: `ViewerAdmission` tracks reservations purely by peerId with no concept of "whose attempt" holds one, so a stale (superseded) attempt's cleanup could call `release(peerId)` *after* a newer attempt had already reclaimed the same peerId — incorrectly starting the reconnect-window countdown on the newer attempt's *live* reservation. Diagnosed the exact fix (an `_admittedAttempts` map tracking admission ownership locally in the transport, deliberately not touching `ViewerAdmission`'s own already-reviewed public API) and delegated the implementation to Qwen with the fix and a full regression-test design fully specified in the brief.
+
+Round 1 ran out of budget reasoning abstractly about the `fakeAsync` timing needed for the test; wrote a deterministic test-double design (`_HoldableFactory`, pausing one `create()` call via a `Completer` until explicitly released) into a correction and resumed. Round 2 copied that design verbatim but hit its own time limit mid-verification, having spotted (but not yet fixed) a bracket/splice error at the insertion point.
+
+Took over directly rather than a third round: fixed the splice error, then found and fixed **two further bugs — both in Claude's own test design, not Qwen's execution**: (1) `_HoldableFactory.release()` could never actually reach the completer a parked `create()` call was awaiting, because `create()` cleared the shared field reference before exposing any way back to it — the "parked" attempt was silently stuck forever rather than ever resuming; (2) even after fixing that, the test still passed against the un-fixed production code, because `admission` in this test file is constructed without a `now:` override (defaulting to the real wall clock), so `async.elapse(...)` — which only advances `fakeAsync`'s own virtual clock — had no effect on `ViewerAdmission`'s notion of time at all. Fixed by giving this one test a local `admission` built with `now: clock.now` (`package:clock`, already a project dependency used for the identical reason in `supabase_auth_service_test.dart`). With both fixed, confirmed the test genuinely fails pre-fix (`Expected: 1, Actual: 0`) before applying the production fix and confirming it passes.
+
+Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packages, 482/482 `zip_core` tests passing (481 + 1 new), zero regressions.
+**Context**: PR #31's CodeRabbit review round 3 addressed. Awaiting CI and human review.
+
+---

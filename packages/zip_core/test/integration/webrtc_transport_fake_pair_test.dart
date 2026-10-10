@@ -19,6 +19,7 @@
 
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -65,6 +66,43 @@ class _TrackingPeerConnectionFactory implements PeerConnectionFactory {
     handles.add(handle);
     onCreated?.call(handle);
     return handle;
+  }
+}
+
+/// Lets a test hold one `create()` call in flight — not yet resolved —
+/// until explicitly released. Used to deterministically engineer a
+/// specific interleaving between two racing `_handleJoinRequest` calls,
+/// instead of relying on fakeAsync's organic microtask ordering.
+class _HoldableFactory implements PeerConnectionFactory {
+  _HoldableFactory(this._inner);
+  final PeerConnectionFactory _inner;
+
+  /// Armed but not yet consumed by a `create()` call.
+  Completer<void>? _armed;
+
+  /// The completer a currently in-flight `create()` call is actually
+  /// awaiting — kept separate from [_armed] so [release] can still reach
+  /// it after `create()` has cleared [_armed] (which happens immediately
+  /// on entry, before the `await`).
+  Completer<void>? _active;
+
+  /// The *next* `create()` call will not resolve until [release] is
+  /// called.
+  void holdNext() => _armed = Completer<void>();
+
+  /// Lets a held `create()` call proceed.
+  void release() => _active?.complete();
+
+  @override
+  Future<PeerConnectionHandle> create(List<IceServer> iceServers) async {
+    final armed = _armed;
+    if (armed != null) {
+      _armed = null;
+      _active = armed;
+      await armed.future;
+      _active = null;
+    }
+    return _inner.create(iceServers);
   }
 }
 
@@ -710,6 +748,101 @@ void main() {
           // breaking the `BroadcastTransport` join/leave contract.
           await broadcastTransport.stop();
           expect(left, isEmpty);
+        },
+      );
+    },
+  );
+
+  group(
+    'a stale attempt superseded after create() must not release a newer '
+    "attempt's live admission reservation",
+    () {
+      test(
+        'admission.count stays 1 even past the reconnect window, since '
+        'the live reservation is never released',
+        () {
+          fakeAsync((async) {
+            remoteBroadcastTarget = RemoteBroadcastTarget(broadcastTransport);
+            // Swap in a holdable factory for *this test only* — signaling
+            // and broadcastId stay the shared instances from `setUp()`.
+            // `admission` is reconstructed with `now: clock.now` instead
+            // of the shared instance's default (real `DateTime.now`):
+            // this test needs `async.elapse(...)` to actually advance
+            // what `ViewerAdmission` considers "now" (fakeAsync's `run()`
+            // sets `package:clock`'s zone-scoped clock, which plain
+            // `DateTime.now()` is not aware of at all).
+            admission = ViewerAdmission(
+              const BroadcastLimits(
+                maxViewers: 2,
+                presenceTimeout: Duration(seconds: 60),
+                reconnectWindow: Duration(seconds: 120),
+              ),
+              now: clock.now,
+            );
+            final holdable = _HoldableFactory(factory);
+            broadcastTransport = WebRtcBroadcastTransport(
+              peerConnectionFactory: holdable,
+            );
+            unawaited(broadcastTransport.start(broadcastContext()));
+            async.flushMicrotasks();
+            const fakePeerId = 'racing-viewer';
+
+            // A real viewer-side peer connection, matching the actual
+            // system's call order (same reasoning as the sibling
+            // "overlapping JoinRequests" test above).
+            unawaited(factory.create(const []));
+            async.flushMicrotasks();
+
+            // Attempt A: gets admitted, then parks inside `create()`.
+            holdable.holdNext();
+            unawaited(signaling.submitJoinRequest(broadcastId, fakePeerId));
+            async.flushMicrotasks();
+
+            // Attempt B: a second, overlapping JoinRequest for the *same*
+            // peerId while A is still parked. B is not held — it runs to
+            // completion, reclaiming A's admission reservation along the
+            // way (ViewerAdmission has no notion of "whose" attempt a
+            // reservation belongs to).
+            final delivered = <RTCDataChannel>[];
+            factory.onCreated = (handle) =>
+                handle.peer.onDataChannel.listen(delivered.add);
+            unawaited(signaling.submitJoinRequest(broadcastId, fakePeerId));
+            async.flushMicrotasks();
+            expect(delivered, hasLength(1));
+            expect(
+              delivered.single.state,
+              RTCDataChannelState.RTCDataChannelOpen,
+            );
+
+            // Confirm B's join actually completes.
+            final joined = <String>[];
+            final joinedSub = broadcastTransport.viewerJoined.listen(
+              joined.add,
+            );
+            addTearDown(joinedSub.cancel);
+            unawaited(
+              delivered.single.send(RTCDataChannelMessage(joinAckSentinel)),
+            );
+            async.flushMicrotasks();
+            expect(joined, [fakePeerId]);
+
+            // Now let A's parked `create()` resolve. A discovers it's been
+            // superseded and bails. Without the fix, A's bail
+            // unconditionally releases `peerId`'s reservation — which is
+            // now B's *live* one — starting its reconnect-window countdown
+            // even though B is actively connected.
+            holdable.release();
+            // Then advance well past the reconnect window. Before the
+            // fix, ViewerAdmission would sweep B's wrongly-released
+            // reservation away here, dropping `count` to 0 even though B
+            // is still joined. After the fix, A's bail never touched B's
+            // reservation, so `count` stays 1.
+            async
+              ..flushMicrotasks()
+              ..elapse(const Duration(seconds: 150))
+              ..flushMicrotasks();
+            expect(admission.count, 1);
+          });
         },
       );
     },
