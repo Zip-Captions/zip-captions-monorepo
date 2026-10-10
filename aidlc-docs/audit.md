@@ -2140,3 +2140,129 @@ Both fixes re-verified against the live local Supabase stack (not just read): th
 **Context**: Committing and pushing the second round of fixes.
 
 ---
+
+## CONSTRUCTION - Unit 3.1 (Signaling Channel Privacy): PR #29 merged, unit complete
+**Timestamp**: 2026-10-07T05:35:00Z
+**User Input**: "I approved, squashed and merged and deleted the branch on remote. let's proceed"
+**AI Response**: Confirmed the merge directly (`gh pr view 29` showed `state: MERGED`, merge commit `fa755ce`) rather than taking the report at face value. Checked git status (clean), switched to `develop`, fetched with `--prune` (confirmed the remote branch was indeed gone), and fast-forward pulled the merge. Force-deleted the local feature branch (`-D`, not `-d` — expected for a squash merge, since the squashed commit's SHA differs from anything on the local branch, so git's merge-detection doesn't recognize it as safe to delete with the normal flag; content was independently confirmed merged via the `develop` diff before deleting). Opened a small docs-only PR (#30, matching the project's own precedent — PRs #25/#28) to log the merge and un-pause Unit 5 in `aidlc-state.md`.
+**Context**: Unit 3.1 shipped. Switching to Unit 5's branch to resume it.
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): branch merged forward, staleness found against Unit 3.1's final design
+**Timestamp**: 2026-10-07T05:45:00Z
+**User Input**: (continuing — resuming Unit 5 per "let's proceed")
+**AI Response**: Checked out Unit 5's existing branch (`feature/webrtc-transport-remote-output-capacity`, last touched 2026-10-05 at its WIP-checkpoint commit `89c1f30`, docs-only — no `zip_core` code written for this unit yet) and merged `develop` in (not rebased, to avoid a force-push on an already-pushed branch) to pick up Unit 3.1's landed work. Resolved two conflicts in `aidlc-state.md`/`audit.md` (both append-only logs with entries added on each side at the same point in history) by keeping `develop`'s fuller, later-corrected narrative and dropping the Unit-5-branch's redundant earlier draft of the same events, confirmed by timestamp ordering. Verified no code-level conflict (`git show --stat` on the WIP commit showed it touched only `aidlc-docs/`). Then audited Unit 5's own Functional Design artifacts for staleness against Unit 3.1's final `SignalingService` shape (approved 2026-10-05, before Unit 3.1's mid-flight redesign) and found two real gaps: `business-rules.md` Rule 4 still referenced `SignalingRole` (removed entirely in the final design), and `domain-entities.md`'s `BroadcastTransportContext`/`ViewerTransportContext` both carried a single `SessionSignalingChannel channel` field, assuming the pre-Unit-3.1 single-shared-channel world.
+**Context**: Confirmed with the user this is a "revise in place" situation (nothing shipped for Unit 5 yet) before touching the already-approved Functional Design.
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): Functional Design revised in place
+**Timestamp**: 2026-10-07T06:00:00Z
+**User Input**: "yes proceed"
+**AI Response**: Revised `BroadcastTransportContext`/`ViewerTransportContext` (Q5) to carry `BroadcastId broadcastId` + `SignalingService signalingService` instead of a pre-opened channel. Updated `business-logic-model.md`'s join sequences for both transports: the broadcaster now opens `sessionChannel(sessionId, peerId)` on *every* `JoinRequest` (accept or reject) rather than assuming a lobby/reject path that no longer exists — confirmed this matches Unit 3.1's own join sequence, where the broadcaster always opens the per-viewer channel first, before deciding admission; the viewer generates a fresh `peerId()` internally on every `connect()`/`restart()` (never via context, never reused, per Unit 3.1 Rule 5), calls `submitJoinRequest`, then opens its own channel. Replaced `business-rules.md` Rule 4's `SignalingRole` reference — the final design has no role field at all; "role" is just which transport class is running. Updated the Functional Design plan (Q5 marked superseded with the revised answer) and the NFR Requirements plan (Q5's fake description extended to a fake `SignalingService` + per-viewer channel pairs). No code existed yet, so nothing needed reworking beyond the docs. Confirmed via `grep` that no other stale `LobbyChannel`/`SignalingRole` references remain anywhere in Unit 5's artifacts.
+**Context**: Unit 5's Functional Design is now consistent with Unit 3.1's final design. Resuming at NFR Requirements (plan already drafted, 7 questions awaiting answers).
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): NFR Requirements approved and generated
+**Timestamp**: 2026-10-08T00:00:00Z
+**User Input**: "give me the link to the specific docs to review" → "approved and proceed"
+**AI Response**: Pointed to the plan file's local path (no web link exists — it's a repo file) rather than guessing at a URL. All 7 questions approved as answered (A throughout, drafted 2026-10-05, never previously approved before the pause): Q1 `const defaultBroadcastLimits`; Q2 fakes validate logical correctness only, NFR-1.3 targets deferred to Unit 9; Q3 uniform exception boundary at `PeerConnectionHandle`; Q4 no new logging infrastructure; Q5 zero real `flutter_webrtc` objects in this unit's tests, fully in-memory fakes (updated for the context-shape revision); Q6 `flutter_webrtc` version re-confirmed current; Q7 `glados` + existing model-based-PBT pattern. Generated `nfr-requirements.md` (Security Baseline: 7 Compliant/8 N/A; PBT Compliance: 6 Compliant(/planned)/4 N/A) and `tech-stack-decisions.md` (no new dependency, no new test tooling, no migration, component placement in `zip_core`'s existing structure) in `aidlc-docs/construction/webrtc-transport-remote-output-capacity/nfr-requirements/`.
+**Context**: NFR Requirements complete. Proceeding to NFR Design.
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): NFR Design approved and generated
+**Timestamp**: 2026-10-08T00:15:00Z
+**User Input**: "approved proceed"
+**AI Response**: Both questions approved (A throughout). Generated `nfr-design-patterns.md` (the `delay`/`now` testability seams for the ack timer, backoff loop, and reservation-expiry sweep — the latter deliberately lazy-on-access rather than a background `Timer`, a literal reading of Rule 6's own invariant wording) and `logical-components.md` (full component table, dependency diagram confirming the one-way dependency on `SignalingService`/`IceServerProvider`, and a testability-seam summary table) in `aidlc-docs/construction/webrtc-transport-remote-output-capacity/nfr-design/`.
+**Context**: NFR Design complete. Proceeding to Code Generation (Part 1: plan).
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): NFR Design Q1 corrected against existing codebase convention
+**Timestamp**: 2026-10-08T00:20:00Z
+**User Input**: "yes, fix it"
+**AI Response**: Before drafting the Code Generation plan around the just-approved `delay: Future<void> Function(Duration)` injected seam, checked whether this codebase already has an established pattern for the same problem — found it does: `supabase_auth_service.dart` (Unit 2) uses a plain `Timer(...)` with no injected delay function at all, tested via `fakeAsync()` (`fake_async`, already a dev dependency) fast-forwarding the real timer; `transcript_writer_target.dart` uses the exact `DateTime Function()? now` idiom already proposed for `ViewerAdmission`. Corrected `nfr-design-patterns.md`, `logical-components.md`, and the NFR Design plan (Q1 marked corrected, original answer kept visible) to drop the invented `delay` seam in favor of plain `Timer`/`Future.delayed` + `fakeAsync()`, matching precedent exactly. `ViewerAdmission`'s `now` seam stands, adjusted only to the optional-nullable-parameter shape `transcript_writer_target.dart` already uses.
+**Context**: NFR Design now matches the codebase's own existing conventions. Proceeding to Code Generation (Part 1: plan).
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): Code Generation Part 1 (Plan Created)
+**Timestamp**: 2026-10-08T00:30:00Z
+**User Input**: "yes" (continuing the NFR Design correction → Code Generation thread)
+**AI Response**: Confirmed via direct `find`/`grep` that nothing WebRTC-related exists yet in `zip_core` and that `flutter_webrtc` is not yet declared in `pubspec.yaml` — this unit creates everything from scratch. Read Application Design's fixed contracts (`phase2-component-methods.md` §4–5) directly to write the plan against the real, already-fixed method signatures rather than re-deriving them. Created a 29-step plan: the `flutter_webrtc` dependency; 9 new model files; 6 new service files in the already-existing `lib/src/services/webrtc/` directory (shared with Unit 4's `IceServerProvider`) plus `RemoteBroadcastTarget`/`RemoteCaptionReceiver` in `lib/src/services/caption/`; model tests, `ViewerAdmission`'s model-based PBT suite, `CaptionWireCodec`'s round-trip PBT suite, and the load-bearing fake-pair harness test. Flagged Step 6 explicitly to apply Unit 3.1's `SignalingCodec` wire-key lesson (`messageType`, never `'type'`/`'event'`) to `CaptionWireCodec` from the start, rather than discovering the same bug twice.
+**Context**: Code Generation Part 1 complete. Awaiting approval before Part 2 (generation).
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): Code Generation Part 2 (Steps 1-21)
+**Timestamp**: 2026-10-08T23:15:00Z
+**User Input**: "proceed"
+**AI Response**: Implemented Steps 1-20 directly: the `flutter_webrtc` dependency (re-verified on pub.dev, a newer patch existed than NFR Requirements' check, pinned to `+hotfix.4`); all 9 new model files; the `BroadcastTransport`/`ViewerTransport` interfaces (not previously materialized as files anywhere — Application Design and this unit's own Functional Design described their shape but never created the Dart file) plus real `flutter_webrtc`-backed implementations, built against the actual package API (verified directly by reading the `webrtc_interface`/`flutter_webrtc` source, not assumed) rather than the originally-sketched simplified wrapper types; `PeerConnectionFactory`, `TransportSelector`, `ViewerAdmission`, `RemoteBroadcastTarget`, `RemoteCaptionReceiver`; barrel updates. Found and fixed two real completeness gaps in the already-approved Functional Design while implementing against the real WebRTC API: `PeerConnectionHandle` was missing `setLocalDescription` (required by WebRTC after `createOffer`/`createAnswer`, not a design choice to omit); `RemoteBroadcastTarget`'s fixed single-argument constructor has no way to receive the current recording state, so `currentActivity` now defaults to `inactive` until the first real `SessionStateEvent` arrives. Flagged one known simplification rather than silently deciding it or scope-creeping the interface: `ViewerConnectionInfo.connectionType` is fixed as `p2pDirect` for every viewer, since the minimal `PeerConnectionHandle` seam has no candidate-pair/stats query method to derive real p2p-vs-relay routing. `dart analyze --fatal-infos` clean; 408 existing tests still passing, zero regressions.
+
+Step 21 (model unit tests, 6 files) was delegated to and accepted from Qwen — gate-checked independently (analyze clean, 25/25 new tests + 433/433 full suite passing, scope matched exactly, no corrections needed).
+**Context**: Steps 1-21 of 29 complete. Remaining: `ViewerAdmission` tests + PBT suite, `CaptionWireCodec` test suite, the load-bearing fake-pair harness, `RemoteBroadcastTarget`/`Receiver` tests, final verification gates.
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): Code Generation Part 2 (Steps 22-23)
+**Timestamp**: 2026-10-09T00:45:00Z
+**User Input**: "All construction work should be delegated to qwen." (standing directive from earlier this session, applied here)
+**AI Response**: Delegated Step 22 (`ViewerAdmission` example-based unit tests) and Step 23 (`ViewerAdmission` model-based PBT suite) to Qwen in sequence, gate-checking each independently before starting the next. Step 22: 8 tests covering every `business-rules.md` Rule 6 behavior, accepted as-is — discriminating, correctly-reasoned coverage, no corrections. Step 23: a `Glados`-driven stateful PBT (100 generated command sequences) asserting the Rule 6 cap invariant after every command; accepted with one minor Claude-applied fix (`dart format`, a cosmetic indentation shift in pre-existing code with no logic change). Both verified independently: `dart analyze --fatal-infos` clean, 442/442 full suite passing throughout, zero regressions.
+**Context**: Steps 1-23 of 29 complete. Remaining: `CaptionWireCodec` test suite, the load-bearing fake-pair harness, `RemoteBroadcastTarget`/`Receiver` tests, final verification gates.
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): Code Generation Part 2 (Step 24)
+**Timestamp**: 2026-10-09T02:00:00Z
+**User Input**: "proceed"
+**AI Response**: Delegated Step 24 (`CaptionWireCodec` test suite — round-trip, malformed-input, and oversized-nested-field regression PBT, mirroring `SignalingCodec`'s own, the only codec-test precedent in this codebase) to Qwen. First attempt failed to start: `generators.dart` was already dirty from Step 23's accepted-but-uncommitted changes, which `delegate.py` refuses by default; retried with `--allow-dirty`, confirmed safe since the tool's before/after diff snapshot is taken at invocation time regardless of prior dirty state. Gate-checked independently: `dart analyze --fatal-infos` clean, 3/3 new tests + 445/445 full suite passing, no regression, scope matched exactly. One minor fix applied: a test name had copied `SignalingCodec`'s own historical `(PR #24 review, 2026-10-02)` citation verbatim, falsely attributing that finding to this new test — reworded. Confirmed the large diffstat was entirely `dart format` reflow of pre-existing generators (the brief asked for a whole-file format specifically to avoid repeating Step 23's left-behind indentation issue), verified line-by-line as cosmetic only.
+**Context**: Steps 1-24 of 29 complete. Remaining: the load-bearing fake-pair harness (to be split into sub-briefs), `RemoteBroadcastTarget`/`Receiver` tests, final verification gates.
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): Code Generation Part 2 (Step 26)
+**Timestamp**: 2026-10-09T06:00:00Z
+**User Input**: (continuing the delegation loop, no new instruction since the standing directive)
+**AI Response**: Delegated Step 26 (`RemoteBroadcastTarget`/`RemoteCaptionReceiver` unit tests) ahead of Step 25, since it's independent and ready while Step 25's sub-brief decomposition is still being planned. First task to mock `BroadcastTransport`/`ViewerTransport` — no prior sibling test existed for either interface. Gate-checked independently: `dart analyze --fatal-infos` clean, 15/15 new tests + 460/460 full suite passing, no regression, scope matched exactly (2 new files in a new `test/services/caption/` directory). Accepted with zero corrections — the work independently ran a genuine mutation test (temporarily broke an assertion, confirmed the suite went red, reverted, confirmed green) to prove the tests actually discriminate, beyond what the brief asked for.
+**Context**: Steps 1-24 and 26 of 29 complete. Remaining: Step 25 (the load-bearing fake-pair harness — next to plan, as a decomposed set of sub-briefs with Opus-level review per the user's standing model-selection guidance) and Steps 27-29 (final verification gates).
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): Code Generation Part 2 (Step 25, part 1 of 3)
+**Timestamp**: 2026-10-09T21:45:00Z
+**User Input**: (continuing the delegation loop, no new instruction since the standing directive)
+**AI Response**: Decomposed Step 25 (the load-bearing fake-pair harness) into three sub-steps and delegated part 1: hand-written `FakeDataChannel`/`FakePeerConnectionHandle`/`FakePeerConnectionFactory` fakes ("wired together in memory" per NFR Requirements Q5, bypassing real SDP/ICE negotiation), plus a sanity test proving the fakes themselves behave correctly (the full join/caption/leave integration test against the real transports is a later sub-step). `FakePeerConnectionFactory` pairs sequential `create()` calls (1st↔2nd, 3rd↔4th), exploiting the real, invariant call order since neither transport's `create()` call carries a peer-identifying parameter.
+
+First attempt timed out without producing output, discovering mid-investigation that `RTCDataChannel`'s real member set (a plain `abstract class`, not an interface class) was larger and different than specified, but running out of its time budget chasing the fix. Verified the real member set directly against `webrtc_interface`'s source and retried with the fix given upfront. The retry's first round again found a real brief defect before writing anything (two callback fields' parameter arity was wrong) — verified and corrected, resumed. The second round implemented both files successfully, and in doing so **independently found a genuine correctness bug in the design itself**: the data channel's "open" transition was scheduled at the same microtask depth as its delivery to the peer, which fires before either side's realistically-timed listener (matching exactly how `WebRtcBroadcastTransport`/`WebRtcViewerTransport` attach their own listeners) exists — the event would be silently dropped, which would have hung the later join-confirmation integration test. Rather than redesign the timing itself (correctly deferred per the brief's own constraint), it adapted its own test to the existing behavior and filed a precise, reproducible open question with a working suggested fix. Verified the fix directly, applied it (nesting the open calls one microtask level deeper than delivery), and strengthened the affected test to assert on the stream directly with realistically-timed listeners rather than the workaround. Gate-checked independently throughout: `dart analyze --fatal-infos` clean, 7/7 new tests + 467/467 full suite passing, no regression, scope matched exactly.
+**Context**: Steps 1-24 and 26 of 29 complete; Step 25 part 1 of 3 now complete. Remaining: Step 25 parts 2-3 (fake `SignalingService`, then the full integration test combining both fakes) and Steps 27-29 (final verification gates).
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): Code Generation Part 2 (Step 25, part 2 of 3)
+**Timestamp**: 2026-10-09T22:45:00Z
+**User Input**: (continuing the delegation loop, no new instruction since the standing directive)
+**AI Response**: Delegated Step 25 part 2: a hand-written in-memory `FakeSignalingService`/`FakeSessionSignalingChannel` fake standing in for the real backend's pub/sub behavior, with no self-echo (a real Realtime broadcast channel never delivers a sender's own message back to itself) — plus a sanity test proving the fake itself behaves correctly. One shared `FakeSignalingService` instance represents "the backend" for an entire test, so both the broadcaster-side and viewer-side code under test can actually reach each other. Clean first-round delegation, no brief defects this time (the contract here was verified against in-repo source rather than an external package, unlike part 1's two rounds of trouble). Correct TDD order (failing test written and confirmed red before the fake existed). Three small, correctly-justified analyzer-lint renames (a private `_Topic` type made public since a public constructor takes one; a lambda replaced with a constructor tear-off; a dartdoc reference fix) — confirmed cosmetic by reading the diff directly. Gate-checked independently: `dart analyze --fatal-infos` clean, 6/6 new tests + 473/473 full suite passing, no regression, scope matched exactly, zero tool errors. Accepted as-is.
+**Context**: Steps 1-24 and 26 of 29 complete; Step 25 parts 1-2 of 3 now complete. Remaining: Step 25 part 3 (the full join/caption/leave integration test combining both fakes against the real `WebRtcBroadcastTransport`/`WebRtcViewerTransport`) and Steps 27-29 (final verification gates).
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): Code Generation Part 2 (Step 25, part 3 of 3 — complete)
+**Timestamp**: 2026-10-10T02:30:00Z
+**User Input**: (continuing the delegation loop, no new instruction since the standing directive)
+**AI Response**: Designed and delegated Step 25's final sub-step: the load-bearing integration test combining both accepted fakes (`FakePeerConnectionFactory`/`FakeSignalingService`) to drive the *real* `WebRtcBroadcastTransport`, `WebRtcViewerTransport`, and `RemoteBroadcastTarget` through a join → caption → leave sequence, confirming Business Rules 1 (ack timeout), 2 (backoff reconnect), 4 (out-of-role message dropped silently), 5 (in-order delivery), 8 (single activity snapshot). Designed specific test mechanics the fakes require: a hand-rolled "silent fake peer" for Rule 1 (the real viewer transport always acks immediately and can't be made not to), a factory-wrapper to reach into the fakes for manual ICE-state simulation (`emitIceState`), and a "bystander" channel exploiting the fakes' shared-topic design for Rule 4.
+
+The implementation produced a full, correctly-structured file matching the design, but all four tests initially failed. Diagnosed and fixed, going well beyond the project's usual "minor fix" scope: (1) a genuine `Zone`/`fakeAsync` interaction bug — `RemoteBroadcastTarget`'s constructor eagerly subscribes to a stream, and constructing it outside the test's `fakeAsync` zone bound that subscription to the real zone, causing a downstream async chain to escape into the real, unfaked microtask queue; fixed by constructing it inside each test instead. (2) Two assertions in the Rule 1 test incorrectly expected the fakes to cascade a peer connection's own `close()` across the link to the paired peer's own object — confirmed via direct inspection that `_teardownViewer` never does this (and the fakes don't simulate real WebRTC's cross-peer ICE teardown), so the assertions were replaced with the test's actual, sufficient proof (the join never confirms). (3) Confirmed via a disposable, deleted-after-use minimal reproduction that `StreamSubscription.cancel()` on a broadcast stream genuinely does not resolve through `fakeAsync`'s intercepted microtask queue in this Dart SDK — a real limitation of the `fake_async` package itself, not a defect anywhere in this project's own code — and rewrote the Rule 2 reconnect test as a plain `async` test with a real ~1.1-second wait to sidestep it, leaving the other three tests correctly under `fakeAsync` since none of them need that specific teardown path to complete mid-test. Gate-checked after every fix: `dart analyze --fatal-infos` clean, 4/4 new tests + 477/477 full suite passing, no regression, scope matched exactly (one file).
+**Context**: Steps 1-24 and 26 of 29 complete; Step 25 (all three parts) now complete. Remaining: Steps 27-29 (final verification gates — `dart analyze`, full-suite confirmation, and a check for stale `LobbyChannel`/`SignalingRole` references).
+
+---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): Code Generation Part 2 (Steps 27-29 — final verification, unit complete)
+**Timestamp**: 2026-10-10T02:45:00Z
+**User Input**: (continuing the delegation loop, no new instruction since the standing directive)
+**AI Response**: Ran the three final verification gates directly (no delegation needed — none of these are generation work). Step 27: `dart analyze --fatal-infos` clean across `zip_core`. Step 28: full suite passing, 477/477 (4 pre-existing skips), zero regressions across the entire unit's work. Step 29: searched the whole `lib/`/`test/` tree for any reintroduced reference to the pre-2026-10-07 `LobbyChannel`/`SignalingRole` design this unit's own Functional Design revision superseded — every `LobbyChannel` match is a historical doc comment explaining its removal, `SignalingRole` has zero matches, and the one bare `channel` field found (`_ViewerSession.channel` in `web_rtc_broadcast_transport.dart`) is a per-viewer-session field consistent with the revised per-viewer-channel design, not a reintroduced single shared channel. All 29 Code Generation plan steps are now complete.
+**Context**: Unit 5 (WebRTC Transport + Remote Output + Capacity)'s Code Generation stage is COMPLETE. The unit is ready for PR against `develop`.
+
+---

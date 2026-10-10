@@ -2,16 +2,22 @@
 
 ## `WebRtcBroadcastTransport` — per-viewer connection lifecycle
 
-Star topology (FR-4.2): one `PeerConnectionHandle` per viewer, created on receiving that
-viewer's `SignalingMessage.JoinRequest` over the session's `SessionSignalingChannel`
-(Unit 3). Sequence per viewer:
+**Revised 2026-10-07** (domain-entities.md's context-shape revision): star topology
+(FR-4.2), one `PeerConnectionHandle` per viewer, created on receiving that viewer's
+`JoinRequest` from `signalingService.joinRequests(broadcastId)` — a Postgres-Changes-
+backed stream (Unit 3.1), not a message arriving over a shared signaling channel (there
+is no such channel). Sequence per viewer:
 
-1. `ViewerAdmission.tryAdmit(peerId)` (business-rules.md). `Full` → send
-   `JoinRejected(JoinRejection.full)`, stop — this viewer never reaches peer-connection
-   setup at all.
+1. On receiving a `JoinRequest`, open `signalingService.sessionChannel(sessionId,
+   peerId)` first (Unit 3.1 business-logic-model.md's own join sequence — the
+   broadcaster always opens this per-viewer channel on a join attempt, since it's now
+   the only way to send either outcome back to a viewer that's already listening on it;
+   there is no separate lobby/reject channel). Then `ViewerAdmission.tryAdmit(peerId)`
+   (business-rules.md). `Full` → send `JoinRejected(JoinRejection.full)` on that
+   per-viewer channel, close it, stop — this viewer never reaches peer-connection setup.
 2. `Admitted` → create a `PeerConnectionHandle` via `PeerConnectionFactory.create`
    (Unit 4's ICE servers), create an ordered+reliable data channel, exchange SDP/ICE
-   through the signaling channel, send `JoinAccepted`.
+   through that same per-viewer channel, send `JoinAccepted`.
 3. **Q1 — join-ack confirmation, not native "open"**: Spike 2.1 found the data
    channel's local "open" event can fire on the broadcaster side before the DCEP
    handshake has actually completed with the remote viewer, so the broadcaster's own
@@ -40,12 +46,18 @@ viewer's `SignalingMessage.JoinRequest` over the session's `SessionSignalingChan
 
 ## `WebRtcViewerTransport` — connection + reconnection
 
-`connect(ViewerTransportContext)`: creates one `PeerConnectionHandle`, sends
-`JoinRequest`, handles the resulting SDP/ICE exchange or a `JoinRejected` (mapped to the
-matching `ConnectFailure` per domain-entities.md). The moment this viewer's own data
-channel reports locally open, it immediately sends a `JoinAck` over that channel — this
-is the signal the broadcaster's Q1 timer is waiting for. This happens before any caption
-traffic is expected and requires no response.
+`connect(ViewerTransportContext)`: **revised 2026-10-07** — generates a fresh `peerId()`
+(Unit 3.1 `business-rules.md` Rule 5: never reused, including across `restart()`),
+opens `signalingService.sessionChannel(sessionId, peerId)` *first* (so it's already
+listening before the broadcaster could possibly respond, closing the race by
+construction — Unit 3.1's own join sequence), then calls
+`signalingService.submitJoinRequest(broadcastId, peerId)` — a one-shot RPC, not a
+message sent over any channel. Creates one `PeerConnectionHandle`, handles the
+resulting SDP/ICE exchange or a `JoinRejected` arriving on that same per-viewer channel
+(mapped to the matching `ConnectFailure` per domain-entities.md). The moment this
+viewer's own data channel reports locally open, it immediately sends a `JoinAck` over
+that channel — this is the signal the broadcaster's Q1 timer is waiting for. This
+happens before any caption traffic is expected and requires no response.
 
 **Q2 — reconnection**: a native ICE `disconnected`/`failed` state on an already-connected
 viewer triggers `ConnectionStatus.Interrupted` and an internal retry loop calling

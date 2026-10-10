@@ -146,15 +146,28 @@ Fixed as parameters to `start()`/`connect()` with inline comments "session chann
 servers, admission" and "session channel, ICE servers" respectively — the actual field
 list is open.
 
-- A. `BroadcastTransportContext { String sessionId, SessionSignalingChannel channel,
-  List<IceServer> iceServers, ViewerAdmission admission }` /
-  `ViewerTransportContext { String sessionId, SessionSignalingChannel channel,
-  List<IceServer> iceServers }` — exactly the four/three things named in the existing
-  inline comments, constructed by the caller (Unit 6's `BroadcastSessionNotifier` /
-  Unit 7's viewer session orchestration) which already has all of them from
-  `SignalingService`/`IceServerProvider` (Units 3–4). **(recommended — a literal,
-  unambiguous reading of the comments already in the fixed interface, nothing invented)**
+- A. (original answer, **superseded 2026-10-07** — see below) `BroadcastTransportContext
+  { String sessionId, SessionSignalingChannel channel, List<IceServer> iceServers,
+  ViewerAdmission admission }` / `ViewerTransportContext { String sessionId,
+  SessionSignalingChannel channel, List<IceServer> iceServers }` — exactly the
+  four/three things named in the existing inline comments, constructed by the caller
+  (Unit 6's `BroadcastSessionNotifier` / Unit 7's viewer session orchestration) which
+  already has all of them from `SignalingService`/`IceServerProvider` (Units 3–4).
 - B. Other (write in)
+
+**Revised 2026-10-07, before this unit's Code Generation began**, against Unit 3.1's
+final signaling design (approved after this answer was written): there is no single
+`SessionSignalingChannel` per session anymore — `JoinRequest` arrives via a
+Postgres-Changes stream, and `SessionSignalingChannel` is opened per-`(sessionId,
+peerId)` pair. Revised answer: `BroadcastTransportContext { String sessionId,
+BroadcastId broadcastId, SignalingService signalingService, List<IceServer>
+iceServers, ViewerAdmission admission }` / `ViewerTransportContext { String sessionId,
+BroadcastId broadcastId, SignalingService signalingService, List<IceServer>
+iceServers }` — both contexts carry the service + id instead of a pre-opened channel,
+and each transport opens its own per-viewer channel(s) internally. See
+`domain-entities.md`'s own revision note for the full reasoning.
+
+[Answer]: A (revised)
 
 [Answer]: A
 

@@ -126,10 +126,13 @@ integration-tagged real-backend test" shape every prior unit has used (Units 2�
   sides together in memory (a fake broadcaster-side handle's `createDataChannel` is
   connected directly to a fake viewer-side handle's `onDataChannel`, bypassing SDP/ICE
   negotiation entirely — they're already "connected" by construction). Likewise
-  `SessionSignalingChannel` gets an in-memory fake pair (mirroring the "both protocol
-  sides are tested together against fakes" language already in this unit's Notes) so a
-  single PBT suite can drive a full broadcaster+viewer join/caption/leave sequence
-  without a network or a real Supabase stack. Real two-device, real-TURN, and real
+  `SessionSignalingChannel` gets an in-memory fake pair per accepted viewer (mirroring
+  the "both protocol sides are tested together against fakes" language already in this
+  unit's Notes), plus a fake `SignalingService` exposing an in-memory `joinRequests`
+  stream and a `submitJoinRequest` that feeds it — matching the context-shape revision
+  in `domain-entities.md` (2026-10-07) — so a single PBT suite can drive a full
+  broadcaster+viewer join/caption/leave sequence without a network or a real Supabase
+  stack. Real two-device, real-TURN, and real
   `flutter_webrtc` platform-channel behavior is **entirely** Unit 9's responsibility —
   this unit has zero test coverage of the actual native WebRTC stack, by necessity, not
   oversight. **(recommended — the only option that's actually possible, given a real

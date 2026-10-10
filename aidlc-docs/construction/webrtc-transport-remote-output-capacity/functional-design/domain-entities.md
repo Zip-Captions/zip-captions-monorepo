@@ -78,18 +78,46 @@ The minimal surface both `WebRtcBroadcastTransport` and `WebRtcViewerTransport` 
 call — each method/stream independently fakeable in a unit test (NFR-7.3), rather than a
 full `flutter_webrtc` `RTCPeerConnection` passthrough.
 
-## BroadcastTransportContext / ViewerTransportContext (fixed at this stage, Q5)
+## BroadcastTransportContext / ViewerTransportContext (fixed at this stage, Q5 —
+**revised 2026-10-07**, before this unit's Code Generation began, against Unit 3.1's
+final signaling design)
 
+The original fixed shape (below, superseded) carried a single `SessionSignalingChannel
+channel` field — written against the pre-Unit-3.1 world, where one shared
+`signaling:{session_id}` channel existed and `JoinRequest` arrived over it directly.
+Unit 3.1 replaced that entirely: there is no single shared channel, `JoinRequest`
+arrives via a Postgres-Changes-backed stream (`SignalingService.joinRequests`), and
+`SessionSignalingChannel` is now opened per-`(sessionId, peerId)` pair, not once per
+session.
+
+```
+BroadcastTransportContext { String sessionId, BroadcastId broadcastId,
+                             SignalingService signalingService,
+                             List<IceServer> iceServers, ViewerAdmission admission }
+ViewerTransportContext   { String sessionId, BroadcastId broadcastId,
+                             SignalingService signalingService,
+                             List<IceServer> iceServers }
+```
+
+Both contexts now carry the `SignalingService` + `BroadcastId` instead of a pre-opened
+channel: `WebRtcBroadcastTransport` calls `signalingService.joinRequests(broadcastId)`
+to learn about joins, then `signalingService.sessionChannel(sessionId, peerId)` per
+accepted viewer (business-logic-model.md); `WebRtcViewerTransport.connect()`/
+`restart()` generates a fresh `peerId()` internally on every call (never supplied via
+context, never reused — matching Unit 3.1 `business-rules.md` Rule 5), calls
+`signalingService.submitJoinRequest(broadcastId, peerId)`, then opens its own
+`sessionChannel(sessionId, peerId)`. Constructed by the caller (`BroadcastSessionNotifier`,
+Unit 6; the viewer-side session orchestrator, Unit 7) from values already available to
+it via `SignalingService`/`BroadcastId` resolution (Unit 3/3.1) and `IceServerProvider`
+(Unit 4) — this unit does not resolve these itself.
+
+*Superseded shape, retained for the audit trail:*
 ```
 BroadcastTransportContext { String sessionId, SessionSignalingChannel channel,
                              List<IceServer> iceServers, ViewerAdmission admission }
 ViewerTransportContext   { String sessionId, SessionSignalingChannel channel,
                              List<IceServer> iceServers }
 ```
-
-Constructed by the caller (`BroadcastSessionNotifier`, Unit 6; the viewer-side session
-orchestrator, Unit 7) from values already available to it via `SignalingService` (Unit
-3) and `IceServerProvider` (Unit 4) — this unit does not resolve these itself.
 
 ## CaptionWireMessage (sealed, fixed shape) / CaptionActivity (enum, fixed)
 

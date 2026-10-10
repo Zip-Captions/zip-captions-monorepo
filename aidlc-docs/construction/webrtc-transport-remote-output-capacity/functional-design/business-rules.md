@@ -32,17 +32,20 @@ implementation must never surface a failure that doesn't map, since FR-7.4's
 "cannot connect, with a specific reason" requires a concrete reason every time.
 
 **Rule 4 — Message-type sender authorization is a transport-layer responsibility (carried
-forward from Unit 3, Business Rule 5).**
-Realtime RLS (Unit 3) establishes channel membership only — "who may publish on
-`signaling:{session_id}` at all" — never which message *type* a given sender may use.
-This unit enforces that: a message received from a peer whose `SignalingRole` doesn't
-match the message's expected origin (e.g. a `JoinAccepted`/`JoinRejected`/
-`BroadcastEnded` received by the broadcaster's own transport, which only a broadcaster
-may originate; a `JoinRequest`/`Leave` received by a viewer's transport, which only a
-viewer may originate) is dropped silently — treated exactly like a
-`SignalingCodec.decode` failure (Unit 3 Rule 4), never thrown or surfaced as a
-connection error. A misbehaving or compromised peer sending an out-of-role message type
-must never be able to affect the receiving side's state.
+forward from Unit 3's Business Rule 5, restated against Unit 3.1's `business-rules.md`
+Rule 7/8).**
+Realtime RLS establishes channel membership only — for the per-viewer channel, "anyone
+who knows this one unguessable `(sessionId, peerId)` pair" — never which message *type*
+a given sender may use. **Revised 2026-10-07**: there is no `SignalingRole` field
+anywhere in the final design (Unit 3.1 removed it entirely) — "role" here just means
+*which transport class is running*, never a value carried on a peer or a message. This
+unit enforces that: a message received by `WebRtcBroadcastTransport` of a type only a
+viewer may originate (`JoinRequest`, `Leave`), or received by `WebRtcViewerTransport`
+of a type only the broadcaster may originate (`JoinAccepted`/`JoinRejected`/
+`BroadcastEnded`), is dropped silently — treated exactly like a `SignalingCodec.decode`
+failure (Unit 3 Rule 4), never thrown or surfaced as a connection error. A misbehaving
+or compromised peer sending an out-of-role message type must never be able to affect
+the receiving side's state.
 
 **Rule 5 — Data channels are created ordered and reliable; this is what makes PBT-03's
 in-order-delivery property true, not an incidental default.**

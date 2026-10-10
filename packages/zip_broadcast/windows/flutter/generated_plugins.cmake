@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   app_links
   desktop_multi_window
   flutter_secure_storage_windows
+  flutter_webrtc
   permission_handler_windows
   record_windows
   speech_to_text_windows
