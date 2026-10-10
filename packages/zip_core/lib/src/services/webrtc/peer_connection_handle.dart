@@ -46,6 +46,14 @@ abstract interface class PeerConnectionHandle {
   /// the broadcaster-created channel arrives here).
   Stream<RTCDataChannel> get onDataChannel;
 
+  /// Fires for each local ICE candidate this connection gathers. **Added
+  /// 2026-10-10** (CodeRabbit PR #31 review) — a completeness gap: the
+  /// SDP offer/answer alone rarely carries every candidate (trickle ICE),
+  /// so without forwarding these, the two sides can fail to find a usable
+  /// candidate pair at all. Callers must forward every event here to the
+  /// remote peer as an `IceCandidate` signaling message.
+  Stream<RTCIceCandidate> get onIceCandidate;
+
   /// Closes this connection and releases its native resources.
   Future<void> close();
 }

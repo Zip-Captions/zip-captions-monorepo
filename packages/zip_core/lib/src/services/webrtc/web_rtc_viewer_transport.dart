@@ -77,11 +77,37 @@ class WebRtcViewerTransport implements ViewerTransport {
     _subs
       ..add(channel.messages.listen(_handleBroadcasterMessage))
       ..add(connection.iceConnectionState.listen(_handleIceState))
-      ..add(connection.onDataChannel.listen(_attachDataChannel));
+      ..add(connection.onDataChannel.listen(_attachDataChannel))
+      ..add(connection.onIceCandidate.listen(_sendLocalIceCandidate));
 
     await context.signalingService.submitJoinRequest(
       context.broadcastId,
       newPeerId,
+    );
+  }
+
+  void _sendLocalIceCandidate(RTCIceCandidate candidate) {
+    final channel = _channel;
+    final peerId = _peerId;
+    if (channel == null || peerId == null) return;
+    final sdpMid = candidate.sdpMid;
+    final sdpMLineIndex = candidate.sdpMLineIndex;
+    final candidateLine = candidate.candidate;
+    // `null` fields signal end-of-candidates (trickle ICE) — nothing to
+    // forward, and `IceCandidate` requires non-null values.
+    if (sdpMid == null || sdpMLineIndex == null || candidateLine == null) {
+      return;
+    }
+    unawaited(
+      channel.send(
+        IceCandidate(
+          fromPeerId: peerId,
+          toPeerId: 'broadcaster',
+          candidate: candidateLine,
+          sdpMid: sdpMid,
+          sdpMLineIndex: sdpMLineIndex,
+        ),
+      ),
     );
   }
 
@@ -163,16 +189,20 @@ class WebRtcViewerTransport implements ViewerTransport {
         _retryTimer?.cancel();
         _retryIndex = 0;
         _statusController.add(const Connected(ConnectionType.p2pDirect));
+      // `disconnected` and `failed` are treated identically (CodeRabbit PR
+      // #31 review): `business-rules.md` Rule 2 says `Failed` is reachable
+      // *only* via `disconnect()` or the broadcast ending — "never via
+      // retry-count exhaustion alone." The previous `_retryIndex > 0`
+      // branch violated that by emitting `Failed(IceFailed())` on the
+      // very first retry's own ICE failure, breaking the 1s/2s/4s/8s
+      // schedule after a single attempt. `IceFailed` (business-rules.md
+      // Rule 3) is therefore not reachable from this retry loop at all —
+      // retries continue indefinitely with capped backoff, exactly as
+      // Rule 2 requires.
       case RTCIceConnectionState.RTCIceConnectionStateDisconnected:
+      case RTCIceConnectionState.RTCIceConnectionStateFailed:
         _statusController.add(const Interrupted());
         _scheduleRetry();
-      case RTCIceConnectionState.RTCIceConnectionStateFailed:
-        if (_retryIndex > 0) {
-          _failConnection(const IceFailed());
-        } else {
-          _statusController.add(const Interrupted());
-          _scheduleRetry();
-        }
       case RTCIceConnectionState.RTCIceConnectionStateClosed:
       case RTCIceConnectionState.RTCIceConnectionStateChecking:
       case RTCIceConnectionState.RTCIceConnectionStateNew:
@@ -197,6 +227,13 @@ class WebRtcViewerTransport implements ViewerTransport {
   void _failConnection(ConnectFailure failure) {
     _retryTimer?.cancel();
     _statusController.add(Failed(failure));
+    // Tear down the live connection/channel/subscriptions (CodeRabbit PR
+    // #31 review): otherwise, e.g. after `JoinRejected(full)`, the
+    // signaling channel stays subscribed and a later `SdpOffer`/ICE event
+    // could still mutate state or start a new retry through
+    // `_handleIceState`. Cancelling `_subs` here removes exactly that
+    // possibility — there's nothing left listening once this completes.
+    unawaited(_teardownConnectionState());
   }
 
   @override
@@ -223,8 +260,11 @@ class WebRtcViewerTransport implements ViewerTransport {
     }
     _subs.clear();
     await _dataChannel?.close();
-    await _connection?.close();
-    await _channel?.close();
+    try {
+      await _connection?.close();
+    } finally {
+      await _channel?.close();
+    }
     _dataChannel = null;
     _connection = null;
     _channel = null;

@@ -67,6 +67,17 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
     final context = _context;
     if (context == null) return;
 
+    // A duplicate `JoinRequest` for a peer we already have a live session
+    // for (CodeRabbit PR #31 review): tear the old one down *before*
+    // `tryAdmit`, so `ViewerAdmission` can reclaim the released
+    // reservation for the reconnecting peer rather than leaving the
+    // replacement session marked as a reconnect reservation that can
+    // later expire out from under it.
+    final existing = _sessions[peerId];
+    if (existing != null) {
+      _teardownViewer(peerId, confirmedBefore: existing.connectedAt != null);
+    }
+
     final channel = context.signalingService.sessionChannel(
       context.sessionId,
       peerId,
@@ -85,49 +96,96 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
       return;
     }
 
-    final connection = await _peerConnectionFactory.create(context.iceServers);
-    final session = _ViewerSession(channel: channel, connection: connection);
-    _sessions[peerId] = session;
+    try {
+      final connection = await _peerConnectionFactory.create(
+        context.iceServers,
+      );
+      final session = _ViewerSession(channel: channel, connection: connection);
+      _sessions[peerId] = session;
 
-    session.subs
-      ..add(
-        channel.messages.listen(
-          (message) => _handleViewerMessage(peerId, message),
-        ),
-      )
-      ..add(
-        connection.iceConnectionState.listen(
-          (state) => _handleIceState(peerId, state),
+      session.subs
+        ..add(
+          channel.messages.listen(
+            (message) => _handleViewerMessage(peerId, message),
+          ),
+        )
+        ..add(
+          connection.iceConnectionState.listen(
+            (state) => _handleIceState(peerId, state),
+          ),
+        )
+        ..add(
+          connection.onIceCandidate.listen(
+            (candidate) => _sendLocalIceCandidate(peerId, candidate),
+          ),
+        );
+
+      final dataChannel = await connection.createDataChannel('captions');
+      session.dataChannel = dataChannel;
+      session.subs
+        ..add(
+          dataChannel.stateChangeStream.listen((state) {
+            if (state == RTCDataChannelState.RTCDataChannelOpen) {
+              _startAckTimer(peerId);
+            }
+          }),
+        )
+        ..add(
+          dataChannel.messageStream.listen((data) {
+            if (!data.isBinary && data.text == joinAckSentinel) {
+              _confirmJoin(peerId);
+            }
+          }),
+        );
+
+      await channel.send(const JoinAccepted(toPeerId: _broadcasterPeerId));
+
+      final offer = await connection.createOffer();
+      await connection.setLocalDescription(offer);
+      await channel.send(
+        SdpOffer(
+          fromPeerId: _broadcasterPeerId,
+          toPeerId: peerId,
+          sdp: offer.sdp ?? '',
         ),
       );
+    } on Object {
+      // Join setup failed partway through (CodeRabbit PR #31 review): the
+      // admission reservation `tryAdmit` already took must not be left
+      // held indefinitely. If a session was installed before the
+      // failure, `_teardownViewer` releases it and cleans up whatever
+      // was already wired; otherwise release the reservation and close
+      // the channel directly, since there's nothing else to tear down.
+      if (_sessions.containsKey(peerId)) {
+        _teardownViewer(peerId, confirmedBefore: false);
+      } else {
+        context.admission.release(peerId);
+        unawaited(channel.close());
+      }
+      rethrow;
+    }
+  }
 
-    final dataChannel = await connection.createDataChannel('captions');
-    session.dataChannel = dataChannel;
-    session.subs
-      ..add(
-        dataChannel.stateChangeStream.listen((state) {
-          if (state == RTCDataChannelState.RTCDataChannelOpen) {
-            _startAckTimer(peerId);
-          }
-        }),
-      )
-      ..add(
-        dataChannel.messageStream.listen((data) {
-          if (!data.isBinary && data.text == joinAckSentinel) {
-            _confirmJoin(peerId);
-          }
-        }),
-      );
-
-    await channel.send(const JoinAccepted(toPeerId: _broadcasterPeerId));
-
-    final offer = await connection.createOffer();
-    await connection.setLocalDescription(offer);
-    await channel.send(
-      SdpOffer(
-        fromPeerId: _broadcasterPeerId,
-        toPeerId: peerId,
-        sdp: offer.sdp ?? '',
+  void _sendLocalIceCandidate(String peerId, RTCIceCandidate candidate) {
+    final session = _sessions[peerId];
+    if (session == null) return;
+    final sdpMid = candidate.sdpMid;
+    final sdpMLineIndex = candidate.sdpMLineIndex;
+    final candidateLine = candidate.candidate;
+    // `null` fields signal end-of-candidates (trickle ICE) — nothing to
+    // forward, and `IceCandidate` requires non-null values.
+    if (sdpMid == null || sdpMLineIndex == null || candidateLine == null) {
+      return;
+    }
+    unawaited(
+      session.channel.send(
+        IceCandidate(
+          fromPeerId: _broadcasterPeerId,
+          toPeerId: peerId,
+          candidate: candidateLine,
+          sdpMid: sdpMid,
+          sdpMLineIndex: sdpMLineIndex,
+        ),
       ),
     );
   }
@@ -207,6 +265,7 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
   void _teardownViewer(String peerId, {required bool confirmedBefore}) {
     final session = _sessions.remove(peerId);
     if (session == null) return;
+    session.ackTimer?.cancel();
     _context?.admission.release(peerId);
     for (final sub in session.subs) {
       unawaited(sub.cancel());
@@ -269,8 +328,11 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
   @override
   Future<void> stop() async {
     await _joinRequestsSub?.cancel();
-    for (final peerId in _sessions.keys.toList()) {
-      _teardownViewer(peerId, confirmedBefore: true);
+    for (final entry in _sessions.entries.toList()) {
+      _teardownViewer(
+        entry.key,
+        confirmedBefore: entry.value.connectedAt != null,
+      );
     }
     await _viewersController.close();
     await _viewerJoinedController.close();

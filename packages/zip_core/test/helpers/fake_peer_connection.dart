@@ -127,6 +127,8 @@ class FakePeerConnectionHandle implements PeerConnectionHandle {
 
   final _iceController = StreamController<RTCIceConnectionState>.broadcast();
   final _dataChannelController = StreamController<RTCDataChannel>.broadcast();
+  final _iceCandidateController =
+      StreamController<RTCIceCandidate>.broadcast();
 
   @override
   Future<RTCDataChannel> createDataChannel(String label) async {
@@ -171,12 +173,20 @@ class FakePeerConnectionHandle implements PeerConnectionHandle {
   @override
   Stream<RTCDataChannel> get onDataChannel => _dataChannelController.stream;
 
+  /// Never fires — the fakes bypass real SDP/ICE negotiation entirely
+  /// (NFR Requirements Q5: "already connected by construction"), so there
+  /// are no local candidates to gather. Present only to satisfy
+  /// `implements PeerConnectionHandle`.
+  @override
+  Stream<RTCIceCandidate> get onIceCandidate => _iceCandidateController.stream;
+
   /// Lets a test simulate an ICE state transition directly — there is no
   /// real ICE negotiation to derive this from.
   void emitIceState(RTCIceConnectionState state) => _iceController.add(state);
 
   @override
   Future<void> close() async {
+    await _iceCandidateController.close();
     await _iceController.close();
     await _dataChannelController.close();
   }

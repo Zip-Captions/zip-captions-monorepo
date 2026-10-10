@@ -2266,3 +2266,24 @@ The implementation produced a full, correctly-structured file matching the desig
 **Context**: Unit 5 (WebRTC Transport + Remote Output + Capacity)'s Code Generation stage is COMPLETE. PR #31 opened against `develop`.
 
 ---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): PR #31 CodeRabbit review addressed
+**Timestamp**: 2026-10-10T04:00:00Z
+**User Input**: "Check the PR for feedback from coderabbit. Address all the requested changes, commit and push the fixes, and respond to the open comment threads, but do not trigger another code review from coderabbit - we are rate limited to one review per hour."
+**AI Response**: CodeRabbit left 9 actionable findings (`CHANGES_REQUESTED`), all genuine, all fixed directly in `zip_core`:
+1. `PeerConnectionFactory.close()` leaked its stream controllers if the native `close()` threw — wrapped in `try`/`finally`.
+2. `_handleJoinRequest` had no error handling after `tryAdmit` reserved a slot — a failure partway through join setup left the admission reservation held forever. Added a `try`/`on Object`/`rethrow` that releases the reservation (via `_teardownViewer` if a session was installed, or `admission.release` + closing the channel directly otherwise).
+3. A duplicate `JoinRequest` for an already-tracked `peerId` replaced the session without tearing down the old one or cancelling its ack timer — the stale timer could later fire and tear down the *replacement*. Fixed by tearing down any existing session before `tryAdmit`, and added `session.ackTimer?.cancel()` to `_teardownViewer` itself.
+4. `stop()` passed `confirmedBefore: true` for every session regardless of ack-confirmation, so never-joined viewers wrongly emitted `viewerLeft` without ever having emitted `viewerJoined`. Fixed to use `session.connectedAt != null`.
+5. **Neither transport forwarded its own locally-generated ICE candidates to the remote peer** — only inbound candidates were ever applied. Added `PeerConnectionHandle.onIceCandidate` (a new stream, implemented in both the real `_WebRtcPeerConnectionHandle` and the test fake `FakePeerConnectionHandle`, which never fires since the fakes bypass real negotiation entirely) and wired both transports to forward every local candidate as an `IceCandidate` signaling message, skipping the null-valued end-of-candidates marker.
+6. The viewer's ICE-`Failed` handling used `_retryIndex > 0` as a terminal test, which emitted `Failed(IceFailed())` on the very first retry's own failure — directly violating `business-rules.md` Rule 2's "indefinite retries ... never via retry-count exhaustion alone." Fixed by collapsing `Failed`/`Disconnected` into identical always-retry handling, per the rule's own literal wording; this makes `IceFailed` currently unreachable from this path, noted in a comment rather than silently left unexplained.
+7. `_failConnection` never tore down the live connection/channel/subscriptions, so a signaling message or ICE event arriving after a terminal failure (e.g. `JoinRejected(full)`) could still mutate state. Added `unawaited(_teardownConnectionState())`.
+8. `_teardownConnectionState` could skip closing the signaling channel if the peer connection's own `close()` threw — wrapped in `try`/`finally`, mirroring fix 1.
+9. A `pubspec.yaml` comment claimed `flutter_webrtc` was "pinned to a specific version," but `^1.6.2+hotfix.4` is a caret range — corrected the comment (confirmed `supabase_flutter`'s own `^2.17.2` is the project's actual, pre-existing convention for this kind of dependency, not a true pin).
+
+Added 3 regression tests for findings 3, 4, and 6 — the three that changed *observable contract behavior* (the resource-cleanup fixes and the new ICE-forwarding stream are harder to test meaningfully without fault injection, and were left to the fix itself plus `dart analyze`). Confirmed all three bugs were real gaps: the full 477-test suite passed both before and after each fix, proving none of the existing tests exercised these paths. Two of the three new tests needed the same `fakeAsync`→plain-`async` workaround already established for the Rule 2 reconnect test (`StreamSubscription.cancel()` not resolving through `fakeAsync`'s queue), since they go through `restart()`/`stop()`'s own awaited cancellations.
+
+Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packages, 480/480 `zip_core` tests passing (477 existing + 3 new), zero regressions. Committed and pushed to `feature/webrtc-transport-remote-output-capacity`. Replied inline on all 9 CodeRabbit review threads describing the fix; did not request or trigger a new CodeRabbit review (rate-limited to one per hour, per explicit instruction).
+**Context**: PR #31's CodeRabbit review addressed. Awaiting CI and human review.
+
+---

@@ -431,4 +431,190 @@ void main() {
       expect(statuses.last, const Connected(ConnectionType.p2pDirect));
     });
   });
+
+  // Regression coverage added 2026-10-10 for 3 CodeRabbit PR #31 findings
+  // that none of the tests above happened to exercise (all 477 existing
+  // tests still passed with the bugs in place).
+
+  group(
+    'Rule 2: an immediate ICE failure (no prior retry) still retries, '
+    'never fails',
+    () {
+      // Plain `async`, not `fakeAsync` — same reason as the Rule 2
+      // reconnect test above: this goes through `restart()`'s own
+      // `_teardownConnectionState()`, which awaits cancelling broadcast
+      // `StreamSubscription`s that don't resolve through `fakeAsync`'s
+      // intercepted queue in this Dart SDK.
+      test(
+        'emitting Failed directly behaves exactly like Disconnected',
+        () async {
+          remoteBroadcastTarget = RemoteBroadcastTarget(broadcastTransport);
+          final statuses = <ConnectionStatus>[];
+          final statusSub = viewerTransport.status.listen(statuses.add);
+          addTearDown(statusSub.cancel);
+
+          await broadcastTransport.start(broadcastContext());
+          remoteBroadcastTarget.onCaptionEvent(
+            const SessionStateEvent(
+              RecordingState.recording(sessionId: 'rec-1'),
+            ),
+          );
+          await viewerTransport.connect(viewerContext());
+          await pumpEventQueue();
+
+          // ICE reports `failed` directly — no prior `disconnected` event
+          // ever set `_retryIndex` above 0. The old `_retryIndex > 0`
+          // terminal test read this as "already mid-retry" and jumped
+          // straight to `Failed(IceFailed())`, breaking Rule 2's
+          // "indefinite retries ... never via retry-count exhaustion
+          // alone" on the very first ICE failure.
+          factory.handles[0].emitIceState(
+            RTCIceConnectionState.RTCIceConnectionStateFailed,
+          );
+          await pumpEventQueue();
+          expect(statuses.last, const Interrupted());
+          expect(statuses, isNot(contains(isA<Failed>())));
+
+          // The backoff retry actually runs, exactly as Disconnected's
+          // would (Test 4 above).
+          await Future<void>.delayed(
+            const Duration(seconds: 1, milliseconds: 100),
+          );
+          await pumpEventQueue();
+          expect(factory.handles.length, 4);
+        },
+      );
+    },
+  );
+
+  group(
+    'a duplicate JoinRequest for an already-tracked peerId tears down '
+    'the stale session',
+    () {
+      test(
+        "cancels the stale session's ack timer so the replacement isn't "
+        'incorrectly torn down once it would have fired',
+        () {
+          fakeAsync((async) {
+            unawaited(broadcastTransport.start(broadcastContext()));
+            async.flushMicrotasks();
+            const fakePeerId = 'reconnecting-viewer';
+
+            // First join attempt: data channel opens, deliberately never
+            // acked — its ack timer is left running.
+            FakePeerConnectionHandle? handle1;
+            unawaited(
+              factory
+                  .create(const [])
+                  .then(
+                    (h) => handle1 = h as FakePeerConnectionHandle,
+                  ),
+            );
+            async.flushMicrotasks();
+            RTCDataChannel? delivered1;
+            handle1!.onDataChannel.listen((c) => delivered1 = c);
+            unawaited(signaling.submitJoinRequest(broadcastId, fakePeerId));
+            async.flushMicrotasks();
+            expect(delivered1, isNotNull);
+            expect(
+              delivered1!.state,
+              RTCDataChannelState.RTCDataChannelOpen,
+            );
+
+            // 3s in — well inside the first attempt's 5s ack window.
+            async.elapse(const Duration(seconds: 3));
+
+            // A second `JoinRequest` for the *same* peerId (e.g. a
+            // reconnecting viewer whose first attempt stalled before
+            // acking). This must tear down the first session — including
+            // cancelling its now-orphaned ack timer — before admitting
+            // the replacement.
+            FakePeerConnectionHandle? handle2;
+            unawaited(
+              factory
+                  .create(const [])
+                  .then(
+                    (h) => handle2 = h as FakePeerConnectionHandle,
+                  ),
+            );
+            async.flushMicrotasks();
+            RTCDataChannel? delivered2;
+            handle2!.onDataChannel.listen((c) => delivered2 = c);
+            unawaited(signaling.submitJoinRequest(broadcastId, fakePeerId));
+            async.flushMicrotasks();
+            expect(delivered2, isNotNull);
+            expect(
+              delivered2!.state,
+              RTCDataChannelState.RTCDataChannelOpen,
+            );
+
+            final joined = <String>[];
+            final joinedSub = broadcastTransport.viewerJoined.listen(
+              joined.add,
+            );
+            addTearDown(joinedSub.cancel);
+            final left = <String>[];
+            final leftSub = broadcastTransport.viewerLeft.listen(left.add);
+            addTearDown(leftSub.cancel);
+
+            // Ack the replacement session right away.
+            unawaited(
+              delivered2!.send(RTCDataChannelMessage(joinAckSentinel)),
+            );
+            async.flushMicrotasks();
+            expect(joined, [fakePeerId]);
+
+            // Advance to exactly 5s after the *first* attempt's own
+            // data-channel-open — when its now-stale ack timer would
+            // have fired, had it not been cancelled. An uncancelled
+            // timer would tear down whatever is currently tracked for
+            // this peerId (the confirmed replacement session),
+            // incorrectly emitting `viewerLeft` for a viewer that is
+            // very much still connected.
+            async.elapse(const Duration(seconds: 2));
+            expect(left, isEmpty);
+          });
+        },
+      );
+    },
+  );
+
+  group(
+    "stop() doesn't emit viewerLeft for a viewer that never joined",
+    () {
+      // Plain `async`: `stop()` itself awaits cancelling a broadcast
+      // `StreamSubscription` (`_joinRequestsSub`), which doesn't resolve
+      // through `fakeAsync`'s intercepted queue — same limitation as the
+      // other plain-`async` tests above.
+      test(
+        'a silent, never-acked viewer is torn down silently by stop()',
+        () async {
+          await broadcastTransport.start(broadcastContext());
+          const fakePeerId = 'silent-viewer-stop';
+
+          final handle =
+              await factory.create(const []) as FakePeerConnectionHandle;
+          RTCDataChannel? delivered;
+          handle.onDataChannel.listen((c) => delivered = c);
+          await signaling.submitJoinRequest(broadcastId, fakePeerId);
+          await pumpEventQueue();
+          expect(delivered, isNotNull);
+          expect(delivered!.state, RTCDataChannelState.RTCDataChannelOpen);
+          // Deliberately never ack — this viewer never reaches `joined`.
+
+          final left = <String>[];
+          final leftSub = broadcastTransport.viewerLeft.listen(left.add);
+          addTearDown(leftSub.cancel);
+
+          // `stop()` used to pass `confirmedBefore: true` for every
+          // tracked session regardless of whether it was ever
+          // ack-confirmed, so a never-joined viewer would wrongly emit
+          // `viewerLeft` without ever having emitted `viewerJoined` —
+          // breaking the `BroadcastTransport` join/leave contract.
+          await broadcastTransport.stop();
+          expect(left, isEmpty);
+        },
+      );
+    },
+  );
 }

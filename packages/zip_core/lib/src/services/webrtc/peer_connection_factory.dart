@@ -42,12 +42,15 @@ class _WebRtcPeerConnectionHandle implements PeerConnectionHandle {
   _WebRtcPeerConnectionHandle(this._connection) {
     _connection.onIceConnectionState = _iceStateController.add;
     _connection.onDataChannel = _dataChannelController.add;
+    _connection.onIceCandidate = _iceCandidateController.add;
   }
 
   final RTCPeerConnection _connection;
   final _iceStateController =
       StreamController<RTCIceConnectionState>.broadcast();
   final _dataChannelController = StreamController<RTCDataChannel>.broadcast();
+  final _iceCandidateController =
+      StreamController<RTCIceCandidate>.broadcast();
 
   @override
   Future<RTCDataChannel> createDataChannel(String label) =>
@@ -79,9 +82,16 @@ class _WebRtcPeerConnectionHandle implements PeerConnectionHandle {
   Stream<RTCDataChannel> get onDataChannel => _dataChannelController.stream;
 
   @override
+  Stream<RTCIceCandidate> get onIceCandidate => _iceCandidateController.stream;
+
+  @override
   Future<void> close() async {
-    await _connection.close();
-    await _iceStateController.close();
-    await _dataChannelController.close();
+    try {
+      await _connection.close();
+    } finally {
+      await _iceStateController.close();
+      await _dataChannelController.close();
+      await _iceCandidateController.close();
+    }
   }
 }
