@@ -2287,3 +2287,19 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 **Context**: PR #31's CodeRabbit review addressed. Awaiting CI and human review.
 
 ---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): PR #31 CodeRabbit review round 2 addressed
+**Timestamp**: 2026-10-10T18:30:00Z
+**User Input**: "Another round of feedback, check the PR for comments and actions, take appropriate remediation steps, commit and push, and reply to the comments and resolve open threads as they're addressed."
+**AI Response**: A second CodeRabbit review (triggered automatically by the prior push, not by anything explicitly requested) found 2 new actionable findings, both genuine:
+1. **A deeper race than round 1's fix caught**: two overlapping `JoinRequest`s for the same peerId can both start before either installs a session (round 1's fix only handled the case where the first had *already* installed its session by the time the second arrived). Fixed with a per-attempt identity token (`_pendingAttempts`, keyed by peerId): claimed synchronously before the first `await`, checked after every subsequent `await` in `_handleJoinRequest` (`channel.open()`, `create()`, `createDataChannel()`, both `channel.send()` calls, `createOffer()`, `setLocalDescription()`). A superseded attempt releases/closes only what it itself reserved or created, never the newer attempt's session.
+2. **My own oversight**: two of the three regression tests added in round 1 (the duplicate-join test and the `stop()` test) never constructed `remoteBroadcastTarget`, even though the shared `tearDown()` disposes it unconditionally — exactly the bug the *original* Rule 1 test had already worked around with a one-line fix and comment. Both would throw `LateInitializationError` if run in isolation (confirmed by reproducing with `--plain-name` before fixing). Applied the same fix already used elsewhere in the file.
+
+Added a fourth regression test for the new race-condition fix specifically — two `JoinRequest`s submitted back-to-back with no flush in between, so both `_handleJoinRequest` calls start before either installs a session. Writing this test surfaced a real subtlety in the *fakes'* own design, not a production bug: `FakePeerConnectionFactory`'s sequential odd/even call-pairing assumes one viewer-side `create()` call followed by one broadcaster-side one; without a real viewer-side call present, the test's two broadcaster-side attempts paired *with each other*, and the superseded attempt's own cleanup (closing its own connection) collided with the survivor's delivery target. Fixed by having the test include the one real viewer-side `create()` call the actual system would always have in this scenario, and by watching every created connection generically (via a small `onCreated` hook added to the test's own factory wrapper) rather than predicting in advance which attempt would "win."
+
+Verified both round-1 test fixes actually address what CodeRabbit described by running each with `--plain-name` in isolation before and after.
+
+Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packages, 481/481 `zip_core` tests passing (480 + 1 new), zero regressions. Committed and pushed. Replied to both new comment threads describing the fixes, and resolved all addressed review threads (round 1's 9 plus round 2's 2). Did not request or trigger a new CodeRabbit review.
+**Context**: PR #31's CodeRabbit review round 2 addressed. Awaiting CI and human review.
+
+---

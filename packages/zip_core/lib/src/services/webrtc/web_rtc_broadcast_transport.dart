@@ -47,6 +47,13 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
 
   final PeerConnectionFactory _peerConnectionFactory;
   final _sessions = <String, _ViewerSession>{};
+  // Identifies which `_handleJoinRequest` call currently "owns" a given
+  // peerId's in-flight setup (CodeRabbit PR #31 review, round 2): two
+  // overlapping `JoinRequest`s for the same peerId can otherwise race
+  // across any of the several `await`s in `_handleJoinRequest`, letting
+  // a stale attempt tear down a newer one's session, or install its own
+  // session/send a stale offer after already being superseded.
+  final _pendingAttempts = <String, Object>{};
   BroadcastTransportContext? _context;
   StreamSubscription<JoinRequest>? _joinRequestsSub;
 
@@ -67,22 +74,34 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
     final context = _context;
     if (context == null) return;
 
-    // A duplicate `JoinRequest` for a peer we already have a live session
-    // for (CodeRabbit PR #31 review): tear the old one down *before*
-    // `tryAdmit`, so `ViewerAdmission` can reclaim the released
-    // reservation for the reconnecting peer rather than leaving the
-    // replacement session marked as a reconnect reservation that can
-    // later expire out from under it.
+    // A duplicate/overlapping `JoinRequest` for the same peerId
+    // (CodeRabbit PR #31 review, rounds 1 and 2): tear down any already-
+    // *installed* session before `tryAdmit`, so `ViewerAdmission` can
+    // reclaim the released reservation rather than leaving the
+    // replacement marked as a reconnect reservation that can later
+    // expire out from under it. Then claim this call's own identity —
+    // `isCurrent()` is checked after every subsequent `await` so a
+    // superseded attempt (one a *later* overlapping `JoinRequest` has
+    // already claimed `peerId` out from under) stops immediately rather
+    // than installing a session, sending a stale offer, or tearing down
+    // the newer attempt's own session.
     final existing = _sessions[peerId];
     if (existing != null) {
       _teardownViewer(peerId, confirmedBefore: existing.connectedAt != null);
     }
+    final attemptId = Object();
+    _pendingAttempts[peerId] = attemptId;
+    bool isCurrent() => _pendingAttempts[peerId] == attemptId;
 
     final channel = context.signalingService.sessionChannel(
       context.sessionId,
       peerId,
     );
     await channel.open();
+    if (!isCurrent()) {
+      unawaited(channel.close());
+      return;
+    }
 
     final decision = context.admission.tryAdmit(peerId);
     if (decision is Full) {
@@ -93,6 +112,7 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
         ),
       );
       await channel.close();
+      if (isCurrent()) _pendingAttempts.remove(peerId);
       return;
     }
 
@@ -100,6 +120,13 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
       final connection = await _peerConnectionFactory.create(
         context.iceServers,
       );
+      if (!isCurrent()) {
+        context.admission.release(peerId);
+        unawaited(connection.close());
+        unawaited(channel.close());
+        return;
+      }
+
       final session = _ViewerSession(channel: channel, connection: connection);
       _sessions[peerId] = session;
 
@@ -121,6 +148,10 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
         );
 
       final dataChannel = await connection.createDataChannel('captions');
+      if (!isCurrent()) {
+        _teardownViewer(peerId, confirmedBefore: false);
+        return;
+      }
       session.dataChannel = dataChannel;
       session.subs
         ..add(
@@ -139,9 +170,21 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
         );
 
       await channel.send(const JoinAccepted(toPeerId: _broadcasterPeerId));
+      if (!isCurrent()) {
+        _teardownViewer(peerId, confirmedBefore: false);
+        return;
+      }
 
       final offer = await connection.createOffer();
+      if (!isCurrent()) {
+        _teardownViewer(peerId, confirmedBefore: false);
+        return;
+      }
       await connection.setLocalDescription(offer);
+      if (!isCurrent()) {
+        _teardownViewer(peerId, confirmedBefore: false);
+        return;
+      }
       await channel.send(
         SdpOffer(
           fromPeerId: _broadcasterPeerId,
@@ -152,17 +195,22 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
     } on Object {
       // Join setup failed partway through (CodeRabbit PR #31 review): the
       // admission reservation `tryAdmit` already took must not be left
-      // held indefinitely. If a session was installed before the
-      // failure, `_teardownViewer` releases it and cleans up whatever
-      // was already wired; otherwise release the reservation and close
-      // the channel directly, since there's nothing else to tear down.
-      if (_sessions.containsKey(peerId)) {
-        _teardownViewer(peerId, confirmedBefore: false);
-      } else {
-        context.admission.release(peerId);
-        unawaited(channel.close());
+      // held indefinitely. Only clean up if this attempt is still
+      // current — if it was already superseded, the resources it
+      // reserved/installed have already been handled by the `!isCurrent()`
+      // branches above, and touching `_sessions[peerId]` here would tear
+      // down the *newer* attempt's session instead.
+      if (isCurrent()) {
+        if (_sessions.containsKey(peerId)) {
+          _teardownViewer(peerId, confirmedBefore: false);
+        } else {
+          context.admission.release(peerId);
+          unawaited(channel.close());
+        }
       }
       rethrow;
+    } finally {
+      if (isCurrent()) _pendingAttempts.remove(peerId);
     }
   }
 

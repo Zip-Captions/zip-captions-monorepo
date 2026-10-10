@@ -53,10 +53,17 @@ class _TrackingPeerConnectionFactory implements PeerConnectionFactory {
   final FakePeerConnectionFactory _inner;
   final handles = <FakePeerConnectionHandle>[];
 
+  /// Called with every handle as it's created — lets a test observe each
+  /// one (e.g. its `peer`'s `onDataChannel`) without having to predict in
+  /// advance which of several racing attempts' call will end up paired
+  /// with which.
+  void Function(FakePeerConnectionHandle handle)? onCreated;
+
   @override
   Future<PeerConnectionHandle> create(List<IceServer> iceServers) async {
     final handle = await _inner.create(iceServers) as FakePeerConnectionHandle;
     handles.add(handle);
+    onCreated?.call(handle);
     return handle;
   }
 }
@@ -496,6 +503,11 @@ void main() {
         'incorrectly torn down once it would have fired',
         () {
           fakeAsync((async) {
+            // Not used by this test, but `tearDown` disposes it
+            // unconditionally — must be assigned here, not relied on
+            // from a preceding test, so this test also passes run in
+            // isolation (CodeRabbit PR #31 review, round 2).
+            remoteBroadcastTarget = RemoteBroadcastTarget(broadcastTransport);
             unawaited(broadcastTransport.start(broadcastContext()));
             async.flushMicrotasks();
             const fakePeerId = 'reconnecting-viewer';
@@ -580,6 +592,86 @@ void main() {
   );
 
   group(
+    'two JoinRequests for the same peerId overlapping before either '
+    'installs a session',
+    () {
+      test(
+        "only one attempt's join actually completes; the superseded one "
+        'releases cleanly, however far it got',
+        () {
+          fakeAsync((async) {
+            remoteBroadcastTarget = RemoteBroadcastTarget(broadcastTransport);
+            unawaited(broadcastTransport.start(broadcastContext()));
+            async.flushMicrotasks();
+            const fakePeerId = 'racing-viewer';
+
+            // Watch every peer connection as it's created, from *either*
+            // racing attempt — not just one predicted in advance. The
+            // identity guard is checked after `create()` too, not only
+            // after `channel.open()`, so the superseded attempt may
+            // still consume one pairing slot (creating a connection)
+            // before discovering it's stale and releasing/closing it;
+            // which attempt reaches which checkpoint first isn't
+            // something this test should have to predict exactly.
+            final allDelivered = <RTCDataChannel>[];
+            factory.onCreated = (handle) =>
+                handle.peer.onDataChannel.listen(allDelivered.add);
+
+            // A real viewer-side peer connection, matching the actual
+            // system's call order: exactly one viewer submits (possibly
+            // duplicate) `JoinRequest`s, so there is exactly one
+            // viewer-side `create()` call before any broadcaster-side
+            // one. Without this, the two *broadcaster-side* attempts
+            // below would end up paired with *each other* instead of
+            // with a viewer — an artifact of the fake's simplified
+            // sequential-pairing scheme, not representative of the real
+            // race this test exists to cover.
+            unawaited(factory.create(const []));
+            async.flushMicrotasks();
+
+            // Two `JoinRequest`s for the same peerId, submitted
+            // back-to-back with *no* flush between them, so both
+            // `_handleJoinRequest` calls start before either has
+            // installed a session. Without the per-attempt identity
+            // guard, this could install two sessions, or let the first
+            // attempt's late continuation corrupt the second's.
+            unawaited(signaling.submitJoinRequest(broadcastId, fakePeerId));
+            unawaited(signaling.submitJoinRequest(broadcastId, fakePeerId));
+            async.flushMicrotasks();
+
+            // Exactly one attempt ever gets far enough to open a data
+            // channel — the real, observable proof that only one
+            // session is actually live, regardless of how many
+            // connections were created and discarded along the way.
+            expect(allDelivered, hasLength(1));
+            expect(
+              allDelivered.single.state,
+              RTCDataChannelState.RTCDataChannelOpen,
+            );
+
+            final joined = <String>[];
+            final joinedSub = broadcastTransport.viewerJoined.listen(
+              joined.add,
+            );
+            addTearDown(joinedSub.cancel);
+            unawaited(
+              allDelivered.single.send(
+                RTCDataChannelMessage(joinAckSentinel),
+              ),
+            );
+            async.flushMicrotasks();
+            expect(joined, [fakePeerId]);
+
+            // And the superseded attempt didn't leak its admission
+            // reservation — exactly one reservation is held overall.
+            expect(admission.count, 1);
+          });
+        },
+      );
+    },
+  );
+
+  group(
     "stop() doesn't emit viewerLeft for a viewer that never joined",
     () {
       // Plain `async`: `stop()` itself awaits cancelling a broadcast
@@ -589,6 +681,11 @@ void main() {
       test(
         'a silent, never-acked viewer is torn down silently by stop()',
         () async {
+          // Not used by this test, but `tearDown` disposes it
+          // unconditionally — must be assigned here, not relied on from
+          // a preceding test, so this test also passes run in isolation
+          // (CodeRabbit PR #31 review, round 2).
+          remoteBroadcastTarget = RemoteBroadcastTarget(broadcastTransport);
           await broadcastTransport.start(broadcastContext());
           const fakePeerId = 'silent-viewer-stop';
 
