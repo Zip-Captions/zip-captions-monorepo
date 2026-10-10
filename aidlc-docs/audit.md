@@ -2317,3 +2317,17 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 **Context**: PR #31's CodeRabbit review round 3 addressed. Awaiting CI and human review.
 
 ---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): PR #31 CodeRabbit review round 4 addressed
+**Timestamp**: 2026-10-10T23:45:00Z
+**User Input**: "we have another review, please check the PR again for updates"
+**AI Response**: A fourth CodeRabbit review found one more real bug, a deeper variant of round 3's: `_sessions` and the stale-bail `_teardownViewer` calls are keyed only by `peerId`, with no check that the *currently installed* session actually belongs to the attempt bailing out. Concretely: attempt A installs its own session, then is superseded (a newer overlapping `JoinRequest` B arrives, tears A's session down via the legitimate duplicate-join path, and installs its own) — but A's own code, unaware of this, later resumes at one of its own `isCurrent()` checks (after `createDataChannel`, after sending `JoinAccepted`, after `createOffer`, after `setLocalDescription`), finds itself stale, and calls `_teardownViewer(peerId, confirmedBefore: false)` — which tears down *whatever session currently exists* for that peerId, i.e. B's live one, and releases its admission reservation.
+
+Implemented the fix directly this time (round 3's experience — needing to independently re-verify and fix two bugs in my own "fully specified" test design even after writing out exact code — made clear that delegating doesn't remove the need for that same empirical verification, so doing it directly was faster without sacrificing rigor): added an `attemptId` field to the private `_ViewerSession` class, threaded `attemptId:` through the four stale-bail `_teardownViewer` calls (and the catch block's), and made `_teardownViewer` itself attempt-aware — given an `attemptId`, it's a no-op unless the installed session's own `attemptId` matches; callers tearing down whatever's legitimately installed regardless of attempt (duplicate-join replacement, ack timeout, ICE failure, explicit `Leave`, `stop()`) omit it, unchanged. Also unified round 3's `_admittedAttempts` bookkeeping into `_teardownViewer` itself (removing the entry whenever its reservation is released, including in the one other direct-release branch), and cleared both attempt-tracking maps in `stop()`.
+
+Added a regression test using a second deterministic test double (`_DataChannelHoldableFactory`/`_HoldableHandle`, pausing a specific attempt's `createDataChannel` call — rather than its `create()` call, the round-3 double's pause point — since this bug needs the stale attempt to have *already installed* its session before parking). Verified rigorously this time: confirmed the test fails against the pre-fix code (`admission.count` 0 vs 1, by temporarily `git stash`-ing just the production fix) before restoring it and confirming the full suite passes.
+
+Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packages, 483/483 `zip_core` tests passing (482 + 1 new), zero regressions.
+**Context**: PR #31's CodeRabbit review round 4 addressed. Awaiting CI and human review.
+
+---

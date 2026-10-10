@@ -131,6 +131,7 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
       );
       if (!isCurrent()) {
         if (_admittedAttempts[peerId] == attemptId) {
+          _admittedAttempts.remove(peerId);
           context.admission.release(peerId);
         }
         unawaited(connection.close());
@@ -138,7 +139,11 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
         return;
       }
 
-      final session = _ViewerSession(channel: channel, connection: connection);
+      final session = _ViewerSession(
+        attemptId: attemptId,
+        channel: channel,
+        connection: connection,
+      );
       _sessions[peerId] = session;
 
       session.subs
@@ -160,7 +165,7 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
 
       final dataChannel = await connection.createDataChannel('captions');
       if (!isCurrent()) {
-        _teardownViewer(peerId, confirmedBefore: false);
+        _teardownViewer(peerId, confirmedBefore: false, attemptId: attemptId);
         return;
       }
       session.dataChannel = dataChannel;
@@ -182,18 +187,18 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
 
       await channel.send(const JoinAccepted(toPeerId: _broadcasterPeerId));
       if (!isCurrent()) {
-        _teardownViewer(peerId, confirmedBefore: false);
+        _teardownViewer(peerId, confirmedBefore: false, attemptId: attemptId);
         return;
       }
 
       final offer = await connection.createOffer();
       if (!isCurrent()) {
-        _teardownViewer(peerId, confirmedBefore: false);
+        _teardownViewer(peerId, confirmedBefore: false, attemptId: attemptId);
         return;
       }
       await connection.setLocalDescription(offer);
       if (!isCurrent()) {
-        _teardownViewer(peerId, confirmedBefore: false);
+        _teardownViewer(peerId, confirmedBefore: false, attemptId: attemptId);
         return;
       }
       await channel.send(
@@ -213,8 +218,9 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
       // down the *newer* attempt's session instead.
       if (isCurrent()) {
         if (_sessions.containsKey(peerId)) {
-          _teardownViewer(peerId, confirmedBefore: false);
+          _teardownViewer(peerId, confirmedBefore: false, attemptId: attemptId);
         } else {
+          _admittedAttempts.remove(peerId);
           context.admission.release(peerId);
           unawaited(channel.close());
         }
@@ -321,11 +327,29 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
     _emitViewers();
   }
 
-  void _teardownViewer(String peerId, {required bool confirmedBefore}) {
-    final session = _sessions.remove(peerId);
+  /// Tears down the session currently installed for [peerId].
+  ///
+  /// If [attemptId] is given (CodeRabbit PR #31 review, round 4), this
+  /// only acts if the *currently installed* session still belongs to
+  /// that attempt — otherwise it's a no-op, since a newer attempt has
+  /// since replaced it and this call must not touch that replacement.
+  /// Callers tearing down whatever is legitimately installed regardless
+  /// of attempt (a duplicate-join replacement, an ack timeout, an ICE
+  /// failure, an explicit `Leave`, or `stop()`) omit [attemptId].
+  void _teardownViewer(
+    String peerId, {
+    required bool confirmedBefore,
+    Object? attemptId,
+  }) {
+    final session = _sessions[peerId];
     if (session == null) return;
+    if (attemptId != null && session.attemptId != attemptId) return;
+    _sessions.remove(peerId);
     session.ackTimer?.cancel();
-    _context?.admission.release(peerId);
+    if (_admittedAttempts[peerId] == session.attemptId) {
+      _admittedAttempts.remove(peerId);
+      _context?.admission.release(peerId);
+    }
     for (final sub in session.subs) {
       unawaited(sub.cancel());
     }
@@ -393,6 +417,12 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
         confirmedBefore: entry.value.connectedAt != null,
       );
     }
+    // Any peerId with an in-flight (not yet installed) attempt at
+    // shutdown time has no session for the loop above to clean up —
+    // clear both attempt-tracking maps directly (CodeRabbit PR #31
+    // review, round 4).
+    _pendingAttempts.clear();
+    _admittedAttempts.clear();
     await _viewersController.close();
     await _viewerJoinedController.close();
     await _viewerLeftController.close();
@@ -402,8 +432,19 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
 String _encodeAsString(Map<String, Object?> payload) => jsonEncode(payload);
 
 class _ViewerSession {
-  _ViewerSession({required this.channel, required this.connection});
+  _ViewerSession({
+    required this.attemptId,
+    required this.channel,
+    required this.connection,
+  });
 
+  // The `_handleJoinRequest` attempt that installed this session
+  // (CodeRabbit PR #31 review, round 4): `_teardownViewer` is keyed only
+  // by peerId, so without this, a stale attempt that bails *after*
+  // installing a session — and is only superseded afterward — could
+  // resume and tear down whatever session is *currently* installed for
+  // that peerId, even if a newer attempt has since replaced it.
+  final Object attemptId;
   final SessionSignalingChannel channel;
   final PeerConnectionHandle connection;
   RTCDataChannel? dataChannel;

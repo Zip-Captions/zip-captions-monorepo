@@ -106,6 +106,90 @@ class _HoldableFactory implements PeerConnectionFactory {
   }
 }
 
+/// Wraps a [PeerConnectionHandle], holding its *own* [createDataChannel]
+/// call until explicitly released. Used by
+/// [_DataChannelHoldableFactory] below to park an attempt *after* it has
+/// already installed its session — unlike [_HoldableFactory], which
+/// parks an attempt *before* installation — to deterministically
+/// engineer the specific interleaving a round-4 regression test needs.
+class _HoldableHandle implements PeerConnectionHandle {
+  _HoldableHandle(this._inner);
+  final PeerConnectionHandle _inner;
+  final _dataChannelGate = Completer<void>();
+
+  /// Lets this handle's held [createDataChannel] call proceed.
+  void release() {
+    if (!_dataChannelGate.isCompleted) _dataChannelGate.complete();
+  }
+
+  @override
+  Future<RTCDataChannel> createDataChannel(String label) async {
+    await _dataChannelGate.future;
+    return _inner.createDataChannel(label);
+  }
+
+  @override
+  Future<RTCSessionDescription> createOffer() => _inner.createOffer();
+
+  @override
+  Future<RTCSessionDescription> createAnswer() => _inner.createAnswer();
+
+  @override
+  Future<void> setLocalDescription(RTCSessionDescription sdp) =>
+      _inner.setLocalDescription(sdp);
+
+  @override
+  Future<void> setRemoteDescription(RTCSessionDescription sdp) =>
+      _inner.setRemoteDescription(sdp);
+
+  @override
+  Future<void> addIceCandidate(RTCIceCandidate candidate) =>
+      _inner.addIceCandidate(candidate);
+
+  @override
+  Stream<RTCIceConnectionState> get iceConnectionState =>
+      _inner.iceConnectionState;
+
+  @override
+  Stream<RTCDataChannel> get onDataChannel => _inner.onDataChannel;
+
+  @override
+  Stream<RTCIceCandidate> get onIceCandidate => _inner.onIceCandidate;
+
+  @override
+  Future<void> close() => _inner.close();
+}
+
+/// Wraps exactly the `n`-th `create()` call's returned handle (0-based,
+/// counting only calls made through *this* factory) in a
+/// [_HoldableHandle], so a test can park that one attempt right before
+/// its own `createDataChannel` call — after it has already installed a
+/// session, unlike [_HoldableFactory]. Every other call's handle passes
+/// through unwrapped.
+class _DataChannelHoldableFactory implements PeerConnectionFactory {
+  _DataChannelHoldableFactory(this._inner);
+  final PeerConnectionFactory _inner;
+  int _callCount = 0;
+
+  /// Which call (0-based) to wrap. Set before the targeted call happens.
+  int? holdCallIndex;
+
+  /// The wrapped handle for [holdCallIndex]'s call, once created.
+  _HoldableHandle? held;
+
+  @override
+  Future<PeerConnectionHandle> create(List<IceServer> iceServers) async {
+    final index = _callCount++;
+    final real = await _inner.create(iceServers);
+    if (index == holdCallIndex) {
+      final wrapped = _HoldableHandle(real);
+      held = wrapped;
+      return wrapped;
+    }
+    return real;
+  }
+}
+
 const _sessionId = 'session-1';
 
 void main() {
@@ -841,6 +925,101 @@ void main() {
               ..flushMicrotasks()
               ..elapse(const Duration(seconds: 150))
               ..flushMicrotasks();
+            expect(admission.count, 1);
+          });
+        },
+      );
+    },
+  );
+
+  group(
+    'a stale attempt that already installed its session must not tear '
+    "down a newer attempt's session",
+    () {
+      test(
+        "the newer attempt's session and admission reservation both "
+        'survive the stale attempt resuming afterward',
+        () {
+          fakeAsync((async) {
+            remoteBroadcastTarget = RemoteBroadcastTarget(broadcastTransport);
+            // Same reasoning as the sibling test above: `admission`
+            // needs `now: clock.now` for `async.elapse(...)` to affect
+            // it at all.
+            admission = ViewerAdmission(
+              const BroadcastLimits(
+                maxViewers: 2,
+                presenceTimeout: Duration(seconds: 60),
+                reconnectWindow: Duration(seconds: 120),
+              ),
+              now: clock.now,
+            );
+            final holdable = _DataChannelHoldableFactory(factory)
+              ..holdCallIndex = 0;
+            broadcastTransport = WebRtcBroadcastTransport(
+              peerConnectionFactory: holdable,
+            );
+            unawaited(broadcastTransport.start(broadcastContext()));
+            async.flushMicrotasks();
+            const fakePeerId = 'racing-viewer';
+
+            // A real viewer-side peer connection, matching the actual
+            // system's call order. This call goes directly through
+            // `factory`, not `holdable`, so it doesn't count toward
+            // `holdable`'s own call index.
+            unawaited(factory.create(const []));
+            async.flushMicrotasks();
+
+            // Attempt A: installs its own session (it gets all the way
+            // through `create()`, which is call index 0 through
+            // `holdable` and therefore wrapped), then parks right before
+            // calling `createDataChannel` on its own connection.
+            unawaited(signaling.submitJoinRequest(broadcastId, fakePeerId));
+            async.flushMicrotasks();
+
+            // Attempt B: a second, overlapping `JoinRequest` for the
+            // *same* peerId while A is parked with its session already
+            // installed (but not yet confirmed). B's own top-of-function
+            // check tears A's installed session down and installs its
+            // own — correctly, since A was never actually confirmed and
+            // B is a legitimate replacement.
+            final delivered = <RTCDataChannel>[];
+            factory.onCreated = (handle) =>
+                handle.peer.onDataChannel.listen(delivered.add);
+            unawaited(signaling.submitJoinRequest(broadcastId, fakePeerId));
+            async.flushMicrotasks();
+            expect(delivered, hasLength(1));
+            expect(
+              delivered.single.state,
+              RTCDataChannelState.RTCDataChannelOpen,
+            );
+
+            final joined = <String>[];
+            final joinedSub = broadcastTransport.viewerJoined.listen(
+              joined.add,
+            );
+            addTearDown(joinedSub.cancel);
+            final left = <String>[];
+            final leftSub = broadcastTransport.viewerLeft.listen(left.add);
+            addTearDown(leftSub.cancel);
+            unawaited(
+              delivered.single.send(RTCDataChannelMessage(joinAckSentinel)),
+            );
+            async.flushMicrotasks();
+            expect(joined, [fakePeerId]);
+
+            // Now let A's parked `createDataChannel` call proceed. A
+            // discovers it's stale and bails. Without the fix, A's bail
+            // unconditionally tears down *whatever* is currently
+            // installed for this peerId — B's live, just-confirmed
+            // session — wrongly emitting `viewerLeft` for a viewer that
+            // is still actively connected, and releasing its
+            // reservation.
+            holdable.held!.release();
+            async
+              ..flushMicrotasks()
+              ..elapse(const Duration(seconds: 150))
+              ..flushMicrotasks();
+            expect(left, isEmpty);
             expect(admission.count, 1);
           });
         },
