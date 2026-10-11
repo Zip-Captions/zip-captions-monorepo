@@ -29,6 +29,16 @@ dependencies:
   # storage override (Unit 2, S-15/SR-01 §4). Already pre-approved
   # (docs/04-technical-specification.md Section 6).
   flutter_secure_storage: ^9.2.2
+  # flutter_webrtc: already an approved dependency
+  # (docs/04-technical-specification.md Section 6) — Unit 5 is the first to
+  # actually declare it. A caret range anchored to a specific patch/hotfix,
+  # matching this project's actual convention for infrastructure-adjacent
+  # dependencies (e.g. supabase_flutter's own `^2.17.2` below) — not a true
+  # pin (corrected 2026-10-10, CodeRabbit PR #31 review: the prior wording
+  # claimed a pin, but `^1.6.2+hotfix.4` still accepts any version below
+  # 2.0.0). Re-verified current on pub.dev at Code Generation (2026-10-08)
+  # — newer than the version checked at NFR Requirements (2026-10-05).
+  flutter_webrtc: ^1.6.2+hotfix.4
   freezed_annotation: ^2.4.4
   google_fonts: ^6.1.0
   json_annotation: ^4.9.0

@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   desktop_multi_window
   flutter_secure_storage_linux
+  flutter_webrtc
   gtk
   record_linux
   sqlite3_flutter_libs

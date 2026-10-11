@@ -9,6 +9,7 @@ import 'package:zip_core/src/models/audio_device.dart';
 import 'package:zip_core/src/models/auth_failure.dart';
 import 'package:zip_core/src/models/broadcast_id.dart';
 import 'package:zip_core/src/models/caption_event.dart';
+import 'package:zip_core/src/models/caption_wire_message.dart';
 import 'package:zip_core/src/models/display_settings.dart';
 import 'package:zip_core/src/models/enums.dart';
 import 'package:zip_core/src/models/recording_state.dart';
@@ -28,22 +29,25 @@ import 'recording_state_model.dart';
 
 // --- Enum generators ---
 
-final Generator<ScrollDirection> arbitraryScrollDirection =
-    any.choose(ScrollDirection.values);
+final Generator<ScrollDirection> arbitraryScrollDirection = any.choose(
+  ScrollDirection.values,
+);
 
-final Generator<CaptionTextSize> arbitraryCaptionTextSize =
-    any.choose(CaptionTextSize.values);
+final Generator<CaptionTextSize> arbitraryCaptionTextSize = any.choose(
+  CaptionTextSize.values,
+);
 
-final Generator<CaptionFont> arbitraryCaptionFont =
-    any.choose(CaptionFont.values);
+final Generator<CaptionFont> arbitraryCaptionFont = any.choose(
+  CaptionFont.values,
+);
 
-final Generator<ThemeModeSetting> arbitraryThemeModeSetting =
-    any.choose(ThemeModeSetting.values);
+final Generator<ThemeModeSetting> arbitraryThemeModeSetting = any.choose(
+  ThemeModeSetting.values,
+);
 
 // --- Composed DisplaySettings generator ---
 
-final Generator<DisplaySettings> arbitraryDisplaySettings =
-    any.combine5(
+final Generator<DisplaySettings> arbitraryDisplaySettings = any.combine5(
   arbitraryScrollDirection,
   arbitraryCaptionTextSize,
   arbitraryCaptionFont,
@@ -60,16 +64,14 @@ final Generator<DisplaySettings> arbitraryDisplaySettings =
 
 // --- Command generators ---
 
-final Generator<Command> arbitraryCommand =
-    any.choose(Command.values);
+final Generator<Command> arbitraryCommand = any.choose(Command.values);
 
-final Generator<List<Command>> arbitraryCommandSequence =
-    any.listWithLengthInRange(0, 50, arbitraryCommand);
+final Generator<List<Command>> arbitraryCommandSequence = any
+    .listWithLengthInRange(0, 50, arbitraryCommand);
 
 // --- FieldState generator ---
 
-final Generator<FieldState> arbitraryFieldState =
-    any.choose(FieldState.values);
+final Generator<FieldState> arbitraryFieldState = any.choose(FieldState.values);
 
 // --- Locale ID generator ---
 
@@ -151,12 +153,11 @@ final Generator<CaptionEvent> arbitraryCaptionEvent = any.combine3(
 enum RegistryOp { register, unregister, get }
 
 /// Returns a random [RegistryOp] value for property-based tests.
-final Generator<RegistryOp> arbitraryRegistryOp =
-    any.choose(RegistryOp.values);
+final Generator<RegistryOp> arbitraryRegistryOp = any.choose(RegistryOp.values);
 
 /// Returns a random list of [RegistryOp] values with length 0–30.
-final Generator<List<RegistryOp>> arbitraryRegistryOps =
-    any.listWithLengthInRange(0, 30, arbitraryRegistryOp);
+final Generator<List<RegistryOp>> arbitraryRegistryOps = any
+    .listWithLengthInRange(0, 30, arbitraryRegistryOp);
 
 // --- Unit 2 domain generators ---
 
@@ -183,24 +184,24 @@ final Generator<WakeLockSettings> arbitraryWakeLockSettings = any.combine2(
 );
 
 /// Generates [SherpaModelCatalogEntry] instances.
-final Generator<SherpaModelCatalogEntry> arbitrarySherpaModelCatalogEntry =
-    any.combine4(
-  any.letterOrDigits,
-  arbitraryLocaleId,
-  any.intInRange(1000, 500000000),
-  any.letterOrDigits,
-  (modelId, locale, sizeBytes, checksum) {
-    final normalizedModelId = modelId.isEmpty ? 'model-0' : modelId;
-    return SherpaModelCatalogEntry(
-      modelId: normalizedModelId,
-      displayName: 'Model $normalizedModelId',
-      primaryLocaleId: locale,
-      downloadSizeBytes: sizeBytes,
-      downloadUrl: 'https://example.com/$normalizedModelId.tar.bz2',
-      sha256Checksum: checksum.isEmpty ? '0' * 64 : checksum,
+final Generator<SherpaModelCatalogEntry> arbitrarySherpaModelCatalogEntry = any
+    .combine4(
+      any.letterOrDigits,
+      arbitraryLocaleId,
+      any.intInRange(1000, 500000000),
+      any.letterOrDigits,
+      (modelId, locale, sizeBytes, checksum) {
+        final normalizedModelId = modelId.isEmpty ? 'model-0' : modelId;
+        return SherpaModelCatalogEntry(
+          modelId: normalizedModelId,
+          displayName: 'Model $normalizedModelId',
+          primaryLocaleId: locale,
+          downloadSizeBytes: sizeBytes,
+          downloadUrl: 'https://example.com/$normalizedModelId.tar.bz2',
+          sha256Checksum: checksum.isEmpty ? '0' * 64 : checksum,
+        );
+      },
     );
-  },
-);
 
 /// Generates [SherpaModelInfo] instances.
 final Generator<SherpaModelInfo> arbitrarySherpaModelInfo = any.combine2(
@@ -218,7 +219,7 @@ final Generator<SherpaModelInfo> arbitrarySherpaModelInfo = any.combine2(
 /// `downloadedBytes` is varied across 0%, partial, and 100% to cover all
 /// progress edge cases.
 final Generator<SherpaModelDownloadProgress>
-    arbitrarySherpaModelDownloadProgress = any.combine3(
+arbitrarySherpaModelDownloadProgress = any.combine3(
   any.letterOrDigits,
   any.intInRange(1, 500000000),
   any.doubleInRange(0, 1),
@@ -265,25 +266,34 @@ final Generator<TranscriptSegment> arbitraryTranscriptSegment = any.combine5(
 );
 
 /// Generates a list of 2–5 non-empty word strings for merge-window PBTs.
-final Generator<List<String>> arbitraryNonEmptyWordList =
-    any.listWithLengthInRange(
-  2,
-  6,
-  any.choose(['hello', 'world', 'foo', 'bar', 'baz', 'qux', 'dart', 'test']),
-);
+final Generator<List<String>> arbitraryNonEmptyWordList = any
+    .listWithLengthInRange(
+      2,
+      6,
+      any.choose([
+        'hello',
+        'world',
+        'foo',
+        'bar',
+        'baz',
+        'qux',
+        'dart',
+        'test',
+      ]),
+    );
 
 /// Generates [TranscriptSearchResult] with 1–3 non-empty snippets.
-final Generator<TranscriptSearchResult> arbitraryTranscriptSearchResult =
-    any.combine3(
-  arbitraryTranscriptSession,
-  any.intInRange(1, 4),
-  any.doubleInRange(-10, 0),
-  (session, snippetCount, score) => TranscriptSearchResult(
-    session: session,
-    snippets: List.generate(snippetCount, (i) => '[match] snippet $i'),
-    relevanceScore: score,
-  ),
-);
+final Generator<TranscriptSearchResult> arbitraryTranscriptSearchResult = any
+    .combine3(
+      arbitraryTranscriptSession,
+      any.intInRange(1, 4),
+      any.doubleInRange(-10, 0),
+      (session, snippetCount, score) => TranscriptSearchResult(
+        session: session,
+        snippets: List.generate(snippetCount, (i) => '[match] snippet $i'),
+        relevanceScore: score,
+      ),
+    );
 
 // --- Auth domain generators ---
 
@@ -363,8 +373,8 @@ AuthCommand _arbitraryAuthCommand(Random r) {
 /// adversarial orderings (back-to-back sign-ins, sign-out before
 /// resolution, session loss with no prior sign-in) and the empty sequence
 /// remain reachable.
-final Generator<List<AuthCommand>> arbitraryAuthCommandSequence =
-    any.listWithLengthInRange(0, 20, _arbitraryAuthCommand);
+final Generator<List<AuthCommand>> arbitraryAuthCommandSequence = any
+    .listWithLengthInRange(0, 20, _arbitraryAuthCommand);
 
 // --- Broadcast identity + signaling domain generators (Unit 3) ---
 
@@ -462,12 +472,12 @@ final Generator<SdpAnswer> arbitrarySdpAnswer = any.combine3(
 
 /// Generates an [IceCandidate].
 IceCandidate arbitraryIceCandidate(Random random) => IceCandidate(
-      fromPeerId: arbitraryPeerId(random),
-      toPeerId: arbitraryPeerId(random),
-      candidate: arbitraryIceCandidateLine(random),
-      sdpMid: any.choose(['0', '1', 'audio', 'video'])(random),
-      sdpMLineIndex: any.intInRange(0, 3)(random),
-    );
+  fromPeerId: arbitraryPeerId(random),
+  toPeerId: arbitraryPeerId(random),
+  candidate: arbitraryIceCandidateLine(random),
+  sdpMid: any.choose(['0', '1', 'audio', 'video'])(random),
+  sdpMLineIndex: any.intInRange(0, 3)(random),
+);
 
 /// Generates an [IceRestart].
 final Generator<IceRestart> arbitraryIceRestart = any.combine2(
@@ -509,19 +519,143 @@ Object? arbitraryMalformedSignalingJson(Random random) =>
       5 => <String, Object?>{'version': 1}, // missing messageType
       6 => <String, Object?>{'messageType': 42, 'version': 1}, // wrong type
       7 => <String, Object?>{
-          'messageType': 'joinRequest',
-          'version': 999, // unsupported version
-          'fromPeerId': 'peer-1',
-        },
+        'messageType': 'joinRequest',
+        'version': 999, // unsupported version
+        'fromPeerId': 'peer-1',
+      },
       8 => <String, Object?>{
-          'messageType': 'totallyUnknownType',
-          'version': 1,
-        },
+        'messageType': 'totallyUnknownType',
+        'version': 1,
+      },
       _ => <String, Object?>{
-          'messageType': 'sdpOffer',
-          'version': 1,
-          'fromPeerId': 'peer-1',
-          'toPeerId': 'peer-2',
-          'sdp': 'x' * 20000, // oversized field
-        },
+        'messageType': 'sdpOffer',
+        'version': 1,
+        'fromPeerId': 'peer-1',
+        'toPeerId': 'peer-2',
+        'sdp': 'x' * 20000, // oversized field
+      },
+    };
+
+// --- Viewer admission (viewer capacity) domain generators ---
+
+/// A command in a simulated ViewerAdmission session, for the stateful
+/// cap-invariant PBT in viewer_admission_properties_test.dart.
+sealed class AdmissionCommand {
+  const AdmissionCommand();
+}
+
+/// Attempt to admit [peerId].
+final class TryAdmitCommand extends AdmissionCommand {
+  const TryAdmitCommand(this.peerId);
+  final String peerId;
+}
+
+/// Release [peerId]'s slot (starts its reconnectWindow grace period).
+final class ReleaseCommand extends AdmissionCommand {
+  const ReleaseCommand(this.peerId);
+  final String peerId;
+}
+
+/// Advance the injected clock by [duration] — this is what lets a
+/// generated sequence cross a reconnectWindow boundary, sometimes just
+/// short of it and sometimes just past it, so the sweep-at-expiry
+/// behavior Rule 6 describes is actually exercised, not just the
+/// immediate-reclaim path.
+final class AdvanceClockCommand extends AdmissionCommand {
+  const AdvanceClockCommand(this.duration);
+  final Duration duration;
+}
+
+/// A small, fixed pool of candidate peer ids — deliberately small so that
+/// collisions, reclaims, and repeated admit/release of the *same* peer id
+/// actually occur in generated sequences (a fresh random peer id per
+/// command would almost never exercise the reclaim path at all).
+const List<String> _viewerPeerIds = [
+  'peer-a',
+  'peer-b',
+  'peer-c',
+];
+
+/// A single [AdmissionCommand] with reasonable frequency for every kind:
+/// try-admit (~40%), release (~30%), clock advance (~30%) — no kind below
+/// ~15%, so the cap's interesting interactions (full + reserved + expiry)
+/// are all reachable in one sequence.
+AdmissionCommand _arbitraryAdmissionCommand(Random r) {
+  final kind = r.nextInt(20);
+  if (kind < 8) {
+    return TryAdmitCommand(_viewerPeerIds[r.nextInt(_viewerPeerIds.length)]);
+  }
+  if (kind < 14) {
+    return ReleaseCommand(_viewerPeerIds[r.nextInt(_viewerPeerIds.length)]);
+  }
+  // 0–200 seconds: spans both sides of the 120-second reconnectWindow so
+  // the sweep boundary is crossed by the generator itself, not only by
+  // hand-picked edge cases.
+  return AdvanceClockCommand(Duration(seconds: any.intInRange(0, 201)(r)));
+}
+
+/// Sequence of up to 40 [AdmissionCommand]s for the stateful
+/// ViewerAdmission PBT: admit/release/clock-advance interleavings where
+/// the clock can race a reservation's expiry, with the empty sequence
+/// reachable too.
+final Generator<List<AdmissionCommand>> arbitraryAdmissionCommandSequence = any
+    .listWithLengthInRange(0, 40, _arbitraryAdmissionCommand);
+
+// --- Caption wire (remote output) domain generators ---
+
+/// Generates a [Caption] message wrapping a randomized [SttResult].
+Caption arbitraryCaption(Random random) =>
+    Caption(result: arbitrarySttResult(random));
+
+/// Generates a [CaptionActivityChanged] across all [CaptionActivity]
+/// values.
+CaptionActivityChanged arbitraryCaptionActivityChanged(Random random) =>
+    CaptionActivityChanged(
+      activity: any.choose(CaptionActivity.values)(random),
+    );
+
+/// Generates a [CaptionWireMessage] covering every one of the 3 sealed
+/// variants (round-robin by random choice, not just one variant).
+CaptionWireMessage arbitraryCaptionWireMessage(Random random) =>
+    switch (random.nextInt(3)) {
+      0 => arbitraryCaption(random),
+      1 => arbitraryCaptionActivityChanged(random),
+      _ => const Ended(),
+    };
+
+/// Generates deliberately malformed/adversarial JSON-shaped input for
+/// `CaptionWireCodec.decode`'s never-throws property. A separate
+/// generator from [arbitraryCaptionWireMessage] — this one targets
+/// broken shapes, not valid messages.
+Object? arbitraryMalformedCaptionWireJson(Random random) =>
+    switch (random.nextInt(10)) {
+      0 => null,
+      1 => 'not a map',
+      2 => 42,
+      3 => <String, Object?>{},
+      4 => <String, Object?>{'messageType': 'caption'}, // missing version
+      5 => <String, Object?>{'version': 1}, // missing messageType
+      6 => <String, Object?>{'messageType': 42, 'version': 1}, // wrong type
+      7 => <String, Object?>{
+        'messageType': 'caption',
+        'version': 999, // unsupported version
+        'text': 'hello world',
+        'isFinal': true,
+        'confidence': 1.0,
+        'timestamp': '2026-01-01T00:00:00.000Z',
+        'sourceId': 'default',
+      },
+      8 => <String, Object?>{
+        'messageType': 'totallyUnknownType',
+        'version': 1,
+      },
+      _ => <String, Object?>{
+        'messageType': 'caption',
+        'version': 1,
+        'text': 'x' * 20000, // oversized field
+        'isFinal': true,
+        'confidence': 1.0,
+        'timestamp': '2026-01-01T00:00:00.000Z',
+        'sourceId': 'default',
+      },
     };
