@@ -2343,3 +2343,11 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 **Context**: PR #31's CodeRabbit review round 5 addressed. Awaiting CI and human review.
 
 ---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): PR #31 approved and merged, unit complete
+**Timestamp**: 2026-10-11T01:00:00Z
+**User Input**: "pr approved, should I squash and merge?" → "squashed, merged, branch deleted, give me the prompt to start the next piece of work in a fresh session"
+**AI Response**: Confirmed PR #31's readiness directly before recommending the merge: all 6 CI checks green, `mergeStateStatus: CLEAN`, `mergeable: MERGEABLE`, all 14 review threads resolved across 5 CodeRabbit rounds — recommended squash-merge, matching this repo's established convention for feature branches (PRs #22, #29). User approved and merged via the GitHub UI; branch deleted. Confirmed the merge landed on `develop` directly (`git fetch`, commit `7203be3`). Updated `aidlc-state.md`: Unit 5's own checkbox flipped to complete/merged, and the Phase 2 "Current Stage" pointer updated to identify Unit 6 (Zip Broadcast Broadcast UI) as the next unit, per `phase2-unit-of-work-dependency.md` ("Unit 6 needs Unit 5 and Proto-11 and Proto-12" — both prototypes already approved in Unit 1) and the project's own suggested execution order (Unit 6 before Unit 7, both now unblocked by Unit 5).
+**Context**: Unit 5 fully shipped. Handing off to a fresh session to start Unit 6 (Zip Broadcast Broadcast UI) at Functional Design, per the AI-DLC Inception→Construction model-switching convention (Opus for Inception through Application Design, Sonnet from Functional Design onward).
+
+---
