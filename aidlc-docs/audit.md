@@ -2331,3 +2331,15 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 **Context**: PR #31's CodeRabbit review round 4 addressed. Awaiting CI and human review.
 
 ---
+
+## CONSTRUCTION - Unit 5 (WebRTC Transport + Remote Output + Capacity): PR #31 CodeRabbit review round 5 addressed
+**Timestamp**: 2026-10-11T00:35:00Z
+**User Input**: "more PR feedback" → "respond to and resolve open conversations" → "more PR feedback"
+**AI Response**: A fifth CodeRabbit review found a real gap in round 4's own fix: `stop()` clears `_pendingAttempts`/`_admittedAttempts` directly for any peerId with an in-flight (not yet session-installed) attempt at shutdown time, without ever calling `admission.release` for it first. `ViewerAdmission` holds a reservation indefinitely until released or reclaimed — skipping that release would leave those slots permanently stuck (never even entering the reconnect grace period) if `admission` outlives this transport instance (e.g. a replacement transport reusing the same context). Fixed by releasing every peerId still in `_admittedAttempts` before clearing the maps.
+
+Added a regression test, and in verifying it empirically (the same discipline applied to every fix in this unit) found two of my own mistakes before they shipped: (1) the test as first written used `fakeAsync`, which can't observe `stop()`'s effects at all — `stop()`'s own first line awaits cancelling a broadcast `StreamSubscription`, which never resolves through `fakeAsync`'s queue (the same limitation already worked around for two other tests in this file), so none of its body ever ran within the test's `flushMicrotasks()`; converted to plain `async`, matching the established pattern. (2) Even then, the test asserted `admission.count == 0` immediately after `stop()`, which is simply the wrong expectation — `release()` never frees a slot immediately by design (Rule 6's reconnect grace period); it only starts the countdown. Corrected the assertion to check the reservation is still counted right after `stop()` (grace period, not freed) and only drops to `0` once a manually-advanced clock passes the reconnect window — confirmed this version genuinely fails against the pre-fix code (via `git stash`) before restoring the fix.
+
+Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packages, 484/484 `zip_core` tests passing (483 + 1 new), zero regressions. Checked general PR-level comments too (not just review threads) — nothing else open, just CodeRabbit's own walkthrough and review-trigger acknowledgments.
+**Context**: PR #31's CodeRabbit review round 5 addressed. Awaiting CI and human review.
+
+---

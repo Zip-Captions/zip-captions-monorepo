@@ -418,9 +418,18 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
       );
     }
     // Any peerId with an in-flight (not yet installed) attempt at
-    // shutdown time has no session for the loop above to clean up —
-    // clear both attempt-tracking maps directly (CodeRabbit PR #31
-    // review, round 4).
+    // shutdown time has no session for the loop above to clean up, so
+    // its admission reservation (if any) was never released there
+    // either — release it directly first (CodeRabbit PR #31 review,
+    // round 5): `ViewerAdmission` holds a reservation indefinitely until
+    // released or reclaimed by the same peerId, so skipping this would
+    // leave those slots permanently stuck if `admission` outlives this
+    // transport instance (e.g. a replacement transport reusing the same
+    // context). Then clear both attempt-tracking maps (round 4).
+    final context = _context;
+    if (context != null) {
+      _admittedAttempts.keys.toList().forEach(context.admission.release);
+    }
     _pendingAttempts.clear();
     _admittedAttempts.clear();
     await _viewersController.close();

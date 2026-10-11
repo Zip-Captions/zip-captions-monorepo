@@ -1026,4 +1026,73 @@ void main() {
       );
     },
   );
+
+  group(
+    "stop() releases a still in-flight attempt's admission reservation",
+    () {
+      // Plain `async`, not `fakeAsync`: `stop()` itself awaits cancelling
+      // a broadcast `StreamSubscription` (`_joinRequestsSub`) as its very
+      // first line, which doesn't resolve through `fakeAsync`'s
+      // intercepted queue in this Dart SDK — the same limitation already
+      // documented on the other plain-`async` tests above. Under
+      // `fakeAsync`, `stop()` would never get past that first line
+      // within a `flushMicrotasks()` call, so none of its body —
+      // including the fix this test exists to verify — would ever run.
+      test(
+        'an attempt admitted but parked before installing its session '
+        "doesn't leave its reservation stuck after stop()",
+        () async {
+          // A manually-advanced clock (same pattern as
+          // `viewer_admission_test.dart`), not `fakeAsync`: `release()`
+          // itself never frees a reservation immediately by design
+          // (Rule 6's reconnect grace period) — it only starts the
+          // countdown. This test needs to confirm `stop()` actually
+          // *starts* that countdown (as opposed to leaving the
+          // reservation held indefinitely, never even entering the
+          // grace period), which means advancing time past the window
+          // afterward, not expecting an immediate drop to 0.
+          var currentTime = DateTime.utc(2026);
+          admission = ViewerAdmission(
+            const BroadcastLimits(
+              maxViewers: 2,
+              presenceTimeout: Duration(seconds: 60),
+              reconnectWindow: Duration(seconds: 120),
+            ),
+            now: () => currentTime,
+          );
+          remoteBroadcastTarget = RemoteBroadcastTarget(broadcastTransport);
+          final holdable = _HoldableFactory(factory);
+          broadcastTransport = WebRtcBroadcastTransport(
+            peerConnectionFactory: holdable,
+          );
+          await broadcastTransport.start(broadcastContext());
+          const fakePeerId = 'parked-at-shutdown';
+
+          // Attempt gets admitted (tryAdmit succeeds, `_admittedAttempts`
+          // records it), then parks inside `create()` — never reaches
+          // session installation.
+          holdable.holdNext();
+          await signaling.submitJoinRequest(broadcastId, fakePeerId);
+          await pumpEventQueue();
+          expect(admission.count, 1);
+
+          // `stop()` runs while the attempt is still parked. Before the
+          // fix, it cleared `_admittedAttempts` without ever calling
+          // `release` for this peerId — the reservation would stay
+          // actively held forever rather than ever entering the
+          // reconnect grace period, so it would never free up no matter
+          // how much time passes.
+          await broadcastTransport.stop();
+          expect(admission.count, 1); // still held — grace period, not freed
+          currentTime = currentTime.add(const Duration(seconds: 150));
+          expect(admission.count, 0); // now swept away, past the window
+
+          // Let the parked attempt resume for cleanliness — it finds
+          // itself stale either way and bails harmlessly.
+          holdable.release();
+          await pumpEventQueue();
+        },
+      );
+    },
+  );
 }
