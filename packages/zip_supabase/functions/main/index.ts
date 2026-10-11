@@ -63,6 +63,18 @@ Deno.serve(async (req: Request) => {
     })
   }
 
+  // Added locally (CodeRabbit PR #33 review) -- this one check is a
+  // deliberate deviation from the otherwise-verbatim upstream file:
+  // without it, a crafted service_name (e.g. containing `..`) could
+  // make servicePath resolve outside /home/deno/functions.
+  if (!/^[A-Za-z0-9_-]+$/.test(service_name)) {
+    const error = { msg: 'invalid function name' }
+    return new Response(JSON.stringify(error), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   const servicePath = `/home/deno/functions/${service_name}`
   console.error(`serving the request with ${servicePath}`)
 
