@@ -266,6 +266,10 @@ services:
     container_name: supabase-edge-functions
     image: supabase/edge-runtime:v1.71.2
     restart: unless-stopped
+    command:
+      - start
+      - --main-service
+      - /home/deno/functions/main
     environment:
       JWT_SECRET: ${JWT_SECRET}
       SUPABASE_URL: http://kong:8000
@@ -275,6 +279,7 @@ services:
       VERIFY_JWT: ${FUNCTIONS_VERIFY_JWT:-false}
     volumes:
       - ./functions:/home/deno/functions:ro
+      - deno-cache:/root/.cache/deno
     depends_on:
       db:
         condition: service_healthy
@@ -319,3 +324,5 @@ volumes:
     name: supabase_storage_data
   coturn_logs:
     name: supabase_coturn_logs
+  deno-cache:
+    name: supabase_deno_cache
