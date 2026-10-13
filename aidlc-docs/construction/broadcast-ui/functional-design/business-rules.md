@@ -18,18 +18,28 @@ for sign-in: the external flow cannot be meaningfully started twice concurrently
 | 2 (`getOrCreateMine`) | `identityUnavailable` | — |
 | 3 (`iceServersFor`) | `relayUnavailable` | — (values only) |
 | 5 (`transport.start`) | `unknown` | — (step 4 carries no action, see F-6.2) |
-| 6 (target create/register/prime) | `unknown` | — (local operation; failure = programming error) |
-| 7 (`publishLive`) | `signalingUnavailable` | stop transport |
+| 6 (target create/register/prime) | `unknown` | `registry.remove(target)` (if registered) → `transport.stop()` |
+| 7 (`publishLive`) | `signalingUnavailable` | `registry.remove(target)` → `transport.stop()` |
 | 8 (auto-start captioning) | *not a goLive failure* — see Rule 3 | — |
 
+**Correction (CodeRabbit PR #34 review, 2026-10-13)**: step 6's unwind was originally
+specified as "—" ("local operation; failure = programming error"). That was wrong —
+`transport.start()` (step 5) has already succeeded by this point, so leaving it
+unstopped on a step-6 failure would silently violate the very invariant this table
+exists to guarantee (see below). Step 6 now unwinds identically to step 7, just
+without a `StatusChannel` to close (it isn't opened until step 7). Each unwind step is
+individually caught and logged, never allowed to escape — a thrown `transport.stop()`
+must not strand the notifier in `StartingState`, where both Rule 1's retry gate and
+Rule 9's sign-out guard refuse.
+
 Unwind steps, newest first: close the `StatusChannel` (if opened) →
-`registry.remove(target)` (disposes it) → `transport.stop()`. After any unwind, state
-is `BroadcastFailedState(reason)` and **no session resource remains** (this is what
-makes `BroadcastFailedState` a legal retry start point and a sign-allowed state under
-Rule 9). Local captioning is unaffected on every failure path: nothing before step 8
-touches captioning, and step 8 cannot fail the broadcast (Rule 3). The UI shows the
-specific reason per variant and offers retry (S-17 AC11) — retry is simply a new
-`goLive()` from `BroadcastFailedState` (Rule 1 permits it).
+`registry.remove(target)` (if registered) → `transport.stop()` (if started). After any
+unwind, state is `BroadcastFailedState(reason)` and **no session resource remains**
+(this is what makes `BroadcastFailedState` a legal retry start point and a
+sign-allowed state under Rule 9). Local captioning is unaffected on every failure
+path: nothing before step 8 touches captioning, and step 8 cannot fail the broadcast
+(Rule 3). The UI shows the specific reason per variant and offers retry (S-17 AC11) —
+retry is simply a new `goLive()` from `BroadcastFailedState` (Rule 1 permits it).
 
 **Rule 3 — Auto-start captioning is best-effort and never fails `goLive()`.**
 The coupled start (F2 step 8) runs only when `autoStartCaptioning` is on **and**

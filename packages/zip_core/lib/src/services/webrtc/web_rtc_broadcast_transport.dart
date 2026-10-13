@@ -401,10 +401,18 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
 
   @override
   Future<void> sendBroadcastEnded() async {
-    for (final session in _sessions.values) {
-      if (session.connectedAt == null) continue;
-      await session.channel.send(const BroadcastEnded());
-    }
+    // Snapshot with `List.of()` before awaiting anything (CodeRabbit PR #34
+    // review): `_sessions` can be mutated by `_teardownViewer`/
+    // `_handleJoinRequest` while a send below is in flight, which would
+    // otherwise throw `ConcurrentModificationError` on this iteration.
+    // Every send is attempted independently (`Future.wait`'s default
+    // `eagerError: false`) so one viewer's channel rejecting the send
+    // never stops the rest from being notified.
+    await Future.wait(
+      List.of(_sessions.values)
+          .where((session) => session.connectedAt != null)
+          .map((session) => session.channel.send(const BroadcastEnded())),
+    );
   }
 
   @override

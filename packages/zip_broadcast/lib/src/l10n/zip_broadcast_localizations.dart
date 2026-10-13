@@ -822,6 +822,30 @@ abstract class ZipBroadcastLocalizations {
   /// In en, this message translates to:
   /// **'End the live broadcast before signing out'**
   String get broadcastSignOutRefused;
+
+  /// Section heading above the connected-viewer list on the live dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Viewers'**
+  String get broadcastViewers;
+
+  /// Per-input audio row status when the engine is actively listening
+  ///
+  /// In en, this message translates to:
+  /// **'active'**
+  String get broadcastAudioInputStatusActive;
+
+  /// Per-input audio row status when the engine failed
+  ///
+  /// In en, this message translates to:
+  /// **'error'**
+  String get broadcastAudioInputStatusError;
+
+  /// Per-input audio row status when the engine isn't running
+  ///
+  /// In en, this message translates to:
+  /// **'inactive'**
+  String get broadcastAudioInputStatusInactive;
 }
 
 class _ZipBroadcastLocalizationsDelegate

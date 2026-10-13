@@ -90,6 +90,10 @@ class FakeBroadcastTransport implements BroadcastTransport {
   int sendBroadcastEndedCalls = 0;
   final sentToAll = <CaptionWireMessage>[];
 
+  /// If set, [stop] throws this after still recording the call —
+  /// simulates a failing unwind step (CodeRabbit PR #34 review).
+  Exception? stopError;
+
   @override
   Future<void> start(BroadcastTransportContext context) async {
     final e = startError;
@@ -100,6 +104,8 @@ class FakeBroadcastTransport implements BroadcastTransport {
   @override
   Future<void> stop() async {
     stopCalls++;
+    final e = stopError;
+    if (e != null) throw e;
   }
 
   @override

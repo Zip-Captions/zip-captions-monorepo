@@ -393,7 +393,7 @@ class _LiveDashboardView extends ConsumerWidget {
                 ),
               const SizedBox(height: 16),
               Text(
-                '${l10n.homeOutputTargets} · ${broadcast.viewers.length}',
+                '${l10n.broadcastViewers} · ${broadcast.viewers.length}',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               for (final viewer in broadcast.viewers)
@@ -627,7 +627,10 @@ class _AudioInputRow extends StatelessWidget {
   final double level;
   final recording.BroadcastSessionState recordingState;
 
-  String _status(recording.BroadcastSessionState state) {
+  String _status(
+    recording.BroadcastSessionState state,
+    ZipBroadcastLocalizations l10n,
+  ) {
     final perEngine = switch (state) {
       recording.BroadcastActiveState(:final perEngineStates) => perEngineStates,
       recording.BroadcastPausedState(:final perEngineStates) => perEngineStates,
@@ -635,14 +638,15 @@ class _AudioInputRow extends StatelessWidget {
     };
     final engineState = perEngine[config.deviceId];
     return switch (engineState) {
-      recording.EngineActiveState() => 'active',
-      recording.EngineErrorState() => 'error',
-      null => 'inactive',
+      recording.EngineActiveState() => l10n.broadcastAudioInputStatusActive,
+      recording.EngineErrorState() => l10n.broadcastAudioInputStatusError,
+      null => l10n.broadcastAudioInputStatusInactive,
     };
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ZipBroadcastLocalizations.of(context)!;
     final style = AudioInputVisualStyle.forIndex(config.colorIndex);
     return ListTile(
       leading: Container(
@@ -651,7 +655,9 @@ class _AudioInputRow extends StatelessWidget {
         decoration: BoxDecoration(color: style.accent, shape: BoxShape.circle),
       ),
       title: Text(config.label.isNotEmpty ? config.label : config.name),
-      subtitle: Text('${_status(recordingState)} · ${(level * 100).round()}%'),
+      subtitle: Text(
+        '${_status(recordingState, l10n)} · ${(level * 100).round()}%',
+      ),
       dense: true,
     );
   }

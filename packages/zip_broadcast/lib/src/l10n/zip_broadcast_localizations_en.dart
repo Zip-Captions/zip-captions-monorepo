@@ -418,4 +418,16 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
   @override
   String get broadcastSignOutRefused =>
       'End the live broadcast before signing out';
+
+  @override
+  String get broadcastViewers => 'Viewers';
+
+  @override
+  String get broadcastAudioInputStatusActive => 'active';
+
+  @override
+  String get broadcastAudioInputStatusError => 'error';
+
+  @override
+  String get broadcastAudioInputStatusInactive => 'inactive';
 }

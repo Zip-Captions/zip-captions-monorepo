@@ -20,7 +20,9 @@ import 'package:zip_core/src/providers/ice_server_provider_provider.dart';
 import 'package:zip_core/src/providers/signaling_service_provider.dart';
 import 'package:zip_core/src/services/broadcast/broadcast_settings_notifier.dart';
 import 'package:zip_core/src/services/broadcast/session_resources.dart';
+import 'package:zip_core/src/services/caption/caption_output_target_registry.dart';
 import 'package:zip_core/src/services/caption/remote_broadcast_target.dart';
+import 'package:zip_core/src/services/webrtc/broadcast_transport.dart';
 import 'package:zip_core/src/services/webrtc/viewer_admission.dart';
 
 part 'broadcast_session_notifier.g.dart';
@@ -55,8 +57,7 @@ class BroadcastSessionNotifier extends _$BroadcastSessionNotifier {
     if (state is! OfflineState && state is! BroadcastFailedState) return;
 
     final settings = ref.read(broadcastSettingsNotifierProvider);
-    if (BroadcastSettings.validateSessionName(settings.sessionName) !=
-        null) {
+    if (BroadcastSettings.validateSessionName(settings.sessionName) != null) {
       return;
     }
 
@@ -108,18 +109,29 @@ class BroadcastSessionNotifier extends _$BroadcastSessionNotifier {
       return;
     }
 
-    // F2-6 — target: create, register, then prime (Rule 4 / Q4). Rule 2's
-    // table deliberately specifies no unwind for this step's own failure
-    // ("local operation; failure = programming error") — not duplicated
-    // here as a safety net.
+    // F2-6 — target: create, register, then prime (Rule 4 / Q4).
+    //
+    // **Correction (CodeRabbit PR #34 review)**: `business-rules.md`
+    // Rule 2's table literally says this step has no unwind ("local
+    // operation; failure = programming error"), but `transport.start()`
+    // already succeeded by this point — leaving it running on failure
+    // would violate the "no session resources in BroadcastFailedState"
+    // invariant every other failure path (and Rule 1's retry gate,
+    // Rule 9's sign-out gate) depends on. `business-rules.md` is being
+    // corrected to match this real unwind, not the other way around.
     final captioningStarter = ref.read(captioningStarterProvider);
     final registry = ref.read(captionOutputTargetRegistryProvider);
-    final RemoteBroadcastTarget target;
+    RemoteBroadcastTarget? target;
     try {
       target = RemoteBroadcastTarget(transport);
       registry.add(target);
       target.primeActivity(captioningStarter.currentActivity);
     } on Object {
+      await _unwindTransport(
+        target: target,
+        transport: transport,
+        registry: registry,
+      );
       state = const BroadcasterSessionState.failed(BroadcastFailure.unknown);
       return;
     }
@@ -134,8 +146,11 @@ class BroadcastSessionNotifier extends _$BroadcastSessionNotifier {
         sessionName: settings.sessionName,
       );
     } on Object {
-      registry.remove(target);
-      await transport.stop();
+      await _unwindTransport(
+        target: target,
+        transport: transport,
+        registry: registry,
+      );
       state = const BroadcasterSessionState.failed(
         BroadcastFailure.signalingUnavailable,
       );
@@ -225,6 +240,33 @@ class BroadcastSessionNotifier extends _$BroadcastSessionNotifier {
     } on Object {
       state = BroadcasterSessionState.failed(onFailure);
       return null;
+    }
+  }
+
+  /// Unwinds a partially-started `goLive()` attempt (F2-6/F2-7 failure
+  /// paths): removes [target] from [registry] if it was registered, then
+  /// stops [transport] — each step individually caught and logged, never
+  /// allowed to escape (CodeRabbit PR #34 review: an uncaught
+  /// `transport.stop()` here would leave the notifier stuck in
+  /// `StartingState`, where both `goLive()`'s retry gate and Rule 9's
+  /// sign-out guard refuse — the same catch-and-continue discipline as
+  /// `SessionResources.disposeAll`).
+  Future<void> _unwindTransport({
+    required RemoteBroadcastTarget? target,
+    required BroadcastTransport transport,
+    required CaptionOutputTargetRegistry registry,
+  }) async {
+    if (target != null) {
+      try {
+        registry.remove(target);
+      } on Object catch (e) {
+        _log.warning('registry.remove(target) failed: ${e.runtimeType}');
+      }
+    }
+    try {
+      await transport.stop();
+    } on Object catch (e) {
+      _log.warning('transport.stop() failed: ${e.runtimeType}');
     }
   }
 

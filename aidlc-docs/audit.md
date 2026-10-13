@@ -2487,3 +2487,19 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 **Context**: Unit 6 Code Generation COMPLETE and APPROVED 2026-10-13. Next: commit + PR.
 
 ---
+
+## CONSTRUCTION - Unit 6 (Zip Broadcast Broadcast UI): committed and PR opened
+**Timestamp**: 2026-10-13T03:10:00Z
+**User Input**: (no new input — executing the commit/PR step per the prior entry)
+**AI Response**: Reviewed `git status` before staging (all 64 changed/new files matched expected Unit 6 scope — functional-design/NFR-requirements/NFR-design/code-generation docs under `aidlc-docs/construction/broadcast-ui/`, the plan files, and the `zip_core`/`zip_broadcast` production + test code; nothing stray). Committed as a single commit (`98188f0`, "Unit 6: Zip Broadcast Broadcast UI (S-17)") — this branch's first commit, so Functional Design through Code Generation land together, matching this project's established per-unit commit granularity. Pushed `feature/broadcast-ui` to origin and opened **PR #34** against `develop`.
+**Context**: Unit 6 fully shipped pending PR review/merge. Awaiting CI and review feedback.
+
+---
+
+## CONSTRUCTION - Unit 6 (Zip Broadcast Broadcast UI): PR #34 CodeRabbit review addressed
+**Timestamp**: 2026-10-13T04:00:00Z
+**User Input**: "check the pr feedback, we have changes requested. implement the changes, push the fixes, and respond to the threads, but do not request another review because we are rate limited to one review per hour"
+**AI Response**: CodeRabbit posted CHANGES_REQUESTED with 7 actionable comments, all genuine, all fixed: (1) the viewer-list heading reused `homeOutputTargets` instead of a real label — added `broadcastViewers` to the ARB; (2) the per-input audio status strings ('active'/'error'/'inactive') were hardcoded — added `broadcastAudioInputStatus{Active,Error,Inactive}` to the ARB; (3) the nav drawer's new "Go Live" tile used a hardcoded label instead of `l10n.appTitleGoLive` (the rail already did this correctly) — fixed. (4) **Major, and a real gap in the already-approved `business-rules.md` itself, not just the code**: Rule 2's table literally specified no unwind for an F2-6 (target create/register/prime) failure, but `transport.start()` had already succeeded by that point — leaving it running would silently violate the "no session resources in BroadcastFailedState" invariant Rules 1 and 9 both depend on. Fixed the code to unwind (added a shared `_unwindTransport` helper, catch-and-continue style) and corrected `business-rules.md`'s Rule 2 table in place, flagged as a correction, not a silent rewrite. (5) The F2-7 publish-failure unwind could itself throw out of `goLive()` if `transport.stop()` failed, stranding the notifier in `StartingState` (where both retry and sign-out are refused) — wrapped in the same catch-and-continue helper. (6)+(7) `WebRtcBroadcastTransport.sendBroadcastEnded()`'s sequential `for`-loop awaited inside the loop (risking `ConcurrentModificationError` if a session was removed mid-iteration) and gave up on the first viewer whose channel rejected the send (leaving later viewers un-notified) — rewritten as `Future.wait` over a `List.of()` snapshot, sending to every viewer independently. Updated the one test whose expectation the Rule-2 correction changed (`stopCalls` 0→1) and added two new regression tests (F2-7 unwind resilience when `stop()` itself throws; the corrected F2-6 unwind). Gate-checked: `dart analyze --fatal-infos` clean on both packages; `zip_core` 528 tests passing (527 + 1 new), `zip_broadcast` 121 tests passing, 0 regressions. Pushed the fix commit and replied inline on all 7 review threads with what changed and why. Did not request a re-review, per the user's explicit rate-limit instruction.
+**Context**: PR #34 fixes pushed and all 7 threads replied to. Awaiting the next automatic CodeRabbit pass (not manually requested) or human merge decision.
+
+---

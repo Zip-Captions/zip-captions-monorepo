@@ -61,24 +61,23 @@ void main() {
   ProviderContainer buildContainer({
     String sessionName = 'My Stream',
     AuthNotifier Function()? authNotifierFactory,
-  }) =>
-      ProviderContainer(
-        overrides: [
-          authNotifierProvider.overrideWith(
-            authNotifierFactory ?? () => authNotifier,
-          ),
-          broadcastSettingsNotifierProvider.overrideWith(
-            () => _FixedBroadcastSettingsNotifier(
-              BroadcastSettings(sessionName: sessionName),
-            ),
-          ),
-          broadcastIdentityRepositoryProvider.overrideWithValue(identityRepo),
-          iceServerProviderProvider.overrideWithValue(iceProvider),
-          signalingServiceProvider.overrideWithValue(signalingService),
-          broadcastTransportFactoryProvider.overrideWithValue(() => transport),
-          captioningStarterProvider.overrideWithValue(captioningStarter),
-        ],
-      );
+  }) => ProviderContainer(
+    overrides: [
+      authNotifierProvider.overrideWith(
+        authNotifierFactory ?? () => authNotifier,
+      ),
+      broadcastSettingsNotifierProvider.overrideWith(
+        () => _FixedBroadcastSettingsNotifier(
+          BroadcastSettings(sessionName: sessionName),
+        ),
+      ),
+      broadcastIdentityRepositoryProvider.overrideWithValue(identityRepo),
+      iceServerProviderProvider.overrideWithValue(iceProvider),
+      signalingServiceProvider.overrideWithValue(signalingService),
+      broadcastTransportFactoryProvider.overrideWithValue(() => transport),
+      captioningStarterProvider.overrideWithValue(captioningStarter),
+    ],
+  );
 
   BroadcastSessionNotifier notifier() =>
       container.read(broadcastSessionNotifierProvider.notifier);
@@ -211,8 +210,11 @@ void main() {
     });
 
     test(
-      'unknown: F2-6 (target create/register/prime) fails, no unwind '
-      '(Rule 2: documented as a programming error, not swept up here)',
+      'unknown: F2-6 (target create/register/prime) fails, unwinds '
+      'transport.stop() (CodeRabbit PR #34 review — correcting '
+      "business-rules.md's literal 'no unwind' text, which would "
+      'otherwise leave the transport running and violate the '
+      '"no session resources in BroadcastFailedState" invariant)',
       () async {
         captioningStarter.currentActivityError = Exception('boom');
         await notifier().goLive();
@@ -221,8 +223,7 @@ void main() {
           state(),
           const BroadcasterSessionState.failed(BroadcastFailure.unknown),
         );
-        // Rule 2's table deliberately specifies no unwind for this step.
-        expect(transport.stopCalls, 0);
+        expect(transport.stopCalls, 1);
       },
     );
 
@@ -231,6 +232,27 @@ void main() {
       'registry.remove(target) -> transport.stop()',
       () async {
         statusChannel.publishLiveError = Exception('publish down');
+        await notifier().goLive();
+
+        expect(
+          state(),
+          const BroadcasterSessionState.failed(
+            BroadcastFailure.signalingUnavailable,
+          ),
+        );
+        expect(transport.stopCalls, 1);
+      },
+    );
+
+    test(
+      'signalingUnavailable unwind resolves to BroadcastFailedState even '
+      'if transport.stop() itself throws (CodeRabbit PR #34 review — an '
+      'escaping exception here would otherwise strand the notifier in '
+      'StartingState, where both retry and sign-out are refused)',
+      () async {
+        statusChannel.publishLiveError = Exception('publish down');
+        transport.stopError = Exception('stop also failed');
+
         await notifier().goLive();
 
         expect(
@@ -328,9 +350,11 @@ void main() {
           CaptionActivity.active,
         );
 
-        container.read(captionBusProvider).publish(
-          const SessionStateEvent(PausedState(sessionId: 's1')),
-        );
+        container
+            .read(captionBusProvider)
+            .publish(
+              const SessionStateEvent(PausedState(sessionId: 's1')),
+            );
         await Future<void>.delayed(Duration.zero);
 
         expect(

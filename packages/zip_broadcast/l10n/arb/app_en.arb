@@ -533,5 +533,21 @@
   "broadcastSignOutRefused": "End the live broadcast before signing out",
   "@broadcastSignOutRefused": {
     "description": "Snackbar shown when sign-out is refused while the broadcast session is non-idle (business-rules.md Rule 9)"
+  },
+  "broadcastViewers": "Viewers",
+  "@broadcastViewers": {
+    "description": "Section heading above the connected-viewer list on the live dashboard"
+  },
+  "broadcastAudioInputStatusActive": "active",
+  "@broadcastAudioInputStatusActive": {
+    "description": "Per-input audio row status when the engine is actively listening"
+  },
+  "broadcastAudioInputStatusError": "error",
+  "@broadcastAudioInputStatusError": {
+    "description": "Per-input audio row status when the engine failed"
+  },
+  "broadcastAudioInputStatusInactive": "inactive",
+  "@broadcastAudioInputStatusInactive": {
+    "description": "Per-input audio row status when the engine isn't running"
   }
 }
