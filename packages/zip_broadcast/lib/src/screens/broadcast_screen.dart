@@ -233,6 +233,16 @@ class _BroadcastUrlRow extends StatelessWidget {
     return FutureBuilder<BroadcastId>(
       future: future,
       builder: (context, snapshot) {
+        // `AsyncSnapshot.inState` (Flutter's own `FutureBuilder` internals)
+        // carries the *previous* future's `error`/`data` forward into the
+        // new future's `waiting` state — `hasError` alone would keep
+        // showing the stale error (and an enabled Retry button a second
+        // tap could race) while the retried fetch is still in flight.
+        // Only treat it as a real error once this future has actually
+        // finished (CodeRabbit PR #34 review).
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const SizedBox.shrink();
+        }
         if (snapshot.hasError) {
           return Card(
             key: const Key('broadcast-url-row-error'),
