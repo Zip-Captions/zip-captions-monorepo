@@ -2511,3 +2511,11 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 **Context**: PR #34 now has two rounds of CodeRabbit feedback fully addressed (8 findings total). Awaiting the next automatic pass or human merge decision.
 
 ---
+
+## CONSTRUCTION - Unit 6 (Zip Broadcast Broadcast UI): PR #34 third CodeRabbit pass addressed
+**Timestamp**: 2026-10-13T13:25:00Z
+**User Input**: "check the pr, we have changes requested" then "check again, we have a fresh review"
+**AI Response**: A third automatic CodeRabbit review (not manually requested) landed on commit `c9a1914`, one new finding: `_BroadcastUrlRow`'s `FutureBuilder` checked `snapshot.hasError` alone, but Flutter's own `AsyncSnapshot.inState` (used internally by `FutureBuilder.didUpdateWidget` when the `future` reference changes) carries the *previous* future's `error`/`data` forward into the new future's `waiting` state — verified directly against Flutter's actual source, not just CodeRabbit's docs citation. This meant the stale error card (with an enabled Retry button) stayed visible for the whole duration of a retried fetch, and a second tap during that window could race a concurrent fetch. Fixed by gating the error branch on `snapshot.connectionState == ConnectionState.done`; while pending it renders nothing, matching the row's existing initial-load behavior. `zip_broadcast`: 121 tests passing, `dart analyze --fatal-infos` clean. Pushed commit `d084777`, replied on the one new thread. No re-review requested (continuing the user's standing rate-limit instruction from earlier in this session).
+**Context**: PR #34 now has three rounds of CodeRabbit feedback fully addressed (9 findings total across all rounds), 0 unresolved threads. The PR's `reviewDecision` may still show CHANGES_REQUESTED until CodeRabbit's own next pass or a human override — this is a GitHub display artifact (confirmed via GraphQL that every thread is resolved), not an indication of outstanding work.
+
+---
