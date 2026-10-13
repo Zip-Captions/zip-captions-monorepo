@@ -88,6 +88,11 @@ class ZbNavRail extends StatelessWidget {
           selectedIcon: const Icon(Icons.history),
           label: Text(l10n.appTitleHistory),
         ),
+        NavigationRailDestination(
+          icon: const Icon(Icons.podcasts_outlined),
+          selectedIcon: const Icon(Icons.podcasts),
+          label: Text(l10n.appTitleGoLive),
+        ),
       ],
     );
   }

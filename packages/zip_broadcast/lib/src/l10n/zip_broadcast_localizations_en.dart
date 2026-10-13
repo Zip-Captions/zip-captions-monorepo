@@ -306,4 +306,128 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
 
   @override
   String get settingsAccountSubtitle => 'Sign in for remote broadcasting';
+
+  @override
+  String get appTitleGoLive => 'Go Live';
+
+  @override
+  String get broadcastSignedOutTitle => 'Sign in to broadcast';
+
+  @override
+  String get broadcastSignedOutCopy =>
+      'Sign in to broadcast to remote viewers over the internet, or go back to use your local output targets only.';
+
+  @override
+  String get broadcastSessionNameLabel => 'Session name';
+
+  @override
+  String get broadcastSessionNameErrorEmpty => 'Session name is required';
+
+  @override
+  String get broadcastSessionNameErrorTooLong => 'Session name is too long';
+
+  @override
+  String get broadcastSessionNameErrorControlChar =>
+      'Session name contains an invalid character';
+
+  @override
+  String get broadcastAutoStartCaptioning =>
+      'Start captioning automatically when I go live';
+
+  @override
+  String get broadcastUrlLabel => 'Your broadcast link';
+
+  @override
+  String get broadcastUrlCopyAction => 'Copy';
+
+  @override
+  String get broadcastUrlCopied => 'Link copied to clipboard';
+
+  @override
+  String get broadcastGoLiveAction => 'Go Live';
+
+  @override
+  String get broadcastGoingLive => 'Going live…';
+
+  @override
+  String get broadcastFailedTitle => 'Couldn\'t go live';
+
+  @override
+  String get broadcastFailureSignedOut =>
+      'You\'ve been signed out. Sign in again and try once more.';
+
+  @override
+  String get broadcastFailureSignalingUnavailable =>
+      'Couldn\'t publish your broadcast\'s live status. Check your connection and try again.';
+
+  @override
+  String get broadcastFailureRelayUnavailable =>
+      'Couldn\'t set up a connection relay. Check your connection and try again.';
+
+  @override
+  String get broadcastFailureIdentityUnavailable =>
+      'Couldn\'t look up your broadcast identity. Try again in a moment.';
+
+  @override
+  String get broadcastFailureUnknown =>
+      'Something went wrong starting your broadcast. Try again.';
+
+  @override
+  String get broadcastRetryAction => 'Try again';
+
+  @override
+  String get broadcastDashboardTitle => 'You\'re live';
+
+  @override
+  String broadcastViewerCount(int count, int max) {
+    return '$count of $max viewers';
+  }
+
+  @override
+  String get broadcastDurationLabel => 'Duration';
+
+  @override
+  String get broadcastCaptionsNeverStarted =>
+      'Captioning hasn\'t started yet — viewers are connected but won\'t see any captions until you start captioning.';
+
+  @override
+  String get broadcastCaptionsNotRunning =>
+      'Captions are not running — viewers are connected but won\'t see any captions until you start captioning.';
+
+  @override
+  String broadcastFullBanner(int cap) {
+    return 'This broadcast is at its $cap-viewer cap — new viewers can\'t join until someone disconnects.';
+  }
+
+  @override
+  String get broadcastCaptionPreviewEmpty =>
+      'No captions yet — start captioning to show live captions here.';
+
+  @override
+  String get broadcastStartCaptioningAction => 'Start Captioning';
+
+  @override
+  String get broadcastPauseCaptioningAction => 'Pause';
+
+  @override
+  String get broadcastResumeCaptioningAction => 'Resume';
+
+  @override
+  String get broadcastEndAction => 'End Broadcast';
+
+  @override
+  String get broadcastSignOutRefused =>
+      'End the live broadcast before signing out';
+
+  @override
+  String get broadcastViewers => 'Viewers';
+
+  @override
+  String get broadcastAudioInputStatusActive => 'active';
+
+  @override
+  String get broadcastAudioInputStatusError => 'error';
+
+  @override
+  String get broadcastAudioInputStatusInactive => 'inactive';
 }

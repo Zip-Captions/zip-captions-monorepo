@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 
 /// Navigation drawer shown at mobile widths.
 ///
@@ -71,6 +72,13 @@ class ZbNavDrawer extends StatelessWidget {
               icon: Icons.history_outlined,
               label: 'History',
               route: '/history',
+              currentLocation: currentLocation,
+              onTap: onTap,
+            ),
+            _DrawerTile(
+              icon: Icons.podcasts_outlined,
+              label: ZipBroadcastLocalizations.of(context)!.appTitleGoLive,
+              route: '/broadcast',
               currentLocation: currentLocation,
               onTap: onTap,
             ),

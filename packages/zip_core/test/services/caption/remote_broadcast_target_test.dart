@@ -166,6 +166,52 @@ void main() {
       });
     });
 
+    group('primeActivity (Unit 6, Functional Design Q4, additive)', () {
+      test('sets currentActivity directly, without emitting on '
+          'activityChanges', () async {
+        final activities = <CaptionActivity>[];
+        target.activityChanges.listen(activities.add);
+
+        target.primeActivity(CaptionActivity.active);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(target.currentActivity, CaptionActivity.active);
+        expect(activities, isEmpty);
+      });
+
+      test('a real activity change afterward still emits normally', () async {
+        final activities = <CaptionActivity>[];
+        target.activityChanges.listen(activities.add);
+
+        target
+          ..primeActivity(CaptionActivity.active)
+          ..onCaptionEvent(
+            const SessionStateEvent(PausedState(sessionId: 's1')),
+          );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(target.currentActivity, CaptionActivity.paused);
+        expect(activities, [CaptionActivity.paused]);
+      });
+
+      test(
+        'the primed value is what a newly joined viewer snapshot uses',
+        () async {
+          target.primeActivity(CaptionActivity.active);
+
+          transport.emitViewerJoined('peer-1');
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => transport.sendTo(
+              'peer-1',
+              const CaptionActivityChanged(activity: CaptionActivity.active),
+            ),
+          ).called(1);
+        },
+      );
+    });
+
     group('viewerJoined', () {
       test(
         'sends the current activity snapshot, not a construction-time one',

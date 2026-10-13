@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/screens/account_section.dart';
+import 'package:zip_broadcast/src/shell/zb_app_shell.dart';
 import 'package:zip_core/zip_core.dart';
 
 class _FakeAuthNotifier extends AuthNotifier {
@@ -27,22 +28,32 @@ class _FakeAuthNotifier extends AuthNotifier {
   }
 }
 
-Widget _wrap(Widget child, {required _FakeAuthNotifier notifier}) =>
-    ProviderScope(
-      overrides: [
-        authNotifierProvider.overrideWith(() => notifier),
-      ],
-      child: MaterialApp(
-        localizationsDelegates: const [
-          ZipBroadcastLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: ZipBroadcastLocalizations.supportedLocales,
-        home: Scaffold(body: child),
-      ),
-    );
+Widget _wrap(
+  Widget child, {
+  required _FakeAuthNotifier notifier,
+  Future<void> Function()? requestSignOut,
+}) => ProviderScope(
+  overrides: [
+    authNotifierProvider.overrideWith(() => notifier),
+  ],
+  child: MaterialApp(
+    localizationsDelegates: const [
+      ZipBroadcastLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: ZipBroadcastLocalizations.supportedLocales,
+    // `AccountSection`'s sign-out button reaches `ZbSignOutScope.of`
+    // (Functional Design Q6) — this test only needs to confirm the
+    // button calls through to whatever scope is in context; the
+    // actual Rule 9 guard logic is `zb_app_shell_test.dart`'s job.
+    home: ZbSignOutScope(
+      requestSignOut: requestSignOut ?? notifier.signOut,
+      child: Scaffold(body: child),
+    ),
+  ),
+);
 
 void main() {
   group('AccountSection', () {
@@ -60,8 +71,9 @@ void main() {
       expect(find.text('Sign in to broadcast'), findsOneWidget);
     });
 
-    testWidgets('SigningInState shows a spinner on the active button',
-        (tester) async {
+    testWidgets('SigningInState shows a spinner on the active button', (
+      tester,
+    ) async {
       final notifier = _FakeAuthNotifier(
         const AuthState.signingIn(providerId: 'google'),
       );
@@ -114,8 +126,9 @@ void main() {
       expect(find.byKey(const Key('sign-in-retry-button')), findsOneWidget);
     });
 
-    testWidgets('tapping the Google button calls signIn(google)',
-        (tester) async {
+    testWidgets('tapping the Google button calls signIn(google)', (
+      tester,
+    ) async {
       final notifier = _FakeAuthNotifier(const AuthState.signedOut());
       await tester.pumpWidget(
         _wrap(const AccountSection(), notifier: notifier),
@@ -142,22 +155,52 @@ void main() {
     });
 
     testWidgets(
-        "tapping retry calls signIn with the failed state's providerId",
-        (tester) async {
-      final notifier = _FakeAuthNotifier(
-        const AuthState.authFailed(
-          providerId: 'google',
-          reason: AuthFailure.network,
-        ),
-      );
-      await tester.pumpWidget(
-        _wrap(const AccountSection(), notifier: notifier),
-      );
+      'tapping sign-out calls through ZbSignOutScope, not '
+      'authNotifierProvider directly (Functional Design Q6)',
+      (tester) async {
+        final notifier = _FakeAuthNotifier(
+          const AuthState.signedIn(userId: 'user-1'),
+        );
+        var scopeCalls = 0;
+        await tester.pumpWidget(
+          _wrap(
+            const AccountSection(),
+            notifier: notifier,
+            requestSignOut: () async {
+              scopeCalls++;
+            },
+          ),
+        );
 
-      await tester.tap(find.byKey(const Key('sign-in-retry-button')));
-      await tester.pump();
+        await tester.tap(find.byKey(const Key('sign-in-sign-out-button')));
+        await tester.pump();
 
-      expect(notifier.signInCalls, ['google']);
-    });
+        expect(scopeCalls, 1);
+        // The scope's callback was a no-op stub — confirms the button
+        // reaches the scope, not `authNotifierProvider.notifier.signOut()`
+        // directly (which would have incremented this instead).
+        expect(notifier.signOutCalls, 0);
+      },
+    );
+
+    testWidgets(
+      "tapping retry calls signIn with the failed state's providerId",
+      (tester) async {
+        final notifier = _FakeAuthNotifier(
+          const AuthState.authFailed(
+            providerId: 'google',
+            reason: AuthFailure.network,
+          ),
+        );
+        await tester.pumpWidget(
+          _wrap(const AccountSection(), notifier: notifier),
+        );
+
+        await tester.tap(find.byKey(const Key('sign-in-retry-button')));
+        await tester.pump();
+
+        expect(notifier.signInCalls, ['google']);
+      },
+    );
   });
 }

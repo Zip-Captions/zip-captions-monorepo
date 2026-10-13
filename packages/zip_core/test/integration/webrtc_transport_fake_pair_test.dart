@@ -1095,4 +1095,77 @@ void main() {
       );
     },
   );
+
+  group(
+    'sendBroadcastEnded() (Unit 6, Functional Design Q5, additive)',
+    () {
+      test(
+        'every ack-confirmed viewer receives exactly one BroadcastEnded; '
+        'a pending (never-acked) viewer receives nothing',
+        () {
+          fakeAsync((async) {
+            remoteBroadcastTarget = RemoteBroadcastTarget(broadcastTransport);
+            // A second slot for the pending viewer alongside the
+            // confirmed one.
+            admission = ViewerAdmission(
+              const BroadcastLimits(
+                maxViewers: 2,
+                presenceTimeout: Duration(seconds: 60),
+                reconnectWindow: Duration(seconds: 120),
+              ),
+            );
+            unawaited(broadcastTransport.start(broadcastContext()));
+            async.flushMicrotasks();
+
+            // A confirmed viewer, via the real WebRtcViewerTransport (same
+            // call order the happy-path test above uses).
+            String? confirmedPeerId;
+            final joinReqSub = signaling
+                .joinRequests(broadcastId)
+                .listen((r) => confirmedPeerId ??= r.fromPeerId);
+            unawaited(viewerTransport.connect(viewerContext()));
+            async.flushMicrotasks();
+            unawaited(joinReqSub.cancel());
+            final confirmedBystander = signaling.sessionChannel(
+              _sessionId,
+              confirmedPeerId!,
+            );
+            final confirmedMessages = <SignalingMessage>[];
+            final confirmedSub = confirmedBystander.messages.listen(
+              confirmedMessages.add,
+            );
+            addTearDown(confirmedSub.cancel);
+
+            // A pending viewer: data channel opens, deliberately never
+            // acked (same pattern as the Rule 1 ack-timeout test above) —
+            // never reaches `broadcastTransport.viewerJoined`.
+            const pendingPeerId = 'pending-viewer';
+            unawaited(factory.create(const []));
+            async.flushMicrotasks();
+            final pendingBystander = signaling.sessionChannel(
+              _sessionId,
+              pendingPeerId,
+            );
+            final pendingMessages = <SignalingMessage>[];
+            final pendingSub = pendingBystander.messages.listen(
+              pendingMessages.add,
+            );
+            addTearDown(pendingSub.cancel);
+            unawaited(signaling.submitJoinRequest(broadcastId, pendingPeerId));
+            async.flushMicrotasks();
+
+            unawaited(broadcastTransport.sendBroadcastEnded());
+            async.flushMicrotasks();
+
+            expect(confirmedMessages, contains(const BroadcastEnded()));
+            // The pending viewer already received ordinary handshake
+            // messages (JoinAccepted, SdpOffer) before `sendBroadcastEnded`
+            // was ever called — the point under test is that it never also
+            // receives a `BroadcastEnded`, since it was never ack-confirmed.
+            expect(pendingMessages.whereType<BroadcastEnded>(), isEmpty);
+          });
+        },
+      );
+    },
+  );
 }

@@ -142,13 +142,40 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     if (location == '/settings') return l10n.appTitleSettings;
     if (location == '/history') return l10n.appTitleHistory;
     if (location == '/audio-inputs') return l10n.appTitleAudioInputs;
+    if (location == '/broadcast') return l10n.appTitleGoLive;
     return l10n.appTitleDefault;
+  }
+
+  /// Rule 9's sign-out guard (F-6.9): the sole call path to
+  /// `authNotifierProvider.notifier.signOut()` within `zip_broadcast`.
+  /// Refuses outright — the call is not made, not merely a disabled
+  /// button — while `BroadcasterSessionState` is `StartingState`,
+  /// `LiveState`, or `EndingState`.
+  ///
+  /// NFR Design Q2: the state read and the subsequent act (the `signOut()`
+  /// call, or the refusal) happen in the same synchronous span — no
+  /// `await` of any kind between them — so no concurrent `goLive()` can
+  /// be interleaved between the check and the decision it makes.
+  Future<void> _requestSignOut() async {
+    final sessionState = ref.read(broadcastSessionNotifierProvider);
+    if (sessionState is StartingState ||
+        sessionState is LiveState ||
+        sessionState is EndingState) {
+      if (!mounted) return;
+      final l10n = ZipBroadcastLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.broadcastSignOutRefused)),
+      );
+      return;
+    }
+    await ref.read(authNotifierProvider.notifier).signOut();
   }
 
   static int _railIndex(String location) {
     if (location == '/') return 0;
     if (location == '/recording') return 1;
     if (location == '/history') return 2;
+    if (location == '/broadcast') return 3;
     return -1;
   }
 
@@ -160,6 +187,8 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
         return '/recording';
       case 2:
         return '/history';
+      case 3:
+        return '/broadcast';
       default:
         return '/';
     }
@@ -179,8 +208,9 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
         broadcastState is BroadcastPausedState ||
         broadcastState is BroadcastReconnectingState;
 
+    final Widget content;
     if (width > _desktopBreakpoint) {
-      return Row(
+      content = Row(
         children: [
           ZbNavRail(
             selectedIndex: _railIndex(location),
@@ -199,39 +229,71 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
           Expanded(child: widget.child),
         ],
       );
-    }
-
-    return BackButtonListener(
-      onBackButtonPressed: () async {
-        if (location == '/') return false;
-        final router = GoRouter.of(context);
-        if (router.canPop()) {
-          router.pop();
-        } else {
-          context.go('/');
-        }
-        return true;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(_screenTitle(context, location)),
-          leading: Builder(
-            builder: (ctx) => IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () => Scaffold.of(ctx).openDrawer(),
+    } else {
+      content = BackButtonListener(
+        onBackButtonPressed: () async {
+          if (location == '/') return false;
+          final router = GoRouter.of(context);
+          if (router.canPop()) {
+            router.pop();
+          } else {
+            context.go('/');
+          }
+          return true;
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(_screenTitle(context, location)),
+            leading: Builder(
+              builder: (ctx) => IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(ctx).openDrawer(),
+              ),
             ),
           ),
+          body: widget.child,
+          drawer: ZbNavDrawer(
+            currentLocation: location,
+            onTap: (route) {
+              context.go(route);
+              Navigator.of(context).pop();
+            },
+            isBroadcastActive: isBroadcastActive,
+          ),
         ),
-        body: widget.child,
-        drawer: ZbNavDrawer(
-          currentLocation: location,
-          onTap: (route) {
-            context.go(route);
-            Navigator.of(context).pop();
-          },
-          isBroadcastActive: isBroadcastActive,
-        ),
-      ),
-    );
+      );
+    }
+
+    return ZbSignOutScope(requestSignOut: _requestSignOut, child: content);
   }
+}
+
+/// Exposes [ZbAppShell]'s Rule 9 sign-out guard to descendants —
+/// `AccountSection`'s sign-out button reaches it via [ZbSignOutScope.of]
+/// instead of calling `authNotifierProvider.notifier.signOut()` directly
+/// (Functional Design Q6).
+class ZbSignOutScope extends InheritedWidget {
+  /// Creates a [ZbSignOutScope] wrapping [child].
+  const ZbSignOutScope({
+    required this.requestSignOut,
+    required super.child,
+    super.key,
+  });
+
+  /// `_ZbAppShellState._requestSignOut`, bound to the current shell
+  /// instance.
+  final Future<void> Function() requestSignOut;
+
+  /// Requests sign-out. Refuses (shows feedback, never calls `signOut()`)
+  /// while the broadcast session is non-idle (`business-rules.md` Rule 9).
+  static Future<void> of(BuildContext context) {
+    final scope =
+        context.dependOnInheritedWidgetOfExactType<ZbSignOutScope>();
+    assert(scope != null, 'No ZbSignOutScope found in context');
+    return scope!.requestSignOut();
+  }
+
+  @override
+  bool updateShouldNotify(ZbSignOutScope oldWidget) =>
+      oldWidget.requestSignOut != requestSignOut;
 }
