@@ -2503,3 +2503,11 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 **Context**: PR #34 fixes pushed and all 7 threads replied to. Awaiting the next automatic CodeRabbit pass (not manually requested) or human merge decision.
 
 ---
+
+## CONSTRUCTION - Unit 6 (Zip Broadcast Broadcast UI): PR #34 second CodeRabbit pass addressed
+**Timestamp**: 2026-10-13T04:50:00Z
+**User Input**: "proceed"
+**AI Response**: All 6 CI checks passed on the previous push. A second CodeRabbit review then ran automatically on the new commit (CodeRabbit's standard per-push behavior — not a re-review manually requested, consistent with the user's rate-limit instruction) and found one new, genuine issue: `_SetupViewState._maybeFetchId`'s "fetch once per mount while signed in" guard never reset on sign-out, so a different user signing in afterward (the `/broadcast` route has no auth redirect, so the widget state can stay mounted across the transition) would see the previous user's cached `BroadcastId`/URL. Fixed: the guard now clears `_idFetchedWhileSignedIn`/`_idFuture` on sign-out. Also added a retry affordance to `_BroadcastUrlRow` for the fetch-failure case, which the original code had no way to recover from (clearing the guard alone in a `catchError` wouldn't trigger a rebuild). Did not add a dedicated widget test for the sign-out-transition case specifically — the fix is a 4-line guard-reset verified by reading, and building the auth-state-transition test harness this would need is disproportionate effort for a quick-fix review response; noted here rather than silently skipped. `zip_broadcast`: 121 tests passing, `dart analyze --fatal-infos` clean. Pushed commit c9a1914, replied on the one new thread. No re-review requested.
+**Context**: PR #34 now has two rounds of CodeRabbit feedback fully addressed (8 findings total). Awaiting the next automatic pass or human merge decision.
+
+---
