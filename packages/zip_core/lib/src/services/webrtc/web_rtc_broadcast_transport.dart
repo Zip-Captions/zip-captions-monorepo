@@ -400,6 +400,14 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
   }
 
   @override
+  Future<void> sendBroadcastEnded() async {
+    for (final session in _sessions.values) {
+      if (session.connectedAt == null) continue;
+      await session.channel.send(const BroadcastEnded());
+    }
+  }
+
+  @override
   Stream<List<ViewerConnectionInfo>> get viewers => _viewersController.stream;
 
   @override

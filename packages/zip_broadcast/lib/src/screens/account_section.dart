@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zip_broadcast/src/auth/auth_provider_config.dart';
 import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
+import 'package:zip_broadcast/src/shell/zb_app_shell.dart';
 import 'package:zip_core/zip_core.dart';
 
 /// The Zip Broadcast sign-in view (S-15), matching Proto-10
@@ -150,8 +151,7 @@ class _SignedInCard extends ConsumerWidget {
               width: double.infinity,
               child: OutlinedButton(
                 key: const Key('sign-in-sign-out-button'),
-                onPressed: () =>
-                    ref.read(authNotifierProvider.notifier).signOut(),
+                onPressed: () => ZbSignOutScope.of(context),
                 child: Text(l10n.signInSignOut),
               ),
             ),

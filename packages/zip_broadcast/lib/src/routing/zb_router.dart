@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zip_broadcast/src/screens/audio_source_config_screen.dart';
+import 'package:zip_broadcast/src/screens/broadcast_screen.dart';
 import 'package:zip_broadcast/src/screens/home_screen.dart';
 import 'package:zip_broadcast/src/screens/recording_screen.dart';
 import 'package:zip_broadcast/src/screens/settings_screen.dart';
@@ -31,6 +32,10 @@ final zbRouter = GoRouter(
         GoRoute(
           path: '/audio-inputs',
           builder: (context, state) => const AudioSourceConfigScreen(),
+        ),
+        GoRoute(
+          path: '/broadcast',
+          builder: (context, state) => const BroadcastScreen(),
         ),
         GoRoute(
           path: '/history',

@@ -29,4 +29,13 @@ abstract interface class BroadcastTransport {
 
   /// Fires with a viewer's `peerId` once it's left (clean or unclean).
   Stream<String> get viewerLeft;
+
+  /// Sends a signaling-layer `BroadcastEnded` notice to every ack-confirmed
+  /// viewer's per-viewer channel (Functional Design Q5, additive).
+  ///
+  /// Covers the niche [sendToAll]'s wire-level `CaptionWireMessage.Ended`
+  /// can't: a viewer mid-reconnect (data channel briefly down) still
+  /// learns the broadcast ended via signaling, rather than only
+  /// discovering it when its reconnect window times out.
+  Future<void> sendBroadcastEnded();
 }

@@ -398,5 +398,140 @@
   "settingsAccountSubtitle": "Sign in for remote broadcasting",
   "@settingsAccountSubtitle": {
     "description": "Settings list entry subtitle for the account/sign-in section"
+  },
+  "appTitleGoLive": "Go Live",
+  "@appTitleGoLive": {
+    "description": "App bar title for the Broadcast UI route (Unit 6, S-17)"
+  },
+  "broadcastSignedOutTitle": "Sign in to broadcast",
+  "@broadcastSignedOutTitle": {
+    "description": "Title of the signed-out overlay on the broadcast setup form"
+  },
+  "broadcastSignedOutCopy": "Sign in to broadcast to remote viewers over the internet, or go back to use your local output targets only.",
+  "@broadcastSignedOutCopy": {
+    "description": "Body copy of the signed-out overlay on the broadcast setup form"
+  },
+  "broadcastSessionNameLabel": "Session name",
+  "@broadcastSessionNameLabel": {
+    "description": "Label for the session name text field"
+  },
+  "broadcastSessionNameErrorEmpty": "Session name is required",
+  "@broadcastSessionNameErrorEmpty": {
+    "description": "Validation error when the session name is empty (business-rules.md Rule 7)"
+  },
+  "broadcastSessionNameErrorTooLong": "Session name is too long",
+  "@broadcastSessionNameErrorTooLong": {
+    "description": "Validation error when the session name exceeds the max length (business-rules.md Rule 7)"
+  },
+  "broadcastSessionNameErrorControlChar": "Session name contains an invalid character",
+  "@broadcastSessionNameErrorControlChar": {
+    "description": "Validation error when the session name contains a control character (business-rules.md Rule 7)"
+  },
+  "broadcastAutoStartCaptioning": "Start captioning automatically when I go live",
+  "@broadcastAutoStartCaptioning": {
+    "description": "Toggle label for BroadcastSettings.autoStartCaptioning"
+  },
+  "broadcastUrlLabel": "Your broadcast link",
+  "@broadcastUrlLabel": {
+    "description": "Label above the stable broadcast URL row"
+  },
+  "broadcastUrlCopyAction": "Copy",
+  "@broadcastUrlCopyAction": {
+    "description": "Button label to copy the broadcast URL to the clipboard"
+  },
+  "broadcastUrlCopied": "Link copied to clipboard",
+  "@broadcastUrlCopied": {
+    "description": "Confirmation snackbar shown after copying the broadcast URL"
+  },
+  "broadcastGoLiveAction": "Go Live",
+  "@broadcastGoLiveAction": {
+    "description": "Label on the Go Live button"
+  },
+  "broadcastGoingLive": "Going live…",
+  "@broadcastGoingLive": {
+    "description": "Progress label on the Go Live button while StartingState is in effect"
+  },
+  "broadcastFailedTitle": "Couldn't go live",
+  "@broadcastFailedTitle": {
+    "description": "Title of the failure card shown for BroadcastFailedState"
+  },
+  "broadcastFailureSignedOut": "You've been signed out. Sign in again and try once more.",
+  "@broadcastFailureSignedOut": {
+    "description": "Failure message for BroadcastFailure.signedOut"
+  },
+  "broadcastFailureSignalingUnavailable": "Couldn't publish your broadcast's live status. Check your connection and try again.",
+  "@broadcastFailureSignalingUnavailable": {
+    "description": "Failure message for BroadcastFailure.signalingUnavailable"
+  },
+  "broadcastFailureRelayUnavailable": "Couldn't set up a connection relay. Check your connection and try again.",
+  "@broadcastFailureRelayUnavailable": {
+    "description": "Failure message for BroadcastFailure.relayUnavailable"
+  },
+  "broadcastFailureIdentityUnavailable": "Couldn't look up your broadcast identity. Try again in a moment.",
+  "@broadcastFailureIdentityUnavailable": {
+    "description": "Failure message for BroadcastFailure.identityUnavailable"
+  },
+  "broadcastFailureUnknown": "Something went wrong starting your broadcast. Try again.",
+  "@broadcastFailureUnknown": {
+    "description": "Failure message for BroadcastFailure.unknown"
+  },
+  "broadcastRetryAction": "Try again",
+  "@broadcastRetryAction": {
+    "description": "Retry button label on the broadcast failure card"
+  },
+  "broadcastDashboardTitle": "You're live",
+  "@broadcastDashboardTitle": {
+    "description": "Heading on the live broadcast dashboard"
+  },
+  "broadcastViewerCount": "{count} of {max} viewers",
+  "@broadcastViewerCount": {
+    "description": "Viewer count vs. capacity on the live dashboard",
+    "placeholders": {
+      "count": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "broadcastDurationLabel": "Duration",
+  "@broadcastDurationLabel": {
+    "description": "Label for the broadcast duration stat card"
+  },
+  "broadcastCaptionsNeverStarted": "Captioning hasn't started yet — viewers are connected but won't see any captions until you start captioning.",
+  "@broadcastCaptionsNeverStarted": {
+    "description": "Banner shown when captioning has never been active during this broadcast (F-6.4)"
+  },
+  "broadcastCaptionsNotRunning": "Captions are not running — viewers are connected but won't see any captions until you start captioning.",
+  "@broadcastCaptionsNotRunning": {
+    "description": "Banner shown when captioning was active before but isn't currently (F-6.4)"
+  },
+  "broadcastFullBanner": "This broadcast is at its {cap}-viewer cap — new viewers can't join until someone disconnects.",
+  "@broadcastFullBanner": {
+    "description": "Banner shown when viewers.length == maxViewers (F-6.5)",
+    "placeholders": {
+      "cap": {"type": "int"}
+    }
+  },
+  "broadcastCaptionPreviewEmpty": "No captions yet — start captioning to show live captions here.",
+  "@broadcastCaptionPreviewEmpty": {
+    "description": "Empty-state text for the live caption preview on the dashboard"
+  },
+  "broadcastStartCaptioningAction": "Start Captioning",
+  "@broadcastStartCaptioningAction": {
+    "description": "Button label to start captioning from the dashboard"
+  },
+  "broadcastPauseCaptioningAction": "Pause",
+  "@broadcastPauseCaptioningAction": {
+    "description": "Button label to pause captioning from the dashboard"
+  },
+  "broadcastResumeCaptioningAction": "Resume",
+  "@broadcastResumeCaptioningAction": {
+    "description": "Button label to resume captioning from the dashboard"
+  },
+  "broadcastEndAction": "End Broadcast",
+  "@broadcastEndAction": {
+    "description": "Button label to end the live broadcast"
+  },
+  "broadcastSignOutRefused": "End the live broadcast before signing out",
+  "@broadcastSignOutRefused": {
+    "description": "Snackbar shown when sign-out is refused while the broadcast session is non-idle (business-rules.md Rule 9)"
   }
 }

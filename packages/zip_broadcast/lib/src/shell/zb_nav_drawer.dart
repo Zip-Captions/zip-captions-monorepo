@@ -74,6 +74,13 @@ class ZbNavDrawer extends StatelessWidget {
               currentLocation: currentLocation,
               onTap: onTap,
             ),
+            _DrawerTile(
+              icon: Icons.podcasts_outlined,
+              label: 'Go Live',
+              route: '/broadcast',
+              currentLocation: currentLocation,
+              onTap: onTap,
+            ),
             const Spacer(),
             _DrawerTile(
               icon: Icons.settings_outlined,

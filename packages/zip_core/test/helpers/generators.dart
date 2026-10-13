@@ -8,6 +8,7 @@ import 'dart:math';
 import 'package:zip_core/src/models/audio_device.dart';
 import 'package:zip_core/src/models/auth_failure.dart';
 import 'package:zip_core/src/models/broadcast_id.dart';
+import 'package:zip_core/src/models/broadcast_settings.dart';
 import 'package:zip_core/src/models/caption_event.dart';
 import 'package:zip_core/src/models/caption_wire_message.dart';
 import 'package:zip_core/src/models/display_settings.dart';
@@ -658,4 +659,104 @@ Object? arbitraryMalformedCaptionWireJson(Random random) =>
         'timestamp': '2026-01-01T00:00:00.000Z',
         'sourceId': 'default',
       },
+    };
+
+// --- Broadcast session orchestration domain generators (Unit 6) ---
+
+/// A single command in a `BroadcastSessionNotifier` stateful PBT sequence
+/// (PBT-06). [GoLiveCommand]'s boolean flags simulate which `goLive()` step
+/// fails (`business-rules.md` Rule 2) — the test driver realizes a `true`
+/// flag by setting the corresponding fake collaborator's error field for
+/// the duration of exactly that one call. Multiple flags may be `true`
+/// simultaneously, deliberately — Rule 2's checks run in a fixed order
+/// (sign-in, then identity, then ICE, then publish), so this also
+/// exercises that priority ordering, not just each failure in isolation.
+sealed class BroadcastSessionCommand {
+  const BroadcastSessionCommand();
+}
+
+/// Attempt to go live.
+final class GoLiveCommand extends BroadcastSessionCommand {
+  /// Creates a [GoLiveCommand].
+  const GoLiveCommand({
+    this.signedOut = false,
+    this.identityError = false,
+    this.iceError = false,
+    this.publishError = false,
+  });
+
+  /// Simulates `authNotifierProvider` reporting signed-out (F2-1).
+  final bool signedOut;
+
+  /// Simulates `BroadcastIdentityRepository.getOrCreateMine()` failing
+  /// (F2-2).
+  final bool identityError;
+
+  /// Simulates `IceServerProvider.iceServersFor()` failing (F2-3).
+  final bool iceError;
+
+  /// Simulates `StatusChannel.publishLive()` failing (F2-7).
+  final bool publishError;
+
+  @override
+  String toString() =>
+      'GoLiveCommand(signedOut: $signedOut, identityError: $identityError, '
+      'iceError: $iceError, publishError: $publishError)';
+}
+
+/// End the current broadcast.
+final class EndBroadcastCommand extends BroadcastSessionCommand {
+  const EndBroadcastCommand();
+
+  @override
+  String toString() => 'EndBroadcastCommand()';
+}
+
+/// A single [BroadcastSessionCommand] weighted toward realistic usage:
+/// a clean `goLive()` (~55%), a `goLive()` failing at exactly one step
+/// (~25%, evenly split across the four), and `endBroadcast()` (~20%).
+BroadcastSessionCommand _arbitraryBroadcastSessionCommand(Random r) {
+  final kind = r.nextInt(20);
+  if (kind < 11) return const GoLiveCommand();
+  if (kind < 14) return const GoLiveCommand(signedOut: true);
+  if (kind < 15) return const GoLiveCommand(identityError: true);
+  if (kind < 16) return const GoLiveCommand(iceError: true);
+  if (kind < 17) return const GoLiveCommand(publishError: true);
+  return const EndBroadcastCommand();
+}
+
+/// Weighted sequence of [BroadcastSessionCommand]s for the stateful
+/// `BroadcastSessionNotifier` PBT (PBT-06): realistic flows (go live, end,
+/// go live again) are common, while adversarial orderings (consecutive
+/// `goLive()` calls, `endBroadcast()` with nothing live, repeated failures)
+/// and the empty sequence remain reachable.
+final Generator<List<BroadcastSessionCommand>>
+    arbitraryBroadcastSessionCommandSequence =
+    any.listWithLengthInRange(0, 20, _arbitraryBroadcastSessionCommand);
+
+/// Generates a session name including deliberately adversarial inputs
+/// (empty/whitespace-only, exactly-at-boundary length, embedded control
+/// characters, Unicode) alongside normal ASCII strings — for
+/// [BroadcastSettings.validateSessionName]'s invariant PBT (PBT-03, PBT-07).
+Generator<String> get arbitraryBroadcastSessionNameInput => (r) {
+      switch (r.nextInt(8)) {
+        case 0:
+          return '';
+        case 1:
+          return '   ';
+        case 2:
+          return 'a' * broadcastSessionNameMaxLength; // exactly at boundary
+        case 3:
+          return 'a' * (broadcastSessionNameMaxLength + 1); // one over
+        case 4:
+          // Embedded control character at a random position.
+          final base = any.letterOrDigits(r);
+          final controlChar = String.fromCharCode(r.nextInt(0x20));
+          final pos = base.isEmpty ? 0 : r.nextInt(base.length + 1);
+          return base.substring(0, pos) + controlChar + base.substring(pos);
+        case 5:
+          return 'héllo wörld 日本語'; // Unicode, otherwise valid
+        default:
+          return any.letterOrDigits(r);
+      }
     };

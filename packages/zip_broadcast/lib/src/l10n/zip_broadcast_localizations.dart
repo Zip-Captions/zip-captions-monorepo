@@ -630,6 +630,198 @@ abstract class ZipBroadcastLocalizations {
   /// In en, this message translates to:
   /// **'Sign in for remote broadcasting'**
   String get settingsAccountSubtitle;
+
+  /// App bar title for the Broadcast UI route (Unit 6, S-17)
+  ///
+  /// In en, this message translates to:
+  /// **'Go Live'**
+  String get appTitleGoLive;
+
+  /// Title of the signed-out overlay on the broadcast setup form
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to broadcast'**
+  String get broadcastSignedOutTitle;
+
+  /// Body copy of the signed-out overlay on the broadcast setup form
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to broadcast to remote viewers over the internet, or go back to use your local output targets only.'**
+  String get broadcastSignedOutCopy;
+
+  /// Label for the session name text field
+  ///
+  /// In en, this message translates to:
+  /// **'Session name'**
+  String get broadcastSessionNameLabel;
+
+  /// Validation error when the session name is empty (business-rules.md Rule 7)
+  ///
+  /// In en, this message translates to:
+  /// **'Session name is required'**
+  String get broadcastSessionNameErrorEmpty;
+
+  /// Validation error when the session name exceeds the max length (business-rules.md Rule 7)
+  ///
+  /// In en, this message translates to:
+  /// **'Session name is too long'**
+  String get broadcastSessionNameErrorTooLong;
+
+  /// Validation error when the session name contains a control character (business-rules.md Rule 7)
+  ///
+  /// In en, this message translates to:
+  /// **'Session name contains an invalid character'**
+  String get broadcastSessionNameErrorControlChar;
+
+  /// Toggle label for BroadcastSettings.autoStartCaptioning
+  ///
+  /// In en, this message translates to:
+  /// **'Start captioning automatically when I go live'**
+  String get broadcastAutoStartCaptioning;
+
+  /// Label above the stable broadcast URL row
+  ///
+  /// In en, this message translates to:
+  /// **'Your broadcast link'**
+  String get broadcastUrlLabel;
+
+  /// Button label to copy the broadcast URL to the clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get broadcastUrlCopyAction;
+
+  /// Confirmation snackbar shown after copying the broadcast URL
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied to clipboard'**
+  String get broadcastUrlCopied;
+
+  /// Label on the Go Live button
+  ///
+  /// In en, this message translates to:
+  /// **'Go Live'**
+  String get broadcastGoLiveAction;
+
+  /// Progress label on the Go Live button while StartingState is in effect
+  ///
+  /// In en, this message translates to:
+  /// **'Going live…'**
+  String get broadcastGoingLive;
+
+  /// Title of the failure card shown for BroadcastFailedState
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t go live'**
+  String get broadcastFailedTitle;
+
+  /// Failure message for BroadcastFailure.signedOut
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve been signed out. Sign in again and try once more.'**
+  String get broadcastFailureSignedOut;
+
+  /// Failure message for BroadcastFailure.signalingUnavailable
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t publish your broadcast\'s live status. Check your connection and try again.'**
+  String get broadcastFailureSignalingUnavailable;
+
+  /// Failure message for BroadcastFailure.relayUnavailable
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t set up a connection relay. Check your connection and try again.'**
+  String get broadcastFailureRelayUnavailable;
+
+  /// Failure message for BroadcastFailure.identityUnavailable
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t look up your broadcast identity. Try again in a moment.'**
+  String get broadcastFailureIdentityUnavailable;
+
+  /// Failure message for BroadcastFailure.unknown
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong starting your broadcast. Try again.'**
+  String get broadcastFailureUnknown;
+
+  /// Retry button label on the broadcast failure card
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get broadcastRetryAction;
+
+  /// Heading on the live broadcast dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re live'**
+  String get broadcastDashboardTitle;
+
+  /// Viewer count vs. capacity on the live dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {max} viewers'**
+  String broadcastViewerCount(int count, int max);
+
+  /// Label for the broadcast duration stat card
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get broadcastDurationLabel;
+
+  /// Banner shown when captioning has never been active during this broadcast (F-6.4)
+  ///
+  /// In en, this message translates to:
+  /// **'Captioning hasn\'t started yet — viewers are connected but won\'t see any captions until you start captioning.'**
+  String get broadcastCaptionsNeverStarted;
+
+  /// Banner shown when captioning was active before but isn't currently (F-6.4)
+  ///
+  /// In en, this message translates to:
+  /// **'Captions are not running — viewers are connected but won\'t see any captions until you start captioning.'**
+  String get broadcastCaptionsNotRunning;
+
+  /// Banner shown when viewers.length == maxViewers (F-6.5)
+  ///
+  /// In en, this message translates to:
+  /// **'This broadcast is at its {cap}-viewer cap — new viewers can\'t join until someone disconnects.'**
+  String broadcastFullBanner(int cap);
+
+  /// Empty-state text for the live caption preview on the dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'No captions yet — start captioning to show live captions here.'**
+  String get broadcastCaptionPreviewEmpty;
+
+  /// Button label to start captioning from the dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Start Captioning'**
+  String get broadcastStartCaptioningAction;
+
+  /// Button label to pause captioning from the dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get broadcastPauseCaptioningAction;
+
+  /// Button label to resume captioning from the dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get broadcastResumeCaptioningAction;
+
+  /// Button label to end the live broadcast
+  ///
+  /// In en, this message translates to:
+  /// **'End Broadcast'**
+  String get broadcastEndAction;
+
+  /// Snackbar shown when sign-out is refused while the broadcast session is non-idle (business-rules.md Rule 9)
+  ///
+  /// In en, this message translates to:
+  /// **'End the live broadcast before signing out'**
+  String get broadcastSignOutRefused;
 }
 
 class _ZipBroadcastLocalizationsDelegate

@@ -44,6 +44,22 @@ class RemoteBroadcastTarget implements CaptionOutputTarget {
   /// This broadcast's current caption activity.
   CaptionActivity get currentActivity => _currentActivity;
 
+  /// Seeds [currentActivity] from the app's actual recording state at
+  /// registration time (Functional Design Q4 — additive, non-breaking).
+  ///
+  /// The fixed single-argument constructor always defaults
+  /// [currentActivity] to [CaptionActivity.inactive]; if captioning was
+  /// already running when `goLive()` registers this target, no
+  /// `SessionStateEvent` will ever fire to correct that default, so newly
+  /// joined viewers would get a wrong `inactive` snapshot. Sets the value
+  /// directly — deliberately **does not** emit on [activityChanges]: this
+  /// seeds the initial value before any real state-change event, so there
+  /// is no prior value for a change notification to be relative to.
+  // ignore: use_setters_to_change_properties
+  void primeActivity(CaptionActivity activity) {
+    _currentActivity = activity;
+  }
+
   /// Fires whenever [currentActivity] changes — drives the dashboard
   /// captions-inactive banner.
   Stream<CaptionActivity> get activityChanges => _activityController.stream;
