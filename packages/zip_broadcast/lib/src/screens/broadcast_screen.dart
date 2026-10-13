@@ -66,9 +66,25 @@ class _SetupViewState extends ConsumerState<_SetupView> {
   }
 
   void _maybeFetchId(bool signedIn) {
-    if (!signedIn || _idFetchedWhileSignedIn) return;
+    if (!signedIn) {
+      // Resets on sign-out so a different user signing in afterward (the
+      // route has no auth redirect, so this same state can stay mounted)
+      // gets a fresh fetch rather than the previous user's cached
+      // BroadcastId (CodeRabbit PR #34 review).
+      _idFetchedWhileSignedIn = false;
+      _idFuture = null;
+      return;
+    }
+    if (_idFetchedWhileSignedIn) return;
     _idFetchedWhileSignedIn = true;
     _idFuture = ref.read(broadcastIdentityRepositoryProvider).getOrCreateMine();
+  }
+
+  void _retryIdFetch() {
+    setState(() {
+      _idFetchedWhileSignedIn = false;
+      _idFuture = null;
+    });
   }
 
   @override
@@ -148,7 +164,11 @@ class _SetupViewState extends ConsumerState<_SetupView> {
                   ),
                   if (signedIn) ...[
                     const SizedBox(height: 16),
-                    _BroadcastUrlRow(idFuture: _idFuture, l10n: l10n),
+                    _BroadcastUrlRow(
+                      idFuture: _idFuture,
+                      l10n: l10n,
+                      onRetry: _retryIdFetch,
+                    ),
                   ],
                   const SizedBox(height: 24),
                   if (failure != null)
@@ -192,10 +212,19 @@ class _SetupViewState extends ConsumerState<_SetupView> {
 }
 
 class _BroadcastUrlRow extends StatelessWidget {
-  const _BroadcastUrlRow({required this.idFuture, required this.l10n});
+  const _BroadcastUrlRow({
+    required this.idFuture,
+    required this.l10n,
+    required this.onRetry,
+  });
 
   final Future<BroadcastId>? idFuture;
   final ZipBroadcastLocalizations l10n;
+
+  /// Clears the fetch guard and retries (CodeRabbit PR #34 review) — the
+  /// original fetch guard had no way to retry after a failure, since
+  /// clearing it alone (e.g. in a `catchError`) doesn't trigger a rebuild.
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -204,6 +233,20 @@ class _BroadcastUrlRow extends StatelessWidget {
     return FutureBuilder<BroadcastId>(
       future: future,
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Card(
+            key: const Key('broadcast-url-row-error'),
+            child: ListTile(
+              title: Text(l10n.broadcastUrlLabel),
+              subtitle: Text(l10n.broadcastFailureUnknown),
+              trailing: TextButton(
+                key: const Key('broadcast-url-retry-button'),
+                onPressed: onRetry,
+                child: Text(l10n.broadcastRetryAction),
+              ),
+            ),
+          );
+        }
         final id = snapshot.data;
         if (id == null) return const SizedBox.shrink();
         final url = BroadcastLink.toUrl(id).toString();
