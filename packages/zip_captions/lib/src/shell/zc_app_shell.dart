@@ -22,6 +22,7 @@ class ZcAppShell extends ConsumerWidget {
     if (location == '/') return 'Zip Captions';
     if (location == '/recording') return 'Caption';
     if (location == '/settings') return 'Settings';
+    if (location == '/join') return 'Join';
     if (location == '/history') return 'History';
     if (location.startsWith('/history/')) return 'Transcript';
     return 'Zip Captions';

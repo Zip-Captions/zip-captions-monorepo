@@ -82,10 +82,30 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     );
   }
 
+  /// Leaves with confirmation while a session can still emit captions, and
+  /// immediately from every terminal state (Rule 9).
   Future<void> _confirmLeave() async {
+    final current = ref.read(viewerSessionNotifierProvider);
+    final needsConfirmation =
+        current is ResolvingState ||
+        current is ConnectingState ||
+        current is LiveViewState ||
+        current is ViewerReconnectingState;
+
+    if (needsConfirmation) {
+      final confirmed = await _showLeaveDialog();
+      if (confirmed != true) return;
+    }
+
+    await _notifier?.leave();
+    if (!mounted) return;
+    context.go('/');
+  }
+
+  Future<bool?> _showLeaveDialog() async {
     final strings = ref.read(zcStringsProvider).valueOrNull;
-    if (strings == null) return;
-    final confirmed = await showDialog<bool>(
+    if (strings == null) return null;
+    return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(strings.confirmLeaveTitle),
@@ -102,10 +122,6 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
         ],
       ),
     );
-    if (confirmed != true) return;
-    await _notifier?.leave();
-    if (!mounted) return;
-    context.go('/');
   }
 
   @override
@@ -136,54 +152,60 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
             notifier.viewerCaptionTarget?.visibleCaptions ??
             const <CaptionDisplayEntry>[];
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(strings.joinBroadcastTitle),
-            actions: [
-              TextButton(
-                onPressed: _confirmLeave,
-                child: Text(strings.viewerLeave),
-              ),
-            ],
-          ),
-          body: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: ViewerStatusRegion(
-                  state: viewer,
-                  text: presentation.title,
-                  body: presentation.body,
+        return BackButtonListener(
+          onBackButtonPressed: () async {
+            await _confirmLeave();
+            return true;
+          },
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text(strings.joinBroadcastTitle),
+              actions: [
+                TextButton(
+                  onPressed: _confirmLeave,
+                  child: Text(strings.viewerLeave),
                 ),
-              ),
-              if (isCaptionActivityPaused(viewer))
+              ],
+            ),
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    strings.captionsPausedNotice,
-                    style: Theme.of(context).textTheme.labelLarge,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: ViewerStatusRegion(
+                    state: viewer,
+                    text: presentation.title,
+                    body: presentation.body,
                   ),
                 ),
-              if (presentation.canRetry)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
+                if (isCaptionActivityPaused(viewer))
+                  Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: OutlinedButton(
-                      onPressed: _retry,
-                      child: Text(strings.tryAgain),
+                    child: Text(
+                      strings.captionsPausedNotice,
+                      style: Theme.of(context).textTheme.labelLarge,
                     ),
                   ),
+                if (presentation.canRetry)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: OutlinedButton(
+                        onPressed: _retry,
+                        child: Text(strings.tryAgain),
+                      ),
+                    ),
+                  ),
+                const Divider(height: 1),
+                Expanded(
+                  child: CaptionDisplayWidget(
+                    entries: captions,
+                    settings: ref.watch(displaySettingsProvider),
+                  ),
                 ),
-              const Divider(height: 1),
-              Expanded(
-                child: CaptionDisplayWidget(
-                  entries: captions,
-                  settings: ref.watch(displaySettingsProvider),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

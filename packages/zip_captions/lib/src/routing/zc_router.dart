@@ -11,8 +11,10 @@ import 'package:zip_captions/src/widgets/viewer_route_args.dart';
 
 /// Application router for Zip Captions.
 ///
-/// All routes are nested inside a [ShellRoute] that renders [ZcAppShell]
-/// as the persistent navigation chrome.
+/// In-app destinations are nested inside a [ShellRoute] that renders
+/// [ZcAppShell] as the persistent navigation chrome. The broadcast viewer
+/// (`/b/:broadcastId`) sits outside the shell: it owns its own app bar and
+/// back handling, and must not offer the app's navigation chrome.
 final zcRouter = GoRouter(
   initialLocation: '/',
   routes: [
@@ -32,17 +34,6 @@ final zcRouter = GoRouter(
           builder: (context, state) => const JoinBroadcastScreen(),
         ),
         GoRoute(
-          path: ViewerScreen.routePath,
-          name: ViewerScreen.routeName,
-          builder: (context, state) => ViewerScreen(
-            broadcastId: state.pathParameters['broadcastId']!,
-            initialBroadcastId: switch (state.extra) {
-              final ViewerRouteArgs args => args.broadcastId,
-              _ => null,
-            },
-          ),
-        ),
-        GoRoute(
           path: '/settings',
           builder: (context, state) => const SettingsScreen(),
         ),
@@ -59,6 +50,17 @@ final zcRouter = GoRouter(
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: ViewerScreen.routePath,
+      name: ViewerScreen.routeName,
+      builder: (context, state) => ViewerScreen(
+        broadcastId: state.pathParameters['broadcastId']!,
+        initialBroadcastId: switch (state.extra) {
+          final ViewerRouteArgs args => args.broadcastId,
+          _ => null,
+        },
+      ),
     ),
   ],
 );
