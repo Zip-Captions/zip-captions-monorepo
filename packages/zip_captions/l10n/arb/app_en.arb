@@ -7,5 +7,156 @@
   "homePlaceholder": "Tap Start to begin captioning",
   "@homePlaceholder": {
     "description": "Placeholder text on the home screen before captioning starts"
+  },
+  "joinBroadcastTitle": "Join a broadcast",
+  "@joinBroadcastTitle": {
+    "description": "Title of the join-broadcast screen and the drawer/home affordance label"
+  },
+  "joinBroadcastFieldLabel": "Broadcast ID or URL",
+  "@joinBroadcastFieldLabel": {
+    "description": "Label of the join screen's broadcast ID or URL text field"
+  },
+  "joinBroadcastSubmit": "Join",
+  "@joinBroadcastSubmit": {
+    "description": "Label of the join screen's submit button"
+  },
+  "joinBroadcastInvalidInput": "That doesn't look like a valid broadcast ID or URL — check it and try again",
+  "@joinBroadcastInvalidInput": {
+    "description": "Inline error shown on the join screen when the entered ID or URL does not parse"
+  },
+  "viewerLeave": "Leave",
+  "@viewerLeave": {
+    "description": "Label of the viewer screen's control that ends the viewing session"
+  },
+  "viewerConfirmLeaveTitle": "Leave the broadcast?",
+  "@viewerConfirmLeaveTitle": {
+    "description": "Title of the dialog shown before leaving an active viewing session"
+  },
+  "viewerConfirmLeaveBody": "You'll stop receiving captions.",
+  "@viewerConfirmLeaveBody": {
+    "description": "Body of the dialog shown before leaving an active viewing session"
+  },
+  "viewerConfirmLeaveConfirm": "Leave",
+  "@viewerConfirmLeaveConfirm": {
+    "description": "Confirm button of the leave dialog"
+  },
+  "viewerConfirmLeaveCancel": "Stay",
+  "@viewerConfirmLeaveCancel": {
+    "description": "Cancel button of the leave dialog"
+  },
+  "viewerTryAgain": "Try again",
+  "@viewerTryAgain": {
+    "description": "Label of the retry button on cannot-connect and full states"
+  },
+  "viewerStateTitleConnecting": "Connecting",
+  "@viewerStateTitleConnecting": {
+    "description": "Status title while the join handshake is in flight"
+  },
+  "viewerStateJoining": "Joining {sessionName}",
+  "@viewerStateJoining": {
+    "description": "Status copy while connecting, once the session name is known",
+    "placeholders": {
+      "sessionName": {
+        "type": "String"
+      }
+    }
+  },
+  "viewerStateTitleLive": "Live",
+  "@viewerStateTitleLive": {
+    "description": "Status title while captions are flowing"
+  },
+  "viewerStateTitleReconnecting": "Reconnecting",
+  "@viewerStateTitleReconnecting": {
+    "description": "Status title while the transport is re-establishing the connection"
+  },
+  "viewerReconnectingNotice": "Reconnecting…",
+  "@viewerReconnectingNotice": {
+    "description": "Inline notice shown over the last captions while reconnecting"
+  },
+  "viewerStateTitleNotBroadcasting": "Not currently broadcasting",
+  "@viewerStateTitleNotBroadcasting": {
+    "description": "Status title when the broadcast exists but nobody is live"
+  },
+  "viewerNotBroadcastingBodyNamed": "{sessionName} hasn't started this broadcast yet. This page will connect automatically once it goes live.",
+  "@viewerNotBroadcastingBodyNamed": {
+    "description": "Not-broadcasting copy when the session name is known",
+    "placeholders": {
+      "sessionName": {
+        "type": "String"
+      }
+    }
+  },
+  "viewerNotBroadcastingBodyNameless": "This broadcast hasn't started yet. This page will connect automatically once it goes live.",
+  "@viewerNotBroadcastingBodyNameless": {
+    "description": "Not-broadcasting copy when the session name is not known yet"
+  },
+  "viewerStateTitleEnded": "Broadcast ended",
+  "@viewerStateTitleEnded": {
+    "description": "Status title after the broadcaster ends the broadcast"
+  },
+  "viewerEndedBodyNamed": "{sessionName} has ended. Thanks for watching.",
+  "@viewerEndedBodyNamed": {
+    "description": "Broadcast-ended copy when the session name is known",
+    "placeholders": {
+      "sessionName": {
+        "type": "String"
+      }
+    }
+  },
+  "viewerEndedBodyNameless": "The broadcast has ended. Thanks for watching.",
+  "@viewerEndedBodyNameless": {
+    "description": "Broadcast-ended copy when the session name is not known"
+  },
+  "viewerStateTitleFull": "Broadcast full",
+  "@viewerStateTitleFull": {
+    "description": "Status title when the broadcaster refuses the join as full"
+  },
+  "viewerFullBody": "This broadcast has reached its viewer limit. Try again later — someone may disconnect.",
+  "@viewerFullBody": {
+    "description": "Broadcast-full copy"
+  },
+  "viewerStateTitleCannotConnect": "Can't connect",
+  "@viewerStateTitleCannotConnect": {
+    "description": "Status title for every cannot-connect state"
+  },
+  "viewerCannotConnectNotFoundBody": "We couldn't find this broadcast — the link may be incorrect.",
+  "@viewerCannotConnectNotFoundBody": {
+    "description": "Cannot-connect copy when the broadcast code does not exist"
+  },
+  "viewerCannotConnectRateLimitedBody": "Too many attempts — please wait a moment and try again.",
+  "@viewerCannotConnectRateLimitedBody": {
+    "description": "Cannot-connect copy when the resolution request was rate limited"
+  },
+  "viewerCannotConnectResolutionFailedBody": "We couldn't check whether this broadcast is live right now. Try again.",
+  "@viewerCannotConnectResolutionFailedBody": {
+    "description": "Cannot-connect copy when the liveness check failed or never completed"
+  },
+  "viewerCannotConnectIceFailedBody": "We couldn't reach this broadcast. Check your network and try again.",
+  "@viewerCannotConnectIceFailedBody": {
+    "description": "Cannot-connect copy for a failed connection or missing relay configuration"
+  },
+  "viewerCannotConnectReconnectTimeoutBody": "Lost connection to the broadcast and couldn't reconnect. Check your network and try again.",
+  "@viewerCannotConnectReconnectTimeoutBody": {
+    "description": "Cannot-connect copy when the reconnect window expired while the broadcast was live"
+  },
+  "viewerCannotConnectSignalingRejectedBody": "The broadcast rejected the connection — it may have ended or changed. Try again.",
+  "@viewerCannotConnectSignalingRejectedBody": {
+    "description": "Cannot-connect copy when the broadcaster rejected the join"
+  },
+  "viewerCannotConnectTimeoutBody": "The broadcast didn't respond. Check your network and try again.",
+  "@viewerCannotConnectTimeoutBody": {
+    "description": "Cannot-connect copy when the broadcaster did not respond in time"
+  },
+  "viewerCaptionsPausedNotice": "Captions paused by the broadcaster",
+  "@viewerCaptionsPausedNotice": {
+    "description": "Inline notice shown over the captions while the broadcaster's captioning is paused or inactive"
+  },
+  "viewerStateTitleInvalidInput": "Can't connect",
+  "@viewerStateTitleInvalidInput": {
+    "description": "Status title for an invalid broadcast link"
+  },
+  "viewerInvalidInputBody": "That broadcast link is invalid. Check the URL and try again.",
+  "@viewerInvalidInputBody": {
+    "description": "Copy shown when the deep-linked broadcast link is invalid"
   }
 }
