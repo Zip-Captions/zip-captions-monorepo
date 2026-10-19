@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zip_captions/src/l10n/zc_strings.dart';
 import 'package:zip_captions/src/shell/zc_nav_drawer.dart';
 import 'package:zip_captions/src/shell/zc_nav_rail.dart';
 import 'package:zip_core/zip_core.dart';
@@ -18,11 +19,13 @@ class ZcAppShell extends ConsumerWidget {
 
   static const _desktopBreakpoint = 768.0;
 
-  static String _screenTitle(String location) {
+  static String _screenTitle(String location, {ZcStrings? strings}) {
     if (location == '/') return 'Zip Captions';
     if (location == '/recording') return 'Caption';
     if (location == '/settings') return 'Settings';
-    if (location == '/join') return 'Join';
+    if (location == '/join') {
+      return strings?.joinBroadcastSubmit ?? 'Join';
+    }
     if (location == '/history') return 'History';
     if (location.startsWith('/history/')) return 'Transcript';
     return 'Zip Captions';
@@ -58,6 +61,7 @@ class ZcAppShell extends ConsumerWidget {
 
     final location = GoRouterState.of(context).matchedLocation;
     final width = MediaQuery.of(context).size.width;
+    final strings = ref.watch(zcStringsProvider).valueOrNull;
 
     if (width > _desktopBreakpoint) {
       return Row(
@@ -86,7 +90,7 @@ class ZcAppShell extends ConsumerWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(_screenTitle(location)),
+          title: Text(_screenTitle(location, strings: strings)),
           leading: Builder(
             builder: (ctx) => IconButton(
               icon: const Icon(Icons.menu),

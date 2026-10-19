@@ -94,6 +94,11 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
   /// leaves it unhandled so the platform gesture keeps its usual meaning
   /// (asking again, or popping) instead of being swallowed.
   Future<bool> _confirmLeave() async {
+    // Captured before any await: `leave()` waits on the transport disconnect,
+    // and a route replacement during that teardown unmounts this screen. A
+    // BuildContext lookup after the await would then be invalid and the
+    // viewer route would be stranded on an idle session.
+    final router = GoRouter.of(context);
     final current = ref.read(viewerSessionNotifierProvider);
     final needsConfirmation =
         current is ResolvingState ||
@@ -107,8 +112,7 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     }
 
     await _notifier?.leave();
-    if (!mounted) return true;
-    context.go('/');
+    router.go('/');
     return true;
   }
 

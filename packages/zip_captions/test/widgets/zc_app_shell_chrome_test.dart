@@ -182,6 +182,23 @@ void main() {
       await _pump(tester, '/');
       expect(find.text('Zip Captions'), findsOneWidget);
     });
+
+    testWidgets('the join title is read from the ARB', (tester) async {
+      await _pump(
+        tester,
+        '/join',
+        overrides: [
+          zcStringsProvider.overrideWith(
+            (ref) async => const ZcStrings.fromMap({
+              'joinBroadcastSubmit': 'SENTINEL-JOIN-TITLE',
+            }),
+          ),
+        ],
+      );
+
+      expect(find.text('SENTINEL-JOIN-TITLE'), findsOneWidget);
+      expect(find.text('Join'), findsNothing);
+    });
   });
 
   group('ZcAppShell — desktop chrome (> 768px)', () {

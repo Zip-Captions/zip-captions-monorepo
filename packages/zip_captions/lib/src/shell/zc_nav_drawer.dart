@@ -23,7 +23,8 @@ class ZcNavDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final joinLabel =
-        ref.watch(zcStringsProvider).valueOrNull?.navJoinBroadcast ?? '';
+        ref.watch(zcStringsProvider).valueOrNull?.navJoinBroadcast ??
+        'Join Broadcast';
     return Drawer(
       child: SafeArea(
         child: Column(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zip_captions/src/l10n/zc_strings.dart';
 import 'package:zip_captions/src/providers/viewer_announcer_provider.dart';
 import 'package:zip_captions/src/routing/zc_router.dart';
 import 'package:zip_core/zip_core.dart';
@@ -14,6 +15,7 @@ Future<void> _pump(
   WidgetTester tester,
   String location, {
   Size physicalSize = const Size(375, 812),
+  List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1.0;
@@ -38,6 +40,7 @@ Future<void> _pump(
           FakeViewerIceServerProvider(),
         ),
         viewerAnnouncerProvider.overrideWithValue((view, message) {}),
+        ...overrides,
       ],
       child: MaterialApp.router(routerConfig: zcRouter),
     ),
@@ -67,12 +70,25 @@ void main() {
       });
     }
 
-    testWidgets('/join shows the Join title in the shell app bar', (
+    testWidgets('/join shows the ARB Join title in the shell app bar', (
       tester,
     ) async {
-      await _pump(tester, '/join');
+      await _pump(
+        tester,
+        '/join',
+        overrides: [
+          zcStringsProvider.overrideWith(
+            (ref) async => const ZcStrings.fromMap({
+              'joinBroadcastSubmit': 'SENTINEL-SHELL-JOIN',
+            }),
+          ),
+        ],
+      );
 
-      expect(find.widgetWithText(AppBar, 'Join'), findsOneWidget);
+      expect(
+        find.widgetWithText(AppBar, 'SENTINEL-SHELL-JOIN'),
+        findsOneWidget,
+      );
     });
   });
 }

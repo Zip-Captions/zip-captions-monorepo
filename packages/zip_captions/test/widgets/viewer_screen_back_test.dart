@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -155,6 +156,42 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('home'), findsOneWidget);
       await pop;
+    });
+
+    testWidgets('the post-leave navigation does not need a live context', (
+      tester,
+    ) async {
+      // `leave()` awaits the transport disconnect. If the route is replaced
+      // in that window the screen unmounts before it navigates, so choosing
+      // the router from the BuildContext after the await would skip the
+      // navigation and strand the viewer route. Navigation must therefore be
+      // issued through a router captured before the await.
+      final source = File(
+        'lib/src/screens/viewer_screen.dart',
+      ).readAsStringSync();
+      final leaveStart = source.indexOf('Future<bool> _confirmLeave()');
+      final dialogStart = source.indexOf(
+        'Future<bool?> _showLeaveDialog()',
+        leaveStart,
+      );
+      final leaveBody = source.substring(leaveStart, dialogStart);
+      final awaitIndex = leaveBody.indexOf('await _notifier?.leave();');
+      final goIndex = leaveBody.indexOf("go('/')");
+      final captureIndex = leaveBody.indexOf('GoRouter.of(context)');
+
+      expect(awaitIndex, isNonNegative);
+      expect(goIndex, greaterThan(awaitIndex));
+      expect(captureIndex, isNonNegative);
+      expect(
+        captureIndex,
+        lessThan(awaitIndex),
+        reason: 'the router must be captured before the await',
+      );
+      expect(
+        leaveBody.substring(0, awaitIndex),
+        isNot(contains('mounted')),
+        reason: 'no mounted check may gate the post-await navigation',
+      );
     });
 
     testWidgets('a terminal state leaves without a dialog', (tester) async {

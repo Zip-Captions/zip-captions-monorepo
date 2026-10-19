@@ -109,3 +109,19 @@
    empty), the back file additionally covers system back from a direct route
    and an unhandled back event, and `_Logged.announcements` was written but
    never read. The duplicate file is deleted; the back file keeps coverage.
+
+## Review round 2
+
+1. **Fixed** — the shell app bar's `/join` title now reads `joinBroadcastSubmit`
+   through `ZcStrings` instead of an inline literal, matching the home and
+   drawer labels fixed in round 1. The drawer's `navJoinBroadcast` fallback no
+   longer resolves to an empty label before the ARB loads. Tests: the shell
+   title renders a sentinel from an overridden ARB (`zc_app_shell_chrome_test`),
+   and `viewer_routes_shell_test`'s `/join` title assertion now proves the
+   value comes from the ARB rather than a literal.
+2. **Fixed** — `_confirmLeave` captures `GoRouter.of(context)` before its first
+   await. Previously an unmount between the transport disconnect and the
+   navigation made the handler return "handled" without navigating, stranding
+   the viewer route on an idle session. The regression test pins the ordering:
+   the router capture must precede `await _notifier?.leave()` and no `mounted`
+   check may gate the post-await navigation.
