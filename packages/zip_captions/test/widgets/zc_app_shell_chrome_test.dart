@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zip_captions/src/l10n/zc_strings.dart';
 import 'package:zip_captions/src/shell/zc_app_shell.dart';
 import 'package:zip_core/zip_core.dart';
 
@@ -57,6 +58,7 @@ Future<void> _pump(
   WidgetTester tester,
   String initialLocation, {
   Size physicalSize = const Size(375, 812),
+  List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1.0;
@@ -70,6 +72,7 @@ Future<void> _pump(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         transcriptWriterTargetProvider.overrideWith((_) {}),
+        ...overrides,
       ],
       child: MaterialApp.router(
         // NoSplash prevents the ink_sparkle.frag shader from being loaded
@@ -127,8 +130,39 @@ void main() {
       expect(find.text('Settings'), findsOneWidget);
     });
 
+    testWidgets('the drawer reads its join label from the ARB', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        '/',
+        overrides: [
+          zcStringsProvider.overrideWith(
+            (ref) async => const ZcStrings.fromMap({
+              'navJoinBroadcast': 'SENTINEL-JOIN',
+            }),
+          ),
+        ],
+      );
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+
+      expect(find.text('SENTINEL-JOIN'), findsOneWidget);
+    });
+
     testWidgets('the drawer joins the broadcast screen', (tester) async {
-      await _pump(tester, '/');
+      await _pump(
+        tester,
+        '/',
+        overrides: [
+          zcStringsProvider.overrideWith(
+            (ref) async => const ZcStrings.fromMap({
+              'navJoinBroadcast': 'Join Broadcast',
+            }),
+          ),
+        ],
+      );
 
       await tester.tap(find.byIcon(Icons.menu));
       await tester.pumpAndSettle();

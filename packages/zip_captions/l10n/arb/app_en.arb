@@ -8,6 +8,10 @@
   "@homePlaceholder": {
     "description": "Placeholder text on the home screen before captioning starts"
   },
+  "navJoinBroadcast": "Join Broadcast",
+  "@navJoinBroadcast": {
+    "description": "Label of the navigation drawer's join affordance; shorter than joinBroadcastTitle so it fits a list tile"
+  },
   "joinBroadcastTitle": "Join a broadcast",
   "@joinBroadcastTitle": {
     "description": "Title of the join-broadcast screen and the drawer/home affordance label"

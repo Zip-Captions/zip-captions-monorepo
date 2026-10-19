@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zip_captions/src/l10n/zc_strings.dart';
 import 'package:zip_core/zip_core.dart';
 
 /// Home screen — entry point for starting a captioning session.
@@ -42,7 +43,10 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: () => context.go('/join'),
-              child: const Text('Join a broadcast'),
+              child: Text(
+                ref.watch(zcStringsProvider).valueOrNull?.joinBroadcastTitle ??
+                    '',
+              ),
             ),
             const Spacer(),
             TextButton(

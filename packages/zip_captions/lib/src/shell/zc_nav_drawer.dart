@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:zip_captions/src/l10n/zc_strings.dart';
 
 /// Navigation drawer shown on mobile for non-tab-bar screens
 /// (Caption, Settings, TranscriptViewer).
 ///
 /// Contains all 4 navigable targets: Home, Caption, History, Settings.
-class ZcNavDrawer extends StatelessWidget {
+class ZcNavDrawer extends ConsumerWidget {
   /// Creates a [ZcNavDrawer].
   const ZcNavDrawer({
     required this.currentLocation,
@@ -19,7 +21,9 @@ class ZcNavDrawer extends StatelessWidget {
   final ValueChanged<String> onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final joinLabel =
+        ref.watch(zcStringsProvider).valueOrNull?.navJoinBroadcast ?? '';
     return Drawer(
       child: SafeArea(
         child: Column(
@@ -54,7 +58,7 @@ class ZcNavDrawer extends StatelessWidget {
             ),
             _DrawerTile(
               icon: Icons.podcasts_outlined,
-              label: 'Join Broadcast',
+              label: joinLabel,
               route: '/join',
               currentLocation: currentLocation,
               onTap: onTap,

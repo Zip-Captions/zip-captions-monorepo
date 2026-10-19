@@ -58,6 +58,9 @@ class ZcStrings {
   /// Title of the join-broadcast screen.
   String get joinBroadcastTitle => _value('joinBroadcastTitle');
 
+  /// Label of the drawer's join affordance (a shorter wording).
+  String get navJoinBroadcast => _value('navJoinBroadcast');
+
   /// Label of the join screen text field.
   String get joinBroadcastFieldLabel => _value('joinBroadcastFieldLabel');
 
