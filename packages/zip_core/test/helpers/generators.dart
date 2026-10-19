@@ -917,8 +917,11 @@ final class LeaveCommand extends ViewerSessionCommand {
 /// A single [ViewerSessionCommand], weighted so leave (~20%), join (~20%),
 /// transport events (~25%), status events (~15%), expiry (~10%), and
 /// activity/ended (~10%) are all reachable.
+///
+/// The range is 21 so every kind — including 20, the activity fallback —
+/// can actually be drawn; with 20 the fallback was unreachable.
 ViewerSessionCommand _arbitraryViewerSessionCommand(Random r) {
-  final kind = r.nextInt(20);
+  final kind = r.nextInt(21);
   if (kind < 4) return const LeaveCommand();
   if (kind < 6) return const JoinCommand();
   if (kind < 7) return const JoinCommand(invalid: true);
