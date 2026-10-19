@@ -39,6 +39,11 @@ class HomeScreen extends ConsumerWidget {
                 child: const Text('Resume'),
               ),
             ],
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: () => context.go('/join'),
+              child: const Text('Join a broadcast'),
+            ),
             const Spacer(),
             TextButton(
               onPressed: () => context.go('/history'),

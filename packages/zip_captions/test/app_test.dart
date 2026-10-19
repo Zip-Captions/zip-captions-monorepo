@@ -53,6 +53,7 @@ void main() {
       );
 
       expect(find.text('Start Captioning'), findsOneWidget);
+      expect(find.text('Join a broadcast'), findsOneWidget);
     });
   });
 }

@@ -53,6 +53,13 @@ class ZcNavDrawer extends StatelessWidget {
               onTap: onTap,
             ),
             _DrawerTile(
+              icon: Icons.podcasts_outlined,
+              label: 'Join Broadcast',
+              route: '/join',
+              currentLocation: currentLocation,
+              onTap: onTap,
+            ),
+            _DrawerTile(
               icon: Icons.history,
               label: 'History',
               route: '/history',
@@ -91,7 +98,8 @@ class _DrawerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selected = currentLocation == route ||
+    final selected =
+        currentLocation == route ||
         (route != '/' && currentLocation.startsWith(route));
     return ListTile(
       leading: Icon(icon),

@@ -94,6 +94,9 @@ class ZcStrings {
   /// Status title for an invalid link.
   String get stateTitleInvalidInput => _value('viewerStateTitleInvalidInput');
 
+  /// Copy shown when the broadcast is at capacity.
+  String get fullBody => _value('viewerFullBody');
+
   /// Inline notice while the broadcaster paused.
   String get captionsPausedNotice => _value('viewerCaptionsPausedNotice');
 
