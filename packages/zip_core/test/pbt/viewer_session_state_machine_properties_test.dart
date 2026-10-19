@@ -50,7 +50,12 @@ class _World {
 
   void settle() => async.flushMicrotasks();
 
+  /// F-7.8 auto-joins: live status emissions that reached `connect()` without
+  /// a resolve of their own.
+  int autoJoins = 0;
+
   void run(ViewerSessionCommand command) {
+    final wasNotBroadcasting = state is NotBroadcastingState;
     switch (command) {
       case JoinCommand(
         :final invalid,
@@ -72,6 +77,7 @@ class _World {
         settle();
         transport.connectError = null;
       case StatusChannelEventCommand(:final live):
+        if (live && wasNotBroadcasting) autoJoins++;
         statusChannel.emitStatus(
           live
               ? const BroadcastStatus.live(
@@ -148,11 +154,12 @@ void main() {
 
           // Invariant 2 (observable form): while resources are owned the
           // target is available; the holder's identity is stable until a
-          // terminal release. At most one session ever exists, so the
-          // counters cannot exceed the joins that were not superseded.
+          // terminal release. Every connect follows either a resolve or an
+          // F-7.8 auto-join (a live status emission from `NotBroadcasting`,
+          // which connects without re-resolving by design).
           expect(
             world.transport.connectCalls,
-            lessThanOrEqualTo(world.resolver.resolveCalls),
+            lessThanOrEqualTo(world.resolver.resolveCalls + world.autoJoins),
             reason: 'connect count after $command',
           );
 
