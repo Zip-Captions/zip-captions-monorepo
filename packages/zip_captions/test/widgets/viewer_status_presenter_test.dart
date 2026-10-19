@@ -12,9 +12,8 @@ ViewerStatusPresentation _present(ViewerSessionState state, {String? name}) =>
 
 void main() {
   group('presentViewerState', () {
-    test('every variant maps to a non-empty title', () {
+    test('every non-idle variant maps to a non-empty title', () {
       const states = <ViewerSessionState>[
-        ViewerSessionState.idle(),
         ViewerSessionState.resolving(),
         ViewerSessionState.connecting(),
         ViewerSessionState.liveView(
@@ -32,6 +31,14 @@ void main() {
       for (final state in states) {
         expect(_present(state).title, isNotEmpty, reason: '$state');
       }
+    });
+
+    test('idle carries no title and does not claim the session is live', () {
+      final presentation = _present(const ViewerSessionState.idle());
+
+      expect(presentation.title, isEmpty);
+      expect(presentation.body, isNull);
+      expect(presentation.canRetry, isFalse);
     });
 
     test('connecting names the session once it is known', () {

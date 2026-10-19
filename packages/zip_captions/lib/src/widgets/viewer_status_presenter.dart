@@ -36,9 +36,9 @@ ViewerStatusPresentation presentViewerState(
   final name = sessionName;
 
   return switch (state) {
-    ViewerIdleState() => ViewerStatusPresentation(
-      title: strings.stateTitleLive,
-    ),
+    // No session is open: render nothing rather than borrowing the live
+    // title, which would claim captions are flowing.
+    ViewerIdleState() => const ViewerStatusPresentation(title: ''),
     ResolvingState() => ViewerStatusPresentation(
       title: strings.stateTitleConnecting,
     ),
