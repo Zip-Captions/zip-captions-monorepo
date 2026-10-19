@@ -69,10 +69,18 @@ _Built _build(_OrderLog log) {
     registry: registry,
     target: target,
     statusChannel: statusChannel,
-    statusWatch: statusChannel.watch().listen((_) {{}}),
-    statusSub: transport.status.listen((_) {{}}),
-    activitySub: receiver.activity.listen((_) {{}}),
-    endedSub: receiver.ended.listen((_) {{}}),
+    statusWatch: statusChannel.watch().listen((_) {
+      {}
+    }),
+    statusSub: transport.status.listen((_) {
+      {}
+    }),
+    activitySub: receiver.activity.listen((_) {
+      {}
+    }),
+    endedSub: receiver.ended.listen((_) {
+      {}
+    }),
     windowTimer: Timer(const Duration(seconds: 120), () {}),
   );
   return (
@@ -87,49 +95,53 @@ _Built _build(_OrderLog log) {
 void main() {
   final log = Logger('zip_core.ViewerSessionResourcesTest');
 
-  test('AC: disposeAll runs F-7.7 steps in order and releases every field',
-      () async {
-    final order = _OrderLog();
-    final built = _build(order);
-    final resources = built.resources;
+  test(
+    'AC: disposeAll runs F-7.7 steps in order and releases every field',
+    () async {
+      final order = _OrderLog();
+      final built = _build(order);
+      final resources = built.resources;
 
-    await resources.disposeAll(log);
+      await resources.disposeAll(log);
 
-    expect(
-      order.events,
-      equals(['statusChannel.close', 'transport.disconnect']),
-    );
-    expect(resources.windowTimer, isNull);
-    expect(resources.statusWatch, isNull);
-    expect(resources.statusChannel, isNull);
-    expect(resources.transport, isNull);
-    expect(resources.receiver, isNull);
-    expect(resources.target, isNull);
-    expect(resources.registry, isNull);
-    expect(resources.bus, isNull);
-    expect(resources.statusSub, isNull);
-    expect(resources.activitySub, isNull);
-    expect(resources.endedSub, isNull);
-    // The identity fields survive teardown: they describe the session, not
-    // a releasable resource.
-    expect(resources.broadcastId.value, equals('K7M9X2'));
-    expect(resources.sessionId, equals('session-1'));
-  });
+      expect(
+        order.events,
+        equals(['statusChannel.close', 'transport.disconnect']),
+      );
+      expect(resources.windowTimer, isNull);
+      expect(resources.statusWatch, isNull);
+      expect(resources.statusChannel, isNull);
+      expect(resources.transport, isNull);
+      expect(resources.receiver, isNull);
+      expect(resources.target, isNull);
+      expect(resources.registry, isNull);
+      expect(resources.bus, isNull);
+      expect(resources.statusSub, isNull);
+      expect(resources.activitySub, isNull);
+      expect(resources.endedSub, isNull);
+      // The identity fields survive teardown: they describe the session, not
+      // a releasable resource.
+      expect(resources.broadcastId.value, equals('K7M9X2'));
+      expect(resources.sessionId, equals('session-1'));
+    },
+  );
 
-  test('AC: a failing disconnect is caught and later steps still run',
-      () async {
-    final order = _OrderLog();
-    final built = _build(order);
-    built.transport.disconnectError = Exception('native stack gone');
+  test(
+    'AC: a failing disconnect is caught and later steps still run',
+    () async {
+      final order = _OrderLog();
+      final built = _build(order);
+      built.transport.disconnectError = Exception('native stack gone');
 
-    await expectLater(built.resources.disposeAll(log), completes);
+      await expectLater(built.resources.disposeAll(log), completes);
 
-    expect(built.transport.disconnectCalls, equals(1));
-    // Receiver/registry/bus were still released despite the failure.
-    expect(built.resources.receiver, isNull);
-    expect(built.resources.registry, isNull);
-    expect(built.resources.bus, isNull);
-  });
+      expect(built.transport.disconnectCalls, equals(1));
+      // Receiver/registry/bus were still released despite the failure.
+      expect(built.resources.receiver, isNull);
+      expect(built.resources.registry, isNull);
+      expect(built.resources.bus, isNull);
+    },
+  );
 
   test('AC: releaseTransport false skips disconnect', () async {
     final order = _OrderLog();

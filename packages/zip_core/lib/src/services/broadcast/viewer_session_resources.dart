@@ -45,8 +45,10 @@ class ViewerSessionResources {
   /// The broadcast being viewed.
   final BroadcastId broadcastId;
 
-  /// The ephemeral session id, once a `live` resolution supplied one.
-  final String? sessionId;
+  /// The ephemeral session id, once a `live` resolution supplied one. Set
+  /// at allocation and updated by the F-7.8 auto-join (same broadcast, new
+  /// session).
+  String? sessionId;
 
   /// The viewer-side transport.
   ViewerTransport? transport;
@@ -91,14 +93,29 @@ class ViewerSessionResources {
   /// [releaseTransport] defaults to `true`: [disposeAll] is called for both
   /// the user's exit and a terminal transition, and both release the
   /// connection. A future partial-release path says `false` here.
-  Future<void> disposeAll(Logger log, {bool releaseTransport = true}) async {
+  ///
+  /// [releaseCaptionPipeline] defaults to `true` (leave) and is `false` for
+  /// a terminal transition: F-7.5 step 3 keeps the viewer-scoped
+  /// bus/registry/target alive so the last captions stay visible until the
+  /// user leaves, and what differs per state is the sub-resource set, not
+  /// the holder's presence (`business-logic-model.md`, invariant 1).
+  Future<void> disposeAll(
+    Logger log, {
+    bool releaseTransport = true,
+    bool releaseCaptionPipeline = true,
+  }) async {
     final timer = windowTimer;
     windowTimer = null;
     timer?.cancel();
 
+    // Subscriptions are cancelled synchronously and their completion is
+    // detached: awaiting a broadcast-stream cancellation parks the calling
+    // async function in some schedulers, which would leave a terminal state
+    // unreached. The cancellation itself still happens immediately, so no
+    // event can be delivered after this point.
     final watch = statusWatch;
     statusWatch = null;
-    await _step(log, 'statusWatch.cancel', watch?.cancel);
+    _detach(log, 'statusWatch.cancel', watch?.cancel);
 
     final channel = statusChannel;
     statusChannel = null;
@@ -120,34 +137,62 @@ class ViewerSessionResources {
       await _step(log, 'receiver.dispose', receiver_.dispose);
     }
 
-    final registry_ = registry;
-    final target_ = target;
-    target = null;
-    registry = null;
-    if (registry_ != null && target_ != null) {
-      await _step(log, 'registry.remove', () => registry_.remove(target_));
-    }
-    if (registry_ != null) {
-      await _step(log, 'registry.dispose', registry_.dispose);
-    }
+    if (releaseCaptionPipeline) {
+      final registry_ = registry;
+      final target_ = target;
+      target = null;
+      registry = null;
+      if (registry_ != null && target_ != null) {
+        await _step(log, 'registry.remove', () => registry_.remove(target_));
+      }
+      if (registry_ != null) {
+        await _step(log, 'registry.dispose', registry_.dispose);
+      }
 
-    final bus_ = bus;
-    bus = null;
-    if (bus_ != null) {
-      await _step(log, 'bus.dispose', bus_.dispose);
+      final bus_ = bus;
+      bus = null;
+      if (bus_ != null) {
+        await _step(log, 'bus.dispose', bus_.dispose);
+      }
     }
 
     final statusSub_ = statusSub;
     statusSub = null;
-    await _step(log, 'statusSub.cancel', statusSub_?.cancel);
+    _detach(log, 'statusSub.cancel', statusSub_?.cancel);
 
     final activitySub_ = activitySub;
     activitySub = null;
-    await _step(log, 'activitySub.cancel', activitySub_?.cancel);
+    _detach(log, 'activitySub.cancel', activitySub_?.cancel);
 
     final endedSub_ = endedSub;
     endedSub = null;
-    await _step(log, 'endedSub.cancel', endedSub_?.cancel);
+    _detach(log, 'endedSub.cancel', endedSub_?.cancel);
+  }
+
+  /// Cancels a subscription and swallows its completion/error — the
+  /// subscription is already detached from the holder, so nothing can
+  /// observe it again (see [disposeAll]'s note on broadcast-stream
+  /// cancellations).
+  void _detach(
+    Logger log,
+    String name,
+    Future<void>? Function()? cancel,
+  ) {
+    if (cancel == null) return;
+    try {
+      final pending = cancel();
+      if (pending == null) return;
+      unawaited(
+        pending.then<void>(
+          (_) {},
+          onError: (Object e) {
+            log.warning('$name failed: ${e.runtimeType}');
+          },
+        ),
+      );
+    } on Object catch (e) {
+      log.warning('$name failed: ${e.runtimeType}');
+    }
   }
 
   /// Runs one teardown step, logging the exception's runtime type only —

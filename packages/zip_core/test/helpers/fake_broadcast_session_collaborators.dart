@@ -153,6 +153,7 @@ class FakeStatusChannel implements StatusChannel {
   int publishLiveCalls = 0;
   int publishOfflineCalls = 0;
   int closeCalls = 0;
+  int watchCalls = 0;
 
   /// If set, [publishLive] throws this instead of recording the call.
   Exception? publishLiveError;
@@ -173,7 +174,13 @@ class FakeStatusChannel implements StatusChannel {
   }
 
   @override
-  Stream<BroadcastStatus> watch() => _statusController.stream;
+  Stream<BroadcastStatus> watch() {
+    watchCalls++;
+    return _statusController.stream;
+  }
+
+  /// Emits [status] on the [watch] stream (the viewer's liveness source).
+  void emitStatus(BroadcastStatus status) => _statusController.add(status);
 
   @override
   Future<void> close() async {
@@ -225,9 +232,9 @@ class FakeBroadcastResolver implements BroadcastResolver {
   FakeBroadcastResolver({
     BroadcastResolution? defaultResolution,
     List<BroadcastResolution>? queued,
-  })  : defaultResolution =
-            defaultResolution ?? const BroadcastResolution.offline(),
-        queue = [...?queued];
+  }) : defaultResolution =
+           defaultResolution ?? const BroadcastResolution.offline(),
+       queue = [...?queued];
 
   /// The result once [queue] is empty.
   BroadcastResolution defaultResolution;

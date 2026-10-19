@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zip_core/src/constants/broadcast_link_config.dart';
+import 'package:zip_core/src/models/broadcast_id.dart';
 import 'package:zip_core/src/models/broadcast_link.dart';
 
 import '../helpers/generators.dart';
@@ -9,7 +10,7 @@ import '../helpers/pbt.dart';
 
 void main() {
   group('BroadcastLink PBT', () {
-    const Glados(arbitraryBroadcastId).test(
+    const Glados<BroadcastId>(arbitraryBroadcastId).test(
       'toUrl then parseInput recovers the original id',
       (id) {
         final url = BroadcastLink.toUrl(id);
@@ -43,7 +44,7 @@ void main() {
     );
 
     // PBT-02: the bare-code form (and its lower-cased display form).
-    Glados(arbitraryBroadcastId).test(
+    const Glados<BroadcastId>(arbitraryBroadcastId).test(
       'parseInput recovers the id from the bare and lower-cased forms',
       (id) {
         expect(BroadcastLink.parseInput(id.value), equals(id));

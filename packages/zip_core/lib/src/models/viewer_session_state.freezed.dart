@@ -71,11 +71,11 @@ mixin _$ViewerSessionState {
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(IdleState value) idle,
+    required TResult Function(ViewerIdleState value) idle,
     required TResult Function(ResolvingState value) resolving,
     required TResult Function(ConnectingState value) connecting,
     required TResult Function(LiveViewState value) liveView,
-    required TResult Function(ReconnectingState value) reconnecting,
+    required TResult Function(ViewerReconnectingState value) reconnecting,
     required TResult Function(NotBroadcastingState value) notBroadcasting,
     required TResult Function(EndedState value) ended,
     required TResult Function(FullState value) full,
@@ -84,11 +84,11 @@ mixin _$ViewerSessionState {
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(IdleState value)? idle,
+    TResult? Function(ViewerIdleState value)? idle,
     TResult? Function(ResolvingState value)? resolving,
     TResult? Function(ConnectingState value)? connecting,
     TResult? Function(LiveViewState value)? liveView,
-    TResult? Function(ReconnectingState value)? reconnecting,
+    TResult? Function(ViewerReconnectingState value)? reconnecting,
     TResult? Function(NotBroadcastingState value)? notBroadcasting,
     TResult? Function(EndedState value)? ended,
     TResult? Function(FullState value)? full,
@@ -97,11 +97,11 @@ mixin _$ViewerSessionState {
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(IdleState value)? idle,
+    TResult Function(ViewerIdleState value)? idle,
     TResult Function(ResolvingState value)? resolving,
     TResult Function(ConnectingState value)? connecting,
     TResult Function(LiveViewState value)? liveView,
-    TResult Function(ReconnectingState value)? reconnecting,
+    TResult Function(ViewerReconnectingState value)? reconnecting,
     TResult Function(NotBroadcastingState value)? notBroadcasting,
     TResult Function(EndedState value)? ended,
     TResult Function(FullState value)? full,
@@ -134,20 +134,20 @@ class _$ViewerSessionStateCopyWithImpl<$Res, $Val extends ViewerSessionState>
 }
 
 /// @nodoc
-abstract class _$$IdleStateImplCopyWith<$Res> {
-  factory _$$IdleStateImplCopyWith(
-    _$IdleStateImpl value,
-    $Res Function(_$IdleStateImpl) then,
-  ) = __$$IdleStateImplCopyWithImpl<$Res>;
+abstract class _$$ViewerIdleStateImplCopyWith<$Res> {
+  factory _$$ViewerIdleStateImplCopyWith(
+    _$ViewerIdleStateImpl value,
+    $Res Function(_$ViewerIdleStateImpl) then,
+  ) = __$$ViewerIdleStateImplCopyWithImpl<$Res>;
 }
 
 /// @nodoc
-class __$$IdleStateImplCopyWithImpl<$Res>
-    extends _$ViewerSessionStateCopyWithImpl<$Res, _$IdleStateImpl>
-    implements _$$IdleStateImplCopyWith<$Res> {
-  __$$IdleStateImplCopyWithImpl(
-    _$IdleStateImpl _value,
-    $Res Function(_$IdleStateImpl) _then,
+class __$$ViewerIdleStateImplCopyWithImpl<$Res>
+    extends _$ViewerSessionStateCopyWithImpl<$Res, _$ViewerIdleStateImpl>
+    implements _$$ViewerIdleStateImplCopyWith<$Res> {
+  __$$ViewerIdleStateImplCopyWithImpl(
+    _$ViewerIdleStateImpl _value,
+    $Res Function(_$ViewerIdleStateImpl) _then,
   ) : super(_value, _then);
 
   /// Create a copy of ViewerSessionState
@@ -156,8 +156,8 @@ class __$$IdleStateImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$IdleStateImpl implements IdleState {
-  const _$IdleStateImpl();
+class _$ViewerIdleStateImpl implements ViewerIdleState {
+  const _$ViewerIdleStateImpl();
 
   @override
   String toString() {
@@ -167,7 +167,7 @@ class _$IdleStateImpl implements IdleState {
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$IdleStateImpl);
+        (other.runtimeType == runtimeType && other is _$ViewerIdleStateImpl);
   }
 
   @override
@@ -243,11 +243,11 @@ class _$IdleStateImpl implements IdleState {
   @override
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(IdleState value) idle,
+    required TResult Function(ViewerIdleState value) idle,
     required TResult Function(ResolvingState value) resolving,
     required TResult Function(ConnectingState value) connecting,
     required TResult Function(LiveViewState value) liveView,
-    required TResult Function(ReconnectingState value) reconnecting,
+    required TResult Function(ViewerReconnectingState value) reconnecting,
     required TResult Function(NotBroadcastingState value) notBroadcasting,
     required TResult Function(EndedState value) ended,
     required TResult Function(FullState value) full,
@@ -260,11 +260,11 @@ class _$IdleStateImpl implements IdleState {
   @override
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(IdleState value)? idle,
+    TResult? Function(ViewerIdleState value)? idle,
     TResult? Function(ResolvingState value)? resolving,
     TResult? Function(ConnectingState value)? connecting,
     TResult? Function(LiveViewState value)? liveView,
-    TResult? Function(ReconnectingState value)? reconnecting,
+    TResult? Function(ViewerReconnectingState value)? reconnecting,
     TResult? Function(NotBroadcastingState value)? notBroadcasting,
     TResult? Function(EndedState value)? ended,
     TResult? Function(FullState value)? full,
@@ -277,11 +277,11 @@ class _$IdleStateImpl implements IdleState {
   @override
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(IdleState value)? idle,
+    TResult Function(ViewerIdleState value)? idle,
     TResult Function(ResolvingState value)? resolving,
     TResult Function(ConnectingState value)? connecting,
     TResult Function(LiveViewState value)? liveView,
-    TResult Function(ReconnectingState value)? reconnecting,
+    TResult Function(ViewerReconnectingState value)? reconnecting,
     TResult Function(NotBroadcastingState value)? notBroadcasting,
     TResult Function(EndedState value)? ended,
     TResult Function(FullState value)? full,
@@ -296,8 +296,8 @@ class _$IdleStateImpl implements IdleState {
   }
 }
 
-abstract class IdleState implements ViewerSessionState {
-  const factory IdleState() = _$IdleStateImpl;
+abstract class ViewerIdleState implements ViewerSessionState {
+  const factory ViewerIdleState() = _$ViewerIdleStateImpl;
 }
 
 /// @nodoc
@@ -410,11 +410,11 @@ class _$ResolvingStateImpl implements ResolvingState {
   @override
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(IdleState value) idle,
+    required TResult Function(ViewerIdleState value) idle,
     required TResult Function(ResolvingState value) resolving,
     required TResult Function(ConnectingState value) connecting,
     required TResult Function(LiveViewState value) liveView,
-    required TResult Function(ReconnectingState value) reconnecting,
+    required TResult Function(ViewerReconnectingState value) reconnecting,
     required TResult Function(NotBroadcastingState value) notBroadcasting,
     required TResult Function(EndedState value) ended,
     required TResult Function(FullState value) full,
@@ -427,11 +427,11 @@ class _$ResolvingStateImpl implements ResolvingState {
   @override
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(IdleState value)? idle,
+    TResult? Function(ViewerIdleState value)? idle,
     TResult? Function(ResolvingState value)? resolving,
     TResult? Function(ConnectingState value)? connecting,
     TResult? Function(LiveViewState value)? liveView,
-    TResult? Function(ReconnectingState value)? reconnecting,
+    TResult? Function(ViewerReconnectingState value)? reconnecting,
     TResult? Function(NotBroadcastingState value)? notBroadcasting,
     TResult? Function(EndedState value)? ended,
     TResult? Function(FullState value)? full,
@@ -444,11 +444,11 @@ class _$ResolvingStateImpl implements ResolvingState {
   @override
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(IdleState value)? idle,
+    TResult Function(ViewerIdleState value)? idle,
     TResult Function(ResolvingState value)? resolving,
     TResult Function(ConnectingState value)? connecting,
     TResult Function(LiveViewState value)? liveView,
-    TResult Function(ReconnectingState value)? reconnecting,
+    TResult Function(ViewerReconnectingState value)? reconnecting,
     TResult Function(NotBroadcastingState value)? notBroadcasting,
     TResult Function(EndedState value)? ended,
     TResult Function(FullState value)? full,
@@ -577,11 +577,11 @@ class _$ConnectingStateImpl implements ConnectingState {
   @override
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(IdleState value) idle,
+    required TResult Function(ViewerIdleState value) idle,
     required TResult Function(ResolvingState value) resolving,
     required TResult Function(ConnectingState value) connecting,
     required TResult Function(LiveViewState value) liveView,
-    required TResult Function(ReconnectingState value) reconnecting,
+    required TResult Function(ViewerReconnectingState value) reconnecting,
     required TResult Function(NotBroadcastingState value) notBroadcasting,
     required TResult Function(EndedState value) ended,
     required TResult Function(FullState value) full,
@@ -594,11 +594,11 @@ class _$ConnectingStateImpl implements ConnectingState {
   @override
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(IdleState value)? idle,
+    TResult? Function(ViewerIdleState value)? idle,
     TResult? Function(ResolvingState value)? resolving,
     TResult? Function(ConnectingState value)? connecting,
     TResult? Function(LiveViewState value)? liveView,
-    TResult? Function(ReconnectingState value)? reconnecting,
+    TResult? Function(ViewerReconnectingState value)? reconnecting,
     TResult? Function(NotBroadcastingState value)? notBroadcasting,
     TResult? Function(EndedState value)? ended,
     TResult? Function(FullState value)? full,
@@ -611,11 +611,11 @@ class _$ConnectingStateImpl implements ConnectingState {
   @override
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(IdleState value)? idle,
+    TResult Function(ViewerIdleState value)? idle,
     TResult Function(ResolvingState value)? resolving,
     TResult Function(ConnectingState value)? connecting,
     TResult Function(LiveViewState value)? liveView,
-    TResult Function(ReconnectingState value)? reconnecting,
+    TResult Function(ViewerReconnectingState value)? reconnecting,
     TResult Function(NotBroadcastingState value)? notBroadcasting,
     TResult Function(EndedState value)? ended,
     TResult Function(FullState value)? full,
@@ -783,11 +783,11 @@ class _$LiveViewStateImpl implements LiveViewState {
   @override
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(IdleState value) idle,
+    required TResult Function(ViewerIdleState value) idle,
     required TResult Function(ResolvingState value) resolving,
     required TResult Function(ConnectingState value) connecting,
     required TResult Function(LiveViewState value) liveView,
-    required TResult Function(ReconnectingState value) reconnecting,
+    required TResult Function(ViewerReconnectingState value) reconnecting,
     required TResult Function(NotBroadcastingState value) notBroadcasting,
     required TResult Function(EndedState value) ended,
     required TResult Function(FullState value) full,
@@ -800,11 +800,11 @@ class _$LiveViewStateImpl implements LiveViewState {
   @override
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(IdleState value)? idle,
+    TResult? Function(ViewerIdleState value)? idle,
     TResult? Function(ResolvingState value)? resolving,
     TResult? Function(ConnectingState value)? connecting,
     TResult? Function(LiveViewState value)? liveView,
-    TResult? Function(ReconnectingState value)? reconnecting,
+    TResult? Function(ViewerReconnectingState value)? reconnecting,
     TResult? Function(NotBroadcastingState value)? notBroadcasting,
     TResult? Function(EndedState value)? ended,
     TResult? Function(FullState value)? full,
@@ -817,11 +817,11 @@ class _$LiveViewStateImpl implements LiveViewState {
   @override
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(IdleState value)? idle,
+    TResult Function(ViewerIdleState value)? idle,
     TResult Function(ResolvingState value)? resolving,
     TResult Function(ConnectingState value)? connecting,
     TResult Function(LiveViewState value)? liveView,
-    TResult Function(ReconnectingState value)? reconnecting,
+    TResult Function(ViewerReconnectingState value)? reconnecting,
     TResult Function(NotBroadcastingState value)? notBroadcasting,
     TResult Function(EndedState value)? ended,
     TResult Function(FullState value)? full,
@@ -853,20 +853,21 @@ abstract class LiveViewState implements ViewerSessionState {
 }
 
 /// @nodoc
-abstract class _$$ReconnectingStateImplCopyWith<$Res> {
-  factory _$$ReconnectingStateImplCopyWith(
-    _$ReconnectingStateImpl value,
-    $Res Function(_$ReconnectingStateImpl) then,
-  ) = __$$ReconnectingStateImplCopyWithImpl<$Res>;
+abstract class _$$ViewerReconnectingStateImplCopyWith<$Res> {
+  factory _$$ViewerReconnectingStateImplCopyWith(
+    _$ViewerReconnectingStateImpl value,
+    $Res Function(_$ViewerReconnectingStateImpl) then,
+  ) = __$$ViewerReconnectingStateImplCopyWithImpl<$Res>;
 }
 
 /// @nodoc
-class __$$ReconnectingStateImplCopyWithImpl<$Res>
-    extends _$ViewerSessionStateCopyWithImpl<$Res, _$ReconnectingStateImpl>
-    implements _$$ReconnectingStateImplCopyWith<$Res> {
-  __$$ReconnectingStateImplCopyWithImpl(
-    _$ReconnectingStateImpl _value,
-    $Res Function(_$ReconnectingStateImpl) _then,
+class __$$ViewerReconnectingStateImplCopyWithImpl<$Res>
+    extends
+        _$ViewerSessionStateCopyWithImpl<$Res, _$ViewerReconnectingStateImpl>
+    implements _$$ViewerReconnectingStateImplCopyWith<$Res> {
+  __$$ViewerReconnectingStateImplCopyWithImpl(
+    _$ViewerReconnectingStateImpl _value,
+    $Res Function(_$ViewerReconnectingStateImpl) _then,
   ) : super(_value, _then);
 
   /// Create a copy of ViewerSessionState
@@ -875,8 +876,8 @@ class __$$ReconnectingStateImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$ReconnectingStateImpl implements ReconnectingState {
-  const _$ReconnectingStateImpl();
+class _$ViewerReconnectingStateImpl implements ViewerReconnectingState {
+  const _$ViewerReconnectingStateImpl();
 
   @override
   String toString() {
@@ -886,7 +887,8 @@ class _$ReconnectingStateImpl implements ReconnectingState {
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$ReconnectingStateImpl);
+        (other.runtimeType == runtimeType &&
+            other is _$ViewerReconnectingStateImpl);
   }
 
   @override
@@ -962,11 +964,11 @@ class _$ReconnectingStateImpl implements ReconnectingState {
   @override
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(IdleState value) idle,
+    required TResult Function(ViewerIdleState value) idle,
     required TResult Function(ResolvingState value) resolving,
     required TResult Function(ConnectingState value) connecting,
     required TResult Function(LiveViewState value) liveView,
-    required TResult Function(ReconnectingState value) reconnecting,
+    required TResult Function(ViewerReconnectingState value) reconnecting,
     required TResult Function(NotBroadcastingState value) notBroadcasting,
     required TResult Function(EndedState value) ended,
     required TResult Function(FullState value) full,
@@ -979,11 +981,11 @@ class _$ReconnectingStateImpl implements ReconnectingState {
   @override
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(IdleState value)? idle,
+    TResult? Function(ViewerIdleState value)? idle,
     TResult? Function(ResolvingState value)? resolving,
     TResult? Function(ConnectingState value)? connecting,
     TResult? Function(LiveViewState value)? liveView,
-    TResult? Function(ReconnectingState value)? reconnecting,
+    TResult? Function(ViewerReconnectingState value)? reconnecting,
     TResult? Function(NotBroadcastingState value)? notBroadcasting,
     TResult? Function(EndedState value)? ended,
     TResult? Function(FullState value)? full,
@@ -996,11 +998,11 @@ class _$ReconnectingStateImpl implements ReconnectingState {
   @override
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(IdleState value)? idle,
+    TResult Function(ViewerIdleState value)? idle,
     TResult Function(ResolvingState value)? resolving,
     TResult Function(ConnectingState value)? connecting,
     TResult Function(LiveViewState value)? liveView,
-    TResult Function(ReconnectingState value)? reconnecting,
+    TResult Function(ViewerReconnectingState value)? reconnecting,
     TResult Function(NotBroadcastingState value)? notBroadcasting,
     TResult Function(EndedState value)? ended,
     TResult Function(FullState value)? full,
@@ -1015,8 +1017,8 @@ class _$ReconnectingStateImpl implements ReconnectingState {
   }
 }
 
-abstract class ReconnectingState implements ViewerSessionState {
-  const factory ReconnectingState() = _$ReconnectingStateImpl;
+abstract class ViewerReconnectingState implements ViewerSessionState {
+  const factory ViewerReconnectingState() = _$ViewerReconnectingStateImpl;
 }
 
 /// @nodoc
@@ -1130,11 +1132,11 @@ class _$NotBroadcastingStateImpl implements NotBroadcastingState {
   @override
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(IdleState value) idle,
+    required TResult Function(ViewerIdleState value) idle,
     required TResult Function(ResolvingState value) resolving,
     required TResult Function(ConnectingState value) connecting,
     required TResult Function(LiveViewState value) liveView,
-    required TResult Function(ReconnectingState value) reconnecting,
+    required TResult Function(ViewerReconnectingState value) reconnecting,
     required TResult Function(NotBroadcastingState value) notBroadcasting,
     required TResult Function(EndedState value) ended,
     required TResult Function(FullState value) full,
@@ -1147,11 +1149,11 @@ class _$NotBroadcastingStateImpl implements NotBroadcastingState {
   @override
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(IdleState value)? idle,
+    TResult? Function(ViewerIdleState value)? idle,
     TResult? Function(ResolvingState value)? resolving,
     TResult? Function(ConnectingState value)? connecting,
     TResult? Function(LiveViewState value)? liveView,
-    TResult? Function(ReconnectingState value)? reconnecting,
+    TResult? Function(ViewerReconnectingState value)? reconnecting,
     TResult? Function(NotBroadcastingState value)? notBroadcasting,
     TResult? Function(EndedState value)? ended,
     TResult? Function(FullState value)? full,
@@ -1164,11 +1166,11 @@ class _$NotBroadcastingStateImpl implements NotBroadcastingState {
   @override
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(IdleState value)? idle,
+    TResult Function(ViewerIdleState value)? idle,
     TResult Function(ResolvingState value)? resolving,
     TResult Function(ConnectingState value)? connecting,
     TResult Function(LiveViewState value)? liveView,
-    TResult Function(ReconnectingState value)? reconnecting,
+    TResult Function(ViewerReconnectingState value)? reconnecting,
     TResult Function(NotBroadcastingState value)? notBroadcasting,
     TResult Function(EndedState value)? ended,
     TResult Function(FullState value)? full,
@@ -1297,11 +1299,11 @@ class _$EndedStateImpl implements EndedState {
   @override
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(IdleState value) idle,
+    required TResult Function(ViewerIdleState value) idle,
     required TResult Function(ResolvingState value) resolving,
     required TResult Function(ConnectingState value) connecting,
     required TResult Function(LiveViewState value) liveView,
-    required TResult Function(ReconnectingState value) reconnecting,
+    required TResult Function(ViewerReconnectingState value) reconnecting,
     required TResult Function(NotBroadcastingState value) notBroadcasting,
     required TResult Function(EndedState value) ended,
     required TResult Function(FullState value) full,
@@ -1314,11 +1316,11 @@ class _$EndedStateImpl implements EndedState {
   @override
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(IdleState value)? idle,
+    TResult? Function(ViewerIdleState value)? idle,
     TResult? Function(ResolvingState value)? resolving,
     TResult? Function(ConnectingState value)? connecting,
     TResult? Function(LiveViewState value)? liveView,
-    TResult? Function(ReconnectingState value)? reconnecting,
+    TResult? Function(ViewerReconnectingState value)? reconnecting,
     TResult? Function(NotBroadcastingState value)? notBroadcasting,
     TResult? Function(EndedState value)? ended,
     TResult? Function(FullState value)? full,
@@ -1331,11 +1333,11 @@ class _$EndedStateImpl implements EndedState {
   @override
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(IdleState value)? idle,
+    TResult Function(ViewerIdleState value)? idle,
     TResult Function(ResolvingState value)? resolving,
     TResult Function(ConnectingState value)? connecting,
     TResult Function(LiveViewState value)? liveView,
-    TResult Function(ReconnectingState value)? reconnecting,
+    TResult Function(ViewerReconnectingState value)? reconnecting,
     TResult Function(NotBroadcastingState value)? notBroadcasting,
     TResult Function(EndedState value)? ended,
     TResult Function(FullState value)? full,
@@ -1464,11 +1466,11 @@ class _$FullStateImpl implements FullState {
   @override
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(IdleState value) idle,
+    required TResult Function(ViewerIdleState value) idle,
     required TResult Function(ResolvingState value) resolving,
     required TResult Function(ConnectingState value) connecting,
     required TResult Function(LiveViewState value) liveView,
-    required TResult Function(ReconnectingState value) reconnecting,
+    required TResult Function(ViewerReconnectingState value) reconnecting,
     required TResult Function(NotBroadcastingState value) notBroadcasting,
     required TResult Function(EndedState value) ended,
     required TResult Function(FullState value) full,
@@ -1481,11 +1483,11 @@ class _$FullStateImpl implements FullState {
   @override
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(IdleState value)? idle,
+    TResult? Function(ViewerIdleState value)? idle,
     TResult? Function(ResolvingState value)? resolving,
     TResult? Function(ConnectingState value)? connecting,
     TResult? Function(LiveViewState value)? liveView,
-    TResult? Function(ReconnectingState value)? reconnecting,
+    TResult? Function(ViewerReconnectingState value)? reconnecting,
     TResult? Function(NotBroadcastingState value)? notBroadcasting,
     TResult? Function(EndedState value)? ended,
     TResult? Function(FullState value)? full,
@@ -1498,11 +1500,11 @@ class _$FullStateImpl implements FullState {
   @override
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(IdleState value)? idle,
+    TResult Function(ViewerIdleState value)? idle,
     TResult Function(ResolvingState value)? resolving,
     TResult Function(ConnectingState value)? connecting,
     TResult Function(LiveViewState value)? liveView,
-    TResult Function(ReconnectingState value)? reconnecting,
+    TResult Function(ViewerReconnectingState value)? reconnecting,
     TResult Function(NotBroadcastingState value)? notBroadcasting,
     TResult Function(EndedState value)? ended,
     TResult Function(FullState value)? full,
@@ -1661,11 +1663,11 @@ class _$CannotConnectStateImpl implements CannotConnectState {
   @override
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(IdleState value) idle,
+    required TResult Function(ViewerIdleState value) idle,
     required TResult Function(ResolvingState value) resolving,
     required TResult Function(ConnectingState value) connecting,
     required TResult Function(LiveViewState value) liveView,
-    required TResult Function(ReconnectingState value) reconnecting,
+    required TResult Function(ViewerReconnectingState value) reconnecting,
     required TResult Function(NotBroadcastingState value) notBroadcasting,
     required TResult Function(EndedState value) ended,
     required TResult Function(FullState value) full,
@@ -1678,11 +1680,11 @@ class _$CannotConnectStateImpl implements CannotConnectState {
   @override
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(IdleState value)? idle,
+    TResult? Function(ViewerIdleState value)? idle,
     TResult? Function(ResolvingState value)? resolving,
     TResult? Function(ConnectingState value)? connecting,
     TResult? Function(LiveViewState value)? liveView,
-    TResult? Function(ReconnectingState value)? reconnecting,
+    TResult? Function(ViewerReconnectingState value)? reconnecting,
     TResult? Function(NotBroadcastingState value)? notBroadcasting,
     TResult? Function(EndedState value)? ended,
     TResult? Function(FullState value)? full,
@@ -1695,11 +1697,11 @@ class _$CannotConnectStateImpl implements CannotConnectState {
   @override
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(IdleState value)? idle,
+    TResult Function(ViewerIdleState value)? idle,
     TResult Function(ResolvingState value)? resolving,
     TResult Function(ConnectingState value)? connecting,
     TResult Function(LiveViewState value)? liveView,
-    TResult Function(ReconnectingState value)? reconnecting,
+    TResult Function(ViewerReconnectingState value)? reconnecting,
     TResult Function(NotBroadcastingState value)? notBroadcasting,
     TResult Function(EndedState value)? ended,
     TResult Function(FullState value)? full,
@@ -1837,11 +1839,11 @@ class _$InvalidInputStateImpl implements InvalidInputState {
   @override
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
-    required TResult Function(IdleState value) idle,
+    required TResult Function(ViewerIdleState value) idle,
     required TResult Function(ResolvingState value) resolving,
     required TResult Function(ConnectingState value) connecting,
     required TResult Function(LiveViewState value) liveView,
-    required TResult Function(ReconnectingState value) reconnecting,
+    required TResult Function(ViewerReconnectingState value) reconnecting,
     required TResult Function(NotBroadcastingState value) notBroadcasting,
     required TResult Function(EndedState value) ended,
     required TResult Function(FullState value) full,
@@ -1854,11 +1856,11 @@ class _$InvalidInputStateImpl implements InvalidInputState {
   @override
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(IdleState value)? idle,
+    TResult? Function(ViewerIdleState value)? idle,
     TResult? Function(ResolvingState value)? resolving,
     TResult? Function(ConnectingState value)? connecting,
     TResult? Function(LiveViewState value)? liveView,
-    TResult? Function(ReconnectingState value)? reconnecting,
+    TResult? Function(ViewerReconnectingState value)? reconnecting,
     TResult? Function(NotBroadcastingState value)? notBroadcasting,
     TResult? Function(EndedState value)? ended,
     TResult? Function(FullState value)? full,
@@ -1871,11 +1873,11 @@ class _$InvalidInputStateImpl implements InvalidInputState {
   @override
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
-    TResult Function(IdleState value)? idle,
+    TResult Function(ViewerIdleState value)? idle,
     TResult Function(ResolvingState value)? resolving,
     TResult Function(ConnectingState value)? connecting,
     TResult Function(LiveViewState value)? liveView,
-    TResult Function(ReconnectingState value)? reconnecting,
+    TResult Function(ViewerReconnectingState value)? reconnecting,
     TResult Function(NotBroadcastingState value)? notBroadcasting,
     TResult Function(EndedState value)? ended,
     TResult Function(FullState value)? full,

@@ -35,7 +35,10 @@ void main() {
 
     test('AC: attempt is retained but never consulted', () {
       const elapsed = Duration(seconds: 45);
-      expect(policy.nextDelay(0, elapsed), equals(policy.nextDelay(99, elapsed)));
+      expect(
+        policy.nextDelay(0, elapsed),
+        equals(policy.nextDelay(99, elapsed)),
+      );
     });
 
     test('AC: the window is defaultBroadcastLimits.reconnectWindow', () {

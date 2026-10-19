@@ -26,7 +26,7 @@ void main() {
 
       expect(states, hasLength(10));
       expect(states.toSet(), hasLength(10));
-      expect(states[0], isA<IdleState>());
+      expect(states[0], isA<ViewerIdleState>());
       expect(states[3], isA<LiveViewState>());
       expect(states[8], isA<CannotConnectState>());
     });
@@ -53,7 +53,10 @@ void main() {
     test('AC: CannotConnectState carries its ConnectFailure reason', () {
       const state = ViewerSessionState.cannotConnect(ResolutionFailed());
       expect(state, isA<CannotConnectState>());
-      expect((state as CannotConnectState).reason, equals(const ResolutionFailed()));
+      expect(
+        (state as CannotConnectState).reason,
+        equals(const ResolutionFailed()),
+      );
     });
 
     test('AC: InvalidInputState carries no data (Rule 8)', () {
@@ -61,11 +64,9 @@ void main() {
       // Every field of the sealed family that could carry a string is
       // either a fixed variant or a typed reason — no caption text, no raw
       // input.
-      final fields = switch (state) {
-        InvalidInputState() => const <Object?>[],
-        _ => fail('expected InvalidInputState'),
-      };
-      expect(fields, isEmpty);
+      // The variant is const and parameterless: the constructor's shape is
+      // the compile-time proof that it holds no data.
+      expect(state, equals(const ViewerSessionState.invalidInput()));
       expect(state.toString(), isNot(contains('SENTINEL')));
     });
   });

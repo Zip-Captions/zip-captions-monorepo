@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:zip_core/src/models/caption_wire_message.dart';
 import 'package:zip_core/src/models/connect_failure.dart';
 import 'package:zip_core/src/models/connection_status.dart';
+import 'package:zip_core/src/models/recording_state.dart';
 
 part 'viewer_session_state.freezed.dart';
 
@@ -13,8 +14,9 @@ part 'viewer_session_state.freezed.dart';
 /// / NotBroadcastingState / CannotConnectState`; transport status drives
 /// `ConnectingState`/`ReconnectingState`/`LiveViewState`/`FullState`; the
 /// receiver's `ended` and any user leave end in `EndedState`/`IdleState`.
-/// Named `LiveViewState` because Unit 6's [BroadcasterSessionState] already
-/// owns a `LiveState` variant in this package.
+/// Variant class names that would collide with Phase 1's [RecordingState]
+/// (`IdleState`, `ReconnectingState`) take a `Viewer` prefix, the same
+/// mechanical disambiguation as [LiveViewState] vs Unit 6's `LiveState`.
 ///
 /// No variant carries caption or join-input content: `InvalidInputState` is
 /// data-free and the live variant carries only activity/routing metadata
@@ -23,7 +25,7 @@ part 'viewer_session_state.freezed.dart';
 sealed class ViewerSessionState with _$ViewerSessionState {
   /// The initial state and the state after `leave()`. No session resources
   /// exist here.
-  const factory ViewerSessionState.idle() = IdleState;
+  const factory ViewerSessionState.idle() = ViewerIdleState;
 
   /// Between `join()` accepting a parsed input and the resolver returning.
   /// Precedes resource allocation, so no session resources exist here.
@@ -42,7 +44,10 @@ sealed class ViewerSessionState with _$ViewerSessionState {
 
   /// The transport reports `Interrupted`; reconnection is underway and the
   /// last received captions remain visible.
-  const factory ViewerSessionState.reconnecting() = ReconnectingState;
+  ///
+  /// Named `ViewerReconnectingState` because Phase 1's [RecordingState]
+  /// already owns a `ReconnectingState` variant in this package.
+  const factory ViewerSessionState.reconnecting() = ViewerReconnectingState;
 
   /// The broadcast exists but no broadcaster is live. The status watch
   /// stays open and auto-joins on a live emission (`business-rules.md`
