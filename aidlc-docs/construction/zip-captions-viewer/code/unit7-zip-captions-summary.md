@@ -94,3 +94,18 @@
    (`joinBroadcastTitle`, new `navJoinBroadcast`). Tests added.
 7. **Fixed** (a222d52) — the unused `viewerCaptionTarget` lookup is gone from
    `_watchViewerBus`.
+
+## CodeRabbit review 1
+
+1. **Fixed** (221ade5) — `_announceIfChanged` returns early for an empty
+   title, before touching `_announced` or the announcer; the duplicate-text
+   check and the `supportsAnnounceOf` gate remain, and `_announced` now
+   advances only when an announcement actually happens, so a status shown
+   while opted out is announced once the setting returns. Tests added: empty
+   title announces nothing, an empty first frame does not swallow the first
+   real announcement, and the mid-session opt-out toggle.
+2. **Fixed** (2d27ac0) — duplication verified before deletion: all five leave
+   tests are byte-identical to rows in `viewer_screen_back_test.dart` (diff
+   empty), the back file additionally covers system back from a direct route
+   and an unhandled back event, and `_Logged.announcements` was written but
+   never read. The duplicate file is deleted; the back file keeps coverage.

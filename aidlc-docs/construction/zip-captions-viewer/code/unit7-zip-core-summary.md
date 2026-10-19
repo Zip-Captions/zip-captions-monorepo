@@ -60,3 +60,24 @@
 - `transport.restartCalls` stays zero across every suite: reconnection cadence
   belongs to the shipped transport, and the notifier owns only the give-up
   window (Rule 14).
+## CodeRabbit review 1
+
+1. **Fixed** (b0d6e71) — `_resolvingBroadcastId` is set when a resolve starts
+   and cleared only by the request that owns it (and by `leave()`); the Rule 1
+   no-op also matches it, so a repeated `join()` during `ResolvingState`
+   resolves once. Tests added: same-id join while resolving resolves once; a
+   stale completion does not release a newer request's in-flight id.
+2. **Fixed** (8de81fe) — the allocation log no longer echoes `id.value`
+   (the join input); it records "session resources allocated" only. Rule 8 is
+   unchanged.
+3. **Fixed** (bb33ae1) — the viewer command range is `nextInt(21)` so the
+   activity fallback (kind 20) is reachable; the other command assignments are
+   untouched. Test added: every viewer command kind is produced over 200 seeds.
+4. **Fixed** (ecec940) — the PBT invariant now compares `connectCalls` with
+   `resolveCalls + autoJoins`, where `autoJoins` counts live status emissions
+   made from `NotBroadcastingState` (F-7.8 connects without re-resolving).
+5. **Fixed** (8de81fe, 2bb2b74) — the Rule 8 test awaits `settle()` and
+   case-folds the log-record check, so the uppercase join input is caught; it
+   now also asserts the SENTINEL caption reached the viewer target first, so
+   the redaction checks cannot pass vacuously. Confirmed failing against the
+   pre-fix allocation log.
