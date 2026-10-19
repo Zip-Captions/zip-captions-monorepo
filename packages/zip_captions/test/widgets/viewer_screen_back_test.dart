@@ -188,7 +188,7 @@ void main() {
         reason: 'the router must be captured before the await',
       );
       expect(
-        leaveBody.substring(0, awaitIndex),
+        leaveBody.substring(awaitIndex, goIndex),
         isNot(contains('mounted')),
         reason: 'no mounted check may gate the post-await navigation',
       );

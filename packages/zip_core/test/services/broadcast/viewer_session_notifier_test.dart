@@ -195,6 +195,48 @@ void main() {
       expect(notifier().resolvingBroadcastId, isNull);
     });
 
+    test(
+      'a stale request for the same id does not release the newer slot',
+      () async {
+        // Leave() resets the slot, so a second join for the SAME id starts a
+        // fresh request. The first request completing then must not clear the
+        // slot the second one owns (CodeRabbit round 3).
+        final firstHeld = Completer<BroadcastResolution>();
+        final secondHeld = Completer<BroadcastResolution>();
+        resolver.pending = firstHeld;
+
+        final first = notifier().join(_validInput);
+        await settle();
+        expect(state(), isA<ResolvingState>());
+
+        await notifier().leave();
+        resolver.pending = secondHeld;
+        final second = notifier().join(_validInput);
+        await settle();
+        expect(resolver.resolveCalls, 2);
+        expect(notifier().resolvingBroadcastId, BroadcastId.parse(_validInput));
+
+        firstHeld.complete(const BroadcastResolution.offline());
+        await settle();
+        await settle();
+
+        // The stale request must not have released the newer request's slot:
+        // a third join for the same id is still a no-op.
+        expect(notifier().resolvingBroadcastId, BroadcastId.parse(_validInput));
+        final callsBeforeThird = resolver.resolveCalls;
+        await notifier().join(_validInput);
+        await settle();
+        expect(resolver.resolveCalls, callsBeforeThird);
+
+        secondHeld.complete(const BroadcastResolution.offline());
+        await settle();
+        await second;
+        await first;
+        expect(notifier().resolvingBroadcastId, isNull);
+      },
+    );
+
+
     test('a different id leaves first, then resolves', () async {
       await joinLive();
       resolver.defaultResolution = const BroadcastResolution.offline();

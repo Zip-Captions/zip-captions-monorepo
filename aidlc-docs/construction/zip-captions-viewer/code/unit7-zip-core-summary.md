@@ -81,3 +81,12 @@
    now also asserts the SENTINEL caption reached the viewer target first, so
    the redaction checks cannot pass vacuously. Confirmed failing against the
    pre-fix allocation log.
+
+## CodeRabbit review 2
+
+1. **Fixed** — the in-flight resolution slot is released by epoch ownership
+   (`epoch == _sessionEpoch`), not by comparing broadcast IDs. `leave()` resets
+   the slot and a second `join()` for the same ID sets it again, so an ID
+   comparison let the stale request clear the newer one's slot and reopened the
+   Rule 1 no-op gap for a third `join()`. Test added: a stale same-ID request
+   does not release the newer slot, and a third join stays a no-op.

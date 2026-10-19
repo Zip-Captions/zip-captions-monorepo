@@ -40,9 +40,9 @@ class ViewerSessionNotifier extends _$ViewerSessionNotifier {
   String? _sessionName;
   BroadcastId? _currentBroadcastId;
   // The broadcast whose resolution request is in flight, if any. Set when a
-  // request starts and cleared only by that same request, so the Rule 1
-  // no-op check also covers `ResolvingState` — where `_currentBroadcastId`
-  // is not set yet.
+  // request starts and cleared only by the request that owns it (same epoch),
+  // so the Rule 1 no-op check also covers `ResolvingState` — where
+  // `_currentBroadcastId` is not set yet.
   BroadcastId? _resolvingBroadcastId;
   CaptionActivity _lastActivity = CaptionActivity.inactive;
 
@@ -123,9 +123,12 @@ class ViewerSessionNotifier extends _$ViewerSessionNotifier {
     try {
       resolution = await ref.read(broadcastResolverProvider).resolve(id);
     } finally {
-      // Only the request that owns the slot may release it: a superseded
-      // request must not clear the id a newer one is resolving.
-      if (_resolvingBroadcastId == id) _resolvingBroadcastId = null;
+      // Only the request that owns the slot may release it. Ownership is the
+      // epoch, not the id: `leave()` resets the slot and increments the epoch,
+      // and a newer request for the same id then sets it again. Comparing ids
+      // cannot tell those two requests apart, and the stale one would clear
+      // the newer one's slot.
+      if (epoch == _sessionEpoch) _resolvingBroadcastId = null;
     }
     if (epoch != _sessionEpoch) return;
 
