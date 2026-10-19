@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
@@ -23,11 +24,29 @@ class ZcStrings {
 
   final Map<String, String> _values;
 
+  /// The copy this instance carries, keyed by ARB key and containing only
+  /// `String` values. ARB metadata (`@key` blocks, `@@locale`) is stripped
+  /// by [load].
+  Map<String, String> get values => UnmodifiableMapView(_values);
+
+  /// Whether this instance carries [key].
+  bool containsKey(String key) => _values.containsKey(key);
+
   /// Loads and parses the bundled ARB file.
+  ///
+  /// ARB files carry `@key` description objects and `@@locale` alongside the
+  /// copy. Those entries are dropped here rather than deferred to a lazy
+  /// `Map.cast`: a cast keeps the original map and throws on any later read
+  /// of a metadata value, which would surface as a runtime error in any code
+  /// that walks the map.
   static Future<ZcStrings> load([AssetBundle? bundle]) async {
     final raw = await (bundle ?? rootBundle).loadString(assetPath);
     final decoded = jsonDecode(raw) as Map<String, dynamic>;
-    return ZcStrings.fromMap(decoded.cast<String, String>());
+    return ZcStrings.fromMap({
+      for (final entry in decoded.entries)
+        if (!entry.key.startsWith('@') && entry.value is String)
+          entry.key: entry.value as String,
+    });
   }
 
   String _value(String key) => _values[key] ?? key;
@@ -36,7 +55,7 @@ class ZcStrings {
   String _withName(String key, String sessionName) =>
       _value(key).replaceAll('{sessionName}', sessionName);
 
-  /// Title of the join screen and the drawer/home affordance.
+  /// Title of the join-broadcast screen.
   String get joinBroadcastTitle => _value('joinBroadcastTitle');
 
   /// Label of the join screen text field.

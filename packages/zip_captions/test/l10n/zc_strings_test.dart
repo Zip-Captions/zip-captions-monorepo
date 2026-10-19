@@ -3,8 +3,23 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zip_captions/src/l10n/zc_strings.dart';
+
+/// An [AssetBundle] serving one in-memory ARB document.
+class _StringBundle extends CachingAssetBundle {
+  _StringBundle(this.text);
+
+  final String text;
+
+  @override
+  Future<ByteData> load(String key) async =>
+      ByteData.sublistView(Uint8List.fromList(utf8.encode(text)));
+
+  @override
+  Future<String> loadString(String key, {bool cache = true}) async => text;
+}
 
 void main() {
   group('ZcStrings', () {
@@ -39,6 +54,35 @@ void main() {
       const strings = ZcStrings.fromMap({});
 
       expect(strings.tryAgain, 'viewerTryAgain');
+    });
+
+    test('AC: load drops ARB @-metadata and non-String values', () async {
+      // The decoded ARB also carries `@key` description objects and
+      // `@@locale`. A whole-map `cast<String, String>()` only defers the
+      // throw, so any later full-map read (serialization, a key sweep)
+      // would fail; the loader must filter instead.
+      final strings = await ZcStrings.load(
+        _StringBundle(
+          jsonEncode({
+            '@@locale': 'en',
+            'viewerLeave': 'Leave',
+            '@viewerLeave': {'description': 'metadata'},
+            'viewerAge': 3,
+          }),
+        ),
+      );
+
+      // Walking every value must not throw: that is exactly what a lazy
+      // `cast` would do on the metadata object.
+      expect(() => strings.values.values.toList(), returnsNormally);
+      expect(strings.viewerLeave, 'Leave');
+      expect(strings.tryAgain, 'viewerTryAgain');
+
+      // Filtered entries are absent, not merely unread.
+      expect(strings.containsKey('@viewerLeave'), isFalse);
+      expect(strings.containsKey('@@locale'), isFalse);
+      expect(strings.containsKey('viewerAge'), isFalse);
+      expect(strings.values, {'viewerLeave': 'Leave'});
     });
 
     test('AC: the real ARB parses and every viewer key is present', () {
