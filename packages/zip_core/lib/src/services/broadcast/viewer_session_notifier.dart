@@ -217,7 +217,9 @@ class ViewerSessionNotifier extends _$ViewerSessionNotifier {
       windowTimer: null,
     );
     _resources = resources;
-    _log.info('session resources allocated: broadcastId=${id.value}');
+    // The broadcast id is derived from the user's join input and must never
+    // be echoed (Rule 8).
+    _log.info('session resources allocated');
   }
 
   /// F-7.2 step 5: fetch ICE servers, then connect. Every failure maps to
