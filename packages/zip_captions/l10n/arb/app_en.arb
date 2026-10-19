@@ -28,6 +28,10 @@
   "@joinBroadcastInvalidInput": {
     "description": "Inline error shown on the join screen when the entered ID or URL does not parse"
   },
+  "viewerTitle": "Broadcast",
+  "@viewerTitle": {
+    "description": "App bar title of the viewer screen while a broadcast is open"
+  },
   "viewerLeave": "Leave",
   "@viewerLeave": {
     "description": "Label of the viewer screen's control that ends the viewing session"

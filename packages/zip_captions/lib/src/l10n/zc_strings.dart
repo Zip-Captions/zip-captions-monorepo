@@ -70,6 +70,9 @@ class ZcStrings {
   /// Inline error for unparseable join input.
   String get joinBroadcastInvalidInput => _value('joinBroadcastInvalidInput');
 
+  /// App bar title of the viewer screen while a broadcast is open.
+  String get viewerTitle => _value('viewerTitle');
+
   /// Label of the viewer Leave control.
   String get viewerLeave => _value('viewerLeave');
 

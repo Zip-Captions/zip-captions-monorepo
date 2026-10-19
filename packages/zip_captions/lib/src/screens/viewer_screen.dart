@@ -42,6 +42,11 @@ class ViewerScreen extends ConsumerStatefulWidget {
 
 class _ViewerScreenState extends ConsumerState<ViewerScreen> {
   StreamSubscription<CaptionEvent>? _captions;
+
+  /// The bus [_captions] listens to: a new session allocates a fresh bus, so
+  /// identity (not nullness) decides when to re-arm (Rule 7).
+  CaptionBus? _watchingBus;
+
   ViewerSessionNotifier? _notifier;
 
   @override
@@ -63,9 +68,9 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
   }
 
   void _watchViewerBus(CaptionBus? bus) {
-    if (_captions != null || bus == null || _notifier == null) return;
-    final target = _notifier!.viewerCaptionTarget;
-    if (target == null) return;
+    if (bus == null || identical(bus, _watchingBus)) return;
+    unawaited(_captions?.cancel());
+    _watchingBus = bus;
     _captions = bus.stream.listen((_) => _syncCaptions());
   }
 
@@ -159,7 +164,7 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
           },
           child: Scaffold(
             appBar: AppBar(
-              title: Text(strings.joinBroadcastTitle),
+              title: Text(strings.viewerTitle),
               actions: [
                 TextButton(
                   onPressed: _confirmLeave,

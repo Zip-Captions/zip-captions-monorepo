@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,17 +33,21 @@ class _Harness {
 
 Future<_Harness> _pumpViewer(
   WidgetTester tester, {
-  BroadcastResolution? resolution,
+  /// Scripted resolutions; the last one repeats. Defaults to one live
+  /// resolution.
+  List<BroadcastResolution>? resolutions,
   String routeId = _id,
 }) async {
   final announcements = <String>[];
-  final resolver = FakeViewerResolver([
-    resolution ??
-        const BroadcastResolution.live(
-          sessionId: 'session-1',
-          sessionName: 'Community Meeting',
-        ),
-  ]);
+  final resolver = FakeViewerResolver(
+    resolutions ??
+        const [
+          BroadcastResolution.live(
+            sessionId: 'session-1',
+            sessionName: 'Community Meeting',
+          ),
+        ],
+  );
   final signaling = FakeViewerSignalingService();
   final factory = RecordingViewerTransportFactory();
   final router = GoRouter(
@@ -87,6 +93,10 @@ Future<_Harness> _pumpViewer(
 
   return _Harness(router, resolver, signaling, factory, announcements);
 }
+
+ViewerSessionNotifier _notifierOf(WidgetTester tester) => ProviderScope
+    .containerOf(tester.element(find.byType(ViewerScreen)))
+    .read(viewerSessionNotifierProvider.notifier);
 
 CaptionWireMessage _caption(String text) => Caption(
   result: SttResult(
@@ -156,6 +166,18 @@ void main() {
       await tester.pump();
 
       expect(find.text('viewerStateJoining'), findsOneWidget);
+    });
+
+    testWidgets('the app bar names the viewer, not the join screen', (
+      tester,
+    ) async {
+      await _pumpViewer(tester);
+
+      expect(find.widgetWithText(AppBar, 'viewerTitle'), findsOneWidget);
+      expect(
+        find.widgetWithText(AppBar, 'joinBroadcastTitle'),
+        findsNothing,
+      );
     });
 
     testWidgets(
@@ -247,7 +269,7 @@ void main() {
     ) async {
       final harness = await _pumpViewer(
         tester,
-        resolution: const BroadcastResolution.resolutionFailed(),
+        resolutions: const [BroadcastResolution.resolutionFailed()],
       );
 
       expect(find.text('viewerStateTitleCannotConnect'), findsOneWidget);
@@ -274,7 +296,7 @@ void main() {
     testWidgets('not-found shows no retry action', (tester) async {
       await _pumpViewer(
         tester,
-        resolution: const BroadcastResolution.notFound(),
+        resolutions: const [BroadcastResolution.notFound()],
       );
 
       expect(find.text('viewerCannotConnectNotFoundBody'), findsOneWidget);
@@ -284,7 +306,7 @@ void main() {
     testWidgets('rate-limited shows no retry action', (tester) async {
       await _pumpViewer(
         tester,
-        resolution: const BroadcastResolution.rateLimited(),
+        resolutions: const [BroadcastResolution.rateLimited()],
       );
 
       expect(find.text('viewerCannotConnectRateLimitedBody'), findsOneWidget);
@@ -296,7 +318,7 @@ void main() {
     ) async {
       final harness = await _pumpViewer(
         tester,
-        resolution: const BroadcastResolution.offline(),
+        resolutions: const [BroadcastResolution.offline()],
       );
 
       expect(find.text('viewerStateTitleNotBroadcasting'), findsOneWidget);
@@ -325,6 +347,91 @@ void main() {
 
       expect(find.text('viewerStateTitleEnded'), findsOneWidget);
       expect(find.text('viewerEndedBodyNamed'), findsOneWidget);
+    });
+
+    testWidgets('retry after the broadcast ended shows the new captions', (
+      tester,
+    ) async {
+      final harness = await _pumpViewer(
+        tester,
+        resolutions: const [
+          BroadcastResolution.live(
+            sessionId: 'session-1',
+            sessionName: 'Community Meeting',
+          ),
+          BroadcastResolution.live(
+            sessionId: 'session-2',
+            sessionName: 'Community Meeting',
+          ),
+        ],
+      );
+      harness.transport.emitStatus(const Connected(ConnectionType.p2pDirect));
+      await tester.pumpAndSettle();
+      harness.transport.emitMessage(
+        _caption('Before the end'),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      harness.transport.emitMessage(const Ended());
+      await tester.pumpAndSettle();
+      expect(find.text('viewerStateTitleEnded'), findsOneWidget);
+
+      // Rule 6: `Ended` has no automatic rejoin; the user starts the next
+      // session by joining again, which leaves first and allocates a fresh
+      // bus (Q7).
+      unawaited(_notifierOf(tester).join(_id));
+      await tester.pumpAndSettle();
+      expect(harness.factory.transports, hasLength(2));
+      final rejoined = harness.factory.transports.last;
+      expect(identical(rejoined, harness.factory.transports.first), isFalse);
+
+      rejoined.emitStatus(const Connected(ConnectionType.p2pDirect));
+      await tester.pumpAndSettle();
+      rejoined.emitMessage(
+        _caption('After the retry'),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('After the retry'), findsOneWidget);
+    });
+
+    testWidgets('auto-join after not-broadcasting shows the captions', (
+      tester,
+    ) async {
+      final harness = await _pumpViewer(
+        tester,
+        resolutions: const [BroadcastResolution.offline()],
+      );
+      expect(find.text('viewerStateTitleNotBroadcasting'), findsOneWidget);
+
+      harness.signaling.channel.emit(
+        const BroadcastStatusLive(
+          sessionId: 'session-2',
+          sessionName: 'Community Meeting',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(harness.factory.transports, hasLength(1));
+      harness.transport.emitStatus(const Connected(ConnectionType.p2pDirect));
+      await tester.pumpAndSettle();
+      harness.transport.emitMessage(
+        _caption('Live at last'),
+      );
+      // Let the target's 50ms debounce expire inside the test's fake zone.
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // That debounce rebuild is timer-driven, so it can paint the caption
+      // even when the screen still listens to the abandoned bus. A fresh
+      // rebuilt bus now sees its own caption event only if the screen
+      // re-armed its subscription; the stale one delivers nothing here.
+      harness.transport.emitMessage(
+        _caption('Second line'),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Second line'), findsOneWidget);
     });
 
     testWidgets('status changes are announced once per transition', (
