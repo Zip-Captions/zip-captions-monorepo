@@ -537,9 +537,16 @@ void main() {
         transport.emitMessage(
           Caption(result: captionResult('SENTINEL caption')),
         );
-        // Delivery to the viewer bus target is asynchronous: without this the
-        // caption under test never reaches the receiver before the assertions.
+        // Delivery to the viewer bus target is asynchronous (and the target
+        // debounces): without this the caption under test never reaches the
+        // receiver before the assertions, and the redaction checks below
+        // would pass vacuously.
         await settle();
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+        expect(
+          notifier().viewerCaptionTarget!.visibleCaptions.map((e) => e.text),
+          contains('SENTINEL caption'),
+        );
 
         expect(state().toString(), isNot(contains('SENTINEL')));
         expect(state().toString(), isNot(contains(_validInput)));
