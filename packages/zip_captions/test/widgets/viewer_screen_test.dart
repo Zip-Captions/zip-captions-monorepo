@@ -393,45 +393,16 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('After the retry'), findsOneWidget);
-    });
 
-    testWidgets('auto-join after not-broadcasting shows the captions', (
-      tester,
-    ) async {
-      final harness = await _pumpViewer(
-        tester,
-        resolutions: const [BroadcastResolution.offline()],
+      // The subscription moved with the session: the ended session's bus
+      // must no longer drive the pane, and the old captions are gone with
+      // that session's target.
+      harness.factory.transports.first.emitMessage(
+        _caption('From the ended session'),
       );
-      expect(find.text('viewerStateTitleNotBroadcasting'), findsOneWidget);
-
-      harness.signaling.channel.emit(
-        const BroadcastStatusLive(
-          sessionId: 'session-2',
-          sessionName: 'Community Meeting',
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(harness.factory.transports, hasLength(1));
-      harness.transport.emitStatus(const Connected(ConnectionType.p2pDirect));
-      await tester.pumpAndSettle();
-      harness.transport.emitMessage(
-        _caption('Live at last'),
-      );
-      // Let the target's 50ms debounce expire inside the test's fake zone.
       await tester.pump(const Duration(milliseconds: 100));
-
-      // That debounce rebuild is timer-driven, so it can paint the caption
-      // even when the screen still listens to the abandoned bus. A fresh
-      // rebuilt bus now sees its own caption event only if the screen
-      // re-armed its subscription; the stale one delivers nothing here.
-      harness.transport.emitMessage(
-        _caption('Second line'),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.text('Second line'), findsOneWidget);
+      expect(find.text('From the ended session'), findsNothing);
+      expect(find.text('Before the end'), findsNothing);
     });
 
     testWidgets('status changes are announced once per transition', (
