@@ -89,7 +89,11 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
 
   /// Leaves with confirmation while a session can still emit captions, and
   /// immediately from every terminal state (Rule 9).
-  Future<void> _confirmLeave() async {
+  ///
+  /// Returns whether the screen handled the request. A dismissed dialog
+  /// leaves it unhandled so the platform gesture keeps its usual meaning
+  /// (asking again, or popping) instead of being swallowed.
+  Future<bool> _confirmLeave() async {
     final current = ref.read(viewerSessionNotifierProvider);
     final needsConfirmation =
         current is ResolvingState ||
@@ -99,12 +103,13 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
 
     if (needsConfirmation) {
       final confirmed = await _showLeaveDialog();
-      if (confirmed != true) return;
+      if (confirmed != true) return false;
     }
 
     await _notifier?.leave();
-    if (!mounted) return;
+    if (!mounted) return true;
     context.go('/');
+    return true;
   }
 
   Future<bool?> _showLeaveDialog() async {
@@ -158,16 +163,13 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
             const <CaptionDisplayEntry>[];
 
         return BackButtonListener(
-          onBackButtonPressed: () async {
-            await _confirmLeave();
-            return true;
-          },
+          onBackButtonPressed: _confirmLeave,
           child: Scaffold(
             appBar: AppBar(
               title: Text(strings.viewerTitle),
               actions: [
                 TextButton(
-                  onPressed: _confirmLeave,
+                  onPressed: () => unawaited(_confirmLeave()),
                   child: Text(strings.viewerLeave),
                 ),
               ],

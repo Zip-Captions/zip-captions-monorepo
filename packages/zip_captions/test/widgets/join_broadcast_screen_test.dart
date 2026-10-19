@@ -1,10 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zip_captions/src/providers/viewer_announcer_provider.dart';
+import 'package:zip_captions/src/routing/zc_router.dart';
 import 'package:zip_captions/src/screens/join_broadcast_screen.dart';
 import 'package:zip_captions/src/screens/viewer_screen.dart';
 import 'package:zip_captions/src/widgets/viewer_route_args.dart';
+import 'package:zip_core/zip_core.dart';
 
 import '../helpers/viewer_test_harness.dart';
 
@@ -39,6 +45,46 @@ Future<GoRouter> _pumpJoin(WidgetTester tester) async {
   );
   await tester.pumpAndSettle();
   return router;
+}
+
+/// Opens `/join` through the home affordance on the real router table, so
+/// the production route graph decides push vs go.
+Future<void> _pumpShellJoin(WidgetTester tester) async {
+  tester.view.physicalSize = const Size(375, 812);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        sentinelStringsOverride(),
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        transcriptWriterTargetProvider.overrideWith((_) {}),
+        broadcastResolverProvider.overrideWithValue(
+          FakeViewerResolver([const BroadcastResolution.notFound()]),
+        ),
+        signalingServiceProvider.overrideWithValue(
+          FakeViewerSignalingService(),
+        ),
+        iceServerProviderProvider.overrideWithValue(
+          FakeViewerIceServerProvider(),
+        ),
+        viewerAnnouncerProvider.overrideWithValue((view, message) {}),
+      ],
+      child: MaterialApp.router(routerConfig: zcRouter),
+    ),
+  );
+  zcRouter.go('/');
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('joinBroadcastTitle'));
+  await tester.pumpAndSettle();
+  expect(
+    zcRouter.routerDelegate.currentConfiguration.uri.path,
+    JoinBroadcastScreen.routePath,
+  );
 }
 
 void main() {
@@ -175,6 +221,25 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(received?.broadcastId?.value, 'K7M9X2');
+    });
+
+    testWidgets('system back returns to home from /join', (
+      tester,
+    ) async {
+      await _pumpShellJoin(tester);
+      await tester.enterText(find.byType(TextField), 'k7m9x2');
+      await tester.pump();
+
+      unawaited(tester.binding.handlePopRoute());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextField), findsNothing);
+      expect(
+        zcRouter.routerDelegate.currentConfiguration.uri.path,
+        '/',
+      );
+      // Back is a single step, never an exit: the shell owns the home route.
+      expect(find.text('home'), findsNothing);
     });
   });
 }
