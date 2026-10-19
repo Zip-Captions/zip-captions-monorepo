@@ -27,5 +27,6 @@ export 'supabase_client_provider.dart';
 export 'transcript_providers.dart';
 export 'transcript_writer_target_provider.dart';
 export 'turn_credential_service_provider.dart';
+export 'viewer_transport_factory_provider.dart';
 export 'wake_lock_service_provider.dart';
 export 'wake_lock_settings_provider.dart';

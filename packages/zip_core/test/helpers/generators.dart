@@ -11,6 +11,8 @@ import 'package:zip_core/src/models/broadcast_id.dart';
 import 'package:zip_core/src/models/broadcast_settings.dart';
 import 'package:zip_core/src/models/caption_event.dart';
 import 'package:zip_core/src/models/caption_wire_message.dart';
+import 'package:zip_core/src/models/connect_failure.dart';
+import 'package:zip_core/src/models/connection_status.dart';
 import 'package:zip_core/src/models/display_settings.dart';
 import 'package:zip_core/src/models/enums.dart';
 import 'package:zip_core/src/models/recording_state.dart';
@@ -418,6 +420,30 @@ final Generator<String> arbitraryLinkInput = any.choose([
   'K7M9X',
 ]);
 
+/// Realistic configured broadcast bases for PBT-02's "configured base" row
+/// (`business-rules.md` Rule 11): the v1 apex default, the v2 subdomain a
+/// release build would supply, and a local-dev host.
+final Generator<String> arbitraryConfiguredBase = any.choose([
+  'https://zipcaptions.app/b/',
+  'https://v2.zipcaptions.app/b/',
+  'http://localhost:8080/b/',
+]);
+
+/// Generates strings that can never parse as a `BroadcastId`: wrong
+/// lengths, characters outside Crockford's alphabet, and non-`/b/` paths
+/// whose last segment is not a valid code (PBT-02's invalid-input row).
+final Generator<String> arbitraryInvalidLinkInput = any.combine3(
+  any.choose([
+    'https://zipcaptions.app/watch/',
+    'zipcaptions.app/b/',
+    'K7M9X!',
+    'localhost:8080/b/',
+  ]),
+  any.choose(['', 'x', 'I', 'L', 'O', 'U', '!']),
+  any.listWithLengthInRange(0, 10, any.choose('01AB!'.split(''))),
+  (prefix, badChar, tail) => '$prefix$badChar${tail.join()}',
+);
+
 /// Realistic-looking peer id strings (short alphanumeric tokens, as a real
 /// Realtime presence/channel peer id would be).
 final Generator<String> arbitraryPeerId = any.combine2(
@@ -731,32 +757,201 @@ BroadcastSessionCommand _arbitraryBroadcastSessionCommand(Random r) {
 /// `goLive()` calls, `endBroadcast()` with nothing live, repeated failures)
 /// and the empty sequence remain reachable.
 final Generator<List<BroadcastSessionCommand>>
-    arbitraryBroadcastSessionCommandSequence =
-    any.listWithLengthInRange(0, 20, _arbitraryBroadcastSessionCommand);
+arbitraryBroadcastSessionCommandSequence = any.listWithLengthInRange(
+  0,
+  20,
+  _arbitraryBroadcastSessionCommand,
+);
 
 /// Generates a session name including deliberately adversarial inputs
 /// (empty/whitespace-only, exactly-at-boundary length, embedded control
 /// characters, Unicode) alongside normal ASCII strings — for
 /// [BroadcastSettings.validateSessionName]'s invariant PBT (PBT-03, PBT-07).
 Generator<String> get arbitraryBroadcastSessionNameInput => (r) {
-      switch (r.nextInt(8)) {
-        case 0:
-          return '';
-        case 1:
-          return '   ';
-        case 2:
-          return 'a' * broadcastSessionNameMaxLength; // exactly at boundary
-        case 3:
-          return 'a' * (broadcastSessionNameMaxLength + 1); // one over
-        case 4:
-          // Embedded control character at a random position.
-          final base = any.letterOrDigits(r);
-          final controlChar = String.fromCharCode(r.nextInt(0x20));
-          final pos = base.isEmpty ? 0 : r.nextInt(base.length + 1);
-          return base.substring(0, pos) + controlChar + base.substring(pos);
-        case 5:
-          return 'héllo wörld 日本語'; // Unicode, otherwise valid
-        default:
-          return any.letterOrDigits(r);
-      }
-    };
+  switch (r.nextInt(8)) {
+    case 0:
+      return '';
+    case 1:
+      return '   ';
+    case 2:
+      return 'a' * broadcastSessionNameMaxLength; // exactly at boundary
+    case 3:
+      return 'a' * (broadcastSessionNameMaxLength + 1); // one over
+    case 4:
+      // Embedded control character at a random position.
+      final base = any.letterOrDigits(r);
+      final controlChar = String.fromCharCode(r.nextInt(0x20));
+      final pos = base.isEmpty ? 0 : r.nextInt(base.length + 1);
+      return base.substring(0, pos) + controlChar + base.substring(pos);
+    case 5:
+      return 'héllo wörld 日本語'; // Unicode, otherwise valid
+    default:
+      return any.letterOrDigits(r);
+  }
+};
+
+// --- Viewer session orchestration domain generators (Unit 7) ---
+
+/// Generates every [ConnectionType] (`domain-entities.md`'s live-view
+/// routing field).
+final Generator<ConnectionType> arbitraryConnectionType = any.choose(
+  ConnectionType.values,
+);
+
+/// Generates every [CaptionActivity] value.
+final Generator<CaptionActivity> arbitraryCaptionActivity = any.choose(
+  CaptionActivity.values,
+);
+
+/// Generates every [ConnectFailure] variant, including Unit 7's three
+/// additive resolution-origin reasons (Rule 5's seven-row table).
+final Generator<ConnectFailure> arbitraryConnectFailure = any.choose(
+  const <ConnectFailure>[
+    BroadcastFull(),
+    IceFailed(),
+    SignalingRejected(),
+    Timeout(),
+    RateLimited(),
+    ResolutionFailed(),
+    NotFound(),
+  ],
+);
+
+/// A single command in a `ViewerSessionNotifier` stateful PBT sequence
+/// (PBT-06). The booleans on [JoinCommand] and the sub-kinds of
+/// [TransportStatusCommand] keep every reachable transition in scope while
+/// the generator's weighting leans toward realistic viewing flows.
+sealed class ViewerSessionCommand {
+  const ViewerSessionCommand();
+}
+
+/// Attempt a join. [invalid] submits a string that fails parsing;
+/// [differentBroadcast] joins a different valid code; [throwsOnConnect]
+/// makes the fake transport's `connect()` throw.
+final class JoinCommand extends ViewerSessionCommand {
+  /// Creates a [JoinCommand].
+  const JoinCommand({
+    this.invalid = false,
+    this.differentBroadcast = false,
+    this.throwsOnConnect = false,
+  });
+
+  /// Whether the submitted input is invalid.
+  final bool invalid;
+
+  /// Whether the submitted input names a different broadcast.
+  final bool differentBroadcast;
+
+  /// Whether `transport.connect()` throws.
+  final bool throwsOnConnect;
+
+  @override
+  String toString() =>
+      'JoinCommand(invalid: $invalid, differentBroadcast: '
+      '$differentBroadcast, throwsOnConnect: $throwsOnConnect)';
+}
+
+/// Emit a status-channel event (liveness authority, Rule 4).
+final class StatusChannelEventCommand extends ViewerSessionCommand {
+  /// Creates a [StatusChannelEventCommand].
+  const StatusChannelEventCommand({required this.live});
+
+  /// `true` for a live emission, `false` for offline.
+  final bool live;
+
+  @override
+  String toString() => 'StatusChannelEventCommand(live: $live)';
+}
+
+/// Emit a transport status event.
+final class TransportStatusCommand extends ViewerSessionCommand {
+  /// Creates a [TransportStatusCommand] for [status].
+  const TransportStatusCommand(this.status);
+
+  /// The emitted status.
+  final ConnectionStatus status;
+
+  @override
+  String toString() => 'TransportStatusCommand($status)';
+}
+
+/// Emit a caption-activity event.
+final class ActivityCommand extends ViewerSessionCommand {
+  /// Creates an [ActivityCommand].
+  const ActivityCommand(this.activity);
+
+  /// The emitted activity.
+  final CaptionActivity activity;
+
+  @override
+  String toString() => 'ActivityCommand(${activity.name})';
+}
+
+/// Emit the broadcast-ended message.
+final class EndedCommand extends ViewerSessionCommand {
+  /// Creates an [EndedCommand].
+  const EndedCommand();
+
+  @override
+  String toString() => 'EndedCommand()';
+}
+
+/// Advance the `fakeAsync` clock past the reconnect window.
+final class WindowExpiryCommand extends ViewerSessionCommand {
+  /// Creates a [WindowExpiryCommand].
+  const WindowExpiryCommand();
+
+  @override
+  String toString() => 'WindowExpiryCommand()';
+}
+
+/// Call `leave()`.
+final class LeaveCommand extends ViewerSessionCommand {
+  /// Creates a [LeaveCommand].
+  const LeaveCommand();
+
+  @override
+  String toString() => 'LeaveCommand()';
+}
+
+/// A single [ViewerSessionCommand], weighted so leave (~20%), join (~20%),
+/// transport events (~25%), status events (~15%), expiry (~10%), and
+/// activity/ended (~10%) are all reachable.
+///
+/// The range is 21 so every kind — including 20, the activity fallback —
+/// can actually be drawn; with 20 the fallback was unreachable.
+ViewerSessionCommand _arbitraryViewerSessionCommand(Random r) {
+  final kind = r.nextInt(21);
+  if (kind < 4) return const LeaveCommand();
+  if (kind < 6) return const JoinCommand();
+  if (kind < 7) return const JoinCommand(invalid: true);
+  if (kind < 8) return const JoinCommand(differentBroadcast: true);
+  if (kind < 9) return const JoinCommand(throwsOnConnect: true);
+  if (kind < 14) {
+    return TransportStatusCommand(
+      switch (r.nextInt(4)) {
+        0 => const Connecting(),
+        1 => Connected(arbitraryConnectionType(r)),
+        2 => const Interrupted(),
+        _ => Failed(arbitraryConnectFailure(r)),
+      },
+    );
+  }
+  if (kind < 17) {
+    return StatusChannelEventCommand(live: r.nextBool());
+  }
+  if (kind < 19) return const WindowExpiryCommand();
+  if (kind == 19) return const EndedCommand();
+  return ActivityCommand(arbitraryCaptionActivity(r));
+}
+
+/// Weighted sequence of [ViewerSessionCommand]s for the stateful
+/// `ViewerSessionNotifier` PBT (PBT-06): realistic viewing flows are
+/// common, adversarial orderings (joins during terminal states, expiry
+/// without a window, repeated leaves) and the empty sequence are reachable.
+final Generator<List<ViewerSessionCommand>>
+arbitraryViewerSessionCommandSequence = any.listWithLengthInRange(
+  0,
+  20,
+  _arbitraryViewerSessionCommand,
+);

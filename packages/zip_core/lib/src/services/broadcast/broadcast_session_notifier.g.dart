@@ -7,7 +7,7 @@ part of 'broadcast_session_notifier.dart';
 // **************************************************************************
 
 String _$broadcastSessionNotifierHash() =>
-    r'b1dba5c702e23d32e7108ae2dd5a5c6a240ffb35';
+    r'85649e014f01ba12dbe6207126b356dfc145f135';
 
 /// The broadcaster's own session orchestration (fixed shape, Application
 /// Design; behavior designed in `business-logic-model.md`).

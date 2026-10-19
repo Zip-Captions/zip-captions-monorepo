@@ -1,3 +1,4 @@
+import 'package:zip_core/src/constants/broadcast_link_config.dart';
 import 'package:zip_core/src/models/broadcast_id.dart';
 
 /// Parses free-form user input (pasted URL or bare code) into a validated
@@ -8,9 +9,6 @@ import 'package:zip_core/src/models/broadcast_id.dart';
 /// can treat "invalid input" as a plain `null` result without a network
 /// call, rather than catching an exception.
 abstract final class BroadcastLink {
-  /// The canonical base URL broadcast links are generated under.
-  static const String baseUrl = 'https://zipcaptions.app/b/';
-
   /// Accepts a bare code (`k7m9x2`), a bare host+path
   /// (`zipcaptions.app/b/k7m9x2`), or the full `https://` form. Returns
   /// `null` for anything else — never throws.
@@ -38,6 +36,10 @@ abstract final class BroadcastLink {
 
   /// Builds the shareable URL for [id], using the lowercase display form
   /// (SR-02 §3) — parsing it back is case-insensitive either way.
+  ///
+  /// The base is build-time configuration ([broadcastBaseUrl], overridable
+  /// via `--dart-define=BROADCAST_BASE_URL=...`), not a source literal
+  /// (`business-rules.md` Rule 11).
   static Uri toUrl(BroadcastId id) =>
-      Uri.parse('$baseUrl${id.value.toLowerCase()}');
+      Uri.parse('$broadcastBaseUrl${id.value.toLowerCase()}');
 }

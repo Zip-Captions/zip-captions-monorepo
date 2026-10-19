@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zip_captions/src/l10n/zc_strings.dart';
 import 'package:zip_captions/src/shell/zc_app_shell.dart';
 import 'package:zip_core/zip_core.dart';
 
@@ -17,43 +18,47 @@ import 'package:zip_core/zip_core.dart';
 // ---------------------------------------------------------------------------
 
 GoRouter _router(String initialLocation) => GoRouter(
-      initialLocation: initialLocation,
+  initialLocation: initialLocation,
+  routes: [
+    ShellRoute(
+      builder: (ctx, state, child) => ZcAppShell(child: child),
       routes: [
-        ShellRoute(
-          builder: (ctx, state, child) => ZcAppShell(child: child),
+        GoRoute(
+          path: '/',
+          builder: (ctx, s) => const SizedBox(key: Key('home')),
+        ),
+        GoRoute(
+          path: '/join',
+          builder: (ctx, s) => const SizedBox(key: Key('join')),
+        ),
+        GoRoute(
+          path: '/recording',
+          builder: (ctx, s) => const SizedBox(key: Key('recording')),
+        ),
+        GoRoute(
+          path: '/settings',
+          builder: (ctx, s) => const SizedBox(key: Key('settings')),
+        ),
+        GoRoute(
+          path: '/history',
+          builder: (ctx, s) => const SizedBox(key: Key('history')),
           routes: [
             GoRoute(
-              path: '/',
-              builder: (ctx, s) => const SizedBox(key: Key('home')),
-            ),
-            GoRoute(
-              path: '/recording',
-              builder: (ctx, s) => const SizedBox(key: Key('recording')),
-            ),
-            GoRoute(
-              path: '/settings',
-              builder: (ctx, s) => const SizedBox(key: Key('settings')),
-            ),
-            GoRoute(
-              path: '/history',
-              builder: (ctx, s) => const SizedBox(key: Key('history')),
-              routes: [
-                GoRoute(
-                  path: ':sessionId',
-                  builder: (ctx, s) =>
-                      const SizedBox(key: Key('transcript')),
-                ),
-              ],
+              path: ':sessionId',
+              builder: (ctx, s) => const SizedBox(key: Key('transcript')),
             ),
           ],
         ),
       ],
-    );
+    ),
+  ],
+);
 
 Future<void> _pump(
   WidgetTester tester,
   String initialLocation, {
   Size physicalSize = const Size(375, 812),
+  List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1.0;
@@ -67,6 +72,7 @@ Future<void> _pump(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         transcriptWriterTargetProvider.overrideWith((_) {}),
+        ...overrides,
       ],
       child: MaterialApp.router(
         // NoSplash prevents the ink_sparkle.frag shader from being loaded
@@ -109,8 +115,9 @@ void main() {
       expect(find.byType(NavigationRail), findsNothing);
     });
 
-    testWidgets('tapping hamburger opens drawer with 4 destinations',
-        (tester) async {
+    testWidgets('tapping hamburger opens drawer with 5 destinations', (
+      tester,
+    ) async {
       await _pump(tester, '/');
 
       await tester.tap(find.byIcon(Icons.menu));
@@ -118,8 +125,51 @@ void main() {
 
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Caption'), findsOneWidget);
+      expect(find.text('Join Broadcast'), findsOneWidget);
       expect(find.text('History'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
+    });
+
+    testWidgets('the drawer reads its join label from the ARB', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        '/',
+        overrides: [
+          zcStringsProvider.overrideWith(
+            (ref) async => const ZcStrings.fromMap({
+              'navJoinBroadcast': 'SENTINEL-JOIN',
+            }),
+          ),
+        ],
+      );
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+
+      expect(find.text('SENTINEL-JOIN'), findsOneWidget);
+    });
+
+    testWidgets('the drawer joins the broadcast screen', (tester) async {
+      await _pump(
+        tester,
+        '/',
+        overrides: [
+          zcStringsProvider.overrideWith(
+            (ref) async => const ZcStrings.fromMap({
+              'navJoinBroadcast': 'Join Broadcast',
+            }),
+          ),
+        ],
+      );
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Join Broadcast'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('join')), findsOneWidget);
     });
 
     testWidgets('AppBar title reflects current route', (tester) async {
@@ -132,11 +182,29 @@ void main() {
       await _pump(tester, '/');
       expect(find.text('Zip Captions'), findsOneWidget);
     });
+
+    testWidgets('the join title is read from the ARB', (tester) async {
+      await _pump(
+        tester,
+        '/join',
+        overrides: [
+          zcStringsProvider.overrideWith(
+            (ref) async => const ZcStrings.fromMap({
+              'joinBroadcastSubmit': 'SENTINEL-JOIN-TITLE',
+            }),
+          ),
+        ],
+      );
+
+      expect(find.text('SENTINEL-JOIN-TITLE'), findsOneWidget);
+      expect(find.text('Join'), findsNothing);
+    });
   });
 
   group('ZcAppShell — desktop chrome (> 768px)', () {
-    testWidgets('shows NavigationRail instead of AppBar hamburger',
-        (tester) async {
+    testWidgets('shows NavigationRail instead of AppBar hamburger', (
+      tester,
+    ) async {
       await _pump(tester, '/', physicalSize: const Size(1200, 800));
 
       expect(find.byType(NavigationRail), findsOneWidget);

@@ -9,19 +9,24 @@
 import 'dart:async';
 
 import 'package:zip_core/src/models/broadcast_id.dart';
+import 'package:zip_core/src/models/broadcast_resolution.dart';
 import 'package:zip_core/src/models/broadcast_status.dart';
 import 'package:zip_core/src/models/broadcast_transport_context.dart';
 import 'package:zip_core/src/models/caption_wire_message.dart';
+import 'package:zip_core/src/models/connection_status.dart';
 import 'package:zip_core/src/models/ice_server.dart';
 import 'package:zip_core/src/models/signaling_message.dart';
 import 'package:zip_core/src/models/viewer_connection_info.dart';
+import 'package:zip_core/src/models/viewer_transport_context.dart';
 import 'package:zip_core/src/services/broadcast/broadcast_authorization_exception.dart';
 import 'package:zip_core/src/services/broadcast/broadcast_identity_repository.dart';
+import 'package:zip_core/src/services/broadcast/broadcast_resolver.dart';
 import 'package:zip_core/src/services/signaling/session_signaling_channel.dart';
 import 'package:zip_core/src/services/signaling/signaling_service.dart';
 import 'package:zip_core/src/services/signaling/status_channel.dart';
 import 'package:zip_core/src/services/webrtc/broadcast_transport.dart';
 import 'package:zip_core/src/services/webrtc/ice_server_provider.dart';
+import 'package:zip_core/src/services/webrtc/viewer_transport.dart';
 
 /// Fake [BroadcastIdentityRepository]: returns [broadcastId], or throws
 /// [error] if set.
@@ -148,6 +153,7 @@ class FakeStatusChannel implements StatusChannel {
   int publishLiveCalls = 0;
   int publishOfflineCalls = 0;
   int closeCalls = 0;
+  int watchCalls = 0;
 
   /// If set, [publishLive] throws this instead of recording the call.
   Exception? publishLiveError;
@@ -168,7 +174,13 @@ class FakeStatusChannel implements StatusChannel {
   }
 
   @override
-  Stream<BroadcastStatus> watch() => _statusController.stream;
+  Stream<BroadcastStatus> watch() {
+    watchCalls++;
+    return _statusController.stream;
+  }
+
+  /// Emits [status] on the [watch] stream (the viewer's liveness source).
+  void emitStatus(BroadcastStatus status) => _statusController.add(status);
 
   @override
   Future<void> close() async {
@@ -204,4 +216,113 @@ class FakeBroadcastSignalingService implements SignalingService {
   @override
   SessionSignalingChannel sessionChannel(String sessionId, String peerId) =>
       throw UnimplementedError('not used by BroadcastSessionNotifier tests');
+}
+
+/// Fake [BroadcastResolver] for the viewer's unit/PBT suites (Unit 7, NFR
+/// Design Q7): a scripted result queue draining before [defaultResolution],
+/// recording every call.
+///
+/// [error] is never thrown: the shipped resolver is total (it maps every
+/// failure to `rateLimited`/`resolutionFailed`), so a fake that threw would
+/// let a test assert behaviour the production contract forbids. Setting
+/// [error] therefore makes [resolve] return
+/// `BroadcastResolution.resolutionFailed()`, documenting that contract.
+class FakeBroadcastResolver implements BroadcastResolver {
+  /// Creates a fake resolving to [defaultResolution] (offline by default).
+  FakeBroadcastResolver({
+    BroadcastResolution? defaultResolution,
+    List<BroadcastResolution>? queued,
+  }) : defaultResolution =
+           defaultResolution ?? const BroadcastResolution.offline(),
+       queue = [...?queued];
+
+  /// The result once [queue] is empty.
+  BroadcastResolution defaultResolution;
+
+  /// Scripted results, consumed in order.
+  final List<BroadcastResolution> queue;
+
+  /// If set, [resolve] yields `resolutionFailed` (see the class doc).
+  Exception? error;
+
+  int resolveCalls = 0;
+
+  /// The ids passed to [resolve], in call order.
+  final resolveIds = <BroadcastId>[];
+
+  /// If set, `resolve` returns [pending]'s future instead of a scripted
+  /// result, so a test can hold a join mid-resolution (stale-resume rows).
+  Completer<BroadcastResolution>? pending;
+
+  @override
+  Future<BroadcastResolution> resolve(BroadcastId id) async {
+    resolveCalls++;
+    resolveIds.add(id);
+    final held = pending;
+    if (held != null) return held.future;
+    if (error != null) return const BroadcastResolution.resolutionFailed();
+    if (queue.isNotEmpty) return queue.removeAt(0);
+    return defaultResolution;
+  }
+}
+
+/// Fake [ViewerTransport] for the viewer's unit/PBT suites (Unit 7, NFR
+/// Design Q7): every call is recorded; status/message events are driven
+/// manually by a test.
+class FakeViewerTransport implements ViewerTransport {
+  final _statusController = StreamController<ConnectionStatus>.broadcast();
+  final _messagesController = StreamController<CaptionWireMessage>.broadcast();
+
+  /// The context passed to [connect], once called.
+  ViewerTransportContext? startedWith;
+
+  /// If set, [connect] throws this after recording the call.
+  Exception? connectError;
+
+  /// If set, [disconnect] throws this after recording the call.
+  Exception? disconnectError;
+
+  int connectCalls = 0;
+  int restartCalls = 0;
+  int disconnectCalls = 0;
+
+  @override
+  Future<void> connect(ViewerTransportContext context) async {
+    connectCalls++;
+    startedWith = context;
+    final e = connectError;
+    if (e != null) throw e;
+  }
+
+  @override
+  Future<void> restart() async {
+    restartCalls++;
+  }
+
+  @override
+  Future<void> disconnect() async {
+    disconnectCalls++;
+    final e = disconnectError;
+    if (e != null) throw e;
+  }
+
+  @override
+  Stream<CaptionWireMessage> get messages => _messagesController.stream;
+
+  @override
+  Stream<ConnectionStatus> get status => _statusController.stream;
+
+  /// Emits [status] on the status stream (synchronously delivered to
+  /// listeners on the next microtask).
+  void emitStatus(ConnectionStatus status) => _statusController.add(status);
+
+  /// Emits [message] on the messages stream.
+  void emitMessage(CaptionWireMessage message) =>
+      _messagesController.add(message);
+
+  /// Closes every internal controller. Call once per test, in `tearDown`.
+  Future<void> disposeControllers() async {
+    await _statusController.close();
+    await _messagesController.close();
+  }
 }

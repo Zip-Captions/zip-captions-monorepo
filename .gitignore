@@ -79,3 +79,8 @@ node_modules/
 # ---------- MCP Servers -----------
 # Local mcp servers used for LLM tooling
 .mcp.json
+# ---------- Agent run scratch (overnight pipeline) ----------
+# Run ledger: local orchestration state, never committed.
+aidlc-docs/overnight-ledger.md
+aidlc-docs/overnight-ledger.*.md
+.agent/*.local.md

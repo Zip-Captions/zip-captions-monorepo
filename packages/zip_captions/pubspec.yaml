@@ -42,3 +42,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/google_fonts/
+    - l10n/arb/app_en.arb
