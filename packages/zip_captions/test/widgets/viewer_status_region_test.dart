@@ -12,6 +12,7 @@ Future<List<String>> _pumpRegion(
   String text, {
   ViewerSessionState state = const ViewerSessionState.idle(),
   String? body,
+  bool supportsAnnounce = true,
 }) async {
   final announcements = <String>[];
   await tester.pumpWidget(
@@ -23,6 +24,12 @@ Future<List<String>> _pumpRegion(
         ),
       ],
       child: MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(supportsAnnounce: supportsAnnounce),
+          child: child!,
+        ),
         home: Scaffold(
           body: ViewerStatusRegion(state: state, text: text, body: body),
         ),
@@ -89,6 +96,21 @@ void main() {
       await tester.pump();
 
       expect(announcements, ['Live', 'Reconnecting']);
+    });
+
+    testWidgets('does not announce when the platform opt-out is set', (
+      tester,
+    ) async {
+      final announcements = await _pumpRegion(
+        tester,
+        'Live',
+        supportsAnnounce: false,
+      );
+
+      expect(announcements, isEmpty);
+      // The live region itself still carries the status for the reader that
+      // consumes it in document order.
+      expect(find.text('Live'), findsOneWidget);
     });
 
     testWidgets('does not re-announce identical copy on rebuild', (

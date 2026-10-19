@@ -58,6 +58,10 @@ class _ViewerStatusRegionState extends ConsumerState<ViewerStatusRegion> {
     final text = widget.text;
     if (text == _announced) return;
     _announced = text;
+    // When the platform opts out of announcements, the live region below
+    // still carries the status for a reader consuming it in document order;
+    // the explicit announcement would duplicate it (NFR-5.2).
+    if (!MediaQuery.supportsAnnounceOf(context)) return;
     ref.read(viewerAnnouncerProvider)(View.of(context), text);
   }
 
