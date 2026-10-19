@@ -65,3 +65,32 @@
 - **`ZcStrings` is synchronous after one asset load.** The `keepAlive`
   provider loads the ARB once; `ZcStrings.fromMap` exists for tests, so there
   is one asynchronous path and one synchronous one, never a second reader.
+## Review round 1
+
+1. **Fixed** (a222d52) — `ViewerScreen` tracks the subscribed `CaptionBus` and
+   cancels/re-subscribes when identity changes. Test added: retry after
+   `Ended` shows the new session's captions and the ended session's bus no
+   longer drives the pane. The finding's auto-join premise is rebutted:
+   `_onStatusChannelEvent` reuses the existing resources (same `bus`, new
+   `sessionId`), so auto-join never allocates a second bus; that test was
+   vacuous here and was removed rather than left passing.
+2. **Fixed** (4664898) — `BackButtonListener` now returns the outcome of
+   `_confirmLeave`, so a dismissed dialog leaves the back event unhandled.
+   Tests added: back from `/join` reaches home in one step, and the
+   dialog-dismiss path returns false. Push-vs-go is rebutted against
+   `frontend-components.md` ("Back … otherwise leave + `context.go('/')`"),
+   and `/join`'s back already reaches home via the shell handler.
+3. **Fixed** (453d247, 34806dc) — announcements are gated on
+   `MediaQuery.supportsAnnounceOf` with the live region retained as fallback;
+   the viewer has its own `viewerTitle` ARB key. Tests added for the opt-out
+   branch and the app-bar title.
+4. **Fixed** (b58f6f7) — `ZcStrings.load` filters `@`-prefixed keys and
+   non-`String` values instead of a lazy `Map.cast`; trailing newline
+   restored. Test added: loading a map with metadata does not throw, and
+   every loaded value is a `String`.
+5. **Fixed** (b629a35) — `ViewerIdleState` maps to an empty title; the
+   exhaustive switch is unchanged. Test added.
+6. **Fixed** (7df7ec0) — home and drawer join labels read `ZcStrings`
+   (`joinBroadcastTitle`, new `navJoinBroadcast`). Tests added.
+7. **Fixed** (a222d52) — the unused `viewerCaptionTarget` lookup is gone from
+   `_watchViewerBus`.
