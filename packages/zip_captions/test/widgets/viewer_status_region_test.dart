@@ -113,6 +113,87 @@ void main() {
       expect(find.text('Live'), findsOneWidget);
     });
 
+    testWidgets('an empty title announces nothing', (tester) async {
+      final announcements = await _pumpRegion(tester, '');
+
+      expect(announcements, isEmpty);
+    });
+
+    testWidgets('an empty first frame does not spoil the first real '
+        'announcement', (tester) async {
+      final announcements = await _pumpRegion(tester, '');
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sentinelStringsOverride(),
+            viewerAnnouncerProvider.overrideWithValue(
+              (view, message) => announcements.add(message),
+            ),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ViewerStatusRegion(
+                state: ViewerSessionState.resolving(),
+                text: 'Connecting',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(announcements, ['Connecting']);
+    });
+
+    testWidgets('announces again after an opt-out toggle mid-session', (
+      tester,
+    ) async {
+      final announcements = <String>[];
+      Widget region({required bool supportsAnnounce, required String text}) =>
+          ProviderScope(
+            overrides: [
+              sentinelStringsOverride(),
+              viewerAnnouncerProvider.overrideWithValue(
+                (view, message) => announcements.add(message),
+              ),
+            ],
+            child: MaterialApp(
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(supportsAnnounce: supportsAnnounce),
+                child: child!,
+              ),
+              home: Scaffold(
+                body: ViewerStatusRegion(
+                  state: const ViewerSessionState.liveView(
+                    captionActivity: CaptionActivity.active,
+                    connectionType: ConnectionType.p2pDirect,
+                  ),
+                  text: text,
+                ),
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(region(supportsAnnounce: true, text: 'Live'));
+      await tester.pump();
+      expect(announcements, ['Live']);
+
+      await tester.pumpWidget(region(supportsAnnounce: false, text: 'Live'));
+      await tester.pumpWidget(
+        region(supportsAnnounce: false, text: 'Reconnecting'),
+      );
+      await tester.pump();
+      expect(announcements, ['Live']);
+
+      await tester.pumpWidget(region(supportsAnnounce: true, text: 'Ended'));
+      await tester.pump();
+
+      expect(announcements, ['Live', 'Ended']);
+    });
+
     testWidgets('does not re-announce identical copy on rebuild', (
       tester,
     ) async {

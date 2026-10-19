@@ -56,12 +56,19 @@ class _ViewerStatusRegionState extends ConsumerState<ViewerStatusRegion> {
 
   void _announceIfChanged() {
     final text = widget.text;
-    if (text == _announced) return;
-    _announced = text;
+    // The idle state carries an empty title, and the first frame can mount
+    // the region idle: an empty announcement would interrupt speech already
+    // in progress without saying anything.
+    if (text.isEmpty) return;
     // When the platform opts out of announcements, the live region below
     // still carries the status for a reader consuming it in document order;
-    // the explicit announcement would duplicate it (NFR-5.2).
+    // the explicit announcement would duplicate it (NFR-5.2). `_announced`
+    // is only advanced once an announcement actually happens, so a status
+    // shown while opted out is still announced if the setting is turned back
+    // on mid-session.
     if (!MediaQuery.supportsAnnounceOf(context)) return;
+    if (text == _announced) return;
+    _announced = text;
     ref.read(viewerAnnouncerProvider)(View.of(context), text);
   }
 
