@@ -134,6 +134,67 @@ void main() {
       expect(transport.connectCalls, 1);
     });
 
+    test(
+      'a repeated join for the same id while resolving resolves once',
+      () async {
+        final held = Completer<BroadcastResolution>();
+        resolver.pending = held;
+
+        final first = notifier().join(_validInput);
+        expect(state(), isA<ResolvingState>());
+        final second = notifier().join(_validInput);
+        await settle();
+
+        expect(resolver.resolveCalls, 1);
+        expect(resolver.resolveIds, [BroadcastId.parse(_validInput)]);
+
+        held.complete(
+          const BroadcastResolution.live(
+            sessionId: 'session-1',
+            sessionName: 'My Stream',
+          ),
+        );
+        await first;
+        await second;
+
+        expect(transport.connectCalls, 1);
+        expect(state(), isA<ConnectingState>());
+      },
+    );
+
+    test('a stale request does not release the in-flight id it lost', () async {
+      final secondHeld = Completer<BroadcastResolution>();
+      final firstHeld = Completer<BroadcastResolution>();
+      resolver.pending = firstHeld;
+
+      unawaited(notifier().join(_validInput));
+      expect(state(), isA<ResolvingState>());
+
+      // Supersede the first request after it has started: the different
+      // id's join leaves first (nothing is allocated yet) and resolves
+      // afresh, so the second request owns the in-flight slot.
+      transport.emitStatus(const Connected(ConnectionType.p2pDirect));
+      await settle();
+      resolver.pending = secondHeld;
+      final second = notifier().join(_otherInput);
+      await settle();
+      expect(resolver.resolveCalls, 2);
+      expect(notifier().resolvingBroadcastId, BroadcastId.parse(_otherInput));
+
+      // The first request now completes in stale form: its cleanup must not
+      // clear the newer request's in-flight id. (Its continuation also
+      // aborts on the epoch check before it can allocate anything.)
+      firstHeld.complete(const BroadcastResolution.offline());
+      await settle();
+      await settle();
+      expect(notifier().resolvingBroadcastId, BroadcastId.parse(_otherInput));
+
+      secondHeld.complete(const BroadcastResolution.offline());
+      await settle();
+      await second;
+      expect(notifier().resolvingBroadcastId, isNull);
+    });
+
     test('a different id leaves first, then resolves', () async {
       await joinLive();
       resolver.defaultResolution = const BroadcastResolution.offline();
@@ -465,25 +526,33 @@ void main() {
   });
 
   group('Rule 8: no caption content in state or logs', () {
-    test('state names and log records carry no join input or caption text', () {
-      final records = <LogRecord>[];
-      final sub = Logger.root.onRecord.listen(records.add);
-      addTearDown(sub.cancel);
+    test(
+      'state names and log records carry no join input or caption text',
+      () async {
+        final records = <LogRecord>[];
+        final sub = Logger.root.onRecord.listen(records.add);
+        addTearDown(sub.cancel);
 
-      return joinLive().then((_) {
+        await joinLive();
         transport.emitMessage(
           Caption(result: captionResult('SENTINEL caption')),
         );
-        // assert
+        // Delivery to the viewer bus target is asynchronous: without this the
+        // caption under test never reaches the receiver before the assertions.
+        await settle();
+
         expect(state().toString(), isNot(contains('SENTINEL')));
         expect(state().toString(), isNot(contains(_validInput)));
         for (final record in records) {
-          expect(record.message, isNot(contains('SENTINEL')));
-          expect(record.message, isNot(contains(_validInput)));
+          final message = record.message.toLowerCase();
+          expect(message, isNot(contains('sentinel')));
+          // The parsed join input must never appear, in any case: the screen
+          // uppercases the code before it reaches join().
+          expect(message, isNot(contains(_validInput.toLowerCase())));
         }
         expect(records, isNotEmpty);
-      });
-    });
+      },
+    );
   });
 
   group('F-7.4: the reconnect window rows (fakeAsync)', () {

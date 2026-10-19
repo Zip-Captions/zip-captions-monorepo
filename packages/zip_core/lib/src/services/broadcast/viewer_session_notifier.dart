@@ -39,6 +39,11 @@ class ViewerSessionNotifier extends _$ViewerSessionNotifier {
   ViewerSessionResources? _resources;
   String? _sessionName;
   BroadcastId? _currentBroadcastId;
+  // The broadcast whose resolution request is in flight, if any. Set when a
+  // request starts and cleared only by that same request, so the Rule 1
+  // no-op check also covers `ResolvingState` — where `_currentBroadcastId`
+  // is not set yet.
+  BroadcastId? _resolvingBroadcastId;
   CaptionActivity _lastActivity = CaptionActivity.inactive;
 
   /// Incremented by every `join()` start, implicit leave and `leave()`; each
@@ -67,6 +72,9 @@ class ViewerSessionNotifier extends _$ViewerSessionNotifier {
   /// The broadcast currently held, for route-reentry checks (F-7.2).
   BroadcastId? get currentBroadcastId => _currentBroadcastId;
 
+  /// The broadcast whose resolution is in flight, if any.
+  BroadcastId? get resolvingBroadcastId => _resolvingBroadcastId;
+
   /// Joins the broadcast described by [input] (F-7.2).
   ///
   /// A no-op for the broadcast already held, and for invalid input while a
@@ -93,7 +101,7 @@ class ViewerSessionNotifier extends _$ViewerSessionNotifier {
         current is! EndedState &&
         current is! FullState &&
         current is! CannotConnectState &&
-        id == _currentBroadcastId) {
+        (id == _currentBroadcastId || id == _resolvingBroadcastId)) {
       return;
     }
 
@@ -110,7 +118,15 @@ class ViewerSessionNotifier extends _$ViewerSessionNotifier {
     final epoch = ++_sessionEpoch;
     _setState(const ViewerSessionState.resolving());
 
-    final resolution = await ref.read(broadcastResolverProvider).resolve(id);
+    _resolvingBroadcastId = id;
+    final BroadcastResolution resolution;
+    try {
+      resolution = await ref.read(broadcastResolverProvider).resolve(id);
+    } finally {
+      // Only the request that owns the slot may release it: a superseded
+      // request must not clear the id a newer one is resolving.
+      if (_resolvingBroadcastId == id) _resolvingBroadcastId = null;
+    }
     if (epoch != _sessionEpoch) return;
 
     switch (resolution) {
@@ -142,6 +158,7 @@ class ViewerSessionNotifier extends _$ViewerSessionNotifier {
   /// Leaves the current session (F-7.7). Idempotent from any state.
   Future<void> leave() async {
     _sessionEpoch++;
+    _resolvingBroadcastId = null;
     // The holder is taken out of the field before its teardown starts: a
     // teardown that synchronously triggers another leave()/join() must see
     // "already released", never the same holder twice (single-writer rule).
