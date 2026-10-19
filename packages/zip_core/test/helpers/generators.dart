@@ -418,6 +418,30 @@ final Generator<String> arbitraryLinkInput = any.choose([
   'K7M9X',
 ]);
 
+/// Realistic configured broadcast bases for PBT-02's "configured base" row
+/// (`business-rules.md` Rule 11): the v1 apex default, the v2 subdomain a
+/// release build would supply, and a local-dev host.
+final Generator<String> arbitraryConfiguredBase = any.choose([
+  'https://zipcaptions.app/b/',
+  'https://v2.zipcaptions.app/b/',
+  'http://localhost:8080/b/',
+]);
+
+/// Generates strings that can never parse as a `BroadcastId`: wrong
+/// lengths, characters outside Crockford's alphabet, and non-`/b/` paths
+/// whose last segment is not a valid code (PBT-02's invalid-input row).
+final Generator<String> arbitraryInvalidLinkInput = any.combine3(
+  any.choose([
+    'https://zipcaptions.app/watch/',
+    'zipcaptions.app/b/',
+    'K7M9X!',
+    'localhost:8080/b/',
+  ]),
+  any.choose(['', 'x', 'I', 'L', 'O', 'U', '!']),
+  any.listWithLengthInRange(0, 10, any.choose('01AB!'.split(''))),
+  (prefix, badChar, tail) => '$prefix${badChar}${tail.join()}',
+);
+
 /// Realistic-looking peer id strings (short alphanumeric tokens, as a real
 /// Realtime presence/channel peer id would be).
 final Generator<String> arbitraryPeerId = any.combine2(
