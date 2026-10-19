@@ -129,9 +129,12 @@ Paste as the entire first message of a fresh session at the repo root:
 ```
 Read .agent/overnight-pipeline.md and execute it from the start, using its Run
 configuration section, with kestra/overnight-pipeline-generic.md as the
-process definition it instantiates. This is the unattended overnight run it
-defines. Do not ask me questions — the document contains the assumptions
-policy.
+process definition it instantiates. That document is the ONLY thing you may
+read from the Obsidian vault — do not read the rest of the vault, and do not
+use the vault for codebase orientation during this run (the handoff summaries
+under aidlc-docs/construction/zip-captions-viewer/ serve that purpose). This
+is the unattended overnight run it defines. Do not ask me questions — the
+document contains the assumptions policy.
 ```
 
 ## Kickoff preconditions (orchestrator checks before Step 0)
