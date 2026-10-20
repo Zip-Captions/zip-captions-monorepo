@@ -299,7 +299,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
     Step 10, which is the first step to import it.
     *Test*: none. *Commit*: `feat(zip_broadcast): add screen_retriever dependency for display enumeration`.
 
-2. [ ] **F01 `display_info.dart`** (+ freezed). *Test*: F33's generator
+2. [x] **F01 `display_info.dart`** (+ freezed). *Test*: F33's generator
     compiles and `DisplayInfo` equality holds over `Rect`/`scaleFactor`
     (asserted inside F35's named examples).
     *Commit*: `feat(zip_broadcast): add DisplayInfo model`.

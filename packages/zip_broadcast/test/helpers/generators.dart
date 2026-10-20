@@ -1,9 +1,14 @@
+import 'dart:math';
+
 // PBT generator library for zip_broadcast tests.
 //
 // Centralized Generator<T> instances for zip_broadcast domain types.
 
+import 'dart:ui';
+
 import 'package:zip_broadcast/src/models/obs_connection_state.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
+import 'package:zip_broadcast/src/output/overlay/display_info.dart';
 
 import 'pbt.dart';
 
@@ -37,3 +42,73 @@ final Generator<OutputTargetSettings> arbitraryOutputTargetSettings =
     browserSourcePort: port,
   ),
 );
+
+/// Generates a logical work-area [Rect] anywhere on a virtual desktop.
+final Generator<Rect> arbitraryBounds = any.combine4(
+  any.doubleInRange(-2000, 4000),
+  any.doubleInRange(-2000, 2000),
+  any.doubleInRange(0, 3000),
+  any.doubleInRange(0, 2000),
+  Rect.fromLTWH,
+);
+
+/// Scale factors a display realistically reports, including the degenerate
+/// `0` that the Windows conversion treats as `1`.
+final Generator<double> arbitraryScaleFactor =
+    any.choose<double>(<double>[0, 1, 1.25, 1.5, 2, 3]);
+
+/// Generates a single [DisplayInfo]. Ids cover the opaque platform form, the
+/// Linux-normalised `display-<n>` form and the empty string; labels may be
+/// empty (BR-U8-08).
+final Generator<DisplayInfo> arbitraryDisplayInfo = any.combine5(
+  any.combine2(
+    any.intInRange(0, 4),
+    any.letterOrDigits,
+    (index, suffix) => switch (index) {
+      0 => 'display-$index',
+      1 => '',
+      _ => 'id-$suffix',
+    },
+  ),
+  any.letterOrDigits,
+  arbitraryBounds,
+  arbitraryScaleFactor,
+  any.boolGen,
+  (id, label, bounds, scaleFactor, isPrimary) => DisplayInfo(
+    id: id,
+    label: label,
+    bounds: bounds,
+    scaleFactor: scaleFactor,
+    isPrimary: isPrimary,
+  ),
+);
+
+/// Generates a display list of 0..4 entries with **at most one** primary
+/// display, at an arbitrary platform position.
+List<DisplayInfo> _generateDisplayList(Random random) {
+  final length = random.nextInt(5);
+  final primaryIndex = length == 0 ? -1 : random.nextInt(length);
+  return List<DisplayInfo>.generate(length, (index) {
+    final display = arbitraryDisplayInfo(random);
+    return display.copyWith(isPrimary: index == primaryIndex);
+  });
+}
+
+const Generator<List<DisplayInfo>> arbitraryDisplayList =
+    _generateDisplayList;
+
+/// Generates a display list that contains a display with [id], honouring the
+/// at-most-one-primary rule.
+Generator<List<DisplayInfo>> arbitraryDisplayListContaining(String id) =>
+    (random) {
+      final displays = arbitraryDisplayList(random);
+      if (displays.isEmpty) {
+        final display = arbitraryDisplayInfo(random);
+        return [display.copyWith(id: id, isPrimary: true)];
+      }
+      final target = random.nextInt(displays.length);
+      return [
+        for (var i = 0; i < displays.length; i++)
+          i == target ? displays[i].copyWith(id: id) : displays[i],
+      ];
+    };
