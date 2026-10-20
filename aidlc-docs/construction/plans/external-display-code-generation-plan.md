@@ -406,12 +406,12 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
     no BR, state, wire shape or test, and is recorded in Step 24's Part 2
     summary.
 
-13. [ ] **F17 — `caption_overlay_target.dart` rewrite**. *Test first*: **F44**.
+13. [x] **F17 — `caption_overlay_target.dart` rewrite**. *Test first*: **F44**.
     Implement the thin delegator + caption-bus adapter (B-9); delete the shipped
     `_isVisible` field.
     *Commit*: `feat(zip_broadcast): reduce CaptionOverlayTarget to a controller delegator`.
 
-14. [ ] **F22 — the providers**. *Test*: covered by F45/F48 via override;
+14. [x] **F22 — the providers**. *Test*: covered by F45/F48 via override;
     the provider file itself has no dedicated test (a hand-written `Provider`
     is wiring, not logic).
     *Commit*: `feat(zip_broadcast): add overlay window controller providers`.
@@ -429,7 +429,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
     handler installed before `overlayReady`; decode failures total.
     *Commit*: `feat(zip_broadcast): add the external display sub-engine entry and window app`.
 
-17. [ ] **F25 `overlay_config.dart`** — `targetDisplayId` → `mode`; regenerate
+17. [x] **F25 `overlay_config.dart`** — `targetDisplayId` → `mode`; regenerate
     freezed. *Test*: a compile + equality case in F45's fixture and the
     controller's config construction.
     *Commit*: `feat(zip_broadcast): replace OverlayConfig.targetDisplayId with a window mode`.
@@ -454,7 +454,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
 
 ### Group G — shell wiring
 
-21. [ ] **F26 — `zb_app_shell.dart`**. *Test first*: **F48** (register/deregister,
+21. [x] **F26 — `zb_app_shell.dart`**. *Test first*: **F48** (register/deregister,
     `WindowClosed`/`OpenFailed` → `overlayEnabled` false, `DisplayLost`
     bookkeeping, no recognition listener).
     *Commit*: `feat(zip_broadcast): wire the overlay controller into the app shell`.
