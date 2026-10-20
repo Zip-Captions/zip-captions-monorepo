@@ -369,13 +369,13 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
 
 ### Group D — the controller
 
-11. [ ] **F16 — the `OverlayMethodHandler`/installer typedefs and the production
+11. [x] **F16 — the `OverlayMethodHandler`/installer typedefs and the production
     const** in `desktop_multi_window_service_io.dart` (+ the no-op in the stub),
     surfaced through the existing conditional export. *Test*: none of its own;
     exercised by F41's "handler installed before createWindow" and F42.
     *Commit*: folded into Step 12's commit.
 
-12. [ ] **F16 — `OverlayWindowController`**. *Test first*: **F41** (the T1-T17
+12. [x] **F16 — `OverlayWindowController`**. *Test first*: **F41** (the T1-T17
     table, the three close paths, the ready timeout under `fakeAsync`, the
     `'-1'` vs ignored-error discrimination, the held snapshot, the coalescer,
     the reframe, the retry, the open order). *Test first*: **F42** (FP-5).

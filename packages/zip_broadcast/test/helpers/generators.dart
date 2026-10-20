@@ -57,6 +57,129 @@ final Generator<Rect> arbitraryBounds = any.combine4(
   Rect.fromLTWH,
 );
 
+/// One command in the external display controller's FP-5 sequence.
+sealed class OverlayCommand {
+  const OverlayCommand();
+}
+
+/// A toggle-on gesture (T5/T16).
+final class ToggleOnCommand extends OverlayCommand {
+  /// Creates a [ToggleOnCommand].
+  const ToggleOnCommand({required this.savedId});
+  /// The broadcaster's saved display id, if any.
+  final String? savedId;
+}
+
+/// A toggle-off gesture (T13).
+final class ToggleOffCommand extends OverlayCommand {
+  /// Creates a [ToggleOffCommand].
+  const ToggleOffCommand();
+}
+
+/// A display-list change (T3/T4/T10/T11/T15/T17).
+final class DisplaysChangedCommand extends OverlayCommand {
+  /// Creates a [DisplaysChangedCommand].
+  const DisplaysChangedCommand({required this.keepSaved, required this.noise});
+  /// Whether the saved display is still present.
+  final bool keepSaved;
+  /// Whether the surviving display's bounds moved (T15).
+  final bool noise;
+}
+
+/// The sub-engine reports ready (T7).
+final class OverlayReadyCommand extends OverlayCommand {
+  /// Creates an [OverlayReadyCommand].
+  const OverlayReadyCommand();
+}
+
+/// The ready timeout elapses (T8).
+final class AdvanceReadyTimeoutCommand extends OverlayCommand {
+  /// Creates an [AdvanceReadyTimeoutCommand].
+  const AdvanceReadyTimeoutCommand();
+}
+
+/// The window reported `'-1'` (T14).
+final class WindowGoneCommand extends OverlayCommand {
+  /// Creates a [WindowGoneCommand].
+  const WindowGoneCommand();
+}
+
+/// A window call failed with a non-`'-1'` code (B-5).
+final class OtherPlatformErrorCommand extends OverlayCommand {
+  /// Creates an [OtherPlatformErrorCommand].
+  const OtherPlatformErrorCommand();
+}
+
+/// `createWindow` throws (T6).
+final class CreateWindowFailsCommand extends OverlayCommand {
+  /// Creates a [CreateWindowFailsCommand].
+  const CreateWindowFailsCommand();
+}
+
+/// A caption event reaches the controller's push path (T9).
+final class CaptionEventCommand extends OverlayCommand {
+  /// Creates a [CaptionEventCommand].
+  const CaptionEventCommand({required this.activity});
+  /// The recognition activity the snapshot carries.
+  final OverlayActivity activity;
+}
+
+/// The caption coalescing interval elapses (P1).
+final class ElapseCommand extends OverlayCommand {
+  /// Creates an [ElapseCommand].
+  const ElapseCommand();
+}
+
+const List<String> _overlayIds = <String>['a', 'b'];
+
+OverlayCommand _overlayCommand(Random random) {
+  final savedId = random.nextBool()
+      ? null
+      : _overlayIds[random.nextInt(_overlayIds.length)];
+  switch (random.nextInt(12)) {
+    case 0:
+    case 1:
+      return ToggleOnCommand(savedId: savedId);
+    case 2:
+    case 3:
+      return const ToggleOffCommand();
+    case 4:
+    case 5:
+      return DisplaysChangedCommand(
+        keepSaved: random.nextBool(),
+        noise: random.nextBool(),
+      );
+    case 6:
+      return const OverlayReadyCommand();
+    case 7:
+      return const AdvanceReadyTimeoutCommand();
+    case 8:
+      return const WindowGoneCommand();
+    case 9:
+      return const OtherPlatformErrorCommand();
+    case 10:
+      return const CreateWindowFailsCommand();
+    case 11:
+      return CaptionEventCommand(
+        activity: OverlayActivity.values[random.nextInt(3)],
+      );
+    default:
+      return const ElapseCommand();
+  }
+}
+
+/// Generates a short command sequence for FP-5.
+List<OverlayCommand> _overlayCommandSequence(Random random) {
+  final length = 1 + random.nextInt(12);
+  return List<OverlayCommand>.generate(
+    length,
+    (_) => _overlayCommand(random),
+  );
+}
+
+const Generator<List<OverlayCommand>> arbitraryOverlayCommandSequence =
+    _overlayCommandSequence;
+
 /// Generates a logical top-left frame, including negative offsets and frames
 /// taller than the display they sit on.
 final Generator<Rect> arbitraryLogicalFrame = any.combine4(

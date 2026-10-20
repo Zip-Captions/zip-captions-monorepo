@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
+import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart';
 
 /// Web/mobile stub for [DesktopWindowService].
 ///
@@ -42,3 +43,10 @@ class DesktopMultiWindowService implements DesktopWindowService {
   @override
   bool get isSupported => false;
 }
+
+/// The stub's [OverlayMethodHandlerInstaller]: there is no multi-window
+/// plugin, so there is nothing to install into.
+const OverlayMethodHandlerInstaller overlayMethodHandlerInstaller =
+    _installNothing;
+
+void _installNothing(OverlayMethodHandler? handler) {}

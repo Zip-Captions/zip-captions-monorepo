@@ -17,13 +17,14 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$OverlayConfig {
-  /// Which display to open the overlay on. `null` = primary display.
-  String? get targetDisplayId => throw _privateConstructorUsedError;
+  /// Which intent the window serves; carries the resolved display id.
+  OverlayWindowMode get mode => throw _privateConstructorUsedError;
 
-  /// Where to position the overlay window.
+  /// Where the caption text sits inside the surface (top/bottom).
   OverlayPosition get position => throw _privateConstructorUsedError;
 
-  /// Window opacity from 0.0 (transparent) to 1.0 (opaque).
+  /// Shipped Phase 1 field. **Never applied:** the external display renders
+  /// an opaque surface (B-8, BR-U8-26).
   double get opacity => throw _privateConstructorUsedError;
 
   /// Create a copy of OverlayConfig
@@ -40,11 +41,7 @@ abstract class $OverlayConfigCopyWith<$Res> {
     $Res Function(OverlayConfig) then,
   ) = _$OverlayConfigCopyWithImpl<$Res, OverlayConfig>;
   @useResult
-  $Res call({
-    String? targetDisplayId,
-    OverlayPosition position,
-    double opacity,
-  });
+  $Res call({OverlayWindowMode mode, OverlayPosition position, double opacity});
 }
 
 /// @nodoc
@@ -62,16 +59,16 @@ class _$OverlayConfigCopyWithImpl<$Res, $Val extends OverlayConfig>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? targetDisplayId = freezed,
+    Object? mode = null,
     Object? position = null,
     Object? opacity = null,
   }) {
     return _then(
       _value.copyWith(
-            targetDisplayId: freezed == targetDisplayId
-                ? _value.targetDisplayId
-                : targetDisplayId // ignore: cast_nullable_to_non_nullable
-                      as String?,
+            mode: null == mode
+                ? _value.mode
+                : mode // ignore: cast_nullable_to_non_nullable
+                      as OverlayWindowMode,
             position: null == position
                 ? _value.position
                 : position // ignore: cast_nullable_to_non_nullable
@@ -95,11 +92,7 @@ abstract class _$$OverlayConfigImplCopyWith<$Res>
   ) = __$$OverlayConfigImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String? targetDisplayId,
-    OverlayPosition position,
-    double opacity,
-  });
+  $Res call({OverlayWindowMode mode, OverlayPosition position, double opacity});
 }
 
 /// @nodoc
@@ -116,16 +109,16 @@ class __$$OverlayConfigImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? targetDisplayId = freezed,
+    Object? mode = null,
     Object? position = null,
     Object? opacity = null,
   }) {
     return _then(
       _$OverlayConfigImpl(
-        targetDisplayId: freezed == targetDisplayId
-            ? _value.targetDisplayId
-            : targetDisplayId // ignore: cast_nullable_to_non_nullable
-                  as String?,
+        mode: null == mode
+            ? _value.mode
+            : mode // ignore: cast_nullable_to_non_nullable
+                  as OverlayWindowMode,
         position: null == position
             ? _value.position
             : position // ignore: cast_nullable_to_non_nullable
@@ -143,28 +136,30 @@ class __$$OverlayConfigImplCopyWithImpl<$Res>
 
 class _$OverlayConfigImpl implements _OverlayConfig {
   const _$OverlayConfigImpl({
-    this.targetDisplayId,
+    this.mode = const ExternalDisplayMode(),
     this.position = const OverlayPositionBottom(),
     this.opacity = 0.9,
   });
 
-  /// Which display to open the overlay on. `null` = primary display.
+  /// Which intent the window serves; carries the resolved display id.
   @override
-  final String? targetDisplayId;
+  @JsonKey()
+  final OverlayWindowMode mode;
 
-  /// Where to position the overlay window.
+  /// Where the caption text sits inside the surface (top/bottom).
   @override
   @JsonKey()
   final OverlayPosition position;
 
-  /// Window opacity from 0.0 (transparent) to 1.0 (opaque).
+  /// Shipped Phase 1 field. **Never applied:** the external display renders
+  /// an opaque surface (B-8, BR-U8-26).
   @override
   @JsonKey()
   final double opacity;
 
   @override
   String toString() {
-    return 'OverlayConfig(targetDisplayId: $targetDisplayId, position: $position, opacity: $opacity)';
+    return 'OverlayConfig(mode: $mode, position: $position, opacity: $opacity)';
   }
 
   @override
@@ -172,16 +167,14 @@ class _$OverlayConfigImpl implements _OverlayConfig {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$OverlayConfigImpl &&
-            (identical(other.targetDisplayId, targetDisplayId) ||
-                other.targetDisplayId == targetDisplayId) &&
+            (identical(other.mode, mode) || other.mode == mode) &&
             (identical(other.position, position) ||
                 other.position == position) &&
             (identical(other.opacity, opacity) || other.opacity == opacity));
   }
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, targetDisplayId, position, opacity);
+  int get hashCode => Object.hash(runtimeType, mode, position, opacity);
 
   /// Create a copy of OverlayConfig
   /// with the given fields replaced by the non-null parameter values.
@@ -194,20 +187,21 @@ class _$OverlayConfigImpl implements _OverlayConfig {
 
 abstract class _OverlayConfig implements OverlayConfig {
   const factory _OverlayConfig({
-    final String? targetDisplayId,
+    final OverlayWindowMode mode,
     final OverlayPosition position,
     final double opacity,
   }) = _$OverlayConfigImpl;
 
-  /// Which display to open the overlay on. `null` = primary display.
+  /// Which intent the window serves; carries the resolved display id.
   @override
-  String? get targetDisplayId;
+  OverlayWindowMode get mode;
 
-  /// Where to position the overlay window.
+  /// Where the caption text sits inside the surface (top/bottom).
   @override
   OverlayPosition get position;
 
-  /// Window opacity from 0.0 (transparent) to 1.0 (opaque).
+  /// Shipped Phase 1 field. **Never applied:** the external display renders
+  /// an opaque surface (B-8, BR-U8-26).
   @override
   double get opacity;
 

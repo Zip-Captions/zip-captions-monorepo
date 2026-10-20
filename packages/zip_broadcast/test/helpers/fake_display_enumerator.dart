@@ -15,8 +15,12 @@ class FakeDisplayEnumerator implements DisplayEnumerator {
 
   List<DisplayInfo> _current;
   bool _disposed = false;
-  final StreamController<List<DisplayInfo>> _controller =
-      StreamController<List<DisplayInfo>>.broadcast();
+  bool _closed = false;
+  /// Each subscriber's sink, so [emit] reaches them and [dispose] can close
+  /// them. Built by hand rather than with a controller so that `cancel()`
+  /// completes synchronously under `fakeAsync`.
+  final List<MultiStreamController<List<DisplayInfo>>> _sinks =
+      <MultiStreamController<List<DisplayInfo>>>[];
 
   /// Every call to [displays] and to [emit].
   final List<String> calls = <String>[];
@@ -26,7 +30,9 @@ class FakeDisplayEnumerator implements DisplayEnumerator {
     calls.add('emit');
     if (_disposed) return;
     _current = next;
-    _controller.add(next);
+    for (final sink in List.of(_sinks)) {
+      sink.add(next);
+    }
   }
 
   /// Simulates a platform failure: logged, no error on the stream, stays open.
@@ -46,21 +52,23 @@ class FakeDisplayEnumerator implements DisplayEnumerator {
     return _current;
   }
 
-  bool get isClosed => _controller.isClosed;
+  bool get isClosed => _closed;
 
   @override
   Stream<List<DisplayInfo>> get changes {
     calls.add('changes');
-    // The contract's first-emission rule: a listener that subscribes at any
-    // time gets the current list.
-    return Stream<List<DisplayInfo>>.multi((controller) {
-      controller.add(_current);
-      final subscription = _controller.stream.listen(
-        controller.add,
-        onError: controller.addError,
-        onDone: controller.close,
-      );
-      controller.onCancel = subscription.cancel;
+    return Stream<List<DisplayInfo>>.multi((sink) {
+      if (_closed) {
+        unawaited(sink.close());
+        return;
+      }
+      // The contract's first emission is the current list, to a listener that
+      // subscribed at any time.
+      sink.onCancel = () => _sinks.remove(sink);
+      // The contract's first emission is the current list, to a listener that
+      // subscribed at any time.
+      _sinks.add(sink);
+      sink.add(_current);
     });
   }
 
@@ -75,6 +83,10 @@ class FakeDisplayEnumerator implements DisplayEnumerator {
     calls.add('dispose');
     if (_disposed) return;
     _disposed = true;
-    await _controller.close();
+    _closed = true;
+    for (final sink in List.of(_sinks)) {
+      unawaited(sink.close());
+    }
+    _sinks.clear();
   }
 }

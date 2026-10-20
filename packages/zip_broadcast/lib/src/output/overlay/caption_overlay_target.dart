@@ -6,6 +6,7 @@ import 'package:zip_broadcast/src/models/overlay_config.dart';
 import 'package:zip_broadcast/src/models/overlay_position.dart';
 import 'package:zip_broadcast/src/output/overlay/desktop_multi_window_service.dart';
 import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
+import 'package:zip_broadcast/src/output/overlay/overlay_window_mode.dart';
 import 'package:zip_core/zip_core.dart';
 
 /// Caption output target that renders captions in a separate desktop window.
@@ -100,7 +101,9 @@ class CaptionOverlayTarget implements CaptionOutputTarget {
         },
     };
     return json.encode({
-      'targetDisplayId': config.targetDisplayId,
+      'displayId': config.mode is ExternalDisplayMode
+          ? (config.mode as ExternalDisplayMode).displayId
+          : null,
       'position': posMap,
       'opacity': config.opacity,
     });
