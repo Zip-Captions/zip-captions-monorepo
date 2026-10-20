@@ -68,11 +68,15 @@ the resolved package version:
 |---|---|---|
 | Application | `packages/zip_broadcast/lib/src/output/obs/obs_websocket_target.dart:167`, `lib/src/providers/obs_connection_notifier.dart:95` | Read the call sites and the final-only gating (`onCaptionEvent` matches `SttResultEvent` with `result.isFinal`) |
 | Dart client | `obs_websocket` 5.2.3+2 (resolved by `^5.0.0` in `packages/zip_broadcast/pubspec.yaml:33`), `lib/src/request/stream.dart:84-93` | Read the generated request wrapper: request name, request data key, documented RPC/version |
-| OBS | `spikes/phase2/obs/reference/RequestHandler_Stream.cpp:144-161` | Read `RequestHandler::SendStreamCaption`: validator, required flag, streaming-state guard, output call |
+| OBS | obs-websocket `src/RequestHandler_Stream.cpp`, `RequestHandler::SendStreamCaption` (protocol reference: `docs/generated/protocol.md` § SendStreamCaption) | Read the handler: `captionText` validator (required), `obs_frontend_streaming_active()` guard returning `OutputNotRunning`, then `obs_output_output_caption_text2(output, text, 0.0)` |
 
-Reference source on disk: seven files under `spikes/phase2/obs/reference/`
-(`RequestHandler_Stream.cpp`, `obs-websocket.cpp`, `Config.cpp`,
-`captions.cpp/.hpp`, `captions-handler.cpp/.hpp`).
+The OBS source was read from a local working copy of the obs-websocket
+repository (GPL-2.0-or-later). That copy was deliberately **not** committed:
+it is third-party source under a different copyright, and only the handler
+above carries any evidential weight. The authoritative, citable form is the
+public repository and its generated protocol reference
+(`docs/generated/protocol.md#sendstreamcaption`), which is what the finding
+rests on.
 
 ### What was not run, and why
 
@@ -170,7 +174,8 @@ rendering) are tracked above with owners and a verification stage.
 
 ## Artifacts
 
-- Reference sources: `spikes/phase2/obs/reference/` (throwaway working copy of
-  OBS WebSocket and OBS caption code; not merged into any package, per the
-  project's spike convention).
-- This report: the durable output.
+- This report: the durable output. It cites the public obs-websocket source
+  and generated protocol reference rather than a local vendored copy.
+- No spike code is committed for this spike. A temporary local working copy of
+  the OBS sources was read during the investigation and then deleted, per the
+  project's spike convention (spike code is never merged).
