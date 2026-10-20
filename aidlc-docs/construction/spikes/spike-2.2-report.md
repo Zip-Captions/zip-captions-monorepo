@@ -68,7 +68,7 @@ the resolved package version:
 |---|---|---|
 | Application | `packages/zip_broadcast/lib/src/output/obs/obs_websocket_target.dart:167`, `lib/src/providers/obs_connection_notifier.dart:95` | Read the call sites and the final-only gating (`onCaptionEvent` matches `SttResultEvent` with `result.isFinal`) |
 | Dart client | `obs_websocket` 5.2.3+2 (resolved by `^5.0.0` in `packages/zip_broadcast/pubspec.yaml:33`), `lib/src/request/stream.dart:84-93` | Read the generated request wrapper: request name, request data key, documented RPC/version |
-| OBS | `spikes/phase2/obs/reference/RequestHandler_Stream.cpp:131-162` | Read `RequestHandler::SendStreamCaption`: validator, required flag, streaming-state guard, output call |
+| OBS | `spikes/phase2/obs/reference/RequestHandler_Stream.cpp:144-161` | Read `RequestHandler::SendStreamCaption`: validator, required flag, streaming-state guard, output call |
 
 Reference source on disk: seven files under `spikes/phase2/obs/reference/`
 (`RequestHandler_Stream.cpp`, `obs-websocket.cpp`, `Config.cpp`,
