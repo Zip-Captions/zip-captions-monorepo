@@ -25,7 +25,7 @@ import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart'
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_broadcast/src/providers/overlay_window_controller_provider.dart';
 import 'package:zip_broadcast/src/shell/zb_app_shell.dart';
-import 'package:zip_core/zip_core.dart';
+import 'package:zip_core/zip_core.dart' hide Failed;
 
 import '../helpers/fake_display_enumerator.dart';
 
@@ -293,6 +293,46 @@ void main() {
       expect(world.controller.selectDisplay, 'primary');
     });
 
+    testWidgets('choosing a different display while on reopens on it', (
+      tester,
+    ) async {
+      await world.pump(tester);
+      await world.setOverlayEnabled(tester, enabled: true);
+      await world.ready(tester);
+      expect(world.controller.selectDisplay, 'primary');
+
+      world.window.calls.clear();
+      await tester.runAsync(() async {
+        await world.container
+            .read(outputTargetSettingsNotifierProvider.notifier)
+            .update(
+              world.container
+                  .read(outputTargetSettingsNotifierProvider)
+                  .copyWith(externalDisplayId: 'second'),
+            );
+      });
+      await tester.pumpAndSettle();
+
+      // The old window is closed before the new one opens, so the open guard
+      // accepts it; the saved selection follows the user.
+      expect(world.window.calls, contains('closeWindow'));
+      expect(world.window.calls, contains('createWindow'));
+      expect(world.controller.selectDisplay, 'second');
+    });
+
+    testWidgets('an open failure keeps the banner state (BR-U8-03)', (
+      tester,
+    ) async {
+      await world.pump(tester);
+      world.window.createWindowError = Exception('no window');
+      await world.setOverlayEnabled(tester, enabled: true);
+      await tester.pumpAndSettle();
+
+      expect(world.controller.status, isA<Failed>());
+      expect(world.registry.activeTargets, isEmpty);
+      expect(world.settings.overlayEnabled, isFalse);
+    });
+
     testWidgets('a recognition pause never closes the window (D-5)',
         (tester) async {
       await world.pump(tester);
@@ -322,6 +362,13 @@ class _ShellWorld {
         bounds: Rect.fromLTWH(0, 0, 1920, 1080),
         scaleFactor: 1,
         isPrimary: true,
+      ),
+      DisplayInfo(
+        id: 'second',
+        label: 'Second',
+        bounds: Rect.fromLTWH(1920, 0, 1920, 1080),
+        scaleFactor: 1,
+        isPrimary: false,
       ),
     ],
   );
@@ -414,10 +461,15 @@ class _ShellWindow implements DesktopWindowService {
   @override
   bool get isSupported => true;
 
+  /// When set, [createWindow] throws it.
+  Exception? createWindowError;
+
   @override
   Future<int> createWindow(String arguments) async {
     calls.add('createWindow');
     launchArguments = arguments;
+    final error = createWindowError;
+    if (error != null) throw error;
     return 1;
   }
 

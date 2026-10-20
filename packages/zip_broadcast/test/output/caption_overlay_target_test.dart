@@ -127,6 +127,7 @@ void main() {
 
   test('dispose closes without awaiting the window close', () {
     fakeAsync((fake) {
+      build();
       fake.flushMicrotasks();
       // A fire-and-forget close must not block the registry's synchronous
       // dispose path.

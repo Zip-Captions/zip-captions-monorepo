@@ -2,17 +2,42 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
 import 'package:zip_broadcast/src/output/overlay/caption_position.dart';
+import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
 import 'package:zip_broadcast/src/output/overlay/display_info.dart';
 import 'package:zip_broadcast/src/output/overlay/external_display_status.dart';
 import 'package:zip_broadcast/src/output/overlay/overlay_activity.dart';
+import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_broadcast/src/providers/overlay_window_controller_provider.dart';
 import 'package:zip_broadcast/src/widgets/external_display_controls.dart';
 import 'package:zip_core/zip_core.dart' hide Failed;
+
+import '../helpers/fake_display_enumerator.dart';
+
+/// A window service that never opens a real window.
+class _StubWindow implements DesktopWindowService {
+  @override
+  bool get isSupported => true;
+  @override
+  Future<int> createWindow(String arguments) async => 1;
+  @override
+  Future<void> closeWindow(int windowId) async {}
+  @override
+  Future<void> invokeMethod(
+    int windowId,
+    String method,
+    dynamic arguments,
+  ) async {}
+  @override
+  Future<void> setFrame(int windowId, Rect frame) async {}
+  @override
+  Future<void> show(int windowId) async {}
+}
 
 DisplayInfo _display(
   String id, {
@@ -73,6 +98,34 @@ void main() {
 
   OutputTargetSettings settings() =>
       container.read(outputTargetSettingsNotifierProvider);
+
+  test('the real status provider replays the initial status', () async {
+    final prefs = await SharedPreferences.getInstance();
+    final window = _StubWindow();
+    final enumerator = FakeDisplayEnumerator(
+      initial: [_display('a', label: 'Projector', isPrimary: true)],
+    );
+    final controller = OverlayWindowController(
+      windowService: window,
+      enumerator: enumerator,
+      handlerInstaller: (_) {},
+      log: Logger('test.controls'),
+    );
+    addTearDown(controller.dispose);
+
+    final real = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        overlayWindowControllerProvider.overrideWithValue(controller),
+      ],
+    );
+    addTearDown(real.dispose);
+
+    // The controller starts Off and emits nothing until a transition.
+    expect(controller.status, isA<Off>());
+    final first = await real.read(externalDisplayStatusProvider.future);
+    expect(first, isA<Off>());
+  });
 
   testWidgets('Unsupported renders nothing at all', (tester) async {
     await pump(tester, const Unsupported());

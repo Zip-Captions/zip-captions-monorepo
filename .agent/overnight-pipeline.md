@@ -97,8 +97,10 @@ merged by the pipeline.** Merge stays a human decision.
 
 ### A4 — The review loop reviews the run's work against the review comment
 
-The local review subagent reviews `git diff d7f5845..HEAD`, excluding the
-`develop` merge from Step 0. It is told the stage boundaries explicitly, so it
+The local review subagent reviews `git diff <develop-merge-second-parent>..HEAD`.
+Use the Step 0 merge's second parent (`git rev-parse 036a020^2`), not `d7f5845`:
+an endpoint diff from `d7f5845` also shows everything the merge brought in from
+`develop`, which is not this unit's work. It is told the stage boundaries explicitly, so it
 does not treat the design documents as code to review for style. It reviews:
 - the revised design against the review comment,
 - the implementation against the revised design.

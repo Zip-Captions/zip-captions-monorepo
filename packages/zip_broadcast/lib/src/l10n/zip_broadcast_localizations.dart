@@ -943,6 +943,12 @@ abstract class ZipBroadcastLocalizations {
   /// **'The external display window could not be opened.'**
   String get externalDisplayFailedCreate;
 
+  /// Fallback noun for the disconnected-display banner when the last known name is unavailable
+  ///
+  /// In en, this message translates to:
+  /// **'selected display'**
+  String get externalDisplaySelectedDisplay;
+
   /// Fixed frame shown when the external display window receives a launch payload it cannot decode
   ///
   /// In en, this message translates to:

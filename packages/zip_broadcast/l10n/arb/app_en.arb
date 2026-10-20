@@ -630,6 +630,10 @@
   "@externalDisplayFailedCreate": {
     "description": "Failure banner when the window could not be created"
   },
+  "externalDisplaySelectedDisplay": "selected display",
+  "@externalDisplaySelectedDisplay": {
+    "description": "Fallback noun for the disconnected-display banner when the last known name is unavailable"
+  },
   "externalDisplayUnavailable": "Window unavailable",
   "@externalDisplayUnavailable": {
     "description": "Fixed frame shown when the external display window receives a launch payload it cannot decode"

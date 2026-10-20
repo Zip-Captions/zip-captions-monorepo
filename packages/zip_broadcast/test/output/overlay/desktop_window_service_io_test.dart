@@ -63,5 +63,16 @@ void main() {
       expect(service.enumerator, isNotNull);
       expect(service.enumerator, isNot(isA<FakeDisplayEnumerator>()));
     });
+
+    test('withEnumerator is public so the provider can share one instance', () {
+      final enumerator = FakeDisplayEnumerator();
+
+      // Public (not a @visibleForTesting seam) because production constructs
+      // the service and the controller with the same enumerator: a second
+      // instance would be a platform observer nothing disposes.
+      final service = DesktopMultiWindowService.withEnumerator(enumerator);
+
+      expect(service.enumerator, same(enumerator));
+    });
   });
 }

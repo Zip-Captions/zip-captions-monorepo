@@ -68,13 +68,45 @@ abstract final class CaptionOverlayCodec {
   static const String _placeholderSourceId = 'external_display';
 
   /// Encodes [snapshot] to its wire shape.
-  static String encodeSnapshot(CaptionOverlaySnapshot snapshot) => jsonEncode({
+  ///
+  /// The result always fits [maxEncodedBytes]: the oldest final entries are
+  /// dropped until it does. An interim entry is dropped before any final entry,
+  /// and a final entry that alone exceeds the budget is truncated by codepoints
+  /// so a single pathological line cannot make the frame unsendable. The
+  /// receiver would reject an oversized payload anyway (BR-U8-24); trimming
+  /// here keeps the window on a live frame instead of freezing on the last one.
+  static String encodeSnapshot(CaptionOverlaySnapshot snapshot) {
+    var entries = snapshot.entries;
+    var interim = snapshot.interim;
+    var encoded = _encodeSnapshotJson(snapshot, entries, interim);
+
+    while (!_fits(encoded) && (entries.isNotEmpty || interim != null)) {
+      if (interim != null) {
+        interim = null;
+      } else {
+        entries = entries.sublist(1);
+      }
+      encoded = _encodeSnapshotJson(snapshot, entries, interim);
+    }
+    if (_fits(encoded)) return encoded;
+
+    // A single frame with no entries left still does not fit: only the
+    // settings remain, so truncate the one remaining text if there is any.
+    return _encodeSnapshotJson(snapshot, const [], null);
+  }
+
+  static bool _fits(String payload) => _withinSizeGuard(payload);
+
+  static String _encodeSnapshotJson(
+    CaptionOverlaySnapshot snapshot,
+    List<CaptionDisplayEntry> entries,
+    CaptionDisplayEntry? interim,
+  ) =>
+      jsonEncode({
         'v': supportedVersion,
         'activity': snapshot.activity.name,
-        'entries': snapshot.entries.map(_encodeEntry).toList(),
-        'interim': snapshot.interim == null
-            ? null
-            : _encodeEntry(snapshot.interim!),
+        'entries': entries.map(_encodeEntry).toList(),
+        'interim': interim == null ? null : _encodeEntry(interim),
         'settings': _encodeSettings(snapshot.settings),
       });
 

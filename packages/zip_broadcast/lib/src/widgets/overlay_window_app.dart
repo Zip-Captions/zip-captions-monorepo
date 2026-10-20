@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/overlay_position.dart';
 import 'package:zip_broadcast/src/output/overlay/caption_overlay_codec.dart';
 import 'package:zip_broadcast/src/output/overlay/caption_overlay_snapshot.dart';
@@ -19,13 +21,25 @@ class OverlayWindowUnavailableApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      // The delegates do not depend on the launch payload, so the frame can be
+      // localized even when that payload did not decode.
+      localizationsDelegates: const [
+        ZipBroadcastLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: ZipBroadcastLocalizations.supportedLocales,
       home: Scaffold(
         backgroundColor: const Color(0xFF0B141D),
         body: Center(
-          child: Text(
-            'Window unavailable',
-            style: const TextStyle(color: Color(0xFFDAE3F0)),
-            textScaler: MediaQuery.textScalerOf(context),
+          child: Builder(
+            builder: (context) => Text(
+              ZipBroadcastLocalizations.of(context)!
+                  .externalDisplayUnavailable,
+              style: const TextStyle(color: Color(0xFFDAE3F0)),
+              textScaler: MediaQuery.textScalerOf(context),
+            ),
           ),
         ),
       ),

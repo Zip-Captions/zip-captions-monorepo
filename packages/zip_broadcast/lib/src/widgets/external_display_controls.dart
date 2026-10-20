@@ -246,15 +246,20 @@ class _WaitingBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = ZipBroadcastLocalizations.of(context)!;
     final displays = ref.watch(displayListProvider).valueOrNull ?? const [];
-    final label = displays
-        .where((display) => display.id == status.displayId)
-        .map((display) => display.label)
-        .where((label) => label.isNotEmpty)
-        .firstOrNull;
+    // The display that disconnected is by definition absent from the connected
+    // list, so the name comes from the controller's capture at loss time, with
+    // the list as a fallback for the brief window before the removal lands.
+    final label = status.label ??
+        displays
+            .where((display) => display.id == status.displayId)
+            .map((display) => display.label)
+            .where((label) => label.isNotEmpty)
+            .firstOrNull ??
+        l10n.externalDisplaySelectedDisplay;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.externalDisplayDisconnectedBanner(label ?? '')),
+        Text(l10n.externalDisplayDisconnectedBanner(label)),
         Text(
           l10n.externalDisplayWaitingForDisplay,
           style: Theme.of(context).textTheme.bodySmall,

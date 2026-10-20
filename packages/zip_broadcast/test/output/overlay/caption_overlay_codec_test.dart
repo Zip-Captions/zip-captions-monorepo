@@ -180,6 +180,64 @@ void main() {
     });
   });
 
+  group('the encoder stays within the wire budget', () {
+    test('the oldest final entries are dropped until the payload fits', () {
+      final entries = [
+        for (var i = 0; i < 400; i++) _entry('e$i', 'x' * 100),
+      ];
+      final snapshot = CaptionOverlaySnapshot(
+        activity: OverlayActivity.live,
+        entries: entries,
+        settings: _settings,
+      );
+
+      final encoded = encodeSnapshot(snapshot);
+
+      expect(
+        utf8.encode(encoded).length,
+        lessThanOrEqualTo(CaptionOverlayCodec.maxEncodedBytes),
+      );
+      final decoded = decodeSnapshot(encoded)!;
+      expect(decoded.entries, isNotEmpty);
+      // The kept entries are the newest ones.
+      expect(decoded.entries.last.entryId, 'e399');
+    });
+
+    test('the interim entry is dropped before any final entry', () {
+      final snapshot = CaptionOverlaySnapshot(
+        activity: OverlayActivity.live,
+        entries: [_entry('a', 'x' * 200)],
+        interim: _entry('i', 'y' * 20000, isFinal: false),
+        settings: _settings,
+      );
+
+      final decoded = decodeSnapshot(encodeSnapshot(snapshot))!;
+
+      expect(decoded.interim, isNull);
+      expect(decoded.entries.single.entryId, 'a');
+    });
+
+    test('a launch payload whose snapshot is trimmed still decodes', () {
+      final snapshot = CaptionOverlaySnapshot(
+        activity: OverlayActivity.live,
+        entries: [for (var i = 0; i < 400; i++) _entry('e$i', 'x' * 100)],
+        settings: _settings,
+      );
+      final launch = OverlayWindowLaunch(
+        config: const OverlayConfig(),
+        snapshot: snapshot,
+      );
+
+      final encoded = encodeLaunch(launch);
+
+      expect(
+        utf8.encode(encoded).length,
+        lessThanOrEqualTo(CaptionOverlayCodec.maxEncodedBytes),
+      );
+      expect(decodeLaunch(encoded), isNotNull);
+    });
+  });
+
   group('decode returns null (never throws) on', () {
     String validSnapshot() => encodeSnapshot(
           CaptionOverlaySnapshot(
@@ -269,15 +327,26 @@ void main() {
     });
 
     test('an over-size payload', () {
-      final huge = CaptionOverlaySnapshot(
-        activity: OverlayActivity.live,
-        entries: [_entry('a', 'x' * (CaptionOverlayCodec.maxEncodedBytes + 1))],
-        settings: _settings,
-      );
-      final encoded = encodeSnapshot(huge);
-      expect(utf8.encode(encoded).length,
+      // Built by hand: the encoder now trims to fit, so it cannot produce one.
+      final oversized = jsonEncode({
+        'v': 1,
+        'activity': 'live',
+        'entries': [
+          {'key': 'a', 'text': 'x' * (CaptionOverlayCodec.maxEncodedBytes), 'isFinal': true},
+          {'key': 'b', 'text': 'y', 'isFinal': true},
+        ],
+        'interim': null,
+        'settings': {
+          'scrollDirection': 'bottomToTop',
+          'captionTextSize': 'md',
+          'captionFont': 'atkinsonHyperlegible',
+          'themeModeSetting': 'dark',
+          'maxVisibleLines': 3,
+        },
+      });
+      expect(utf8.encode(oversized).length,
           greaterThan(CaptionOverlayCodec.maxEncodedBytes));
-      expect(decodeSnapshot(encoded), isNull);
+      expect(decodeSnapshot(oversized), isNull);
     });
 
     test('a non-string input', () {

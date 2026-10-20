@@ -51,10 +51,16 @@ final class Open extends ExternalDisplayStatus {
 /// still on, waiting for it to return (D-4).
 final class WaitingForDisplay extends ExternalDisplayStatus {
   /// Creates a [WaitingForDisplay].
-  const WaitingForDisplay({required this.displayId});
+  const WaitingForDisplay({required this.displayId, this.label});
 
   /// The saved display id being waited for.
   final String displayId;
+
+  /// The display's last known label, captured when it disconnected.
+  ///
+  /// The display is no longer in the connected list, so the controls cannot
+  /// look it up; without this the banner would name nothing.
+  final String? label;
 }
 
 /// The window could not be opened.

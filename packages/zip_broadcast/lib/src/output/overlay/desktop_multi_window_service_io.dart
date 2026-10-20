@@ -23,9 +23,10 @@ class DesktopMultiWindowService implements DesktopWindowService {
   /// Creates the service with an injected [enumerator].
   ///
   /// The seam supplies the platform inputs the frame conversion needs (the
-  /// primary's full height on macOS), so tests can pass a fake. This service
-  /// never imports the plugin itself: the conditional export supplies it (F03).
-  @visibleForTesting
+  /// primary's full height on macOS, the target display's scale on Windows),
+  /// so tests can pass a fake and the provider can share one enumerator with
+  /// the controller. This service never imports the plugin itself: the
+  /// conditional export supplies it (F03).
   DesktopMultiWindowService.withEnumerator(this.enumerator);
 
   /// The display enumerator that supplies the frame conversion's platform
@@ -51,9 +52,30 @@ class DesktopMultiWindowService implements DesktopWindowService {
       DesktopMultiWindow.invokeMethod(windowId, method, arguments);
 
   @override
-  Future<void> setFrame(int windowId, Rect frame) {
-    final converted = toPlatformFrame(frame, defaultTargetPlatform);
-    return WindowController.fromWindowId(windowId).setFrame(converted);
+  Future<void> setFrame(int windowId, Rect frame) async {
+    final target = defaultTargetPlatform;
+    double? primaryFullHeight;
+    double? displayScaleFactor;
+
+    if (target == TargetPlatform.macOS) {
+      primaryFullHeight = (await enumerator.primarySize())?.height;
+    } else if (target == TargetPlatform.windows) {
+      final displays = await enumerator.displays();
+      for (final display in displays) {
+        if (display.bounds.contains(frame.center)) {
+          displayScaleFactor = display.scaleFactor;
+          break;
+        }
+      }
+    }
+
+    final converted = toPlatformFrame(
+      frame,
+      target,
+      primaryFullHeight: primaryFullHeight,
+      displayScaleFactor: displayScaleFactor,
+    );
+    await WindowController.fromWindowId(windowId).setFrame(converted);
   }
 
   @override

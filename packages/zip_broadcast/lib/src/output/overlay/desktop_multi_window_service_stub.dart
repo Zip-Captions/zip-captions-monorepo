@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
+import 'package:zip_broadcast/src/output/overlay/display_enumerator.dart';
 import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart';
 
 /// Web/mobile stub for [DesktopWindowService].
@@ -10,9 +11,14 @@ import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart'
 class DesktopMultiWindowService implements DesktopWindowService {
   /// Creates the stub.
   ///
-  /// Production callers construct it with no arguments, exactly as with the io
-  /// implementation, so the conditional export stays a drop-in.
-  DesktopMultiWindowService();
+  /// Production callers construct it with the shared display enumerator,
+  /// exactly as with the io implementation, so the conditional export stays a
+  /// drop-in. The enumerator is unused here: every method throws.
+  DesktopMultiWindowService.withEnumerator(this.enumerator);
+
+  /// The display enumerator the io implementation reads; unused on web.
+  final DisplayEnumerator enumerator;
+
   @override
   Future<int> createWindow(String arguments) =>
       throw UnsupportedError('Multi-window is not available on this platform.');

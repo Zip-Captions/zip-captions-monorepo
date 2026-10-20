@@ -211,6 +211,9 @@ class OverlayWindowController {
   void _onDisplaysChanged(List<DisplayInfo> displays) {
     if (_disposed || _status is Unsupported) return;
     _displays = displays;
+    for (final display in displays) {
+      if (display.label.isNotEmpty) _lastLabels[display.id] = display.label;
+    }
 
     switch (_status) {
       case NoDisplays():
@@ -256,6 +259,18 @@ class OverlayWindowController {
     _setState(const Off());
     unawaited(_startOpen(_configFor(displayId), displayId));
   }
+
+  /// The last known label for [id], or `null` if it was never seen.
+  String? _labelFor(String id) {
+    for (final display in _displays) {
+      if (display.id == id) return display.label.isEmpty ? null : display.label;
+    }
+    return _lastLabels[id];
+  }
+
+  /// Labels of the displays seen so far, so a disconnected display can still
+  /// be named. Bounded by the number of displays ever connected.
+  final Map<String, String> _lastLabels = <String, String>{};
 
   DisplayInfo? _find(String? id) {
     if (id == null) {
@@ -307,6 +322,11 @@ class OverlayWindowController {
       return;
     }
 
+    // The resolved target is what the window is on, so it is what the waiting
+    // state and `DisplayLost` must name if that display goes away. Without this
+    // a null persisted id would leave the selection empty and a lost display
+    // would fall through to `Off` with no event.
+    _selection.value = target.id;
     await _startOpen(_configFor(target.id, base: config), target.id);
   }
 
@@ -483,9 +503,15 @@ class OverlayWindowController {
     switch (reason) {
       case CloseReason.toggleOff:
       case CloseReason.cancel:
-      case CloseReason.dispose:
         await _release(windowId);
         _setState(const Off());
+      case CloseReason.dispose:
+        await _release(windowId);
+        // Unregistering the target disposes it, and the shell unregisters on
+        // `OpenFailed`. Overwriting `Failed` here would erase the only record
+        // of why the open ended (BR-U8-03); the controller is going away, so
+        // leaving the state is harmless.
+        if (_status is! display_status.Failed) _setState(const Off());
       case CloseReason.windowClosed:
         await _release(windowId);
         _setState(const Off());
@@ -513,7 +539,11 @@ class OverlayWindowController {
       _setState(const Off());
       return;
     }
-    _setState(WaitingForDisplay(displayId: displayId));
+    // The display has left the connected list by the time this runs, so its
+    // label is captured from the list as last seen (`_displays` still holds
+    // the pre-change list on this path only when the change is what removed
+    // it; `_labelFor` tolerates both).
+    _setState(WaitingForDisplay(displayId: displayId, label: _labelFor(displayId)));
     _emit(DisplayLost(displayId: displayId));
   }
 

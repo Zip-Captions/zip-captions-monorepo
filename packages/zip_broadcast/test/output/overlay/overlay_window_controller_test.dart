@@ -416,6 +416,40 @@ void main() {
     });
   });
 
+  group('display loss keeps a name and a selection (D-4)', () {
+    test('a display lost with no persisted id still names the display and '
+        'emits DisplayLost', () {
+      fakeAsync((fake) {
+        final harness = _Harness();
+        fake.flushMicrotasks();
+        final events = harness.collectEvents();
+        harness.enumerator.emit([
+          _display('primary', isPrimary: true),
+          _display('second', left: 1920),
+        ]);
+        fake.flushMicrotasks();
+
+        // No persisted id: the controller opens on the primary and records it.
+        unawaited(harness.controller.open(const OverlayConfig()));
+        fake.flushMicrotasks();
+        unawaited(harness.installer.handler!('overlayReady', 7));
+        fake.flushMicrotasks();
+        expect(harness.controller.selectDisplay, 'primary');
+
+        harness.enumerator.emit([_display('second', left: 1920)]);
+        fake.flushMicrotasks();
+
+        final waiting =
+            harness.controller.status as WaitingForDisplay;
+        expect(waiting.displayId, 'primary');
+        // The disconnected display is gone from the list, so its name comes
+        // from the capture.
+        expect(waiting.label, 'Display primary');
+        expect(events.whereType<DisplayLost>(), hasLength(1));
+      });
+    });
+  });
+
   group('close paths (T13, T14, T10)', () {
     test('toggle off closes the window and returns to Off', () {
       fakeAsync((fake) {

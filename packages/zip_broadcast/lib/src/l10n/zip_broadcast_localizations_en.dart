@@ -485,6 +485,9 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
       'The external display window could not be opened.';
 
   @override
+  String get externalDisplaySelectedDisplay => 'selected display';
+
+  @override
   String get externalDisplayUnavailable => 'Window unavailable';
 
   @override
