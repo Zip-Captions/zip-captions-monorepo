@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_broadcast/src/models/obs_settings.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
+import 'package:zip_broadcast/src/output/overlay/caption_position.dart';
 
 part 'broadcast_providers.g.dart';
 
@@ -99,6 +100,9 @@ class OutputTargetSettingsNotifier extends _$OutputTargetSettingsNotifier {
   static const _browserSourceKey = 'output.browserSourceEnabled';
   static const _overlayKey = 'output.overlayEnabled';
   static const _browserPortKey = 'output.browserSourcePort';
+  static const _externalDisplayIdKey = 'output.externalDisplayId';
+  static const _externalDisplayCaptionPositionKey =
+      'output.externalDisplayCaptionPosition';
 
   @override
   OutputTargetSettings build() {
@@ -115,6 +119,18 @@ class OutputTargetSettingsNotifier extends _$OutputTargetSettingsNotifier {
     await prefs.setBool(_browserSourceKey, settings.browserSourceEnabled);
     await prefs.setBool(_overlayKey, settings.overlayEnabled);
     await prefs.setInt(_browserPortKey, settings.browserSourcePort);
+    // An absent id means "primary"; removing the key keeps that meaning
+    // distinct from an empty string (BR-U8-07).
+    final externalDisplayId = settings.externalDisplayId;
+    if (externalDisplayId == null) {
+      await prefs.remove(_externalDisplayIdKey);
+    } else {
+      await prefs.setString(_externalDisplayIdKey, externalDisplayId);
+    }
+    await prefs.setString(
+      _externalDisplayCaptionPositionKey,
+      settings.externalDisplayCaptionPosition.name,
+    );
   }
 
   Future<void> _loadAsync() async {
@@ -125,10 +141,24 @@ class OutputTargetSettingsNotifier extends _$OutputTargetSettingsNotifier {
       obsEnabled: prefs.getBool(_obsKey) ?? state.obsEnabled,
       browserSourceEnabled:
           prefs.getBool(_browserSourceKey) ?? state.browserSourceEnabled,
-      overlayEnabled:
-          prefs.getBool(_overlayKey) ?? state.overlayEnabled,
+      // overlayEnabled is deliberately not read back: it keeps the model's
+      // `false` default, so the switch always starts off whatever was stored
+      // (D-6, BR-U8-21). Only the display id and the caption position survive
+      // a relaunch.
       browserSourcePort:
           prefs.getInt(_browserPortKey) ?? state.browserSourcePort,
+      externalDisplayId: prefs.getString(_externalDisplayIdKey),
+      externalDisplayCaptionPosition: _captionPositionFrom(
+        prefs.getString(_externalDisplayCaptionPositionKey),
+      ),
     );
   }
+
+  /// An unknown or absent stored value falls back to the default (bottom):
+  /// the codec, not the settings loader, is the strict decoding boundary.
+  static CaptionPosition _captionPositionFrom(String? stored) =>
+      CaptionPosition.values.firstWhere(
+        (position) => position.name == stored,
+        orElse: () => CaptionPosition.bottom,
+      );
 }

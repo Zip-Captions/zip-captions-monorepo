@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zip_broadcast/src/output/overlay/display_info.dart';
+import 'package:zip_broadcast/src/output/overlay/external_display_status.dart'
+    hide Failed;
 import 'package:zip_broadcast/src/providers/obs_connection_notifier.dart';
-import 'package:zip_core/zip_core.dart';
+import 'package:zip_broadcast/src/providers/overlay_window_controller_provider.dart';
+import 'package:zip_broadcast/src/widgets/external_display_controls.dart';
+import 'package:zip_core/zip_core.dart' hide Failed;
 
 import '../helpers/fake_notifiers.dart';
 import '../helpers/zb_test_harness.dart';
@@ -182,6 +187,37 @@ void main() {
 
       expect(find.text('Remote Viewers'), findsOneWidget);
       expect(find.text('Coming soon'), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets(
+        'Output Targets detail hosts the external display controls and no '
+        'Phase 1 overlay switch', (tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      await tester.pumpWidget(
+        buildZbApp(
+          prefs: prefs,
+          initialLocation: '/settings',
+          overrides: [
+            obsConnectionNotifierProvider
+                .overrideWith(FakeDisconnectedObsConnectionNotifier.new),
+            externalDisplayStatusProvider.overrideWith(
+              (ref) => Stream.value(const Off()),
+            ),
+            displayListProvider.overrideWith(
+              (ref) => Stream.value(const <DisplayInfo>[]),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Output Targets'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ExternalDisplayControls), findsOneWidget);
+      expect(find.text('External Display'), findsOneWidget);
+      expect(find.text('Available Displays'), findsOneWidget);
+      expect(find.text('Caption Overlay'), findsNothing);
     });
   });
 }

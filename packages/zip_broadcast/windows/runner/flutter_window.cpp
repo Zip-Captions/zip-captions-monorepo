@@ -2,6 +2,8 @@
 
 #include <optional>
 
+#include <desktop_multi_window/desktop_multi_window_plugin.h>
+
 #include "flutter/generated_plugin_registrant.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
@@ -25,6 +27,23 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
   RegisterPlugins(flutter_controller_->engine());
+
+  // External display windows are caption surfaces, so they carry no frame.
+  DesktopMultiWindowSetWindowCreatedCallback(
+      flutter_controller_->engine(),
+      [](FlutterDesktopViewControllerRef controller, void* user_data) {
+        HWND hwnd = GetAncestor(
+            FlutterDesktopViewControllerGetView(controller)->GetNativeWindow(),
+            GA_ROOT);
+        LONG style = GetWindowLong(hwnd, GWL_STYLE);
+        style &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX |
+                   WS_MAXIMIZEBOX | WS_SYSMENU);
+        SetWindowLong(hwnd, GWL_STYLE, style);
+        SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+      },
+      nullptr);
+
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {

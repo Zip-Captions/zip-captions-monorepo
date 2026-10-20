@@ -7,11 +7,17 @@ import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/broadcast_session_state.dart';
 import 'package:zip_broadcast/src/models/browser_source_start_exception.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
+import 'package:zip_broadcast/src/models/overlay_config.dart';
+import 'package:zip_broadcast/src/models/overlay_position.dart';
 import 'package:zip_broadcast/src/output/browser_source/browser_source_server.dart';
 import 'package:zip_broadcast/src/output/browser_source/browser_source_target.dart';
 import 'package:zip_broadcast/src/output/overlay/caption_overlay_target.dart';
+import 'package:zip_broadcast/src/output/overlay/caption_position.dart';
+import 'package:zip_broadcast/src/output/overlay/overlay_event.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_broadcast/src/providers/broadcast_recording_notifier.dart';
+import 'package:zip_broadcast/src/providers/overlay_window_controller_provider.dart';
+import 'package:zip_broadcast/src/providers/settings_notifier.dart';
 import 'package:zip_broadcast/src/shell/zb_nav_drawer.dart';
 import 'package:zip_broadcast/src/shell/zb_nav_rail.dart';
 import 'package:zip_core/zip_core.dart';
@@ -47,6 +53,8 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
   bool _browserSourceStarting = false;
   bool _browserSourceDesiredEnabled = false;
   bool _overlayRegistered = false;
+  String? _overlayDisplayId;
+  StreamSubscription<OverlayEvent>? _overlayEvents;
 
   @override
   void initState() {
@@ -54,8 +62,17 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     _browserSourceTarget = BrowserSourceTarget(
       server: BrowserSourceServer(),
     );
-    _overlayTarget = CaptionOverlayTarget();
+    _overlayTarget = CaptionOverlayTarget(
+      controller: ref.read(overlayWindowControllerProvider),
+      registry: ref.read(captionOutputTargetRegistryProvider),
+      displaySettings: () => ref.read(displaySettingsProvider),
+    );
     _registry = ref.read(captionOutputTargetRegistryProvider);
+
+    // BR-U8-15: the shell is what switches the output off when the window
+    // goes away on its own. Display loss keeps the output on (D-4): the
+    // controller waits for the saved display to come back.
+    _overlayEvents = _overlayTarget.events.listen(_onOverlayEvent);
 
     // Register transcript target (always active).
     ref.read(transcriptWriterTargetProvider);
@@ -66,8 +83,43 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     });
   }
 
+  /// Reacts to the controller's lifecycle events (BR-U8-15).
+  void _onOverlayEvent(OverlayEvent event) {
+    switch (event) {
+      case WindowClosed():
+      case OpenFailed():
+        // Unregister and switch the output off, but do not send a toggle-off
+        // close back to the controller: after `OpenFailed` the controller is
+        // already `Failed` with no window, and that state is what the failure
+        // banner renders (BR-U8-03).
+        _unregisterOverlay();
+        unawaited(_switchOverlayOff());
+      case DisplayLost():
+        // Bookkeeping only: the target stays registered, `overlayEnabled`
+        // stays true, and the controller reopens on the saved display when
+        // it returns (T11).
+        // No state change: the target stays registered.
+    }
+  }
+
+  void _unregisterOverlay() {
+    if (!_overlayRegistered) return;
+    _registry.remove(_overlayTarget);
+    _overlayRegistered = false;
+    _overlayDisplayId = null;
+  }
+
+  Future<void> _switchOverlayOff() async {
+    if (!mounted) return;
+    final notifier = ref.read(outputTargetSettingsNotifierProvider.notifier);
+    final current = ref.read(outputTargetSettingsNotifierProvider);
+    await notifier.update(current.copyWith(overlayEnabled: false));
+  }
+
   @override
   void dispose() {
+    unawaited(_overlayEvents?.cancel());
+    _overlayEvents = null;
     _browserSourceDesiredEnabled = false;
     if (_browserSourceRegistered) {
       _registry.remove(_browserSourceTarget);
@@ -87,7 +139,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
       settings.browserSourceEnabled,
       settings.browserSourcePort,
     );
-    _syncOverlay(settings.overlayEnabled);
+    _syncOverlay(settings);
   }
 
   void _syncBrowserSource(bool enabled, int port) {
@@ -101,15 +153,59 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     }
   }
 
-  void _syncOverlay(bool enabled) {
+  void _syncOverlay(OutputTargetSettings settings) {
+    final enabled = settings.overlayEnabled;
+    final config = OverlayConfig(
+      position: settings.externalDisplayCaptionPosition == CaptionPosition.top
+          ? const OverlayPositionTop()
+          : const OverlayPositionBottom(),
+    );
     if (enabled && !_overlayRegistered) {
       _registry.add(_overlayTarget);
       _overlayRegistered = true;
-    } else if (!enabled && _overlayRegistered) {
-      _registry.remove(_overlayTarget);
-      _overlayRegistered = false;
-      unawaited(_overlayTarget.hide());
+      _overlayDisplayId = settings.externalDisplayId;
+      // After the registry add, so the first snapshot already reads the
+      // on-screen buffer. The launch carries the persisted caption position
+      // and display selection (BR-U8-07, BR-U8-26); the controller resolves
+      // the selection and never writes it back.
+      unawaited(
+        _overlayTarget.show(
+          config,
+          persistedDisplayId: settings.externalDisplayId,
+        ),
+      );
+    } else if (enabled && settings.externalDisplayId != _overlayDisplayId) {
+      // The broadcaster picked a different display while the output is on.
+      // Closing first is what lets the controller accept the re-open (its
+      // open guard refuses a second window); the window then opens on the new
+      // display with the current position.
+      _overlayDisplayId = settings.externalDisplayId;
+      unawaited(
+        _retarget(
+          () => _overlayTarget.show(
+            config,
+            persistedDisplayId: settings.externalDisplayId,
+          ),
+        ),
+      );
+    } else if (!enabled) {
+      // Only a window that still exists needs closing. After an open failure
+      // the event handler has already unregistered and released it, and the
+      // controller stays `Failed` so the banner can explain why (BR-U8-03).
+      _unregisterOverlay();
+      if (_overlayTarget.isVisible) unawaited(_overlayTarget.hide());
     }
+  }
+
+  /// Closes the open window, then applies [reopen].
+  ///
+  /// The close is skipped when there is no window: an open that failed leaves
+  /// the controller `Failed` with nothing to close, and a toggle-off close
+  /// would replace that state with `Off` (BR-U8-03).
+  Future<void> _retarget(Future<void> Function() reopen) async {
+    if (_overlayTarget.isVisible) await _overlayTarget.hide();
+    if (!mounted || !_overlayRegistered) return;
+    await reopen();
   }
 
   Future<void> _startBrowserSource(int port) async {

@@ -430,4 +430,66 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
 
   @override
   String get broadcastAudioInputStatusInactive => 'inactive';
+
+  @override
+  String get externalDisplay => 'External Display';
+
+  @override
+  String get externalDisplayAvailableDisplays => 'Available Displays';
+
+  @override
+  String get externalDisplayNoDisplays => 'No displays detected';
+
+  @override
+  String externalDisplayDisplayFallback(int number) {
+    return 'Display $number';
+  }
+
+  @override
+  String get externalDisplayPrimaryMarker => 'primary';
+
+  @override
+  String get externalDisplaySelectedMarker => 'selected';
+
+  @override
+  String get externalDisplayConnectedMarker => 'connected';
+
+  @override
+  String get externalDisplayDisconnectedMarker => 'disconnected';
+
+  @override
+  String get externalDisplayActivePill => 'Active';
+
+  @override
+  String get externalDisplayOpening => 'opening';
+
+  @override
+  String get externalDisplayCaptionPosition => 'Caption Position';
+
+  @override
+  String get externalDisplayPositionTop => 'Top';
+
+  @override
+  String get externalDisplayPositionBottom => 'Bottom';
+
+  @override
+  String externalDisplayDisconnectedBanner(String display) {
+    return 'The $display was disconnected. Captioning continues, but the external display output has stopped.';
+  }
+
+  @override
+  String get externalDisplayWaitingForDisplay => 'waiting for display';
+
+  @override
+  String get externalDisplayFailedCreate =>
+      'The external display window could not be opened.';
+
+  @override
+  String get externalDisplaySelectedDisplay => 'selected display';
+
+  @override
+  String get externalDisplayUnavailable => 'Window unavailable';
+
+  @override
+  String get cancel => 'Cancel';
 }

@@ -32,6 +32,16 @@ mixin _$OutputTargetSettings {
   /// HTTP port for the browser source server. Valid range: 1024–65535.
   int get browserSourcePort => throw _privateConstructorUsedError;
 
+  /// Selected external display id (`output.externalDisplayId`). `null` means
+  /// the primary display. A value no longer present in the display list is
+  /// kept as-is — it is the id the waiting state waits for (BR-U8-07, D-4).
+  String? get externalDisplayId => throw _privateConstructorUsedError;
+
+  /// Where the caption block sits in the external display surface
+  /// (`output.externalDisplayCaptionPosition`, B-8).
+  CaptionPosition get externalDisplayCaptionPosition =>
+      throw _privateConstructorUsedError;
+
   /// Create a copy of OutputTargetSettings
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -52,6 +62,8 @@ abstract class $OutputTargetSettingsCopyWith<$Res> {
     bool browserSourceEnabled,
     bool overlayEnabled,
     int browserSourcePort,
+    String? externalDisplayId,
+    CaptionPosition externalDisplayCaptionPosition,
   });
 }
 
@@ -78,6 +90,8 @@ class _$OutputTargetSettingsCopyWithImpl<
     Object? browserSourceEnabled = null,
     Object? overlayEnabled = null,
     Object? browserSourcePort = null,
+    Object? externalDisplayId = freezed,
+    Object? externalDisplayCaptionPosition = null,
   }) {
     return _then(
       _value.copyWith(
@@ -101,6 +115,15 @@ class _$OutputTargetSettingsCopyWithImpl<
                 ? _value.browserSourcePort
                 : browserSourcePort // ignore: cast_nullable_to_non_nullable
                       as int,
+            externalDisplayId: freezed == externalDisplayId
+                ? _value.externalDisplayId
+                : externalDisplayId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            externalDisplayCaptionPosition:
+                null == externalDisplayCaptionPosition
+                ? _value.externalDisplayCaptionPosition
+                : externalDisplayCaptionPosition // ignore: cast_nullable_to_non_nullable
+                      as CaptionPosition,
           )
           as $Val,
     );
@@ -122,6 +145,8 @@ abstract class _$$OutputTargetSettingsImplCopyWith<$Res>
     bool browserSourceEnabled,
     bool overlayEnabled,
     int browserSourcePort,
+    String? externalDisplayId,
+    CaptionPosition externalDisplayCaptionPosition,
   });
 }
 
@@ -144,6 +169,8 @@ class __$$OutputTargetSettingsImplCopyWithImpl<$Res>
     Object? browserSourceEnabled = null,
     Object? overlayEnabled = null,
     Object? browserSourcePort = null,
+    Object? externalDisplayId = freezed,
+    Object? externalDisplayCaptionPosition = null,
   }) {
     return _then(
       _$OutputTargetSettingsImpl(
@@ -167,6 +194,14 @@ class __$$OutputTargetSettingsImplCopyWithImpl<$Res>
             ? _value.browserSourcePort
             : browserSourcePort // ignore: cast_nullable_to_non_nullable
                   as int,
+        externalDisplayId: freezed == externalDisplayId
+            ? _value.externalDisplayId
+            : externalDisplayId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        externalDisplayCaptionPosition: null == externalDisplayCaptionPosition
+            ? _value.externalDisplayCaptionPosition
+            : externalDisplayCaptionPosition // ignore: cast_nullable_to_non_nullable
+                  as CaptionPosition,
       ),
     );
   }
@@ -181,6 +216,8 @@ class _$OutputTargetSettingsImpl implements _OutputTargetSettings {
     this.browserSourceEnabled = false,
     this.overlayEnabled = false,
     this.browserSourcePort = 8080,
+    this.externalDisplayId,
+    this.externalDisplayCaptionPosition = CaptionPosition.bottom,
   });
 
   /// Whether on-screen caption rendering is active.
@@ -208,9 +245,21 @@ class _$OutputTargetSettingsImpl implements _OutputTargetSettings {
   @JsonKey()
   final int browserSourcePort;
 
+  /// Selected external display id (`output.externalDisplayId`). `null` means
+  /// the primary display. A value no longer present in the display list is
+  /// kept as-is — it is the id the waiting state waits for (BR-U8-07, D-4).
+  @override
+  final String? externalDisplayId;
+
+  /// Where the caption block sits in the external display surface
+  /// (`output.externalDisplayCaptionPosition`, B-8).
+  @override
+  @JsonKey()
+  final CaptionPosition externalDisplayCaptionPosition;
+
   @override
   String toString() {
-    return 'OutputTargetSettings(onScreenEnabled: $onScreenEnabled, obsEnabled: $obsEnabled, browserSourceEnabled: $browserSourceEnabled, overlayEnabled: $overlayEnabled, browserSourcePort: $browserSourcePort)';
+    return 'OutputTargetSettings(onScreenEnabled: $onScreenEnabled, obsEnabled: $obsEnabled, browserSourceEnabled: $browserSourceEnabled, overlayEnabled: $overlayEnabled, browserSourcePort: $browserSourcePort, externalDisplayId: $externalDisplayId, externalDisplayCaptionPosition: $externalDisplayCaptionPosition)';
   }
 
   @override
@@ -227,7 +276,15 @@ class _$OutputTargetSettingsImpl implements _OutputTargetSettings {
             (identical(other.overlayEnabled, overlayEnabled) ||
                 other.overlayEnabled == overlayEnabled) &&
             (identical(other.browserSourcePort, browserSourcePort) ||
-                other.browserSourcePort == browserSourcePort));
+                other.browserSourcePort == browserSourcePort) &&
+            (identical(other.externalDisplayId, externalDisplayId) ||
+                other.externalDisplayId == externalDisplayId) &&
+            (identical(
+                  other.externalDisplayCaptionPosition,
+                  externalDisplayCaptionPosition,
+                ) ||
+                other.externalDisplayCaptionPosition ==
+                    externalDisplayCaptionPosition));
   }
 
   @override
@@ -238,6 +295,8 @@ class _$OutputTargetSettingsImpl implements _OutputTargetSettings {
     browserSourceEnabled,
     overlayEnabled,
     browserSourcePort,
+    externalDisplayId,
+    externalDisplayCaptionPosition,
   );
 
   /// Create a copy of OutputTargetSettings
@@ -260,6 +319,8 @@ abstract class _OutputTargetSettings implements OutputTargetSettings {
     final bool browserSourceEnabled,
     final bool overlayEnabled,
     final int browserSourcePort,
+    final String? externalDisplayId,
+    final CaptionPosition externalDisplayCaptionPosition,
   }) = _$OutputTargetSettingsImpl;
 
   /// Whether on-screen caption rendering is active.
@@ -281,6 +342,17 @@ abstract class _OutputTargetSettings implements OutputTargetSettings {
   /// HTTP port for the browser source server. Valid range: 1024–65535.
   @override
   int get browserSourcePort;
+
+  /// Selected external display id (`output.externalDisplayId`). `null` means
+  /// the primary display. A value no longer present in the display list is
+  /// kept as-is — it is the id the waiting state waits for (BR-U8-07, D-4).
+  @override
+  String? get externalDisplayId;
+
+  /// Where the caption block sits in the external display surface
+  /// (`output.externalDisplayCaptionPosition`, B-8).
+  @override
+  CaptionPosition get externalDisplayCaptionPosition;
 
   /// Create a copy of OutputTargetSettings
   /// with the given fields replaced by the non-null parameter values.

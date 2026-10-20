@@ -529,7 +529,7 @@ When the user is signed out
 Then it works unchanged (no account required)
 
 Given the external display window is open
-When the broadcaster disables the output or stops captioning
+When the broadcaster disables the output
 Then the window closes and its resources are released
 
 Given the external display window is open

@@ -846,6 +846,120 @@ abstract class ZipBroadcastLocalizations {
   /// In en, this message translates to:
   /// **'inactive'**
   String get broadcastAudioInputStatusInactive;
+
+  /// Section label for the external display output controls
+  ///
+  /// In en, this message translates to:
+  /// **'External Display'**
+  String get externalDisplay;
+
+  /// Heading above the list of connected displays
+  ///
+  /// In en, this message translates to:
+  /// **'Available Displays'**
+  String get externalDisplayAvailableDisplays;
+
+  /// Shown when no external display is connected
+  ///
+  /// In en, this message translates to:
+  /// **'No displays detected'**
+  String get externalDisplayNoDisplays;
+
+  /// Fallback name for a display that reports no label; {number} is its 1-based position
+  ///
+  /// In en, this message translates to:
+  /// **'Display {number}'**
+  String externalDisplayDisplayFallback(int number);
+
+  /// Meta marker on the display the system considers primary
+  ///
+  /// In en, this message translates to:
+  /// **'primary'**
+  String get externalDisplayPrimaryMarker;
+
+  /// Meta marker on the display captions are sent to
+  ///
+  /// In en, this message translates to:
+  /// **'selected'**
+  String get externalDisplaySelectedMarker;
+
+  /// Meta marker on the display currently captioned
+  ///
+  /// In en, this message translates to:
+  /// **'connected'**
+  String get externalDisplayConnectedMarker;
+
+  /// Meta marker on a display that went away while in use
+  ///
+  /// In en, this message translates to:
+  /// **'disconnected'**
+  String get externalDisplayDisconnectedMarker;
+
+  /// Pill on the display row that is currently receiving captions
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get externalDisplayActivePill;
+
+  /// Affordance on the row whose window is being created
+  ///
+  /// In en, this message translates to:
+  /// **'opening'**
+  String get externalDisplayOpening;
+
+  /// Label above the Top/Bottom caption position selector
+  ///
+  /// In en, this message translates to:
+  /// **'Caption Position'**
+  String get externalDisplayCaptionPosition;
+
+  /// Caption position: top of the display
+  ///
+  /// In en, this message translates to:
+  /// **'Top'**
+  String get externalDisplayPositionTop;
+
+  /// Caption position: bottom of the display
+  ///
+  /// In en, this message translates to:
+  /// **'Bottom'**
+  String get externalDisplayPositionBottom;
+
+  /// Banner shown when the selected display went away; {display} is its label
+  ///
+  /// In en, this message translates to:
+  /// **'The {display} was disconnected. Captioning continues, but the external display output has stopped.'**
+  String externalDisplayDisconnectedBanner(String display);
+
+  /// Status line under the disconnected banner
+  ///
+  /// In en, this message translates to:
+  /// **'waiting for display'**
+  String get externalDisplayWaitingForDisplay;
+
+  /// Failure banner when the window could not be created
+  ///
+  /// In en, this message translates to:
+  /// **'The external display window could not be opened.'**
+  String get externalDisplayFailedCreate;
+
+  /// Fallback noun for the disconnected-display banner when the last known name is unavailable
+  ///
+  /// In en, this message translates to:
+  /// **'selected display'**
+  String get externalDisplaySelectedDisplay;
+
+  /// Fixed frame shown when the external display window receives a launch payload it cannot decode
+  ///
+  /// In en, this message translates to:
+  /// **'Window unavailable'**
+  String get externalDisplayUnavailable;
+
+  /// Dismisses the waiting-for-display state without forgetting the chosen display
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
 }
 
 class _ZipBroadcastLocalizationsDelegate
