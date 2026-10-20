@@ -10,7 +10,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logging/logging.dart';
 import 'package:zip_broadcast/src/models/overlay_config.dart';
-import 'package:zip_broadcast/src/output/overlay/caption_overlay_codec.dart';
 import 'package:zip_broadcast/src/output/overlay/caption_overlay_snapshot.dart';
 import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
 import 'package:zip_broadcast/src/output/overlay/display_info.dart';
@@ -22,8 +21,6 @@ import 'package:zip_core/zip_core.dart' hide Failed;
 import '../../helpers/fake_display_enumerator.dart';
 import '../../helpers/generators.dart';
 import '../../helpers/pbt.dart';
-
-const List<String> _ids = <String>['a', 'b'];
 
 DisplayInfo _display(String id, {bool isPrimary = false, double left = 0}) =>
     DisplayInfo(

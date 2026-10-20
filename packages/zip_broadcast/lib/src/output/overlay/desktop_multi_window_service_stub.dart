@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:flutter/foundation.dart';
 import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
 import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart';
 
@@ -11,10 +10,8 @@ import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart'
 class DesktopMultiWindowService implements DesktopWindowService {
   /// Creates the stub.
   ///
-  /// The io implementation takes an `enumerator` seam; there is no display
-  /// here to enumerate, so the stub accepts nothing and callers are written
-  /// against the io constructor only behind `isSupported`.
-  @visibleForTesting
+  /// Production callers construct it with no arguments, exactly as with the io
+  /// implementation, so the conditional export stays a drop-in.
   DesktopMultiWindowService();
   @override
   Future<int> createWindow(String arguments) =>

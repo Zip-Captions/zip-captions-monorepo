@@ -11,10 +11,19 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
+import 'package:zip_broadcast/src/models/output_target_settings.dart';
+import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
+import 'package:zip_broadcast/src/output/overlay/display_enumerator.dart';
+import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart';
+import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
+import 'package:zip_broadcast/src/providers/overlay_window_controller_provider.dart';
 import 'package:zip_broadcast/src/shell/zb_app_shell.dart';
 import 'package:zip_core/zip_core.dart';
+
+import '../helpers/fake_display_enumerator.dart';
 
 class _FakeAuthNotifier extends AuthNotifier {
   _FakeAuthNotifier(this._initial);
@@ -212,4 +221,188 @@ void main() {
       );
     });
   });
+
+  group('external display wiring (F26)', () {
+    late _ShellWorld world;
+
+    setUp(() {
+      world = _ShellWorld();
+      SharedPreferences.setMockInitialValues({
+        // BR-U8-21: it is never restored switched on.
+        'output.overlayEnabled': false,
+      });
+    });
+
+    tearDown(() async {
+      await world.controller.dispose();
+      world.container.dispose();
+    });
+
+    testWidgets('switching the output on registers the target and opens the '
+        'window', (tester) async {
+      await world.pump(tester);
+      expect(world.controller.isWindowOpen, isFalse);
+
+      await world.setOverlayEnabled(tester, enabled: true);
+
+      expect(world.registry.activeTargets, hasLength(1));
+      expect(world.window.calls, contains('createWindow'));
+    });
+
+    testWidgets('switching the output off removes the target and closes the '
+        'window', (tester) async {
+      await world.pump(tester);
+      await world.setOverlayEnabled(tester, enabled: true);
+      await world.ready(tester);
+
+      await world.setOverlayEnabled(tester, enabled: false);
+
+      expect(world.registry.activeTargets, isEmpty);
+      expect(world.window.calls, contains('closeWindow'));
+    });
+
+    testWidgets('a recognition pause never closes the window (D-5)',
+        (tester) async {
+      await world.pump(tester);
+      await world.setOverlayEnabled(tester, enabled: true);
+      await world.ready(tester);
+      world.window.calls.clear();
+
+      await world.publish(
+        tester,
+        const SessionStateEvent(RecordingState.paused(sessionId: 's')),
+      );
+
+      expect(world.window.calls, isNot(contains('closeWindow')));
+      expect(world.settings.overlayEnabled, isTrue);
+    });
+  });
+}
+
+/// The shell plus an overridden overlay graph.
+class _ShellWorld {
+  final _ShellWindow window = _ShellWindow();
+  final FakeDisplayEnumerator enumerator = FakeDisplayEnumerator(
+    initial: const [
+      DisplayInfo(
+        id: 'primary',
+        label: 'Primary',
+        bounds: Rect.fromLTWH(0, 0, 1920, 1080),
+        scaleFactor: 1,
+        isPrimary: true,
+      ),
+    ],
+  );
+  late final OverlayWindowController controller = OverlayWindowController(
+    windowService: window,
+    enumerator: enumerator,
+    handlerInstaller: (next) => handler = next,
+    log: Logger('test.shell'),
+  );
+  late final ProviderContainer container;
+  OverlayMethodHandler? handler;
+
+  CaptionOutputTargetRegistry get registry =>
+      container.read(captionOutputTargetRegistryProvider);
+
+  OutputTargetSettings get settings =>
+      container.read(outputTargetSettingsNotifierProvider);
+
+  Future<void> ready(WidgetTester tester) async {
+    await tester.runAsync(() async => handler?.call('overlayReady', 1));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> publish(WidgetTester tester, CaptionEvent event) async {
+    await tester.runAsync(
+      () async => container.read(captionBusProvider).publish(event),
+    );
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> setOverlayEnabled(
+    WidgetTester tester, {
+    required bool enabled,
+  }) async {
+    await tester.runAsync(() async {
+      final notifier =
+          container.read(outputTargetSettingsNotifierProvider.notifier);
+      await notifier.update(
+        container
+            .read(outputTargetSettingsNotifierProvider)
+            .copyWith(overlayEnabled: enabled),
+      );
+    });
+    await tester.pump();
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> pump(WidgetTester tester) async {
+    final prefs = await SharedPreferences.getInstance();
+    container = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        overlayWindowControllerProvider.overrideWithValue(controller),
+      ],
+    );
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          localizationsDelegates: const [
+            ZipBroadcastLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: ZipBroadcastLocalizations.supportedLocales,
+          routerConfig: GoRouter(
+            initialLocation: '/',
+            routes: [
+              ShellRoute(
+                builder: (context, state, child) => ZbAppShell(child: child),
+                routes: [
+                  GoRoute(path: '/', builder: (_, _) => const SizedBox.shrink()),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+}
+
+/// Records window calls.
+class _ShellWindow implements DesktopWindowService {
+  final List<String> calls = <String>[];
+
+  @override
+  bool get isSupported => true;
+
+  @override
+  Future<int> createWindow(String arguments) async {
+    calls.add('createWindow');
+    return 1;
+  }
+
+  @override
+  Future<void> closeWindow(int windowId) async => calls.add('closeWindow');
+
+  @override
+  Future<void> invokeMethod(
+    int windowId,
+    String method,
+    dynamic arguments,
+  ) async =>
+      calls.add('invokeMethod:$method');
+
+  @override
+  Future<void> setFrame(int windowId, Rect frame) async =>
+      calls.add('setFrame');
+
+  @override
+  Future<void> show(int windowId) async => calls.add('show');
 }

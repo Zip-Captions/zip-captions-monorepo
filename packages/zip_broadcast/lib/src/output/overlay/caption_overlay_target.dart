@@ -1,111 +1,116 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:logging/logging.dart';
 import 'package:zip_broadcast/src/models/overlay_config.dart';
-import 'package:zip_broadcast/src/models/overlay_position.dart';
-import 'package:zip_broadcast/src/output/overlay/desktop_multi_window_service.dart';
-import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
-import 'package:zip_broadcast/src/output/overlay/overlay_window_mode.dart';
+import 'package:zip_broadcast/src/output/overlay/caption_overlay_snapshot.dart';
+import 'package:zip_broadcast/src/output/overlay/overlay_activity.dart';
+import 'package:zip_broadcast/src/output/overlay/overlay_event.dart';
+import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart';
 import 'package:zip_core/zip_core.dart';
 
-/// Caption output target that renders captions in a separate desktop window.
+/// The caption output target for the external display window.
 ///
-/// Delegates all platform-window calls to [DesktopWindowService], which is
-/// injectable for testing (Pattern 7, TEST-U3.2). On unsupported platforms
-/// (mobile, web), [show] is a no-op.
+/// A thin delegator to [OverlayWindowController] plus a caption-bus adapter
+/// (B-9). The controller owns the window, the state machine and the
+/// handshake; this class only turns caption events into snapshots and forwards
+/// show/hide. It holds no visibility flag of its own: [isVisible] reads the
+/// controller's window id, so there is one writer for that invariant.
 class CaptionOverlayTarget implements CaptionOutputTarget {
   /// Creates a [CaptionOverlayTarget].
-  ///
-  /// Defaults to [DesktopMultiWindowService] in production.
   CaptionOverlayTarget({
-    DesktopWindowService? windowService,
-  }) : _windowService = windowService ?? DesktopMultiWindowService();
+    required OverlayWindowController controller,
+    required CaptionOutputTargetRegistry registry,
+    required DisplaySettings Function() displaySettings,
+  })  : _controller = controller,
+        _registry = registry,
+        _displaySettings = displaySettings;
 
-  final DesktopWindowService _windowService;
+  final OverlayWindowController _controller;
+  final CaptionOutputTargetRegistry _registry;
+  final DisplaySettings Function() _displaySettings;
 
-  int? _windowId;
-  bool _isVisible = false;
-
-  static final _log = Logger('zip_broadcast.CaptionOverlayTarget');
+  /// The recognition activity, updated by session-state events.
+  ///
+  /// Activity is an attribute of the open window, not a lifecycle event: a
+  /// recognition change never opens, closes or re-frames anything (D-5).
+  OverlayActivity _activity = OverlayActivity.standby;
 
   @override
   String get targetId => 'caption_overlay';
 
-  /// Whether the overlay window is currently visible.
-  bool get isVisible => _isVisible;
+  /// Whether the external display window is open.
+  bool get isVisible => _controller.isWindowOpen;
 
-  /// Opens (or refreshes) the overlay window with [config].
+  /// The controller's lifecycle events, for the shell.
+  Stream<OverlayEvent> get events => _controller.events;
+
+  /// Opens (or re-targets) the window.
   ///
-  /// No-op if the platform does not support multi-window APIs.
-  Future<void> show(OverlayConfig config) async {
-    if (!_windowService.isSupported) {
-      _log.fine('show: platform not supported; no-op');
-      return;
-    }
+  /// The controller resolves the display and refuses a concurrent open; this
+  /// call is not itself awaited by the shell's caption path.
+  Future<void> show(OverlayConfig config) => _controller.open(config);
 
-    if (_isVisible && _windowId != null) {
-      _log.fine('show: already visible; sending config update');
-      await _windowService.invokeMethod(
-        _windowId!,
-        'updateConfig',
-        _encodeConfig(config),
-      );
-      return;
-    }
-
-    _log.fine('show: creating overlay window');
-    _windowId = await _windowService.createWindow(_encodeConfig(config));
-    _isVisible = true;
-    _log.fine('show: windowId=$_windowId');
-  }
-
-  /// Hides and destroys the overlay window.
-  Future<void> hide() async {
-    if (!_isVisible || _windowId == null) return;
-    _log.fine('hide: closing windowId=$_windowId');
-    await _windowService.closeWindow(_windowId!);
-    _isVisible = false;
-    _windowId = null;
-  }
+  /// Closes the window because the output was switched off.
+  Future<void> hide() => _controller.close(reason: CloseReason.toggleOff);
 
   @override
   void onCaptionEvent(CaptionEvent event) {
-    if (!_isVisible || _windowId == null) return;
-    if (event case SttResultEvent(:final result)) {
-      unawaited(
-        _windowService
-            .invokeMethod(
-              _windowId!,
-              'captionUpdate',
-              json.encode({'text': result.text, 'isFinal': result.isFinal}),
-            )
-            .catchError(
-              (Object e) => _log.warning('captionUpdate failed: $e'),
-            ),
-      );
+    switch (event) {
+      case SessionStateEvent(:final state):
+        _activity = _activityFor(state);
+      case SttResultEvent():
+        break;
     }
+    _pushSnapshot();
   }
 
-  @override
-  Future<void> dispose() async => hide();
+  /// Builds the snapshot from the on-screen target's visible captions and the
+  /// current display settings (BR-U8-12).
+  ///
+  /// The settings are read from the provider's value at each update, never a
+  /// cached copy, so a theme, font, size, direction or max-lines change reaches
+  /// the next snapshot without reopening the window.
+  void _pushSnapshot() {
+    final entries = _visibleCaptions();
+    final interim = entries.isNotEmpty && !entries.last.isFinal
+        ? entries.last
+        : null;
+    final finals = interim == null ? entries : entries.sublist(0, entries.length - 1);
 
-  static String _encodeConfig(OverlayConfig config) {
-    final posMap = switch (config.position) {
-      OverlayPositionTop() => {'type': 'top'},
-      OverlayPositionBottom() => {'type': 'bottom'},
-      OverlayPositionCustom(:final x, :final y) => {
-          'type': 'custom',
-          'x': x,
-          'y': y,
-        },
-    };
-    return json.encode({
-      'displayId': config.mode is ExternalDisplayMode
-          ? (config.mode as ExternalDisplayMode).displayId
-          : null,
-      'position': posMap,
-      'opacity': config.opacity,
-    });
+    _controller.push(
+      CaptionOverlaySnapshot(
+        activity: _activity,
+        entries: finals,
+        interim: interim,
+        settings: _displaySettings(),
+      ),
+    );
+  }
+
+  List<CaptionDisplayEntry> _visibleCaptions() {
+    for (final target in _registry.activeTargets) {
+      if (target is OnScreenCaptionTarget) {
+        // Final buffer entries followed by the trailing interim.
+        return target.visibleCaptions;
+      }
+    }
+    return const <CaptionDisplayEntry>[];
+  }
+
+  /// Maps the recognition state onto the window's activity (D-5).
+  static OverlayActivity _activityFor(RecordingState state) => switch (state) {
+        IdleState() => OverlayActivity.standby,
+        StoppedState() => OverlayActivity.standby,
+        PausedState() => OverlayActivity.paused,
+        RecordingActiveState() => OverlayActivity.live,
+        // Reconnecting is a transport concern; recognition itself is not
+        // paused (D-5).
+        ReconnectingState() => OverlayActivity.live,
+      };
+
+  @override
+  void dispose() {
+    // Fire-and-forget: the registry's `dispose()` is synchronous and must not
+    // block on a window close.
+    unawaited(_controller.close(reason: CloseReason.dispose));
   }
 }

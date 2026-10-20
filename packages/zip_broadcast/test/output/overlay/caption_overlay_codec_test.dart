@@ -1,7 +1,6 @@
 // Tests for Unit 8 (S-20): the versioned snapshot and launch codecs (B-7).
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zip_broadcast/src/models/overlay_config.dart';
 import 'package:zip_broadcast/src/models/overlay_position.dart';

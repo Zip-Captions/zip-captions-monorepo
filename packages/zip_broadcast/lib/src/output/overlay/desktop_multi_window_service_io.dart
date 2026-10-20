@@ -15,16 +15,18 @@ import 'package:zip_broadcast/src/output/overlay/screen_retriever_display_enumer
 /// [isSupported] returns `false` and callers must guard before invoking
 /// window APIs.
 class DesktopMultiWindowService implements DesktopWindowService {
-  /// Creates the production service.
+  /// Creates the production service, with the `screen_retriever` adapter the
+  /// frame conversion needs.
+  DesktopMultiWindowService()
+      : enumerator = ScreenRetrieverDisplayEnumerator();
+
+  /// Creates the service with an injected [enumerator].
   ///
-  /// [enumerator] is the seam that supplies the platform inputs the frame
-  /// conversion needs (the primary's full height on macOS). Production callers
-  /// pass nothing and get the `screen_retriever` adapter; tests pass a fake.
-  /// This service never imports the plugin itself: the conditional export
-  /// supplies it (F03).
+  /// The seam supplies the platform inputs the frame conversion needs (the
+  /// primary's full height on macOS), so tests can pass a fake. This service
+  /// never imports the plugin itself: the conditional export supplies it (F03).
   @visibleForTesting
-  DesktopMultiWindowService({DisplayEnumerator? enumerator})
-      : enumerator = enumerator ?? ScreenRetrieverDisplayEnumerator();
+  DesktopMultiWindowService.withEnumerator(this.enumerator);
 
   /// The display enumerator that supplies the frame conversion's platform
   /// inputs.

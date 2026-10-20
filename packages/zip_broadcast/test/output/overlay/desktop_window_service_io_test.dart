@@ -6,7 +6,6 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zip_broadcast/src/output/overlay/desktop_multi_window_service_io.dart';
-import 'package:zip_broadcast/src/output/overlay/display_enumerator.dart';
 
 import '../../helpers/fake_display_enumerator.dart';
 
@@ -42,16 +41,16 @@ void main() {
 
   group('DesktopMultiWindowService', () {
     test('the test seam accepts a FakeDisplayEnumerator', () {
-      final service = DesktopMultiWindowService(
-        enumerator: FakeDisplayEnumerator(),
+      final service = DesktopMultiWindowService.withEnumerator(
+        FakeDisplayEnumerator(),
       );
 
       expect(service.enumerator, isA<FakeDisplayEnumerator>());
     });
 
     test('the test seam does not change isSupported', () {
-      final withFake = DesktopMultiWindowService(
-        enumerator: FakeDisplayEnumerator(),
+      final withFake = DesktopMultiWindowService.withEnumerator(
+        FakeDisplayEnumerator(),
       );
       final withoutFake = DesktopMultiWindowService();
 
