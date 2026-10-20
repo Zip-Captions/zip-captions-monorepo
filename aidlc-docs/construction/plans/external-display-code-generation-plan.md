@@ -304,7 +304,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
     (asserted inside F35's named examples).
     *Commit*: `feat(zip_broadcast): add DisplayInfo model`.
 
-3. [ ] **F09-F13** (`overlay_window_mode`, `overlay_activity`,
+3. [x] **F09-F13** (`overlay_window_mode`, `overlay_activity`,
     `caption_position`, `overlay_event`, `external_display_status`) — plain
     Dart sealed types. *Test*: an exhaustive `switch` compiles in
     `overlay_window_controller_test.dart`'s fixture and the controls test's
