@@ -504,7 +504,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
     allowed set moved, record it — do not stage.
     *Commit*: the `Podfile.lock` entries (if any) join Step 26.
 
-26. [ ] **Lockfile review + final commit.** `git diff --stat pubspec.lock
+26. [x] **Lockfile review + final commit.** `git diff --stat pubspec.lock
     packages/zip_broadcast/macos/Podfile.lock`; stage only §1.3's entries.
     Write `aidlc-docs/construction/external-display/code/` summaries (Part 2
     artifact, same shape as Unit 7's). The commit message:
