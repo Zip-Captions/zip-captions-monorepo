@@ -1,8 +1,11 @@
 import 'dart:io';
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
+import 'package:zip_broadcast/src/output/overlay/display_enumerator.dart';
+import 'package:zip_broadcast/src/output/overlay/screen_retriever_display_enumerator.dart';
 
 /// Production [DesktopWindowService] backed by the `desktop_multi_window`
 /// platform channel.
@@ -11,6 +14,21 @@ import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
 /// [isSupported] returns `false` and callers must guard before invoking
 /// window APIs.
 class DesktopMultiWindowService implements DesktopWindowService {
+  /// Creates the production service.
+  ///
+  /// [enumerator] is the seam that supplies the platform inputs the frame
+  /// conversion needs (the primary's full height on macOS). Production callers
+  /// pass nothing and get the `screen_retriever` adapter; tests pass a fake.
+  /// This service never imports the plugin itself: the conditional export
+  /// supplies it (F03).
+  @visibleForTesting
+  DesktopMultiWindowService({DisplayEnumerator? enumerator})
+      : enumerator = enumerator ?? ScreenRetrieverDisplayEnumerator();
+
+  /// The display enumerator that supplies the frame conversion's platform
+  /// inputs.
+  final DisplayEnumerator enumerator;
+
   @override
   Future<int> createWindow(String arguments) async {
     final controller = await DesktopMultiWindow.createWindow(arguments);
@@ -28,6 +46,16 @@ class DesktopMultiWindowService implements DesktopWindowService {
     dynamic arguments,
   ) =>
       DesktopMultiWindow.invokeMethod(windowId, method, arguments);
+
+  @override
+  Future<void> setFrame(int windowId, Rect frame) {
+    final converted = toPlatformFrame(frame, defaultTargetPlatform);
+    return WindowController.fromWindowId(windowId).setFrame(converted);
+  }
+
+  @override
+  Future<void> show(int windowId) =>
+      WindowController.fromWindowId(windowId).show();
 
   @override
   bool get isSupported =>

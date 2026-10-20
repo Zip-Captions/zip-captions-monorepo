@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 /// Abstract interface for desktop window management.
 ///
 /// `CaptionOverlayTarget` depends on this interface rather than on
@@ -12,6 +14,16 @@ abstract class DesktopWindowService {
 
   /// Invokes [method] on the child window with [windowId].
   Future<void> invokeMethod(int windowId, String method, dynamic arguments);
+
+  /// Moves and resizes the child window to [frame].
+  ///
+  /// [frame] is logical top-left, as reported by `DisplayInfo.bounds`; the io
+  /// implementation converts it into platform-native coordinates with
+  /// `toPlatformFrame` (B-1, B-2).
+  Future<void> setFrame(int windowId, Rect frame);
+
+  /// Shows the child window with [windowId].
+  Future<void> show(int windowId);
 
   /// Whether the current platform supports multi-window desktop APIs.
   bool get isSupported;
