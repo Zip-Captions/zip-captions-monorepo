@@ -216,9 +216,9 @@ Functional Design fixes the real channel/topic shape.
 
 ### Unit 8: External Display
 
-**Package**: zip_broadcast (adds `screen_retriever`)
+**Package**: zip_broadcast (adds `screen_retriever`; `window_manager` removed per the PR #37 review, 2026-10-19)
 **Stories**: S-20
-**Stages**: Functional Design, Infrastructure Design (secondary-window entry point, desktop platform window configuration; Phase 1 overlay precedent), Code Generation. NFR stages are skipped: the only NFR is WCAG AAA contrast, which is covered by the story criteria and the existing theme. The SECURITY-10 dependency justification for `screen_retriever` is recorded in Functional Design.
+**Stages**: Functional Design, NFR Requirements, NFR Design, Infrastructure Design (secondary-window entry point, desktop platform window configuration; Phase 1 overlay precedent), Code Generation. (Amended 2026-10-19 per the PR #37 review comment: NFR Requirements and NFR Design are run, not skipped; the pop-out is split into its own unit after this one and blocks the v2.0 RC.) The SECURITY-10 dependency justification for `screen_retriever` is recorded in Functional Design.
 
 **Components**: `DisplayEnumerator`, `ScreenRetrieverDisplayEnumerator`, `DisplayInfo`; `CaptionOverlayTarget` completion; `OverlayWindowEntry`, `OverlayWindowApp`; `OutputTargetSettings` display field; `ExternalDisplayControls`.
 
@@ -250,5 +250,5 @@ Functional Design fixes the real channel/topic shape.
 | 5 Transport + Output + Capacity | yes | yes | yes | — | yes | — |
 | 6 ZB Broadcast UI | yes | yes | yes | — | yes | — |
 | 7 ZC Viewer | yes | yes | yes | — | yes | — |
-| 8 External Display | yes | — | — | yes | yes | Dependency record (SECURITY-10) |
+| 8 External Display | yes | yes | yes | yes | yes | Dependency record (SECURITY-10) |
 | 9 Integration | Build and Test + Documentation Refinement | | | | | Exit criteria |

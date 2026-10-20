@@ -92,6 +92,15 @@ add/remove; Windows and Linux fire only on add/remove), so the adapter treats
 *every* event as "re-read the list and diff", which is also the only way
 re-arrangement is observed (see `domain-entities.md` coordinate note).
 
+**Deprecation check (corrects Infrastructure Design ID-3).**
+`ScreenRetriever.instance` is **not deprecated** in 0.2.2
+(`screen_retriever/lib/src/screen_retriever.dart:9` declares it without a
+`@Deprecated`). Infrastructure Design ID-3 states the 0.2.x entry point is
+deprecated and shapes its conditional-export form around that; the claim is
+**not applicable under this pin** and must be corrected when Infrastructure
+Design is re-run (per D-10 it is a later stage). The conditional-export
+obligation itself (this record §5 item 4) stands regardless.
+
 That surface is confined to `screen_retriever_display_enumerator_io.dart`; see
 §5 item 1.
 
@@ -102,7 +111,7 @@ That surface is confined to `screen_retriever_display_enumerator_io.dart`; see
 | Question | Finding |
 |---|---|
 | Maintainer and provenance | `leanflutter` organisation (the Flutter desktop plugin group behind `window_manager`, `launch_at_startup`, `desktop_drop`, `local_notifier` and similar). Public GitHub repository `leanflutter/screen_retriever`, MIT licensed. |
-| Release cadence | 18 releases from 0.0.1 to 0.3.0; the 0.2.x line has three patch releases (0.2.0-0.2.2), each a federated-platform bump. |
+| Release cadence | 16 releases from 0.0.1 to 0.3.0 (counted against the pub.dev release list, verified 2026-10-20); the 0.2.x line has three patch releases (0.2.0-0.2.2), each a federated-platform bump. |
 | Federated structure | 0.2.x splits into `screen_retriever_platform_interface`, `_macos`, `_windows`, `_linux`. Each is a small, separately-versioned package under the same organisation. All are pinned by the 0.2.x resolution. |
 | Native code | Swift (macOS), C++ (Windows, Linux). No dynamic code loading, no network access, no file access outside the platform's own display APIs, no obfuscated blobs. The macOS side reads `NSScreen`; the Windows side calls `EnumDisplayMonitors`; the Linux side reads the X11/GDK monitor list. |
 | Permissions | None requested. No entitlement is added to the macOS runner, no manifest capability is added on Windows, no `dlopen` of system frameworks beyond those already linked by the Flutter runner. |
