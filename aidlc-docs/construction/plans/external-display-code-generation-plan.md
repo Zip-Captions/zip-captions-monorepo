@@ -344,7 +344,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
 
 ### Group C — window service and enumeration
 
-9. [ ] **F06/F07/F08 — the B-6 interface additions**: `setFrame(int, Rect)` and
+9. [x] **F06/F07/F08 — the B-6 interface additions**: `setFrame(int, Rect)` and
     `show(int)` on the abstract class, the io implementation (calling
     `WindowController.fromWindowId(id).setFrame(converted)` /
     `.show()`), the stub's throwing versions; extend F32's doc.
@@ -359,7 +359,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
     stays at the mock level (`MockDesktopWindowService`, F32).
     *Commit*: `feat(zip_broadcast): add setFrame and show to DesktopWindowService`.
 
-10. [ ] **F02-F05 — the enumerator triplet**. *Test first*: **F34** (contract,
+10. [x] **F02-F05 — the enumerator triplet**. *Test first*: **F34** (contract,
     id normalisation, repeated-name suffix, error keeps the stream open,
     idempotent dispose). Implement the interface + conditional export + io
     adapter (the single plugin import) + stub. Then run
