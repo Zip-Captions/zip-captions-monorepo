@@ -88,7 +88,11 @@ beforehand if wanted.
 **BR-U8-10 — Closing the pop-out clears popped-out, and only that.**
 `WindowClosed` in pop-out mode must set `popOutEnabled` to `false`, clear the
 hint, and reset the toggle; it must not touch `overlayEnabled`,
-`externalDisplayId` or captioning state.
+`externalDisplayId` or captioning state. Conversely, BR-U8-17's stop path writes
+`overlayEnabled = false` and must **not** clear `popOutEnabled`: stopping
+captioning closes the external display, but a pop-out the user deliberately
+opened stays open showing the last buffer until they close it. The two flags are
+independent once both can be set.
 *Flow: F-8.6. (`BR-PIP-03`).*
 
 **BR-U8-11 — Web is excluded by capability, not by a platform check.**
@@ -137,9 +141,13 @@ from stored state on launch. The first open in a process must be a user action.
 *Flow: F-8.8 (`BR-PIP-10`).*
 
 **BR-U8-17 — External display output stops when captioning stops.**
-Reaching `BroadcastStoppedState`, or `clearSession()` reaching idle, must write
-`overlayEnabled = false` and close the window. It must not open it, pause
-captioning, or change any other target.
+Reaching `BroadcastStoppedState`, or idle after a session, must write
+`overlayEnabled = false` and close the external display window. It must not open
+it, pause captioning, clear `popOutEnabled` (BR-U8-10), or change any other
+target. The shell owns this listener; the recording screen's existing stop
+handling (`recording_screen.dart:81-84`) runs `clearSession()` and navigates
+inside the same callback, so the rule is stated over "stopped **or** idle after
+a session" to be independent of that ordering.
 *Flow: F-8.6 path B.*
 
 ---
@@ -163,13 +171,20 @@ throw out of a method handler, because an unhandled exception in a secondary
 engine's method handler can tear down that engine.
 *Flow: F-8.7 steps 2-3.*
 
-**BR-U8-20 — WCAG AAA contrast on the caption surface.**
-Caption text rendered by `OverlayWindowApp` must meet a contrast ratio >= 7:1
-against its own background in both themes. The pair is `AppTheme`'s
-`onSurface` on `surface` (dark: 0xFFDAE3F0 on 0xFF0B141D; light: 0xFF0B141D on
-0xFFFAFCFF). A unit test in `zip_broadcast` must assert the two ratios from the
-actual `AppTheme` instances rather than a copy of the hex values, so a theme
-change that breaks AAA fails this unit's suite. (S-20 AC; NFR-5.1.)
+**BR-U8-20 — Caption-surface contrast comes from the theme, not a literal.**
+`OverlayWindowApp` must take its surface and text colours from `AppTheme`'s
+`surface`/`onSurface` (dark: 0xFFDAE3F0 on 0xFF0B141D; light: 0xFF0B141D on
+0xFFFAFCFF) and must not hard-code a colour literal for either. The AAA ratio
+(>= 7:1) of those two pairs is already asserted in
+`zip_core/test/pbt/theme_contrast_test.dart`; this unit **must not repeat that
+assertion**, because a second copy of the same two constants cannot fail
+independently and would drift from the theme without anyone noticing — the
+review recorded exactly that. This unit's test instead asserts the *wiring*: a
+widget test builds `OverlayWindowApp` with the dark attachment, swaps to the
+light `DisplaySettings.themeModeSetting` in a new snapshot, and observes the
+rendered `Scaffold`/`Material` surface colour change with it. That test fails if
+the overlay introduces a literal, and stays green when the theme's own ratio is
+what changes. (S-20 AC; NFR-5.1.)
 *Flow: F-8.7 step 4.*
 
 ---

@@ -44,17 +44,53 @@ natively and the space the macOS bridge converts into. No bottom-left flip is
 performed in Dart.
 
 **`id` provenance.** `screen_retriever` 0.2.x's `Display.id` is a non-empty
-string on every desktop platform (Windows and macOS derive it from the platform
-display handle; Linux from the X11 output number) and is what
-`DesktopMultiWindow`-style placement needs. The adapter must not invent ids;
-it passes the plugin's `id` through unchanged, so ids stay stable across app
-restarts and the persisted selection survives a relaunch.
+string on Windows and macOS (derived from the platform display handle) but the
+Linux backend sends `""` for every monitor
+(`screen_retriever_linux/linux/screen_retriever_linux_plugin.cc:76`). The
+adapter therefore **normalises**, in this order, in one place:
+
+1. use the plugin's `id` when it is non-empty;
+2. otherwise use `name` when it is non-empty (Linux reports the GDK monitor
+   model or the X11 output name, which is stable across a session), prefixed
+   with the list position only when the same name repeats (`VGA-1#2`);
+3. otherwise use `display-<index>`.
+
+Normalisation is stable *within* a process (same list, same ids) and across
+relaunches for (1) and (2). A persisted id that no longer matches is handled by
+BR-U8-07 (kept, not cleared), so a relaunch that renames a display degrades to
+the primary-display fallback rather than crashing. This is the only
+platform-specific behaviour the adapter owns.
 
 **Label provenance.** `screen_retriever` 0.2.x does not expose a user-assigned
-display name on all three platforms (macOS and Linux report `name == id`). The
-adapter passes whatever `name` the plugin returns; the UI owns the fallback
-copy. This is the reason `label` is allowed to be empty and is never used as a
-key.
+display name on all three platforms (Windows and Linux report the monitor model
+or nothing; macOS reports `NSScreen.localizedName`). The adapter passes whatever
+`name` the plugin returns; the UI owns the fallback copy. This is the reason
+`label` is allowed to be empty and is never used as a key.
+
+**Coordinate and scale provenance (per backend).** `bounds` is built from
+`visiblePosition` (offset) + `visibleSize` (extent) in logical pixels. All three
+backends produce a top-left-origin global rectangle, which is the space
+`setFrame` takes on macOS (plug-in converts to Cocoa bottom-left itself:
+`ScreenRetrieverMacosPlugin.swift:40-46`) and the space the Windows/Linux
+window APIs use, so no conversion is done in Dart:
+
+| Backend | Offset source | Extent source | Conversion in the adapter |
+|---|---|---|---|
+| macOS | `NSScreen.visibleFrame.origin`, flipped to top-left by the plugin | `visibleFrame.size` | none — already top-left logical pixels (`ScreenRetrieverMacosPlugin.swift:18-31,40-46`); the adapter must not flip again |
+| Windows | `rcWork.left/top` (physical pixels) | `rcWork` width/height (physical) | **divide offset and extent by `scaleFactor`** — the plugin reports the raw `GetMonitorInfo` rectangle and the runner manifest is `PerMonitorV2` (`windows/runner/runner.exe.manifest:5`), so without the divide the frame is DPI-scaled twice |
+| Linux | `gdk_monitor_get_workarea().x/y` | workarea width/height | none — GDK already reports logical pixels in the frame the window API consumes; `scaleFactor` is passed through unchanged |
+
+The one non-symmetric step is Windows. It is applied in the adapter and asserted
+in the T6 case "a Windows-shaped display at 1.5x is divided once", so a future
+plugin fix that starts reporting logical pixels fails the test loudly instead of
+silently halving the frame. `scaleFactor == 0` (a backend that omits it) is
+treated as `1`.
+
+Where the three disagree (fractional scaling, Wayland), the adapter does not
+reconcile beyond the Windows divide: it reports what the platform gives and
+`setFrame` receives the same space. The remaining discrepancy is a Unit 9
+manual check (§8.8 item 15's platform sweep). No further heuristic conversion is
+written without a real multi-monitor machine to verify it on.
 
 ---
 
@@ -92,10 +128,15 @@ is idempotent.
 | Threading | Events are delivered on the Dart event loop; no reentrancy guarantees are made. |
 | Duplicate suppression | Adjacent equal lists (`==` over id, label, bounds, scaleFactor, isPrimary) are coalesced. A same-id list with changed geometry is **not** equal and is emitted. |
 
-`ScreenRetrieverDisplayEnumerator` maps `screen_retriever`'s
-`getAllDisplays()`/`displayChangedNotifier` onto this contract. The plugin's
-own API shape (including any version-specific detail) is confined to that one
-file; `DisplayEnumerator` is the only type the rest of the package sees.
+`ScreenRetrieverDisplayEnumerator` maps `screen_retriever` 0.2.2's
+`getAllDisplays()` and its `ScreenListener` (`addListener`/`removeListener`,
+`onScreenEvent(String)`) onto this contract. The platform event carries only
+`display-added` / `display-removed`, so every event re-reads the display list
+and diffs it against the last emitted list; that is what produces first
+emission, connect, disconnect, rearrangement and duplicate suppression from one
+code path. The plugin's own API shape is confined to
+`screen_retriever_display_enumerator_io.dart`; `DisplayEnumerator` is the only
+type the rest of the package sees.
 
 ---
 
@@ -239,8 +280,7 @@ abstract class CaptionOverlaySnapshot with _$CaptionOverlaySnapshot {
   const factory CaptionOverlaySnapshot({
     @Default(<CaptionDisplayEntry>[]) List<CaptionDisplayEntry> entries,
     CaptionDisplayEntry? interim,
-    @Default(<String, AudioInputVisualStyle>{})
-    Map<String, AudioInputVisualStyle> styles,
+    @Default(<String, int>{}) Map<String, int> sourceColorValues,
     required DisplaySettings settings,
   }) = _CaptionOverlaySnapshot;
 
@@ -253,7 +293,7 @@ abstract class CaptionOverlaySnapshot with _$CaptionOverlaySnapshot {
 |---|---|
 | `entries` | Final captions, oldest first, capped at `maxBufferSegments` of the source buffer (the target receives `OnScreenCaptionTarget.visibleCaptions`' final portion) |
 | `interim` | The current interim entry, if any — rendered at 0.8 opacity by the shipped `CaptionDisplayWidget` |
-| `styles` | `entry.sourceId` → the Phase 1 per-input style the broadcaster configured; the pop-out has no access to `AudioInputSettingsProvider` |
+| `styles` → `sourceColorValues` | `entry.sourceId` → the source's caption **colour**. Resolved in the main engine from `AudioInputConfig.colorIndex` through `AudioInputVisualStyle.forIndex(...).accent`, because the pop-out has no access to the audio settings provider. The name is `sourceColorValues` and the value is `int` (`Color.toARGB32()`), not `Color`: `zip_core`'s own `AudioInputVisualStyle` fixture already uses `int colorValue`, and a `Color` does not survive a JSON codec round-trip in a stable form across SDKs. The shipped `CaptionDisplayWidget` does not paint per-source colour today (it uses one `textStyle`), so this map is carried for the renderer and asserted in T4 only; **no new colouring behaviour is introduced by this unit** (see F-8.4 note). |
 | `settings` | The broadcaster's `DisplaySettings` at the moment of the update, so font, size, scroll direction and theme mode track the main window live (BR-U8-12) |
 
 `CaptionDisplayEntry` and `DisplaySettings` are shipped `zip_core` models. The

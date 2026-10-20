@@ -69,11 +69,31 @@ legacy.dart" half of the binding decision does not apply under this pin. The
 ```dart
 import 'package:screen_retriever/screen_retriever.dart';
 // ScreenRetriever.instance.getAllDisplays() -> Future<List<Display>>
-// ScreenRetriever.instance.displayChangedNotifier -> ValueNotifier<List<Display>>
-// Display { id, name, size, visiblePosition, visibleSize, scaleFactor, rotation }
+// ScreenRetriever.instance.addListener(ScreenListener) / removeListener(...)
+// ScreenListener.onScreenEvent(String eventName) -> void
+//   eventName is 'display-added' or 'display-removed'; no payload
+// Display { id, name, size, visiblePosition, visibleSize, scaleFactor }
 ```
 
-That surface is confined to `screen_retriever_display_enumerator.dart`; see §5.
+**The 0.2.x change signal has no notifier.** There is no
+`displayChangedNotifier` in 0.2.2 (that is a 0.3-only API). The 0.2.x model is a
+listener mixin: `ScreenRetriever.instance.addListener(myListener)` where
+`myListener` is a class with `onScreenEvent(String)`. The event carries only
+the *kind* of change (`display-added` / `display-removed`), never a display
+list and never the changed display's id, so the adapter must re-call
+`getAllDisplays()` and diff. The platform sources were read to confirm the
+event names are identical on all three backends
+(`screen_retriever_macos/.../ScreenRetrieverMacosPlugin.swift:96-105`,
+`screen_retriever_windows/windows/screen_retriever_windows_plugin.cpp:90-96`,
+`screen_retriever_linux/linux/screen_retriever_linux_plugin.cc:165-170`). The
+three backends also report the event differently on the way out (macOS's
+`didChangeScreenParametersNotification` fires for resolution changes as well as
+add/remove; Windows and Linux fire only on add/remove), so the adapter treats
+*every* event as "re-read the list and diff", which is also the only way
+re-arrangement is observed (see `domain-entities.md` coordinate note).
+
+That surface is confined to `screen_retriever_display_enumerator_io.dart`; see
+§5 item 1.
 
 ---
 
@@ -111,8 +131,13 @@ That surface is confined to `screen_retriever_display_enumerator.dart`; see §5.
 These are binding for Code Generation and for review:
 
 1. Exactly one file imports `package:screen_retriever/...`:
-   `packages/zip_broadcast/lib/src/output/overlay/screen_retriever_display_enumerator.dart`.
-   A second import anywhere in the package is a review finding.
+   `packages/zip_broadcast/lib/src/output/overlay/screen_retriever_display_enumerator_io.dart`.
+   A second import anywhere in the package is a review finding. The sibling
+   `screen_retriever_display_enumerator.dart` is the conditional export and
+   `screen_retriever_display_enumerator_stub.dart` is the non-io adapter; neither
+   imports the plugin (the `_io` file is only *listed* in the export's
+   conditional URI, which is not an import of the plugin, and `_io` is the only
+   file where the plugin symbol is named).
 2. Every other type in the unit depends on `DisplayEnumerator`, `DisplayInfo`
    or `OverlayWindowMode` — never on the plugin.
 3. `pubspec.yaml`/`pubspec.lock`: the root `pubspec.lock` gains

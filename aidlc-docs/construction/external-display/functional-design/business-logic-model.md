@@ -140,10 +140,28 @@ BR-U8-14).
    `ref.read(onScreenCaptionTargetProvider)`'s `visibleCaptions` split into
    `entries` (final) and `interim` (the trailing non-final entry, already
    rendered at 0.8 opacity by the shipped widget).
-2. `styles` is read from `audioInputSettingsProvider` once per target
-   activation and refreshed on the same notifier events the recording screen
-   watches; `settings` is read from `displaySettingsProvider` on every snapshot
-   so a font-size or theme change reaches the window without a reopen.
+2. `sourceColorValues` is built from `audioInputConfigNotifierProvider` (a
+   `List<AudioInputConfig>`), mapping each `config.deviceId` →
+   `AudioInputVisualStyle.forIndex(config.colorIndex).accent.toARGB32()`. Two
+   facts make the naive version wrong, and both are binding here:
+   - The style class is `zip_broadcast`'s local
+     `lib/src/models/audio_input_visual_style.dart`, **not** `zip_core`'s
+     freezed `AudioInputVisualStyle` (`zip_core/lib/src/models/audio_input_config.dart`).
+     `broadcast_recording_notifier.dart:10` and `broadcast_screen.dart:16`
+     already `hide AudioInputVisualStyle` from the `zip_core` export for exactly
+     this reason; the new files must do the same or the name resolves to the
+     wrong type.
+   - The value comes from `colorIndex`, not from any `AudioInputSettingsProvider`
+     (there is no provider of constructor properties; the config list is the
+     source). `home_screen.dart:127` and `audio_level_row.dart:61` are the
+     precedent.
+   - `deviceId` is the same value `CaptionDisplayEntry.sourceId` carries
+     (`stt_engine_factory_provider` keys engines by `deviceId`), so the map key
+     matches without translation.
+   The map is recomputed on every `SttResultEvent` from a `ref.read`, not cached:
+   the list is short and the read is cheap; caching it was the source of the
+   review finding. `settings` is read from `displaySettingsProvider` on every
+   snapshot so a font-size or theme change reaches the window without a reopen.
 3. `SessionStateEvent` does **not** produce a snapshot. The window keeps the
    last content, exactly as the main window's `CaptionDisplayWidget` does
    until its buffer is cleared (Phase 1 BR-U3-05). Closing on stop is F-8.6.
@@ -218,8 +236,39 @@ state, differing only in who initiated it and what is emitted.
 | Path | Trigger | Who closes | Emitted | Persisted change |
 |---|---|---|---|---|
 | A. User disables | Toggle, `overlayEnabled` false | Shell `_syncOverlay` | none | `overlayEnabled = false` |
-| B. Captioning stops | `BroadcastRecordingNotifier` reaches `BroadcastStoppedState`, or `clearSession()` reaches idle | Shell listens to the same notifier it already watches (`zb_app_shell.dart:190-193`) | none | `overlayEnabled = false` (external display only) |
+| B. Captioning stops | `BroadcastRecordingNotifier` reaches `BroadcastStoppedState`, or `clearSession()` is called | Shell, via its own `ref.listen<BroadcastSessionState>` added in `ZbAppShell.initState` | none | `overlayEnabled = false` (external display only) |
 | C. OS close button | The sub-window's own close | Platform → controller notices the window is gone | `WindowClosed` | `overlayEnabled = false`, `popOutEnabled = false` |
+
+**Path B's seam, stated exactly.** `ZbAppShell` today has **no**
+`ref.listen<BroadcastSessionState>` and does not read
+`broadcastRecordingNotifierProvider`; `zb_app_shell.dart:190-193` is the
+`GoRouterState.matchedLocation` / `MediaQuery.size` preamble of `build`, not a
+listener. The listener that already exists is in
+`recording_screen.dart:81-84`, which on `BroadcastStoppedState` invalidates the
+transcript provider, calls `recordingNotifier.clearSession()`, and then
+navigates to `/history` or `/`. That listener is **not** reusable for path B:
+(a) it only runs while the recording screen is mounted, and stopping from a
+different route would skip it, and (b) it converts the stop into
+`BroadcastIdleState` within the same callback, so a shell listener watching only
+for `BroadcastStoppedState` would race it; watching for "idle after having seen
+a session" is the robust predicate. Path B is therefore implemented as:
+
+1. `ZbAppShell.initState` adds
+   `ref.listen<BroadcastSessionState>(broadcastRecordingNotifierProvider, ...)`
+   and a `_hadSession` bool;
+2. on `BroadcastActiveState`/`BroadcastPausedState`/`BroadcastReconnectingState`
+   set `_hadSession = true`;
+3. on `BroadcastStoppedState` **or** (`BroadcastIdleState` and `_hadSession`)
+   write `overlayEnabled = false` for external display mode only — never touch
+   `popOutEnabled` (BR-U8-10 says a pop-out close clears only popped-out, and
+   the reverse is symmetrical: stopping captioning must not close the pop-out
+   the user deliberately opened);
+4. reset `_hadSession = false` after handling.
+
+The write goes through the settings notifier, so path A remains the single
+place that calls `closeWindow`; the shell never closes the window directly.
+T12 asserts both orders (stop-then-navigate, navigate-then-stop) against a fake
+controller, which is the pair that the single existing listener cannot express.
 
 Path B is the S-20 AC "when the broadcaster disables the output **or stops
 captioning**". It is a *settings write*, not a direct window call: the shell
@@ -269,13 +318,22 @@ logic:
    logged and ignored, never a crash), `ping` (ack), and nothing else. An
    unknown method returns `null` rather than throwing.
 4. Rendering uses the shipped `CaptionDisplayWidget` with the snapshot's
-   `entries`/`interim`/`settings`. Per-input styles are applied by the same
-   `sourceId` → `AudioInputVisualStyle` rule the recording screen uses,
-   reading `styles` from the snapshot instead of the settings provider.
+   `entries`/`interim`/`settings`. The widget takes no per-source colour: it
+   builds one `textStyle` from `settings.captionTextSize` and
+   `settings.captionFont` (`caption_display_widget.dart:68-76`) and paints every
+   entry with it. This unit therefore **does not re-implement colouring**: the
+   snapshot carries `sourceColorValues` so a later unit can paint it, and T4
+   asserts the map round-trips. Adding a `sourceId`→colour override to the
+   widget is a `zip_core` change and is out of this unit's scope (the plan's
+   scope fence says `zip_core` is consumed as shipped).
    Contrast is the `AppTheme` surface/onSurface pair, whose AAA ratio is
    already asserted in `zip_core/test/pbt/theme_contrast_test.dart`
-   (dark 0xFFDAE3F0 on 0xFF0B141D; light 0xFF0B141D on 0xFFFAFCFF), and the
-   overlay adds its own assertion (S-20 AC, NFR-5.1).
+   (dark 0xFFDAE3F0 on 0xFF0B141D; light 0xFF0B141D on 0xFFFAFCFF). This unit
+   adds **no** second ratio test — comparing the same two constants twice is
+   what the review called out as a test that cannot fail. What this unit does
+   assert is that `OverlayWindowApp` resolves its colours *from* `AppTheme` and
+   not from a local literal (a widget test that swaps the theme and observes the
+   surface colour change). The ratio itself remains zip_core's test (BR-U8-20).
 5. The window is borderless in the sense S-20 uses: no app chrome, no
    toolbar, no menu; the platform title bar decorations remain as
    `desktop_multi_window` creates them (see Infrastructure Design ID-5 for the
@@ -292,10 +350,25 @@ section maps the binding contract onto the V2 surface; it does not restate it.
 
 | Contract | In this unit |
 |---|---|
-| UX-PIP-01 primary toggle | `PopOutToggle` in `ZbAppShell`'s app bar and nav rail (two shells: `ZbNavRail` host and the AppBar host) |
-| UX-PIP-02 secondary toggle usable from inside the pop-out | The pop-out renders `PopOutToggle` inside `OverlayWindowApp`; it sends `popOutToggle` to the main engine via `DesktopMultiWindow.invokeMethod(0, 'popOutToggle', null)`, which the main engine handles by toggling the same settings field. This is the only inbound control message in the design. |
-| UX-PIP-03 conditions | Platform capable (same `isSupported`), caption surface exists (always true in this app — the recording screen always builds one), session active or already popped out (`BroadcastRecordingNotifier` is `Active`/`Paused`/`Reconnecting`, or `popOutEnabled`) |
-| UX-PIP-04 unsupported | `PopOutToggle` returns `SizedBox.shrink()` — no disabled control |
+| UX-PIP-01 primary toggle | `PopOutToggle` in `ZbAppShell`'s app bar and nav rail (two hosts: the `ZbNavRail` host and the AppBar host). |
+
+**The Home-screen toggle (review finding, now in scope).** "App chrome" is not
+only the shell's app bar. The shell chrome is absent on the Home route's body,
+and Home already renders `OutputTargetsPanel` (`home_screen.dart:65`), so a user
+who lands on Home sees an output-targets surface with no pop-out control unless
+one is added. The binding contract's requirement is that the toggle "exists in
+the app chrome and inside the caption surface"; a single chrome host satisfies
+the letter but not the intent, and the review demonstrated the Home surface is a
+real place a broadcaster starts from. Decision: `PopOutToggle` is also rendered
+by `ExternalDisplayControls`, which is the Proto-13 section inside
+`OutputTargetsPanel`, so Home and Settings both get it without a third host.
+The 30-file plan gains no new file for this: it changes which widget renders the
+toggle (controls widget, not the panel), and T14 asserts it on Home. `PopOutHint`
+stays shell-only (a banner in the main window), not in the controls.
+| UX-PIP-02 secondary toggle usable from inside the pop-out | The pop-out renders `PopOutToggle` inside `OverlayWindowApp`; it sends `popOutToggle` to the main engine via `DesktopMultiWindow.invokeMethod(0, 'popOutToggle', null)`. Window id `0` **is** addressable: all three managers attach the main window under key `0` (`macos/Classes/MultiWindowManager.swift:32`, `windows/multi_window_manager.cc:87`, `linux/multi_window_manager.cc:73`), and the Dart API's own docs use `0` for the main window. The main-engine handler is installed by `ZbAppShell.initState` via `DesktopMultiWindow.setMethodHandler` and removed in `dispose`; it accepts only `popOutToggle` with a `null` argument and returns `'ok'`. Two platform details the implementation must not assume away: on macOS the inner argument travels in a `["fromWindowId": ..., "arguments": ...]` map (`macos/Classes/WindowChannel.swift:49-55`) while the Linux channel passes it through as the raw value (`linux/window_channel.cc:76-84`); the Dart-side `setMethodHandler` wrapper normalises that difference into `MethodCall(method, arguments)` plus a separate `fromWindowId`, so handlers only ever see the wrapper's shape. Validate that `fromWindowId > 0` before acting. This is the only inbound control message in the design. |
+| UX-PIP-03 conditions | Platform capable (same `isSupported`), the broadcaster is on the recording surface or a session is active, and (`BroadcastRecordingNotifier` is `Active`/`Paused`/`Reconnecting`, **or** `popOutEnabled`). Explicitly widened from "session active" so `popOutEnabled` reopening is not blocked: the pop-out is also usable while idle if it was left open (it renders the last buffer). |
+| UX-PIP-04 unsupported | `PopOutToggle` returns `SizedBox.shrink()` — no disabled control. |
+| UX-PIP-04b disabled-with-reason | When capable but there is no session **and** `popOutEnabled` is false, the toggle renders disabled (`onPressed: null`) with a tooltip whose text is `popOutDisabledNoSession` ("Start captioning to pop out"). The state is `enabled: false`, not hidden, so the control's existence tracks capability and its enablement tracks session state (BR-PIP-12/13/14's "disabled + reason"). T12 asserts the tooltip text and that the toggle callback does not fire. |
 | UX-PIP-05 hint and return | `PopOutHint` in the main window (a `MaterialBanner` in the shell) with a "Return to window" action that disables pop-out; clears on close by any path (BR-PIP-03) |
 | UX-PIP-06 content setting | `PipContent` three-way enum persisted in settings (`original`/`translated`/`both`). **Translation does not exist in Phase 2**: the enum, its three labels, and its persistence ship; while translation is off (always, today) the window shows originals (BR-PIP-06) and the setting is stored for the future translation unit. §8.8 item 8 requires "offers all three options", which this satisfies; item 8's "applies only while translation is on" is vacuously true. |
 | UX-PIP-07 controls inside pop-out | Orientation toggle, pane swap, translation target select, download progress: **none of these exists in Phase 2**. Phase 1 has a single caption pane (`CaptionDisplayWidget`), one language, no download. §8.8 item 10 lists them as must-function; §8.6/§8.9 do not defer item 10, but the features it names are not in the Phase 2 product. This is a **gap recorded as an open question (OQ-2)**, not silently dropped: the pop-out ships with the toggles that do exist (primary/secondary toggle, theme, content setting), and item 10 is flagged for the unit that adds those controls. |

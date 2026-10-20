@@ -49,7 +49,7 @@ reason:
 | `Supabase.initialize` | The window has no auth need (BR-U8-14); a second Supabase client in a sub-engine opens a second realtime socket and a second GoTrue refresh loop for a window whose whole purpose is captions |
 | `_initLogging()` | The root logger listener is process-wide per engine; duplicating it is harmless but unnecessary, and the overlay's own logging is one `Logger` with fixed strings |
 | `GoogleFonts.config.allowRuntimeFetching = false` | Nothing in the overlay fetches fonts; the snapshot carries the settings and the fonts are resolved by `CaptionDisplayWidget` from the app's asset bundle, which the sub-engine shares |
-| Blocking startup on a window controller call | The window already exists when `main` runs; blocking on `setFrame` before `runApp` delays the first frame for no gain |
+| Blocking startup on a window controller call | The window object exists when `main` runs, but the plugin does **not** order it on screen (`MultiWindowManager.create` returns the id without `show()`), so blocking on `setFrame` before `runApp` gains nothing; the first frame matters and the frame is applied after `createWindow` by the controller (F-8.3). |
 
 The launch detection is the plugin's own contract, so it is written against the
 argument list, not against a platform check:
@@ -104,13 +104,20 @@ Object? args) onCall)` and `void send(Object? args)`), implemented by
 `DesktopMultiWindowBridge` in `_io.dart` and by a no-op `_stub.dart`.
 
 **`popOutToggle` from the pop-out (UX-PIP-02).** The in-window toggle calls
-`DesktopMultiWindow.invokeMethod(0, 'popOutToggle', null)`. The main engine's
-`main.dart` is not the right place for that handler (it has no providers); the
-handler is installed by `ZbAppShell`'s state in `initState` and removed in
-`dispose`, through the same bridge. Window id 0 is the main window by the
-plugin's documented contract ("0 means the main window", `WindowController`).
-This is the only inbound message the main engine accepts, and its argument is
-always `null`.
+`DesktopMultiWindow.invokeMethod(0, 'popOutToggle', null)`. Window id 0 is the
+main window on all three backends: each manager attaches it under key `0`
+(`macos/Classes/MultiWindowManager.swift:32`, `windows/multi_window_manager.cc:87`,
+`linux/multi_window_manager.cc:73`), and `handleMethodCall` looks the target up
+in the same map, so the call routes to the main engine's
+`mixin.one/flutter_multi_window_channel`. The handler is installed by
+`ZbAppShell.initState` with `DesktopMultiWindow.setMethodHandler` and removed in
+`dispose`, through the bridge. It is the only inbound message the main engine
+accepts, and it accepts only: method `popOutToggle`, `fromWindowId > 0`, argument
+`null`. Anything else returns `null` without acting (BR-U8-18/19). On macOS the
+plugin wraps the argument in `{"fromWindowId", "arguments"}`
+(`WindowChannel.swift:49-55`) and on Linux it does not (`window_channel.cc:76-84`);
+the Dart `setMethodHandler` wrapper normalises both into a `MethodCall` plus a
+separate `fromWindowId`, so the handler is written against the wrapper only.
 
 ---
 
@@ -132,16 +139,34 @@ an empty closed stream, which is what the web build needs and never reaches
 
 - `displays()` → `ScreenRetriever.instance.getAllDisplays()` mapped to
   `DisplayInfo`, preserving platform order.
-- `changes` → a `StreamController<List<DisplayInfo>>.broadcast` fed by the
-  plugin's `displayChangedNotifier` listener, started on the first Dart listener
-  and stopped on the last (or on `dispose()`), plus the first list replayed to
+- `changes` → a `StreamController<List<DisplayInfo>>.broadcast` fed by a
+  `ScreenListener` registered with `ScreenRetriever.instance.addListener(...)`
+  (the 0.2.2 API; there is no `displayChangedNotifier` — that is 0.3-only). The
+  listener class overrides `onScreenEvent(String eventName)`; the event carries
+  only `display-added` / `display-removed`, so **every** event triggers
+  `getAllDisplays()` and a diff against the last emitted list. That single
+  path produces the first emission, connect, disconnect, rearrangement (macOS
+  fires on screen-parameter changes, which includes resolution), and duplicate
+  suppression. The platform subscription starts on the first Dart listener and
+  is removed on the last (or in `dispose()`); the latest list is replayed to
   every new listener (`domain-entities.md` event contract).
 - Map `Display.id`, `name`, `visiblePosition` + `visibleSize` → `bounds`,
   `scaleFactor`. `visiblePosition`/`visibleSize` are the work-area-aware
   rectangle; `size` alone can be larger than the visible region on a display
   with a taskbar. This is a deliberate choice: the overlay is a caption surface,
   not a wallpaper, and covering a taskbar is not its job.
-- `scaleFactor` is passed through for description only.
+- `bounds` uses `visiblePosition + visibleSize`, with **one** conversion:
+  Windows reports physical pixels and the runner manifest is `PerMonitorV2`
+  (`windows/runner/runner.exe.manifest:5`), so offsets and extents are divided
+  by `scaleFactor` there. macOS already emits top-left logical pixels; Linux
+  emits logical workarea pixels. Full provenance table is in
+  `domain-entities.md` ("Coordinate and scale provenance").
+- `Display.id` is empty on the Linux backend
+  (`screen_retriever_linux/linux/screen_retriever_linux_plugin.cc:76`), so the
+  adapter normalises ids (`id`, else `name`, else `display-<index>`, with a
+  suffix for repeated names) as specified in `domain-entities.md`.
+- `scaleFactor` is passed through for description only (except the Windows
+  divide above).
 - Errors from the plugin call: log a fixed string, do not forward.
 
 **Deprecation surface.** `ScreenRetriever.instance` is the 0.2.x accessor. If
@@ -226,9 +251,9 @@ still adjust it. Implementation choice per platform, with a hard
 
 | Platform | Mechanism | Dependency | Verdict |
 |---|---|---|---|
-| macOS | In `MainFlutterWindow.swift`, obtain the sub-window through `NSApplication.shared.windows` matched by the window id the plugin passes in the entrypoint (`args[1]`), set `window.level = .floating`. | none | Implement. This is the project's own runner code, small and reviewable. |
-| Windows | In `windows/runner`, the existing `FlutterWindow`/`Win32Window` wrapper owns the `HWND`. A sub-window is not created through this wrapper, so the same match-by-title-or-id approach is not available without the plugin's handle. The supported route is `SetWindowPos(hwnd, HWND_TOPMOST, ...)`, but the handle is only reachable from the plugin's native side. Without patching the plugin, the portable option is to skip. | none | **Defer**, recorded. Not attempted by patching a vendored plugin. |
-| Linux | GTK window hints (`gtk_window_set_keep_above`) are not exposed; the same handle-inaccessibility applies. Any portable route is a new plugin (e.g. `window_manager`), which is a new dependency under FR-9.5. | would be new | **Do not add.** OQ-1 stands. |
+| macOS | No private API needed, but the callback alone is not enough. `FlutterMultiWindowPlugin.onWindowCreatedCallback` is a public static hook and is called with the sub-window's `FlutterViewController` (`macos/Classes/FlutterWindow.swift:81`), however it fires **inside** `FlutterWindow.init`, before `super.init` and before `controller.view.window` is attached, so reading `view.window` there yields nil. The runner instead installs a one-shot observer: in `MainFlutterWindow.awakeFromNib`, `setOnWindowCreatedCallback` stores the controller; then on `NSWindow.didBecomeKeyNotification` (or `didOrderOnScreen`) whose `object` is `controller.view.window`, it applies `level = .floating` and `collectionBehavior.insert(.fullScreenAuxiliary)` and removes the observer. **The plugin never calls `show()` on the window it creates** (`MultiWindowManager.create` lines 18-27 return the id without ordering the window front; only the explicit `show` method does, line 48), so the controller must call `WindowController.fromWindowId(id).show()` explicitly after `createWindow` — without that the window exists but is invisible. ID-1's "the window already exists when main runs" is therefore corrected: it exists as an object, not on screen. | none | Implement. One documented callback, one notification observer, no id matching, no enumeration heuristic, no private API. |
+| Windows | No equivalent public hook. `EnumWindows` + `GetWindowThreadProcessId` in our runner can find our own top-level windows and call `SetWindowPos(hwnd, HWND_TOPMOST, ...)`, but there is no id linkage, so "which of our windows" is a heuristic. | none | **Defer**, recorded. Heuristic topmost is not shipped. |
+| Linux | `flutter_window.cc` is compiled into the runner, and GDK exposes `gtk_window_set_keep_above`, but nothing like `onWindowCreatedCallback` exists in the GTK plugin and the runner never sees the sub-window's `GtkWidget`. | none (would need a runner-side patch of plugin code) | **Defer.** OQ-1 stands. |
 
 `pip-ux-parity.md` §8.8 itself assigns item 15 (always-on-top) to Unit 9
 platform verification. The consequence of this table: macOS ships with it, the
