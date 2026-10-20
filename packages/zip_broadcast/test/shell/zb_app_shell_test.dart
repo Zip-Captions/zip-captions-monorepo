@@ -15,8 +15,12 @@ import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
+import 'package:zip_broadcast/src/models/overlay_position.dart';
+import 'package:zip_broadcast/src/output/overlay/caption_overlay_codec.dart';
+import 'package:zip_broadcast/src/output/overlay/caption_position.dart';
 import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
 import 'package:zip_broadcast/src/output/overlay/display_enumerator.dart';
+import 'package:zip_broadcast/src/output/overlay/external_display_status.dart';
 import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_broadcast/src/providers/overlay_window_controller_provider.dart';
@@ -261,6 +265,34 @@ void main() {
       expect(world.window.calls, contains('closeWindow'));
     });
 
+    testWidgets('the launch carries the persisted position and display '
+        'selection (BR-U8-07, BR-U8-26)', (tester) async {
+      await world.pump(tester);
+      await tester.runAsync(() async {
+        final notifier =
+            world.container.read(outputTargetSettingsNotifierProvider.notifier);
+        await notifier.update(
+          world.container
+              .read(outputTargetSettingsNotifierProvider)
+              .copyWith(
+                externalDisplayId: 'primary',
+                externalDisplayCaptionPosition: CaptionPosition.top,
+              ),
+        );
+      });
+      await tester.pumpAndSettle();
+
+      await world.setOverlayEnabled(tester, enabled: true);
+
+      final launch = decodeLaunch(world.window.launchArguments!);
+      expect(launch, isNotNull);
+      expect(launch!.config.position, isA<OverlayPositionTop>());
+      // The display id is deliberately not on the wire (B-7); the selection
+      // shows up as the controller opening on that display.
+      expect(world.controller.status, isA<Opening>());
+      expect(world.controller.selectDisplay, 'primary');
+    });
+
     testWidgets('a recognition pause never closes the window (D-5)',
         (tester) async {
       await world.pump(tester);
@@ -385,8 +417,11 @@ class _ShellWindow implements DesktopWindowService {
   @override
   Future<int> createWindow(String arguments) async {
     calls.add('createWindow');
+    launchArguments = arguments;
     return 1;
   }
+
+  String? launchArguments;
 
   @override
   Future<void> closeWindow(int windowId) async => calls.add('closeWindow');

@@ -8,9 +8,11 @@ import 'package:zip_broadcast/src/models/broadcast_session_state.dart';
 import 'package:zip_broadcast/src/models/browser_source_start_exception.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
 import 'package:zip_broadcast/src/models/overlay_config.dart';
+import 'package:zip_broadcast/src/models/overlay_position.dart';
 import 'package:zip_broadcast/src/output/browser_source/browser_source_server.dart';
 import 'package:zip_broadcast/src/output/browser_source/browser_source_target.dart';
 import 'package:zip_broadcast/src/output/overlay/caption_overlay_target.dart';
+import 'package:zip_broadcast/src/output/overlay/caption_position.dart';
 import 'package:zip_broadcast/src/output/overlay/overlay_event.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_broadcast/src/providers/broadcast_recording_notifier.dart';
@@ -124,7 +126,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
       settings.browserSourceEnabled,
       settings.browserSourcePort,
     );
-    _syncOverlay(settings.overlayEnabled);
+    _syncOverlay(settings);
   }
 
   void _syncBrowserSource(bool enabled, int port) {
@@ -138,13 +140,26 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     }
   }
 
-  void _syncOverlay(bool enabled) {
+  void _syncOverlay(OutputTargetSettings settings) {
+    final enabled = settings.overlayEnabled;
     if (enabled && !_overlayRegistered) {
       _registry.add(_overlayTarget);
       _overlayRegistered = true;
       // After the registry add, so the first snapshot already reads the
-      // on-screen buffer.
-      unawaited(_overlayTarget.show(const OverlayConfig()));
+      // on-screen buffer. The launch carries the persisted caption position
+      // and display selection (BR-U8-07, BR-U8-26); the controller resolves
+      // the selection and never writes it back.
+      unawaited(
+        _overlayTarget.show(
+          OverlayConfig(
+            position: settings.externalDisplayCaptionPosition ==
+                    CaptionPosition.top
+                ? const OverlayPositionTop()
+                : const OverlayPositionBottom(),
+          ),
+          persistedDisplayId: settings.externalDisplayId,
+        ),
+      );
     } else if (!enabled && _overlayRegistered) {
       _registry.remove(_overlayTarget);
       _overlayRegistered = false;

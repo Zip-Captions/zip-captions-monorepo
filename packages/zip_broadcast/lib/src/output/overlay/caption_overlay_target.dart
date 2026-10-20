@@ -45,9 +45,15 @@ class CaptionOverlayTarget implements CaptionOutputTarget {
 
   /// Opens (or re-targets) the window.
   ///
-  /// The controller resolves the display and refuses a concurrent open; this
-  /// call is not itself awaited by the shell's caption path.
-  Future<void> show(OverlayConfig config) => _controller.open(config);
+  /// [persistedDisplayId] is the broadcaster's saved selection; the controller
+  /// resolves it against the connected displays and never writes it (BR-U8-07,
+  /// D-4). The controller refuses a concurrent open; this call is not itself
+  /// awaited by the shell's caption path.
+  Future<void> show(
+    OverlayConfig config, {
+    String? persistedDisplayId,
+  }) =>
+      _controller.open(config, persistedDisplayId: persistedDisplayId);
 
   /// Closes the window because the output was switched off.
   Future<void> hide() => _controller.close(reason: CloseReason.toggleOff);
