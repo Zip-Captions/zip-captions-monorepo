@@ -8,6 +8,7 @@ import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_broadcast/src/providers/browser_source_url_provider.dart';
 import 'package:zip_broadcast/src/providers/obs_connection_notifier.dart';
 import 'package:zip_broadcast/src/widgets/coming_soon_card.dart';
+import 'package:zip_broadcast/src/widgets/external_display_controls.dart';
 
 /// Shared output-target toggle panel used on both the Home screen and the
 /// Settings › Output Targets detail.
@@ -85,16 +86,7 @@ class _OutputTargetsPanelState extends ConsumerState<OutputTargetsPanel> {
                 .update(outputSettings.copyWith(browserSourceEnabled: v)),
           ),
         ),
-        _TargetCard(
-          icon: Icons.picture_in_picture_alt,
-          label: l10n.settingsCaptionOverlay,
-          enabled: outputSettings.overlayEnabled,
-          onToggle: (v) => unawaited(
-            ref
-                .read(outputTargetSettingsNotifierProvider.notifier)
-                .update(outputSettings.copyWith(overlayEnabled: v)),
-          ),
-        ),
+        const ExternalDisplayControls(),
         _TargetCard(
           icon: Icons.description_outlined,
           label: l10n.settingsTranscriptsTarget,

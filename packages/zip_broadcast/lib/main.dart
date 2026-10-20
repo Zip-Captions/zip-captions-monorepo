@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zip_broadcast/src/app.dart';
 import 'package:zip_broadcast/src/auth/auth_provider_config.dart';
+import 'package:zip_broadcast/src/output/overlay/overlay_window_entry.dart';
 import 'package:zip_broadcast/src/providers/broadcast_captioning_starter.dart';
 import 'package:zip_core/zip_core.dart';
 
@@ -27,8 +28,16 @@ void _initLogging() {
   });
 }
 
-void main() async {
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // An external display window is its own engine: it must not initialise
+  // Supabase, logging for the main app, or anything network-facing (ID-1).
+  if (isOverlayWindowLaunch(args)) {
+    await overlayWindowMain(args);
+    return;
+  }
+
   GoogleFonts.config.allowRuntimeFetching = false;
   _initLogging();
   final prefs = await SharedPreferences.getInstance();

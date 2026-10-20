@@ -434,7 +434,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
     controller's config construction.
     *Commit*: `feat(zip_broadcast): replace OverlayConfig.targetDisplayId with a window mode`.
 
-18. [ ] **F28 `main.dart`** — the `main(List<String> args)` signature and the
+18. [x] **F28 `main.dart`** — the `main(List<String> args)` signature and the
     overlay branch. *Test*: F47's `isOverlayWindowLaunch` cases cover the
     predicate; the branch itself is three lines and is verified by
     `dart analyze` plus the entry test's `overlayWindowMain` cases (which prove
@@ -445,9 +445,9 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
 
 ### Group F — controls and settings surface
 
-19. [ ] **F20 — `external_display_controls.dart`**. *Test first*: **F45**.
+19. [x] **F20 — `external_display_controls.dart`**. *Test first*: **F45**.
     *Commit*: `feat(zip_broadcast): add ExternalDisplayControls`.
-20. [ ] **F27 — `output_targets_panel.dart`** — swap the Phase 1 card for the
+20. [x] **F27 — `output_targets_panel.dart`** — swap the Phase 1 card for the
     controls. *Test*: extend the existing panel/widget test to assert the
     section renders and no Phase 1 switch remains.
     *Commit*: `feat(zip_broadcast): host ExternalDisplayControls in the output targets panel`.
@@ -461,7 +461,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
 
 ### Group H — strings
 
-22. [ ] **F29 — `app_en.arb`** + `flutter gen-l10n` (§6 keys). Never edit
+22. [x] **F29 — `app_en.arb`** + `flutter gen-l10n` (§6 keys). Never edit
     `lib/src/l10n/*.dart` by hand. *Test*: F45 using the real generated
     localizations (the harness already provides `ZipBroadcastLocalizations`).
     *Commit*: `feat(zip_broadcast): add external display ARB strings`.

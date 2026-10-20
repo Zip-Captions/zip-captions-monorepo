@@ -487,8 +487,12 @@
   "@broadcastViewerCount": {
     "description": "Viewer count vs. capacity on the live dashboard",
     "placeholders": {
-      "count": {"type": "int"},
-      "max": {"type": "int"}
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "broadcastDurationLabel": "Duration",
@@ -507,7 +511,9 @@
   "@broadcastFullBanner": {
     "description": "Banner shown when viewers.length == maxViewers (F-6.5)",
     "placeholders": {
-      "cap": {"type": "int"}
+      "cap": {
+        "type": "int"
+      }
     }
   },
   "broadcastCaptionPreviewEmpty": "No captions yet — start captioning to show live captions here.",
@@ -549,5 +555,87 @@
   "broadcastAudioInputStatusInactive": "inactive",
   "@broadcastAudioInputStatusInactive": {
     "description": "Per-input audio row status when the engine isn't running"
+  },
+  "externalDisplay": "External Display",
+  "@externalDisplay": {
+    "description": "Section label for the external display output controls"
+  },
+  "externalDisplayAvailableDisplays": "Available Displays",
+  "@externalDisplayAvailableDisplays": {
+    "description": "Heading above the list of connected displays"
+  },
+  "externalDisplayNoDisplays": "No displays detected",
+  "@externalDisplayNoDisplays": {
+    "description": "Shown when no external display is connected"
+  },
+  "externalDisplayDisplayFallback": "Display {number}",
+  "@externalDisplayDisplayFallback": {
+    "description": "Fallback name for a display that reports no label; {number} is its 1-based position",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "externalDisplayPrimaryMarker": "primary",
+  "@externalDisplayPrimaryMarker": {
+    "description": "Meta marker on the display the system considers primary"
+  },
+  "externalDisplaySelectedMarker": "selected",
+  "@externalDisplaySelectedMarker": {
+    "description": "Meta marker on the display captions are sent to"
+  },
+  "externalDisplayConnectedMarker": "connected",
+  "@externalDisplayConnectedMarker": {
+    "description": "Meta marker on the display currently captioned"
+  },
+  "externalDisplayDisconnectedMarker": "disconnected",
+  "@externalDisplayDisconnectedMarker": {
+    "description": "Meta marker on a display that went away while in use"
+  },
+  "externalDisplayActivePill": "Active",
+  "@externalDisplayActivePill": {
+    "description": "Pill on the display row that is currently receiving captions"
+  },
+  "externalDisplayOpening": "opening",
+  "@externalDisplayOpening": {
+    "description": "Affordance on the row whose window is being created"
+  },
+  "externalDisplayCaptionPosition": "Caption Position",
+  "@externalDisplayCaptionPosition": {
+    "description": "Label above the Top/Bottom caption position selector"
+  },
+  "externalDisplayPositionTop": "Top",
+  "@externalDisplayPositionTop": {
+    "description": "Caption position: top of the display"
+  },
+  "externalDisplayPositionBottom": "Bottom",
+  "@externalDisplayPositionBottom": {
+    "description": "Caption position: bottom of the display"
+  },
+  "externalDisplayDisconnectedBanner": "The {display} was disconnected. Captioning continues, but the external display output has stopped.",
+  "@externalDisplayDisconnectedBanner": {
+    "description": "Banner shown when the selected display went away; {display} is its label",
+    "placeholders": {
+      "display": {
+        "type": "String"
+      }
+    }
+  },
+  "externalDisplayWaitingForDisplay": "waiting for display",
+  "@externalDisplayWaitingForDisplay": {
+    "description": "Status line under the disconnected banner"
+  },
+  "externalDisplayFailedCreate": "The external display window could not be opened.",
+  "@externalDisplayFailedCreate": {
+    "description": "Failure banner when the window could not be created"
+  },
+  "externalDisplayUnavailable": "Window unavailable",
+  "@externalDisplayUnavailable": {
+    "description": "Fixed frame shown when the external display window receives a launch payload it cannot decode"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Dismisses the waiting-for-display state without forgetting the chosen display"
   }
 }
