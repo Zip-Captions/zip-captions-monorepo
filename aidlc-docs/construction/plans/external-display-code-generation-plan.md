@@ -318,7 +318,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
     the missing fields; it also covers the persistence in Step 5).
     *Commit*: `feat(zip_broadcast): add external display settings fields`.
 
-5. [ ] **F23 `broadcast_providers.dart`** — the two keys, persistence, and the
+5. [x] **F23 `broadcast_providers.dart`** — the two keys, persistence, and the
     launch force-off. *Test*: F49 (per-field persistence; stored
     `overlayEnabled=true` → loaded false; absent id stays null).
     *Commit*: `feat(zip_broadcast): persist external display selection and caption position`.
