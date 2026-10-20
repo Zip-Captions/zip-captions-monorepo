@@ -325,7 +325,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
 
 ### Group B — pure logic (no I/O)
 
-6. [ ] **F14 `caption_overlay_snapshot.dart`** + **F15
+6. [x] **F14 `caption_overlay_snapshot.dart`** + **F15
     `caption_overlay_codec.dart`**. *Test first*: **F39** named examples, then
     **F40** (FP-1, FP-2). Implement until both pass; FP-2 must be `null`, never
     a throw, for every malformed generator output.
