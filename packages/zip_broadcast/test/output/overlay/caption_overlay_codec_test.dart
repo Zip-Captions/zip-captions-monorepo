@@ -142,6 +142,22 @@ void main() {
       }
     });
 
+    test('a custom position is encoded as the decodable fallback', () {
+      const launch = OverlayWindowLaunch(
+        config: OverlayConfig(position: OverlayPositionCustom(x: 10, y: 10)),
+        snapshot: CaptionOverlaySnapshot(
+          activity: OverlayActivity.standby,
+          entries: [],
+          settings: _settings,
+        ),
+      );
+
+      final decoded = decodeLaunch(encodeLaunch(launch));
+
+      expect(decoded, isNotNull);
+      expect(decoded!.config.position, isA<OverlayPositionBottom>());
+    });
+
     test('exactly one mode source: config.mode', () {
       final json = jsonDecode(
         encodeLaunch(

@@ -435,6 +435,26 @@ void main() {
       });
     });
 
+    test('close(openFailed) releases the window and reports OpenFailed', () {
+      fakeAsync((fake) {
+        final harness = _Harness();
+        fake.flushMicrotasks();
+        final events = harness.collectEvents();
+        unawaited(harness.controller.open(const OverlayConfig()));
+        fake.flushMicrotasks();
+        unawaited(harness.installer.handler!('overlayReady', 7));
+        fake.flushMicrotasks();
+
+        unawaited(harness.controller.close(reason: CloseReason.openFailed));
+        fake.flushMicrotasks();
+
+        expect(harness.controller.status, isA<Failed>());
+        expect(harness.windowService.closed, isTrue);
+        expect(events.whereType<OpenFailed>(), hasLength(1));
+        expect(events.whereType<OpenFailed>().single.reason, 'create_failed');
+      });
+    });
+
     test('a -1 from a window call emits WindowClosed (T14)', () {
       fakeAsync((fake) {
         final harness = _Harness();

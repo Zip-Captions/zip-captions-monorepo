@@ -145,9 +145,11 @@ abstract final class CaptionOverlayCodec {
         'position': switch (config.position) {
           OverlayPositionTop() => 'top',
           OverlayPositionBottom() => 'bottom',
-          // Not offerable for the external display: it cannot be encoded, and
-          // the decode rejects anything but top/bottom (BR-U8-26).
-          OverlayPositionCustom() => 'custom',
+          // Not offerable for the external display (BR-U8-26). Encoding
+          // `custom` would produce a payload the decoder rejects and the
+          // window would never signal ready, so the fallback is the shipped
+          // default instead of an undecodable value.
+          OverlayPositionCustom() => 'bottom',
         },
       };
 

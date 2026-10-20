@@ -1,5 +1,6 @@
 // Tests for Unit 8 (S-20): the display-enumerator event contract (BR-U8-05)
 // and the io adapter's id normalisation and diff.
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -259,6 +260,27 @@ void main() {
       await enumerator.dispose();
       await enumerator.dispose();
 
+      expect(source.listeners, isEmpty);
+    });
+
+    test('cancelling before the first read resolves emits nothing and does '
+        'not throw', () async {
+      final source = FakeScreenEventSource();
+      final read = Completer<List<Display>>();
+      final enumerator = ScreenRetrieverDisplayEnumerator(
+        eventSource: source,
+        readDisplays: () => read.future,
+      );
+      addTearDown(enumerator.dispose);
+
+      final emissions = <List<DisplayInfo>>[];
+      final subscription = enumerator.changes.listen(emissions.add);
+      await subscription.cancel();
+
+      read.complete([_pluginDisplay(id: 'a')]);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emissions, isEmpty);
       expect(source.listeners, isEmpty);
     });
   });

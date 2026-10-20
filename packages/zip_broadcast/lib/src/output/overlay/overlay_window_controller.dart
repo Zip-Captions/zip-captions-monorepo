@@ -495,7 +495,7 @@ class OverlayWindowController {
         _runDisplayLost();
       case CloseReason.openFailed:
         await _release(windowId);
-        await _runFail(_createFailed, reason: reason);
+        await _runFail(_createFailed);
     }
   }
 
@@ -526,12 +526,11 @@ class OverlayWindowController {
   }
 
   /// Fails the current open with [code], releasing any window.
-  Future<void> _runFail(String code, {CloseReason? reason}) async {
+  Future<void> _runFail(String code) async {
     await _release(_takeWindow());
     _setState(display_status.Failed(reason: code));
-    // `close(reason: openFailed)` reports the failure; the internal fail paths
-    // (create throw, timeout) report it here.
-    if (reason == null) _emit(OpenFailed(code));
+    // Every fail path reports the failure exactly once (BR-U8-03).
+    _emit(OpenFailed(code));
   }
 
   String get _createFailed => _createFailedCode;
