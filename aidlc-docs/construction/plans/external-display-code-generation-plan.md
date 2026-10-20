@@ -11,24 +11,27 @@ proposed 2026-10-19T22:32Z) and Infrastructure Design
 
 **Gate status of this plan.** The run instruction makes this plan the hard
 approval gate and says Part 2 proceeds in the same run only when the plan is a
-*strict transcription of already-approved design with no open questions.* That
-precondition is **not met**: the design was not human-approved, and three
-questions are open (OQ-1, OQ-2, OQ-3 below). Consistent with the instruction,
-this plan is committed and the run stops here. Part 2 is specified step by
-step so the next session can execute it after the questions are answered.
+*strict transcription of already-approved design with no open questions.* The
+three open questions (OQ-1, OQ-2, OQ-3) were answered on 2026-10-19 and are
+transcribed below with their consequences. The design itself still has no human
+approver (recorded `*_PROPOSED`), and OQ-1's answer required a correction to
+what it delivers, so Part 2 still waits on a human accepting the design as
+revised. This plan is committed and the run stops here.
 
 ---
 
 ## Scope
 
-`zip_broadcast` only, plus the root `pubspec.lock` through the approved
-dependency. No `zip_core` change: the caption buffer, `CaptionDisplayEntry`,
-`DisplaySettings`, `AppTheme` and `CaptionDisplayWidget` are consumed as
-shipped.
+`zip_broadcast` only, plus the root `pubspec.lock` through the two approved
+dependencies (`screen_retriever`, `window_manager`). No `zip_core` change: the
+caption buffer, `CaptionDisplayEntry`, `DisplaySettings`, `AppTheme` and
+`CaptionDisplayWidget` are consumed as shipped.
 
-Out of scope, carried verbatim: always-on-top on Windows/Linux and a truly
-frameless window on Windows/Linux (OQ-1, ID-5); UX-PIP-07's controls that do
-not exist (OQ-2); the web Document PiP path (OQ-3, F-8.9).
+Out of scope, carried verbatim after the OQ answers: always-on-top on
+Windows/Linux and a truly frameless window on Windows/Linux (OQ-1 Option B does
+not reach the sub-window at this SDK floor; ID-5,
+`window-manager-security-10.md` §2); UX-PIP-07's controls that do not exist
+(OQ-2, deferred); the web Document PiP path (OQ-3, later unit, F-8.9).
 
 ---
 
@@ -56,22 +59,25 @@ not exist (OQ-2); the web Document PiP path (OQ-3, F-8.9).
 | `lib/src/widgets/` | 18 | `external_display_controls.dart` — Proto-13 section, including the pop-out toggle row |
 | `lib/src/models/` | 19 | `pip_content.dart` — enum `original/translated/both` |
 | `lib/src/providers/` | 20 | `external_display_controller_provider.dart` — `@Riverpod(keepAlive: true)` controller/status provider |
-| `macos/Runner/` | 21 | `MainFlutterWindow.swift` — sub-window `NSWindow.level = .floating` (ID-5) |
+| 21 | `desktop_window_decorator.dart` | `abstract interface class DesktopWindowDecorator` (`setAlwaysOnTop`, `setFrameless`) + conditional export + `createDesktopWindowDecorator()`. **No plugin symbol.** |
+| 22 | `desktop_window_decorator_io.dart` | `WindowManagerDecorator`; the **only** `package:window_manager/...` import (`window-manager-security-10.md` §5 item 1). Used for the **main** window only; never constructed or called in the sub-engine (§5 item 4). |
+| 23 | `desktop_window_decorator_stub.dart` | no-op decorator; **no plugin import**. |
+| `macos/Runner/` | 24 | `MainFlutterWindow.swift` — sub-window `NSWindow.level = .floating` (ID-5) |
 
 ## Modified files
 
 | # | File | Change |
 |---|---|---|
-| 22 | `pubspec.yaml` | `screen_retriever: ^0.2.2` under dependencies with the SECURITY-10 comment |
-| 23 | `pubspec.lock` (root) | resolution entries only |
-| 24 | `lib/src/models/overlay_config.dart` | `targetDisplayId` → `mode`; add `popOutSize`, `popOutMinimumSize`; regenerate freezed. **Recorded deviation from Application Design** (see below). |
-| 25 | `lib/src/models/output_target_settings.dart` | `externalDisplayId`, `popOutEnabled`, `popOutDisplayId`, `pipContent`; regenerate |
-| 26 | `lib/src/providers/broadcast_providers.dart` | persist/load the four new keys |
-| 27 | `lib/src/output/overlay/caption_overlay_target.dart` | own the snapshot stream; `show(mode)`; disconnect re-frame; `events`; `captionUpdate` carries a snapshot; probe-failure → `WindowClosed` |
-| 28 | `lib/src/shell/zb_app_shell.dart` | `_syncOverlay` drives the controller; **new** `ref.listen<BroadcastSessionState>` in `initState` for BR-U8-17 (there is none today); `PopOutToggle` in rail/AppBar; `PopOutHint`; `popOutToggle` inbound handler (`setMethodHandler`); notice on `DisplayLost`/`OpenFailed` |
-| 29 | `lib/main.dart` | `main(List<String> args)` + overlay branch |
-| 30 | `l10n/arb/app_en.arb` + generated `src/l10n/*` | the strings in the "Strings" section |
-| 31 | `lib/src/widgets/output_targets_panel.dart` | replace the Phase 1 overlay switch with `ExternalDisplayControls` (unchanged in structure; the card is shared by Home and Settings already) |
+| 25 | `pubspec.yaml` | `screen_retriever: ^0.2.2` and `window_manager: ^0.5.2` under dependencies, each with a SECURITY-10 comment |
+| 26 | `pubspec.lock` (root) | resolution entries only (`screen_retriever*`, `window_manager`, `path` if absent) |
+| 27 | `lib/src/models/overlay_config.dart` | `targetDisplayId` → `mode`; add `popOutSize`, `popOutMinimumSize`; regenerate freezed. **Recorded deviation from Application Design** (see below). |
+| 28 | `lib/src/models/output_target_settings.dart` | `externalDisplayId`, `popOutEnabled`, `popOutDisplayId`, `pipContent`; regenerate |
+| 29 | `lib/src/providers/broadcast_providers.dart` | persist/load the four new keys |
+| 30 | `lib/src/output/overlay/caption_overlay_target.dart` | own the snapshot stream; `show(mode)`; disconnect re-frame; `events`; `captionUpdate` carries a snapshot; probe-failure → `WindowClosed` |
+| 31 | `lib/src/shell/zb_app_shell.dart` | `_syncOverlay` drives the controller; **new** `ref.listen<BroadcastSessionState>` in `initState` for BR-U8-17 (there is none today); `PopOutToggle` in rail/AppBar; `PopOutHint`; `popOutToggle` inbound handler (`setMethodHandler`); notice on `DisplayLost`/`OpenFailed`; construct the decorator for main-window state only |
+| 32 | `lib/main.dart` | `main(List<String> args)` + overlay branch |
+| 33 | `l10n/arb/app_en.arb` + generated `src/l10n/*` | the strings in the "Strings" section |
+| 34 | `lib/src/widgets/output_targets_panel.dart` | replace the Phase 1 overlay switch with `ExternalDisplayControls` (unchanged in structure; the card is shared by Home and Settings already) |
 
 **Deviation from Application Design, recorded.** `phase2-component-methods.md`
 §7 fixes `OverlayConfig.targetDisplayId`; this unit replaces that field with a
@@ -83,12 +89,13 @@ preserved for the only producer (`const OverlayConfig()` in
 deliberate, documented departure rather than an oversight; it needs the human's
 acknowledgement alongside OQ-1.
 
-## 32nd file: none
+## File count
 
-The list is 31 files because the pop-out toggle was promoted to its own
-`lib/src/widgets/pop_out_toggle.dart` (it has three hosts, so it cannot live
-inside the shell without the shell owning Home's copy). The count changed from
-the earlier 30; nothing else moved.
+The list is 34 files (24 new, 10 modified). Two changes produced the count: the
+pop-out toggle was promoted to its own `lib/src/widgets/pop_out_toggle.dart`
+(three hosts, so the shell cannot own Home's copy), 31 files; and OQ-1 Option B
+added the three-file `desktop_window_decorator` trio (interface + conditional
+export, `_io` adapter, `_stub`), 34 files.
 
 ## Convention note
 
@@ -125,29 +132,36 @@ Existing tests to keep green: `test/output/caption_overlay_target_test.dart`
 PBT use: T2 and T5 only, via the in-tree `test/helpers/pbt.dart` (100 fixed
 seeds, no shrinking — the project's Dart PBT decision recorded at Unit 7).
 
+| T15 | `test/output/desktop_window_decorator_test.dart` | the factory returns the stub on web/unsupported and the io adapter elsewhere (via the same conditional-seam pattern as the other trios); the adapter maps calls to the package's methods one-to-one against a fake channel; **fence**: `OverlayWindowApp` never constructs or calls the decorator (SECTION: assert the widget tree's dependencies do not include the decorator provider, and that a sub-engine smoke test records zero channel calls) — `window-manager-security-10.md` §5 item 4 |
+
 Not testable in this package, recorded for Unit 9: always-on-top (macOS code
-only), borderless on Windows/Linux (not implemented), window close by the OS
-(T12 covers the code path via a fake; the real close is manual).
+only; and on Windows/Linux not implemented at this SDK floor even with
+`window_manager` 0.5.2), borderless on Windows/Linux (not implemented), window
+close by the OS (T12 covers the code path via a fake; the real close is
+manual).
 
 ---
 
 ## Implementation order (Part 2)
 
 1. `pubspec.yaml` + `dart pub get`; confirm the resolved `screen_retriever`
-   version is 0.2.x and that `--fatal-infos` stays clean in a scratch import
-   (ID-3's deprecation hazard).
+   version is 0.2.x, the resolved `window_manager` version is 0.5.x (not 0.6),
+   and that `--fatal-infos` stays clean in a scratch import of both plugins
+   (ID-3's deprecation hazard; `window-manager-security-10.md` §2 and §5).
 2. Write T1, T3, T4, T5 (models + codecs) — failing.
 3. Implement files 1, 6, 7, 8, 9; regenerate freezed.
 4. Write T2; implement file 2.
 5. Write T6; implement files 3-5.
 6. Write T11; implement files 11-14 (bridge + entry).
 7. Write T7; implement file 10 and the `events`/snapshot additions to 26.
-8. Write T10; implement file 15.
+8. Write T10 and the decorator-fence case; implement file 15; implement files
+   21-23 and wire the decorator into the shell (file 31) for main-window use
+   only.
 9. Write T9, T14; implement files 16, 17 (`lib/src/widgets/`), 30.
-10. Write T12, T13; implement files 25, 27, 28, 18, 19.
-11. Strings (29); regenerate l10n.
-12. macOS runner (20).
-13. Re-run T8 against the final target; regenerate freezed for 23/24.
+10. Write T12, T13; implement files 27, 30, 31, 18, 19.
+11. Strings (33); regenerate l10n.
+12. macOS runner (24).
+13. Re-run T8 against the final target; regenerate freezed for 27/28.
 14. Gates, in the run's order, all three packages.
 15. Summaries under `aidlc-docs/construction/external-display/code/`.
 
@@ -171,9 +185,14 @@ No string contains caption text.
 
 ---
 
-## Open questions that block Part 2
+## Open questions — answered 2026-10-19
 
-### OQ-1 — Always-on-top and borderless on Windows/Linux
+All three were answered by the human after this plan was first committed. The
+answers are authoritative and are transcribed below with their consequences.
+Where an answer's premise turned out to be factually wrong, that is recorded
+rather than papered over.
+
+### OQ-1 — Always-on-top and borderless on Windows/Linux — ANSWERED: Option B
 
 `desktop_multi_window` 0.2.1 creates the native window but exposes no
 always-on-top API and no style-mask control **to Dart**. The native side does
@@ -182,40 +201,63 @@ because the earlier draft of this section overstated the blocker:
 
 | Platform | Where the sub-window object lives | Reachable from our runner without vendoring? |
 |---|---|---|
-| macOS | `FlutterWindow` in the plugin, registered in `MultiWindowManager.windows` | Only by enumerating `NSApplication.shared.windows` from `MainFlutterWindow.swift` and matching on size/absence-of-main — the plugin exposes no id lookup. Then `level = .floating` (works for our own windows) needs the id to pick the right one; a size match is fragile. |
+| macOS | `FlutterWindow` in the plugin, registered in `MultiWindowManager.windows` | Yes, via the plugin's `onWindowCreatedCallback` plus an order-on-screen observer (ID-5). |
 | Windows | `FlutterWindow` owns an `HWND` inside `MultiWindowManager` | `EnumWindows` + `GetWindowThreadProcessId` in our runner can find our own top-level windows and call `SetWindowPos(..., HWND_TOPMOST, ...)`. No plugin handle needed, but it is a heuristic (process-wide enumeration) with no id linkage. |
 | Linux | `flutter_window.cc` links the plugin's GTK code into the **runner** binary (`CMakeLists.txt` in the package adds `flutter_window.cc` to the runner target) | The plugin registers itself with the runner's registrar; a runner-side `gtk_window_set_keep_above` would need a reference to the sub-window's `GtkWidget`, which the plugin does not publish either. |
 
-So "the handle is not reachable at all" was too strong for Windows (enumeration
-works) and correct-in-effect for Linux and macOS (no id linkage without
-patching). ID-5 is being revised to say exactly this.
+**Answer: Option B — add `window_manager` as a dependency, with its own
+SECURITY-10 record.**
 
-- Option A (recommended, conservative): ship external display on all three
-  platforms; ship the macOS floating level (id linkage is acceptable there
-  because the runner can compare `NSScreen`/window geometry), and on
-  Windows/Linux record the gap for Unit 9 rather than shipping a heuristic
-  `EnumWindows` topmost call. The pop-out is then not guaranteed on top there.
-- Option B: add a window-management plugin that exposes always-on-top
-  (`window_manager`). New dependency, needs its own SECURITY-10 record, may
-  compete with `desktop_multi_window` for the native window.
-- Option C: vendor a patched `desktop_multi_window` — rejected in ID-5; it puts
-  native code in the repo with no build verification on this machine.
+**Verified consequence, which changes what Option B delivers.** Option B was
+proposed on the assumption that a window-management plugin can address the
+sub-window. It cannot at this repo's SDK floor:
 
-**Needed to proceed**: which of A/B, and whether S-20's "borderless" is satisfied
-by "no app chrome, platform title bar retained" (the only implementable reading
-without the handle).
+- 0.6.0 (repo `main`, not published) is the only version with an API that
+  addresses arbitrary windows (`nativeapi` `Window.isAlwaysOnTop`,
+  `titleBarStyle`, `isNonActivating`, `setParentWindow`; `legacy.dart` targets
+  the current engine's window, which in a sub-engine is the sub-window). It
+  requires `sdk ^3.13.0` / `flutter >=3.47.0` and is therefore excluded by the
+  same rule that excludes `screen_retriever` 0.3.0.
+- 0.5.2 (the newest usable release, `sdk >=3.0.0 <4.0.0`, `flutter >=3.3.0`) is
+  single-window: one `MethodChannel('window_manager')`, no window-id parameter
+  on any method, native handlers bound to the app's own window. Calling
+  `setAlwaysOnTop` from the sub-engine raises the **main** window.
+- 0.5.2 already depends on `screen_retriever ^0.2.2`, the pin this unit chose,
+  so the two plugins agree by construction.
 
-### OQ-2 — `pip-ux-parity.md` §8.8 item 10
+So Option B is implemented as: pin `window_manager: ^0.5.2`, add the
+`window-manager-security-10.md` record, confine it to one adapter with a
+platform-neutral interface, and forbid its use from the sub-engine with a
+test. macOS always-on-top still ships through the `desktop_multi_window`
+callback (unchanged, and the only mechanism that reaches the sub-window);
+Windows/Linux sub-window always-on-top remains deferred, now for a verified
+reason. The dependency's value at this floor is a maintained main-window
+state API plus a recorded upgrade path to 0.6.0 when the SDK floor moves.
+This must be stated in the PR body: adding the package does not close
+§8.8 item 15 on Windows/Linux.
+
+Borderless is answered by "no app chrome; the platform title bar is retained"
+(FD, ID-5 "Borderless"). Option B does not change that either, for the same
+reason: 0.5.2 cannot set the sub-window's style mask.
+
+**File-list effect**: `pubspec.yaml` gains `window_manager: ^0.5.2` alongside
+`screen_retriever` (file 22); `pubspec.lock` gains the package (file 23); one
+new adapter file and its stub/factory are added to the overlay directory; one
+test asserts the adapter is never invoked from `OverlayWindowApp`. The file
+count is now 34 (24 new, 10 modified); see the revised tables below.
+
+### OQ-2 — `pip-ux-parity.md` §8.8 item 10 — ANSWERED: defer
 
 Item 10 requires the orientation toggle, pane swap, translation target select
 and download progress to work inside the pop-out. None of those features exists
 in Phase 2 (one pane, one language, no download). F-8.8 records the mapping and
 ships the controls that exist.
 
-**Needed to proceed**: confirm item 10 is deferred to the unit that adds those
-controls, rather than being a blocker for this unit.
+**Answer: deferred to the unit that adds those controls.** Not a blocker for
+Unit 8. §8.8 item 10 stays open in `pip-ux-parity.md` and is not claimed as
+met.
 
-### OQ-3 — Web scope
+### OQ-3 — Web scope — ANSWERED: later unit
 
 The binding decision says "Web/PWA uses the browser Document Picture-in-Picture
 API", and §8.6 says the PWA "is a release target, not a degraded fallback".
@@ -223,8 +265,8 @@ S-20 says external display is not offered on web, and this unit's definition
 names no web work. F-8.9 excludes web entirely in this unit; the pop-out control
 is hidden there.
 
-**Needed to proceed**: confirm the web Document PiP path is a later unit (and
-therefore that the pop-out shipping desktop-only is acceptable), or scope it in.
+**Answer: the web Document PiP path is a later unit; the pop-out ships
+desktop-only and is hidden on web in this unit.** Unchanged from the design.
 
 ---
 
@@ -233,6 +275,9 @@ therefore that the pop-out shipping desktop-only is acceptable), or scope it in.
 > do not proceed to Part 2 in the same run unless the plan is a strict
 > transcription of already-approved design with no open questions.
 
-Not strict transcription (design unapproved) and three open questions → stop
-after committing this plan. Every step above is ordered and test-listed so the
-next session can execute it verbatim once OQ-1..OQ-3 are answered.
+The three open questions are now answered, so the second half of that condition
+is met. The first half is **not**: the design stages were never human-approved
+(recorded `*_PROPOSED` in the ledger), and OQ-1's answer rests on a premise the
+investigation corrected. Part 2 still requires a human to accept the design
+(including the corrected Option B consequence) before implementation. Every
+step above is ordered and test-listed so that session can execute it verbatim.

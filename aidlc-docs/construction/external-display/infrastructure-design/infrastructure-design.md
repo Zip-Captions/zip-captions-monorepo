@@ -5,8 +5,10 @@ configuration, and the Phase 1 overlay precedent this unit finishes. Functional
 design is `../functional-design/`; this document decides *where* and *with what
 platform configuration*, not *what* the feature does.
 
-No server-side or Supabase change. `screen_retriever` is a client plugin; its
-record is `../functional-design/screen-retriever-security-10.md`.
+No server-side or Supabase change. `screen_retriever` and `window_manager` are
+client plugins; their records are
+`../functional-design/screen-retriever-security-10.md` and
+`../functional-design/window-manager-security-10.md`.
 
 ---
 
@@ -242,18 +244,49 @@ verification. Recorded as a limitation in the PR body.
 "Always on top" and "borderless" are the two things S-20 wants that the plugin
 does not expose. Both are runner-level configuration.
 
-### Always-on-top (OQ-1 resolution)
+### Always-on-top (OQ-1 resolution: Option B, and what it actually buys)
 
-The binding decision says desktop uses a native always-on-top secondary window.
-The plugin creates the `NSWindow` / `HWND` / `GtkWindow`; the application can
-still adjust it. Implementation choice per platform, with a hard
-"no new dependency" constraint:
+OQ-1 was answered **Option B: add the `window_manager` dependency**. Its
+supply-chain record is `../functional-design/window-manager-security-10.md`.
+That decision was made on the assumption that a window-management plugin can
+reach the pop-out window. Checking the package against this repo's SDK floor
+showed it cannot, so this section records the corrected reality rather than the
+assumption.
+
+**The version constraint decides the capability.**
+
+| Version | SDK requirement | Can it address a `desktop_multi_window` sub-window? |
+|---|---|---|
+| `window_manager` 0.6.0 (on `main`, not on pub.dev) | `sdk: ^3.13.0`, `flutter: >=3.47.0` | **Yes.** Its `nativeapi`-based `Window` exposes `isAlwaysOnTop`, `titleBarStyle`, `isNonActivating`, `setParentWindow`, `nativeHandle`, and `window_manager/legacy.dart` targets the current engine's window, which in a sub-engine is the sub-window. |
+| `window_manager` 0.5.2 (newest usable here) | `sdk: >=3.0.0 <4.0.0`, `flutter: >=3.3.0` | **No.** Single-window by construction: one `MethodChannel('window_manager')`, no window-id parameter on any method (`setAlwaysOnTop`, `getTitle`, `setBounds`, ...), and native handlers resolve the app's own window (macOS main `FlutterWindow`; Windows/Linux runner window). |
+
+The monorepo floor is `sdk >=3.10.0`, `flutter >=3.38.0` (environment Dart
+3.11.5 / Flutter 3.41.7), so 0.6.0 is excluded for exactly the reason
+`screen_retriever` 0.3.0 is excluded. Calling
+`windowManager.setAlwaysOnTop(true)` from the sub-engine on 0.5.2 would raise
+the **main** window, not the overlay. That is worse than doing nothing, so the
+adapter is forbidden from calling it from the sub-engine
+(`window-manager-security-10.md` §5 item 4), and a test asserts the call is
+never made there.
+
+**Resulting mechanism per platform**, unchanged from the pre-Option-B design
+for the reasons above:
 
 | Platform | Mechanism | Dependency | Verdict |
 |---|---|---|---|
 | macOS | No private API needed, but the callback alone is not enough. `FlutterMultiWindowPlugin.onWindowCreatedCallback` is a public static hook and is called with the sub-window's `FlutterViewController` (`macos/Classes/FlutterWindow.swift:81`), however it fires **inside** `FlutterWindow.init`, before `super.init` and before `controller.view.window` is attached, so reading `view.window` there yields nil. The runner instead installs a one-shot observer: in `MainFlutterWindow.awakeFromNib`, `setOnWindowCreatedCallback` stores the controller; then on `NSWindow.didBecomeKeyNotification` (or `didOrderOnScreen`) whose `object` is `controller.view.window`, it applies `level = .floating` and `collectionBehavior.insert(.fullScreenAuxiliary)` and removes the observer. **The plugin never calls `show()` on the window it creates** (`MultiWindowManager.create` lines 18-27 return the id without ordering the window front; only the explicit `show` method does, line 48), so the controller must call `WindowController.fromWindowId(id).show()` explicitly after `createWindow` — without that the window exists but is invisible. ID-1's "the window already exists when main runs" is therefore corrected: it exists as an object, not on screen. | none | Implement. One documented callback, one notification observer, no id matching, no enumeration heuristic, no private API. |
-| Windows | No equivalent public hook. `EnumWindows` + `GetWindowThreadProcessId` in our runner can find our own top-level windows and call `SetWindowPos(hwnd, HWND_TOPMOST, ...)`, but there is no id linkage, so "which of our windows" is a heuristic. | none | **Defer**, recorded. Heuristic topmost is not shipped. |
-| Linux | `flutter_window.cc` is compiled into the runner, and GDK exposes `gtk_window_set_keep_above`, but nothing like `onWindowCreatedCallback` exists in the GTK plugin and the runner never sees the sub-window's `GtkWidget`. | none (would need a runner-side patch of plugin code) | **Defer.** OQ-1 stands. |
+| Windows | No equivalent public hook, and `window_manager` 0.5.2 cannot target the sub-window. `EnumWindows` + `GetWindowThreadProcessId` in our runner can find our own top-level windows and call `SetWindowPos(hwnd, HWND_TOPMOST, ...)`, but there is no id linkage, so "which of our windows" is a heuristic. | none | **Defer**, recorded. Heuristic topmost is not shipped. Option B does not change this at the current SDK floor. |
+| Linux | `flutter_window.cc` is compiled into the runner, and GDK exposes `gtk_window_set_keep_above`, but nothing like `onWindowCreatedCallback` exists in the GTK plugin, the runner never sees the sub-window's `GtkWidget`, and `window_manager` 0.5.2 cannot target it either. | none (would need a runner-side patch of plugin code) | **Defer.** Option B does not change this at the current SDK floor. |
+
+**What Option B therefore delivers.** The dependency is added and pinned
+`^0.5.2`, documented, and confined to one adapter, but it does not by itself
+close the sub-window always-on-top gap on any platform; macOS still ships via
+the `desktop_multi_window` callback. Its concrete value here is (1) a
+maintained window-state API for the **main** window's needs at this floor, and
+(2) a recorded upgrade path to 0.6.0 that closes the gap once the SDK floor
+moves to Dart 3.13 / Flutter 3.47. This is stated in the PR body rather than
+implied, because "we added window_manager" would otherwise read as "the gap is
+closed".
 
 `pip-ux-parity.md` §8.8 itself assigns item 15 (always-on-top) to Unit 9
 platform verification. The consequence of this table: macOS ships with it, the
@@ -344,7 +377,7 @@ settings writes.
 
 | Item | Effect |
 |---|---|
-| New dependency | `screen_retriever: ^0.2.2`, plus its four federated sub-packages in `pubspec.lock` |
+| New dependency | `screen_retriever: ^0.2.2` and `window_manager: ^0.5.2`, plus their federated sub-packages in `pubspec.lock` (`screen_retriever_{android,linux,macos,windows,platform_interface}`; `path` if absent). Records: `screen-retriever-security-10.md`, `window-manager-security-10.md`. |
 | New native code in repo | one macOS runner adjustment (`MainFlutterWindow.swift`); no Windows/Linux native edit |
 | CI | The existing `build-verify.yml` matrix runs `flutter build` for macOS/Windows/Linux/web; the web leg compiles the stub path (ID-3). No workflow change. |
 | Tests | No native stack, no display hardware: fakes only, same as every prior overlay test |

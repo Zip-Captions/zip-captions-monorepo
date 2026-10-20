@@ -54,13 +54,13 @@ Functional Design as the artifact-shape precedent.
 | D11 | Pop-out content setting (`PipContent`: original/translated/both) ships and persists; it changes nothing until translation exists | §8.8 item 8 is satisfiable today; `BR-PIP-06` makes it inert |
 | D12 | Web renders no controls; Document PiP is not implemented in this unit | S-20 excludes web; see OQ-3 |
 
-## Open questions (carried to the ledger; not blocking the artifacts)
+## Open questions — answered 2026-10-19
 
-| # | Question | Conservative resolution taken |
-|---|---|---|
-| OQ-1 | `desktop_multi_window` 0.2.1 has no always-on-top API. macOS can be done in `MainFlutterWindow.swift`; Windows needs `SetWindowPos(HWND_TOPMOST)` in the runner; Linux needs WM-class handling whose portable form may be a new plugin. | Implement macOS and Windows in the existing runners if Infrastructure Design can do it without a new dependency; if Linux needs one, stop at the dependency gate and record it (FR-9.5, §8.8 item 15 is Unit 9-verified anyway). |
-| OQ-2 | §8.8 item 10 names orientation, pane swap, translation target and download progress "inside the pop-out". None exists in Phase 2 (single pane, one language, no download). | Ship the controls that exist; record item 10 as unsatisfiable-until-those-features-exist. Not silently dropped. |
-| OQ-3 | §8.6 says the PWA uses Document PiP and §8.8 item 15 is "not separately testable on web" — implying web is in §8.8's scope, while S-20 says web is not offered. | Follow S-20 and the unit definition (web excluded); no web pipeline this unit. |
+| # | Question | Initial conservative resolution | Human answer (authoritative) |
+|---|---|---|---|
+| OQ-1 | `desktop_multi_window` 0.2.1 has no always-on-top API. macOS can be done in `MainFlutterWindow.swift`; Windows needs `SetWindowPos(HWND_TOPMOST)` in the runner; Linux needs WM-class handling whose portable form may be a new plugin. | Implement macOS and Windows in the existing runners if Infrastructure Design can do it without a new dependency; if Linux needs one, stop at the dependency gate and record it (FR-9.5, §8.8 item 15 is Unit 9-verified anyway). | **Option B: add `window_manager`.** Recorded in `../external-display/functional-design/window-manager-security-10.md`. Verified consequence: the usable release (0.5.2) is single-window and cannot address the sub-window; 0.6.0 can but needs Dart 3.13 / Flutter 3.47. So the dependency is added and pinned, macOS still ships always-on-top via the plugin callback, and Windows/Linux stay deferred for a now-verified reason. Option B does not by itself close §8.8 item 15. |
+| OQ-2 | §8.8 item 10 names orientation, pane swap, translation target and download progress "inside the pop-out". None exists in Phase 2 (single pane, one language, no download). | Ship the controls that exist; record item 10 as unsatisfiable-until-those-features-exist. Not silently dropped. | **Defer item 10** to the unit that adds those controls. Recorded, not claimed as met. |
+| OQ-3 | §8.6 says the PWA uses Document PiP and §8.8 item 15 is "not separately testable on web" — implying web is in §8.8's scope, while S-20 says web is not offered. | Follow S-20 and the unit definition (web excluded); no web pipeline this unit. | **Later unit.** Pop-out ships desktop-only and is hidden on web in this unit. |
 
 ## Artifacts produced
 
@@ -68,6 +68,7 @@ Functional Design as the artifact-shape precedent.
 - `business-logic-model.md` — F-8.1 .. F-8.9, the event→state table, and the §8.8 mapping.
 - `business-rules.md` — BR-U8-01 .. BR-U8-20 plus the out-of-scope fence.
 - `screen-retriever-security-10.md` — the dependency record, including the version check demanded by the run brief. **Result: 0.3.0 requires Dart ^3.13.0 / Flutter >=3.47.0, the monorepo floor is 3.10.0, the environment has Dart 3.11.5 / Flutter 3.41.7 → pin `^0.2.2`; 0.2.x has no `legacy.dart`, so the legacy shim clause does not apply.**
+- `window-manager-security-10.md` — the OQ-1 Option B dependency record: supply chain, the `^0.5.2` pin, the single-window limitation, the 0.6.0 SDK-floor conflict, the one-import fence, and the recorded Windows/Linux gap.
 - This plan.
 
 ## Self-check against S-20's seven acceptance criteria
