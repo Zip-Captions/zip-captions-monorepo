@@ -5,6 +5,8 @@
 #include <gdk/gdkx.h>
 #endif
 
+#include <desktop_multi_window/desktop_multi_window_plugin.h>
+
 #include "flutter/generated_plugin_registrant.h"
 
 struct _MyApplication {
@@ -74,6 +76,15 @@ static void my_application_activate(GApplication* application) {
   gtk_widget_realize(GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
+
+  // External display windows are caption surfaces, so they carry no frame.
+  desktop_multi_window_plugin_set_window_created_callback(
+      view, [](FlView* created_view) {
+        GtkWidget* toplevel = gtk_widget_get_toplevel(GTK_WIDGET(created_view));
+        if (GTK_IS_WINDOW(toplevel)) {
+          gtk_window_set_decorated(GTK_WINDOW(toplevel), FALSE);
+        }
+      });
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }

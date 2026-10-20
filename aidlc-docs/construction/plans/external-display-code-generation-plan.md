@@ -468,7 +468,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
 
 ### Group I — runners (D-2, B-3)
 
-23. [ ] **`macos/Runner/MainFlutterWindow.swift`** — in `awakeFromNib`, after
+23. [x] **`macos/Runner/MainFlutterWindow.swift`** — in `awakeFromNib`, after
     `self.contentViewController = flutterViewController`, register
     `FlutterMultiWindowPlugin.setOnWindowCreatedCallback` setting the borderless
     `styleMask` (`controller.view.window?.styleMask.remove([.titled, .closable,
