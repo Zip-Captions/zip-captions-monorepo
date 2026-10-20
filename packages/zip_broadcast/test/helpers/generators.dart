@@ -57,6 +57,19 @@ final Generator<Rect> arbitraryBounds = any.combine4(
   Rect.fromLTWH,
 );
 
+/// Generates a logical top-left frame, including negative offsets and frames
+/// taller than the display they sit on.
+final Generator<Rect> arbitraryLogicalFrame = any.combine4(
+  any.doubleInRange(-2000, 4000),
+  any.doubleInRange(-2000, 2000),
+  any.doubleInRange(1, 3000),
+  any.doubleInRange(1, 2000),
+  Rect.fromLTWH,
+);
+
+/// Generates a primary display's full height, menu bar included.
+final Generator<double> arbitraryDisplayHeight = any.doubleInRange(600, 2400);
+
 /// Scale factors a display realistically reports, including the degenerate
 /// `0` that the Windows conversion treats as `1`.
 final Generator<double> arbitraryScaleFactor =

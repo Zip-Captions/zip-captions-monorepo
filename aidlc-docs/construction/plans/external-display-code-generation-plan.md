@@ -335,7 +335,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
     only (the class lands in Step 12). *Test first*: **F37**, then **F38** (FP-4).
     *Commit*: `feat(zip_broadcast): add open-display resolution`.
 
-8. [ ] **F06/F07/F08 — the frame conversion**: add `toPlatformFrame` to
+8. [x] **F06/F07/F08 — the frame conversion**: add `toPlatformFrame` to
     `desktop_multi_window_service_io.dart` (pure, platform inputs as
     arguments; their callers are Step 9's `setFrame` and Step 12's reframe —
     see Step 12's note) *before* the interface methods, so the function has a
