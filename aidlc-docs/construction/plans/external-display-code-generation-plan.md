@@ -312,7 +312,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
     `ExternalDisplayMode()` + defaults.
     *Commit*: `feat(zip_broadcast): add external display state and event types`.
 
-4. [ ] **F24 `output_target_settings.dart`** — add `externalDisplayId` and
+4. [x] **F24 `output_target_settings.dart`** — add `externalDisplayId` and
     `externalDisplayCaptionPosition`; regenerate freezed. *Test*: F49
     (`providers/output_target_settings_test.dart`, written first and failing on
     the missing fields; it also covers the persistence in Step 5).
