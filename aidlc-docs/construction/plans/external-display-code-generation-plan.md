@@ -492,13 +492,13 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
 
 ### Group J — final gates
 
-24. [ ] Run the three gates from package roots (§5). Run
+24. [x] Run the three gates from package roots (§5). Run
     `rg -l "package:screen_retriever" packages/zip_broadcast/lib` (exactly one
     path) and `rg -n "window_manager|kIsWeb|popOut|PopOut|pipContent|ping"
     packages/zip_broadcast` (no match in the unit's files). Record the results.
     *Commit*: none yet — the results feed Step 26.
 
-25. [ ] **`flutter build macos --debug`** in `packages/zip_broadcast`
+25. [x] **`flutter build macos --debug`** in `packages/zip_broadcast`
     (compile only, nothing launched). Then inspect `git diff
     packages/zip_broadcast/macos/Podfile.lock` (§1.3). If anything outside the
     allowed set moved, record it — do not stage.
