@@ -290,7 +290,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
 
 ### Group A — dependency and contracts
 
-1. [ ] **`pubspec.yaml`** — add `screen_retriever: ^0.2.2` with the §1.2
+1. [x] **`pubspec.yaml`** — add `screen_retriever: ^0.2.2` with the §1.2
     comment; run `flutter pub get` in `packages/zip_broadcast`; confirm the
     resolved version is 0.2.2 (not 0.3.x) and `git diff pubspec.lock` shows
     exactly the five entries of §1.3. Run `dart analyze --fatal-infos` (clean)
