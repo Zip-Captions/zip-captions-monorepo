@@ -418,11 +418,11 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
 
 ### Group E — the sub-engine
 
-15. [ ] **F19 — `overlay_window_bridge.dart` triplet**. *Test*: F47 uses the
+15. [x] **F19 — `overlay_window_bridge.dart` triplet**. *Test*: F47 uses the
     stub bridge; no separate test.
     *Commit*: folded into Step 16.
 
-16. [ ] **F18/F21 — `overlay_window_entry.dart` and `overlay_window_app.dart`**.
+16. [x] **F18/F21 — `overlay_window_entry.dart` and `overlay_window_app.dart`**.
     *Test first*: **F47** (entry) and **F46** (app: standby/live/paused,
     "Window unavailable", position, BR-U8-20 wiring, opaque). Implement; the
     app reads `AppTheme` and never a literal; `GoogleFonts.config` mirrored;
