@@ -331,7 +331,7 @@ Commit scaffolding follows `docs/04-technical-specification.md` §7
     a throw, for every malformed generator output.
     *Commit*: `feat(zip_broadcast): add versioned caption overlay codec`.
 
-7. [ ] **F16 `overlay_window_controller.dart` — the pure part**: `resolveOpenDisplay`
+7. [x] **F16 `overlay_window_controller.dart` — the pure part**: `resolveOpenDisplay`
     only (the class lands in Step 12). *Test first*: **F37**, then **F38** (FP-4).
     *Commit*: `feat(zip_broadcast): add open-display resolution`.
 
