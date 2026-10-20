@@ -1,7 +1,7 @@
 # Zip Captions v2 — Roadmap
 
-> **Document Status:** Draft v0.3
-> **Last Updated:** 2026-04-25
+> **Document Status:** Draft v0.4
+> **Last Updated:** 2026-10-19
 > **Purpose:** Defines the phased development milestones for Zip Captions v2, including dependencies, deliverables, and sequencing. Each phase builds on the previous one. Both apps (Zip Captions and Zip Broadcast) are developed in parallel, with shared work concentrated in `zip_core`.
 > **Repository:** `zip-captions-monorepo`
 
@@ -27,17 +27,19 @@
 | 3 | Auth, Encryption & Sync | — | Phase 1 | Not started |
 | 4 | Entitlements & Payment | — | Phase 3 | Not started |
 | 5 | BLE Local Discovery | v2.0 | Phase 1 | Not started |
-| 6 | Release & v1 Deprecation | v2.0 | Phases 1–5 | Not started |
+| 6 | Release & v1 Deprecation | v2.0 | Phases 1–5, Phase 8 | Not started |
 | 7 | Observability & Polish | Ongoing | Phases 1–4 | Not started |
-| 8 | Translation | v2.1 | Phase 1, Phase 2 | Not started |
+| 8 | Translation | v2.0 | Phase 1, Phase 2 | Not started |
 
-Phases 2, 3, and 5 can run in parallel after Phase 1 is complete. Phase 4 depends on Phase 3 (auth must exist before entitlements). Phase 6 is the v2.0 release milestone — it requires Phases 1–5 (feature parity with v1). Phase 7 runs alongside later phases. Phase 8 (translation) is v2.1 — new functionality beyond v1 parity, scheduled after v2.0 ships.
+Phases 2, 3, and 5 can run in parallel after Phase 1 is complete. Phase 4 depends on Phase 3 (auth must exist before entitlements). Phase 6 is the v2.0 release milestone — it requires Phases 1–5 **and Phase 8** (full v1 feature parity). Phase 7 runs alongside later phases. Phase 8 (translation) is part of v2.0, not a later release.
+
+**Phase 8 was moved into the v2.0 release candidate (2026-10-19).** Translation shipped in Zip Captions v1 (v0.5.0-rc.5) before v2 reached release, so it is existing user functionality rather than new functionality beyond parity. Under Roadmap Principle 1 ("v1 capabilities must be replicated before new functionality is added"), v2.0 cannot ship without it. See `aidlc-docs/v1-parity/live-translation-v1-analysis.md`.
 
 ### Release Targeting
 - **v2.0 first platforms:** Zip Captions on Android and iOS (app store submissions)
 - **v2.0 fast follow:** Zip Captions on Windows desktop (direct download)
 - **v2.0 full rollout:** Zip Captions on macOS, Linux; Zip Broadcast on all desktop platforms; PWA fallbacks
-- **v2.1:** Translation features (Phase 8)
+- **v2.0 scope:** Phases 1–6 and Phase 8. There is no separate v2.1 release.
 
 ---
 
@@ -419,7 +421,7 @@ Phase 1 complete (caption bus must exist). Phase 2 recommended (transport negoti
 Ship v2.0 to production and manage the transition from v1. This phase covers production infrastructure deployment, app store submissions, v1 migration guidance, and a planned deprecation timeline for v1.
 
 ### Prerequisites
-Phases 1–5 complete (all v1 feature parity functionality working). Phase 7 (observability) should be sufficiently advanced to monitor production.
+Phases 1–5 complete (core captioning, broadcasting, auth, entitlements, BLE discovery) **and Phase 8 complete (translation)**. All v1 feature parity functionality, including translation, must be working before this phase begins. Phase 7 (observability) should be sufficiently advanced to monitor production.
 
 ### Deliverables
 
@@ -446,11 +448,42 @@ Phases 1–5 complete (all v1 feature parity functionality working). Phase 7 (ob
 - PWA fallback for both apps
 
 **v1 deprecation plan:**
-- **Overlap period:** v1 and v2 run simultaneously for a defined period (suggest 3–6 months) after v2 reaches feature parity on the platforms v1 serves (web)
+- **Overlap period:** v1 and v2 run simultaneously for a defined period (suggest 3–6 months) after v2 reaches feature parity on the platforms v1 serves (web), **including translation parity**
 - **Migration guide:** Documentation for v1 users explaining what's changed, how to get v2, and how to migrate any saved data (if applicable)
 - **In-app notice in v1:** Banner or notification in the v1 web app directing users to v2 with download links
 - **v1 backend sunset:** After the overlap period, the v1 NestJS/MongoDB backend is shut down. The v1 web app can remain as a static page redirecting to v2.
 - **Data migration:** If v1 stores any user data server-side (beyond the session cache), provide an export mechanism before shutdown. Given v1's architecture (client-side encryption, minimal server state), this may be minimal.
+
+### Definition of Done
+
+v2.0 is done when all of the following hold. This list is the release gate; a phase being marked complete is necessary but not sufficient.
+
+**Feature parity with v1 (v0.5.0-rc.5):**
+- Every user-facing capability of Zip Captions v1 works in Zip Captions v2 on every platform where v2 ships.
+- **Captioning:** live speech-to-text, history, text flow, full screen, typography settings on all target platforms.
+- **Picture-in-Picture, including UX parity:** the user can pop captions out into a small window that stays on top of other windows, and bring them back. The pop-out toggle exists in the app chrome and inside the caption surface and is usable from the pop-out window itself. It is hidden where the platform cannot create the window, and disabled with a stated reason where there is no active session or no usable recognition engine. The drawer closes on pop-out. The window opens at the same default size, is resizable, carries the theme live, and offers a hint and a return action in the main window. Layout and translation controls remain operable from the pop-out. The content setting (original / translated / split) exists. This is a UX requirement, not an implementation one. Desktop platforms use a native always-on-top secondary window; the web/PWA build uses the browser Document Picture-in-Picture API, as V1 does.
+- **Live translation:** the mode set (off / split / translated-only / original-only), the language list, per-segment translation by segment ID, placeholder for pending translations, language swap with per-language dialect memory, the interim (live) line translation, model download with progress, PiP content and OBS feed settings, broadcaster-provided translations for viewers, and viewer-side translation for languages the broadcaster does not offer.
+- **Translation disclaimer:** "Source language: [detected]. Translation may be inaccurate." is visible and non-dismissible in every translation mode on every platform. This is a v2 requirement with no v1 equivalent; it is additive, not a parity item.
+- **Broadcasting and viewers:** broadcast sessions, viewer join, browser source, OBS closed captions, external display output.
+
+**Parity exclusions, documented rather than silent:**
+- Per-language windows (v1 FR-W2) and a draggable caption divider (v1 US-C4) are backlog items. Their absence must be listed in the migration guide so v1 users are not surprised.
+- Any other v1 capability not carried forward is listed in the migration guide with a reason.
+
+**Translation across platforms (Phase 8):**
+- On-device translation works on every platform v2 ships on, using the engine matrix in ADR-013: Apple Translation on iOS/macOS, ML Kit on Android, bundled or downloaded model on Windows/Linux, Chrome Translator API on web.
+- Offline translation works for at least en↔fr and en↔es on every platform.
+- The cloud translation tier works as a premium option.
+- The combined STT + translation latency stays within the NFR-1.3 thresholds (Spike 6.3).
+
+**Release readiness (Phase 6):**
+- Zip Captions is live on Android Play Store and iOS App Store
+- Zip Captions Windows desktop download is available
+- Zip Broadcast is available for download on at least one desktop platform
+- Production Supabase, Coturn, and monitoring are running and healthy
+- v1 displays a deprecation notice directing users to v2
+- Migration guide is published, including the parity exclusions above
+- v1 sunset date is announced
 
 ### Exit Criteria
 - Zip Captions is live on Android Play Store and iOS App Store
@@ -525,13 +558,13 @@ Phases 1–4 complete (core functionality, broadcasting, auth, and entitlements 
 
 ---
 
-## Phase 8 — Translation (v2.1)
+## Phase 8 — Translation (v2.0)
 
 ### Goal
-Add real-time translation capabilities: conversation translation (S1.5), bilingual broadcast display (S2.6), and viewer-side translation (S3.4). This is new functionality beyond v1 feature parity.
+Add real-time translation capabilities: conversation translation (S1.5), bilingual broadcast display (S2.6), and viewer-side translation (S3.4). **This is v1 feature parity, not new functionality.** Zip Captions v1 shipped live on-device translation in v0.5.0-rc.5, so v2 must reproduce it before release (Roadmap Principle 1). The V1 implementation is analysed in `aidlc-docs/v1-parity/live-translation-v1-analysis.md`.
 
 ### Prerequisites
-Phase 1 complete (caption bus must exist for translation middleware). Phase 2 complete (for broadcast bilingual display S2.6).
+Phase 1 complete (caption bus must exist for translation middleware). Phase 2 complete (for broadcast bilingual display S2.6). Blocks Phase 6.
 
 ### Deliverables
 
@@ -549,6 +582,18 @@ Phase 1 complete (caption bus must exist for translation middleware). Phase 2 co
 - Caption bus stream transformer that translates `SttResult` text
 - `TranslatedCaptionResult` model (source text + translated text + source language + target language)
 - Translation pipeline does not block caption delivery — source text renders immediately, translation appends when ready
+
+**Parity requirements carried over from v1:**
+- Translation display modes: off, split, translated-only, original-only
+- Split layout with orientation (stacked / side by side) and pane order (original first / translated first)
+- Per-segment translation keyed by segment ID; a pending translation shows a placeholder, never the source text
+- The interim (live) line is translated separately, with latest-wins debounce
+- A failed translation is distinguishable from a pass-through and is never displayed or broadcast as a translation
+- Language swap between spoken and translation languages, restoring the last dialect used per language
+- Model download requires a user gesture, with progress indicator
+- Broadcaster sends both original and translated segments so viewers do not need translation support locally
+- Viewers prefer the broadcaster's translation and fall back to local translation, then to nothing
+- Language detection per segment for bilingual locales (`fr-CA`, `es-US`, `ar-*`)
 
 **Conversation translation mode (S1.5):**
 - Bidirectional language selection (language A ↔ language B)
@@ -573,10 +618,12 @@ Phase 1 complete (caption bus must exist for translation middleware). Phase 2 co
 - Storage usage display
 - Download progress indicators
 
-### Research Spikes (complete during or before Phase 6)
+### Research Spikes (complete before Phase 8 construction)
 - **Spike 6.1:** Desktop on-device translation feasibility. Test NLLB model via ONNX Runtime FFI on Windows, macOS, Linux. Measure model size, load time, translation latency, and memory usage. Determine if the quality/performance tradeoff is acceptable for common language pairs (en↔fr, en↔es, en↔de). If not feasible, the fallback is cloud-only translation on desktop.
 - **Spike 6.2:** Google ML Kit Translation API in Flutter. Test on Android via platform channel or existing Flutter package. Measure latency for real-time translation of short phrases (caption-length text).
 - **Spike 6.3:** Combined STT + translation latency budget. Measure end-to-end latency from speech to translated caption display. Determine if the combined pipeline stays under acceptable thresholds for live captioning.
+
+**These spikes now block v2.0.** Spike 6.1 in particular decides whether Windows and Linux ship with on-device translation or fall back to a cloud tier, which is a release-scope decision for Phase 6.
 
 ### Exit Criteria
 - User enables conversation mode, speaks English, sees Spanish translation (and vice versa) on a single device
@@ -606,11 +653,12 @@ Phase 2        Phase 3        Phase 5
   │            (Entitlements)
   │              │
   ├──────────────┘
-  ▼
-Phase 6 (Release & v1 Deprecation) ← v2.0
   │
   ▼
-Phase 8 (Translation) ← v2.1
+Phase 8 (Translation)
+  │
+  ▼
+Phase 6 (Release & v1 Deprecation) ← v2.0
 
 Phase 7 (Observability & Polish) — runs alongside Phases 4–8
 ```
@@ -648,3 +696,4 @@ These items are captured in the specification documents but intentionally not sc
 | 2026-03-26 | 0.1 | Initial draft — 8 phases (0–7) covering foundation through release prep. Feature parity before new features. Translation is Phase 6 (after v1 parity). Dependency graph and parked items defined. |
 | 2026-03-26 | 0.2 | Major revision: Added Phase 6 (Release & v1 Deprecation) with overlap period and migration guide. Renumbered Translation to Phase 8 (v2.1). Expanded Phase 7 (Observability) with public Grafana dashboard and maintainer-only dashboard. Added ai-dlc git submodule and GitHub Projects to Phase 0. Added VPS provider research (Spike 0.2) and on-device STT survey (Spike 0.3) to Phase 0. Fixed Phase 1 exit criteria to reflect Zip Captions on mobile AND desktop. Fixed Phase 3: provider-agnostic OAuth, cross-platform account merging by email, P2P key transfer, YubiKey spike. Self-hosted STUN via Coturn (no Google dependency). Added release targeting (Android/iOS first, Windows fast follow). Added caption overlay and YubiKey to parked items. |
 | 2026-03-26 | 0.3 | Fixed Phase 2 deliverable: STUN configuration now references self-hosted Coturn (was incorrectly referencing Google's free STUN servers, contradicting ADR-011). |
+| 2026-10-19 | 0.4 | Moved Phase 8 (Translation) into the v2.0 release: v1 shipped translation in v0.5.0-rc.5, so it is feature parity, not new functionality. Phase 6 now depends on Phase 8 and has an explicit Definition of Done covering captioning, Picture-in-Picture UX parity, live translation, the accuracy disclaimer, and cross-platform translation. Spike 6.1 now blocks v2.0 release scope. Removed the v2.1 release. |
