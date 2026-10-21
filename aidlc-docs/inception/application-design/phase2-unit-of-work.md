@@ -226,15 +226,39 @@ Functional Design fixes the real channel/topic shape.
 
 ---
 
+### Unit 8.1: Pop-out Live Captions (PiP)
+
+**Inserted into the roadmap 2026-10-20**, per the PR #37 review decision D-1 (2026-10-19). Unit 8 was scoped to external-display output only; the pop-out was designed inside it against `pip-ux-parity.md` §8 and is split out here as its own unit so that neither feature ships half-built. It **blocks the v2.0 RC**: `docs/03-roadmap.md` §Phase 6 Definition of Done lists Picture-in-Picture UX parity as a release gate.
+
+**Package**: zip_core (window machinery, promoted from Unit 8), zip_broadcast, zip_captions (toggle wiring in both; both add `desktop_multi_window` + `window_manager`). **Amended 2026-10-20** to span both apps (option A) — see `pip-ux-parity.md` §8 and §8.7.
+**Stories**: S-21
+**Stages**: Functional Design, NFR Requirements, NFR Design, Code Generation. Infrastructure Design covers the `zip_core` platform fence and the per-app runner registration, which differ from Unit 8's single-app case.
+
+**Scope**: The user can pop the live captions out into a small window that floats above all other application windows, and bring them back — **in both Zip Broadcast and Zip Captions**. §8 applies to both apps; nothing in the contract is broadcaster-specific. The window machinery Unit 8 built in `zip_broadcast` (controller and state machine, versioned codec, sub-engine entry contract, ready handshake) is **promoted to `zip_core`** so both apps consume one implementation, then each app adds its own toggle wiring and sub-engine entry. `pip-ux-parity.md` §8 is the binding user-visible contract; its 18 acceptance criteria are checked **once per app**, and items 8-10 (translation-dependent) are recorded as deferred to Phase 8 rather than claimed.
+
+**Components** (proposed; confirmed or amended in Functional Design): in `zip_core` — the promoted `OverlayWindowController` + `OverlayWindowMode` hierarchy, the launch/snapshot codec, the sub-engine entry contract, and a `window_manager` registration helper behind the established `_io`/`_stub` fence (so `zip_core` stays platform-agnostic per tech-spec §4); `PopOutWindowMode` as a sibling of the external-display mode; `CaptionOverlaySnapshot` content-setting field. In each app — `PopOutControls` (the chrome toggle, UX-PIP-01), the in-surface toggle (UX-PIP-02), pop-out ARB keys, and the app's own sub-engine entry point.
+
+**Dependencies**: Unit 8 complete (it supplies the machinery this unit promotes). Independent of the broadcast chain and all spikes.
+
+**Platform scope**: **desktop only for Phase 2** (decided 2026-10-20). Web Document Picture-in-Picture is explicitly deferred to Phase 5 alongside the rest of the web scaffold, which Unit 7 also deferred; the `document-pip` documentation is indexed for that later work. S-20's web exclusion carries over unchanged.
+
+**Known constraints carried in from verification** (2026-10-20): `desktop_multi_window` 0.2.1 exposes no always-on-top, window-level or topmost API on any of its three backends — the capability must come from `window_manager`. On macOS that is `NSFloatingWindowLevel`, which floats above normal windows but not above another application's full-screen window; floating above a foreign full-screen window needs an `NSPanel`-derived window class, which is recorded as a known limitation and a Unit 9 manual check rather than silently claimed. The always-on-top assertion itself is platform-level and belongs to Unit 9 (pip-ux-parity §8.8 item 15).
+
+**Plugin registration — decided 2026-10-20**: `window_manager` is registered in the **`desktop_multi_window` window-created callback** on each desktop runner, not by adding it to the sub-engine's `plugins` list. Unit 8's ID-1 deliberately passed an empty plugin list to the sub-engine (its locked set needed none); the window-created callback already gives each runner the created window's `FlutterViewController` (macOS) / `FlView` (Linux, via `desktop_multi_window_plugin_set_window_created_callback`) / the created window (Windows, via `DesktopMultiWindowSetWindowCreatedCallback`), so it can run `RegisterGeneratedPlugins(registry:)`-equivalent registration against that engine before the window is shown. This keeps ID-1's empty-list invariant intact and keeps all three runner callbacks as the single place where sub-engine window configuration lives. Unit 8 installed these callbacks in Zip Broadcast's runners only; **this unit adds the equivalent to Zip Captions' three desktop runners**, which have no windowing today. The always-on-top call itself still runs from Dart in the sub-engine (see above), because `setAlwaysOnTop` needs the plugin's channel; the runner callback is what makes that channel exist.
+
+**Blocks**: the v2.0 RC, and Unit 9 (which verifies the always-on-top behaviour on real desktops, in both apps).
+
+---
+
 ### Unit 9: Integration Milestones
 
 **Packages**: all
 **Stories**: M-S2.2, M-S2.3, M-S3.6, M-REG-01
 **Stages**: Build and Test, then Documentation Refinement
 
-**Scope**: Two-device P2P on the same network; TURN under restricted-NAT simulation (the Spike 2.3 method); capacity refusal at the cap; reconnection after a network change; signed-out regression; checking the exit criteria (Spike 2.2 result for criterion 7). Documentation Refinement applies the documentation updates listed in `phase2-requirements.md`, the S3.6 persona scenario, and AGENTS.md's out-of-date "Current Scope" and worktree guidance (with per-change approval).
+**Scope**: Two-device P2P on the same network; TURN under restricted-NAT simulation (the Spike 2.3 method); capacity refusal at the cap; reconnection after a network change; signed-out regression; checking the exit criteria (Spike 2.2 result for criterion 7). Also the platform-level checks the units could not assert in tests: Unit 8's five manual checks (hot-plug with the output on, borderless on each platform, the shipped font on a real display, an opaque surface, a theme change reaching the window) plus the Windows/Linux runner callback compile, and Unit 8.1's always-on-top behaviour (pip-ux-parity §8.8 item 15) including the foreign-full-screen limitation. Documentation Refinement applies the documentation updates listed in `phase2-requirements.md`, the S3.6 persona scenario, and AGENTS.md's out-of-date "Current Scope" and worktree guidance (with per-change approval).
 
-**Dependencies**: Units 1-8 and all spikes.
+**Dependencies**: Units 1-8.1 and all spikes.
 
 ---
 
@@ -251,4 +275,5 @@ Functional Design fixes the real channel/topic shape.
 | 6 ZB Broadcast UI | yes | yes | yes | — | yes | — |
 | 7 ZC Viewer | yes | yes | yes | — | yes | — |
 | 8 External Display | yes | yes | yes | yes | yes | Dependency record (SECURITY-10) |
+| 8.1 Pop-out (PiP) | yes | yes | yes | yes | yes | `window_manager` dependency record (SECURITY-10) before CG; spans both apps |
 | 9 Integration | Build and Test + Documentation Refinement | | | | | Exit criteria |

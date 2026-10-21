@@ -550,6 +550,73 @@ Then contrast meets WCAG AAA (7:1)
 
 ---
 
+### S-21: Pop-out Live Captions (PiP)
+**Feature Area:** Output targets | **FR:** none new — v1 parity, carried by the Phase 6 Definition of Done (`docs/03-roadmap.md:464`) | **NFR:** NFR-5.1 | **Packages:** zip_core, zip_broadcast, zip_captions
+**Personas:** Jordan, Alex
+
+> As a person captioning speech, I want to pop the live captions out into a small window that floats on top of every other application, so that I can keep reading captions while I work in another program and bring them back when I am done.
+
+**Brownfield note:** Authored 2026-10-20 (PR #37 review decision D-1). This is v1 feature parity, not new functionality: Zip Captions v1 shipped Picture-in-Picture in v0.5.0-rc.5, and the Phase 6 Definition of Done makes PiP UX parity a v2.0 release gate. The unit was split out of Unit 8 (External Display, S-20) because Unit 8 is scoped to a different surface (a caption window on a selected display) and the two would have shipped half-built together. **Story ID S-21 is new; it does not add an FR.** Its behaviour contract already exists as `aidlc-docs/construction/output-targets/functional-design/pip-ux-parity.md` §8, which is binding and untouched by Unit 8; the V1 behaviour analysis lives in `aidlc-docs/v1-parity/picture-in-picture-v1-analysis.md`.
+
+**Applies to both apps (2026-10-20).** V1 was one web app that both broadcast and self-captioned; v2 splits that in two, and both need the pop-out. Zip Broadcast: read captions while running OBS or slides. Zip Captions: it is a self-contained caption engine, so a user captioning themselves has the same need. The contract in §8 applies identically to both; the unit delivers it in both, and its acceptance criteria are evidenced **per app**.
+
+**Architecture (option A, approved 2026-10-20).** Unit 8's window machinery lives in `zip_broadcast` today and `zip_captions` has no windowing at all (no `desktop_multi_window`, no sub-engine entry). Rather than duplicate the state machine or make one app depend on the other, the machinery is promoted to `zip_core` and both apps consume it; each app adds only its toggle wiring and sub-engine entry point. The promotion is a refactor of shipped Unit 8 code and must leave the external display behaving exactly as it does today.
+
+**Platform scope:** desktop only in Phase 2 (macOS, Windows, Linux). Web Document Picture-in-Picture is deferred to Phase 5 with the rest of the web scaffold, matching the deferral Unit 7 (S-19) already made for the web viewer route.
+
+**Acceptance Criteria:**
+
+```gherkin
+Given Zip Broadcast on macOS, Windows or Linux with live captions running
+When the broadcaster toggles the pop-out control in the app chrome
+Then a small pop-out window opens showing the live captions and its control reads "Exit Picture in Picture"
+
+Given Zip Captions on macOS, Windows or Linux with live captions running
+When the user toggles the pop-out control in the app chrome
+Then a small pop-out window opens showing the live captions and its control reads "Exit Picture in Picture"
+
+Given the pop-out window is open in either app
+When the user activates any other application
+Then the pop-out window remains above that application's window and keeps updating
+
+Given the pop-out window is open in either app
+When the user uses the in-surface toggle inside the pop-out window itself
+Then the captions return to the main window and the pop-out window closes
+
+Given the pop-out window is open in either app
+When the user closes it with the OS close button
+Then the main window returns to a coherent state and the caption controls still work
+
+Given the pop-out window is open in either app
+When the theme, layout settings or text appearance change
+Then the pop-out window reflects the change live without being reopened
+
+Given an active pop-out window in either app
+When the user toggles pop-out a second time
+Then no second pop-out window is created
+
+Given Zip Broadcast after the machinery is promoted to zip_core
+When the broadcaster uses external display output
+Then it behaves exactly as it did before the move (no regression in Unit 8's shipped behaviour)
+
+Given Zip Broadcast web or Zip Captions web
+When the user views the caption surface
+Then the pop-out control is not offered (web PiP is deferred to Phase 5)
+
+Given any pop-out path
+When the application logs
+Then no caption text appears in the logs
+```
+
+**Deferred:** §8.8 items 8-10 (content setting, live content-setting update, orientation/pane swap/translation controls inside the pop-out) depend on translation, which is Phase 8. They are recorded as deferred with that reason, not claimed as delivered.
+
+**Known limitation (accepted 2026-10-20):** on macOS the window floats above all normal application windows but not above another application's full-screen window; lifting that restriction requires an `NSPanel`-derived window class and is recorded in the Backlog rather than claimed here.
+
+**Blocked by:** Proto-15 (the caption-surface toggle is prototyped there; §8.3 defines the apparent conflict with S-19's surface)
+**Dependencies:** S-20 (reuses its window machinery, codec and sub-engine entry); caption bus from Phase 1
+
+---
+
 ## Security Review Stories
 
 Each review produces an approach document in the relevant unit's design folder and needs explicit human approval. The listed implementation stories cannot start Code Generation until their review is approved.
@@ -762,6 +829,7 @@ And the browser source still serves the caption overlay page
 | S-18 | FR-8 | NFR-2.1 | Jordan, Sam | M-S2.3 | 5 |
 | S-19 | FR-7 | NFR-4.1, 5.1, 5.2 | Sam | M-S2.2, M-S2.3, M-S3.6 | 1, 4 |
 | S-20 | FR-9 | NFR-5.1 | Jordan | M-S2.2, M-S2.3, M-REG-01 | 6, 9 |
+| S-21 | (none new — Phase 6 DoD PiP parity) | NFR-5.1 | Jordan, Alex | M-S2.2, M-S2.3 | — (v2.0 RC gate) |
 | SR-01 | FR-1.7 | NFR-3.8 | — | Blocks S-15 | — |
 | SR-02 | FR-2, FR-3.3 | NFR-3.4, 3.5 | — | Blocks S-11, S-13 | — |
 | SR-03 | — | NFR-3.1, 6.1 | — | Blocks S-12 | — |
@@ -791,13 +859,15 @@ S-13 + S-14 ──► S-18 (Capacity)
 S-11 + S-13 + S-15 + S-16 + S-18 + Proto-11 + Proto-12 ──► S-17 (Session mgmt)
 S-11 + S-13 + S-14 + S-16 + Proto-14 + Proto-15 ──► S-19 (Viewer)
 Proto-13 ──► S-20 (External display; independent of the broadcast chain)
+Proto-15 ──► S-21 (Pop-out; reuses S-20's window machinery)
 
 S-17 + S-19 + S-20 ──► M-S2.2, M-S2.3
+S-21 ──► M-S2.2, M-S2.3 (PiP parity)
 S-19 ──► M-S3.6
 S-15 + S-20 ──► M-REG-01
 ```
 
-S-20 and its prototype do not depend on the broadcast chain, so they can run in parallel with it from the start of Construction.
+S-20 and its prototype do not depend on the broadcast chain, so they can run in parallel with it from the start of Construction. S-21 is sequenced after S-20 because it reuses S-20's window machinery.
 
 ---
 
