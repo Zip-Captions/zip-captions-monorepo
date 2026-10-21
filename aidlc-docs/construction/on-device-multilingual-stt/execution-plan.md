@@ -1,7 +1,7 @@
 # Execution Plan: On-Device Multilingual STT
 
 **Date**: 2026-10-20
-**Status**: DRAFT — pending human approval. Stage plans execute sequentially; each stage requires explicit approval before its artifacts are generated (AI-DLC Construction Phase, `aidlc-project-rules/` + `.aidlc-rule-details/construction/`).
+**Status**: OQ-1/OQ-2/OQ-3 RESOLVED 2026-10-20 (all option A). Functional Design plan answers collected 2026-10-20 (14/14, all option A; Q1 refined in review for the streaming-caption premise — the engine's decode strategy is sherpa-onnx's documented **simulated-streaming** pattern: interim re-decodes while the user speaks + final on VAD end-of-speech). Next: generate the FD stage artifacts and present for approval; NFR stages draft on flagged vendor data; Code Generation Parts 1+2 are hard-gated on the Spike 1.4 report (OQ-2).
 **Unit number**: unassigned — see Open Question OQ-1 (roadmap placement is a human decision; this plan deliberately does not edit `docs/` or the inception unit-of-work artifacts).
 
 **Origin**: the research recorded in `aidlc-docs/construction/spikes/spike-1.4-plan.md` (Whistle vs. Sherpa-ONNX spike plan, including the "Sherpa-ONNX Language Coverage — Findings" section added 2026-10-20 from the indexed sherpa-onnx and cactus-needle docs).
@@ -15,13 +15,13 @@
 
 Phase 1 shipped on-device STT for the streaming model family (English-centric; the streaming pretrained zoo has no de/es/it/nl/pl models). The v1 UI is 11 languages. This unit adds a **multilingual on-device engine** so a user on any supported platform can caption in de/es/it/nl/pl (and the other 19 European languages the model covers) fully offline, without new infrastructure and without touching the ADR-005 `SttEngine` contract.
 
-The research recommendation (spike-1.4-plan.md, findings section): **Parakeet TDT 0.6B v3 int8** (~640 MB, 25 European languages, auto-detect, word-level timestamps, punctuation, hotword-capable transducer, FLEURS WER de 5.04 / es 3.45 / fr 5.15 / it 3.00 / nl 7.48 / pl 7.31 / en 4.85, CC-BY-4.0) via sherpa-onnx's **offline recognizer + Silero VAD sentence-chunking** pattern — reachable from the already-declared `sherpa_onnx: ^1.10.31` dependency through the `OfflineRecognizer` + `VoiceActivityDetector` Dart API, no new dependency.
+The research recommendation (spike-1.4-plan.md, findings section): **Parakeet TDT 0.6B v3 int8** (~640 MB, 25 European languages, auto-detect, word-level timestamps, punctuation, hotword-capable transducer, FLEURS WER de 5.04 / es 3.45 / fr 5.15 / it 3.00 / nl 7.48 / pl 7.31 / en 4.85, CC-BY-4.0) via sherpa-onnx's documented **simulated-streaming** pattern (offline recognizer + Silero VAD + periodic interim re-decodes + final on end-of-speech — the `sherpa-onnx-vad-microphone-simulated-streaming-asr` mode, with an official Parakeet v3 build in the release set) — reachable from the already-declared `sherpa_onnx: ^1.10.31` dependency through the `OfflineRecognizer` + `VoiceActivityDetector` Dart API, no new dependency. No true-streaming pretrained model exists for the gap languages in the streaming zoo, so simulated streaming is what makes the streaming-caption premise hold for the multilingual engine.
 
 ## Scope
 
 In scope:
 
-- A new `SttEngine` implementation (sentence mode) in `zip_core`: Silero VAD segmentation of the existing audio pipeline → offline decode of the completed segment → `SttResult(isFinal: true)` per sentence; `stopListening` flushes the in-flight segment.
+- A new `SttEngine` implementation (chunk-decode / simulated-streaming mode) in `zip_core`: Silero VAD segmentation of the existing audio pipeline → interim re-decodes of the in-progress segment on a cadence (interim `SttResult`, the caption pipeline's trailing-interim line) → final decode at VAD end-of-speech (final `SttResult`, best-effort commit on final-decode failure); `stopListening` flushes the in-flight segment.
 - The offline model family in the existing model catalog (`SherpaModelManager` / `SherpaModelCatalogNotifier`): Parakeet TDT 0.6B v3 int8 + `silero_vad.onnx` (~2 MB); the existing 100 MB large-download confirmation gate covers the 640 MB model by construction.
 - Catalog entry shape extended to represent a multilingual model (one download, many locales) — the existing `primaryLocaleId`-only shape cannot.
 - Engine registration and the engine-picker surface in `zip_captions` (one new row; reuses the shipped catalog/download UI).
@@ -79,11 +79,13 @@ Another session is actively building (Unit 8 overnight run; branch `feature/exte
 - **Do not touch**: `aidlc-docs/aidlc-state.md`, `aidlc-docs/audit.md`, `aidlc-docs/overnight-ledger.md`, `.agent/`, `docs/`, `stories/`, `aidlc-docs/inception/**`, any existing `aidlc-docs/construction/**` file or directory, `packages/**`, or the other session's branch/PR. The Unit 8 run owns `aidlc-state.md` and `audit.md` entries for its stages; this unit's entries are added at the normal approval points in its own session, after the Unit 8 run has written its own (or by a human, if ordering collides — flag, don't force).
 - The state-file/roadmap edits this unit eventually needs (unit number, story-map row, `docs/` roadmap line) happen **only** during Documentation Refinement with per-change approval — never as a side effect.
 
-## Open questions (human decisions, before Stage 1 approval is final)
+## Open questions — RESOLVED 2026-10-20 (all option A)
 
-- **OQ-1 — Roadmap placement and unit number.** Where does this unit sit: a late Phase 2 unit, a new phase, or pre-v2.0-RC (alongside the pop-out unit and Unit 9's live-verification work)? Determines the inception artifact edits (deferred to Documentation Refinement) and the PR sequencing relative to the pop-out unit.
-- **OQ-2 — Stage gating policy.** Proceed with Stages 1–5 on vendor-flagged data now (recommended; Unit 5/Spike 2.1 precedent), with Code Generation Part 2 gated on the Spike 1.4 report — or hold all stages until the spike report exists?
-- **OQ-3 — First model.** Parakeet TDT 0.6B v3 int8 as the sole initial catalog entry (recommended; best WER, permissive license, hotword-capable) vs. also shipping a smaller fallback model. The catalog architecture is model-agnostic either way.
+- **OQ-1 — Roadmap placement and unit number. RESOLVED: A.** Next free unit number in the Phase 2 cycle (after Unit 8, the pending pop-out unit, and Unit 9's live-verification work; the human assigns the exact number at the unit's approval). Targets v2.0 alongside Phase 8 (translation); does NOT block the v2.0 RC. The phase/story-map/roadmap doc edits happen during this unit's Documentation Refinement with per-change approval.
+- **OQ-2 — Stage gating policy. RESOLVED: A.** Stages 1–3 proceed now on vendor-flagged data (the FD's 14 answers are collected; NFR Requirements and NFR Design draft with values explicitly flagged "pending Spike 1.4 verification", per the Unit 5 / Spike 2.1 interim-values precedent; values are revised in place when the spike report lands, through the normal revision + review path). Code Generation Part 1 and Part 2 are hard-gated on the Spike 1.4 report so the step plan is transcribed once, from verified numbers.
+- **OQ-3 — First models. RESOLVED: A.** Parakeet TDT 0.6B v3 int8 + `silero_vad.onnx` are the only two catalog rows in v1. The catalog architecture (Q6's `kind` discriminator + `localeIds`) makes adding a second ASR model (e.g. Omnilingual 300M, once its license is verified) a row addition, not a redesign.
+
+**Spike 1.4 scope note (2026-10-20).** Spike 1.4's Q7 is expanded from "per-utterance latency" to also measure **interim update latency at the re-decode cadence** (interim results are now part of the design, not an afterthought) — the spike plan's Q7 row and methodology are updated accordingly.
 
 ## Verification gates (standing)
 
