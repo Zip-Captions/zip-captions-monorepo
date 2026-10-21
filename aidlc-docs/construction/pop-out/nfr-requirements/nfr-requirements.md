@@ -291,3 +291,71 @@ not introduced here.
 | Size/position memory | Not implemented | §8.9 "permitted, not required"; Q10 B |
 | Web Document PiP | Phase 5 | §8.6 |
 | Screen-reader announcement on open | Not implemented | Not required by §8 |
+---
+
+## 10. Review decisions (2026-10-21, owner + agent, during the NFR Requirements review)
+
+The three questions the handoff carried to NFR Design were resolved here instead, because each one
+decides a testable shape that NFR Requirements already has to state.
+
+### 10.1 Router and enumerator ownership (Q1 -> A1)
+
+A `@Riverpod(keepAlive: true)` provider in `zip_core` owns the `OverlayMethodRouter` and the single
+`ScreenRetrieverDisplayEnumerator`, and exposes `createController(...)`. Each app's controller
+provider becomes two calls with different mode arguments and does not construct an enumerator, a
+window service or an installer itself.
+
+Reasoning: the shipped provider creates the enumerator and hands it to *both* its window service and
+its controller, with a comment explaining that a second instance would open a second platform
+observer that nothing disposes. Repeating that construction in two apps repeats the invariant. A
+provider in `zip_core` is not foreign to the package — `captionBus` and `captionOutputTargetRegistry`
+are already keepAlive providers there.
+
+Consequence for the constructor: `createController` takes the mode and the logger prefix, and
+supplies both the window service and the open handshake's always-on-top mode from the router it
+owns. Neither app passes `handlerInstaller`, `enumerator` or `windowService`.
+
+### 10.2 Two consequences of `PopOutMode` on the controller (found while reviewing Q2)
+
+- `_bootstrap()` today settles on `Unsupported` when `_windowService.isSupported` is false. For
+  `PopOutMode` that judgement must not depend on the display list: a pop-out needs no display, so a
+  headless or display-less machine must still be able to pop out. The bootstrap rule becomes
+  `isSupported && (mode == popOut || displaysAvailable)`, and its test is the display-less case with
+  a pop-out request.
+- `_modeDisplayId` is a display-mode field. `PopOutMode` reuses `_openBounds` (the computed frame)
+  and leaves `_modeDisplayId` `null`, so the close path's display-lost branch is a no-op for
+  pop-out. This needs its own test: a pop-out open followed by an empty `displaysChanged` event must
+  not close the window (the external-display behaviour of D-5 is unchanged).
+
+### 10.3 Main-window-centre parameter (Q2 -> C)
+
+`computePopOutFrame`'s nullable main-window-centre parameter stays `null` in production this unit.
+The pop-out opens on the primary display's work area, centred horizontally, bottom-anchored. The
+parameter is exercised through a fake in the geometry tests and by no real caller. Multi-monitor
+placement is recorded as a Unit 9 platform check, in the same list as the always-on-top floating
+check, so it is judged on a real multi-monitor desktop rather than guessed.
+
+Reasoning: `window_manager.getBounds()` would make this cheap, but it adds a platform call on the
+open path for behaviour that has not been seen on a real multi-monitor setup, and `getBounds` can
+throw before the main window is ready — a third failure mode on an already-bounded open sequence.
+
+### 10.4 Two-controller router proof (Q3 -> C)
+
+Both layers, in `zip_core`:
+
+1. **Unit-level** — one real router, two recording handlers keyed by window id. Asserts each id
+   reaches its own handler, that unregistering one leaves the other, that the first register installs
+   the static slot and the last unregister clears it, and that a duplicate unregister is a no-op.
+2. **Two real controllers** — controllers A (window `7`) and B (window `9`), each with a distinct
+   recording `DesktopWindowService`, sharing one real router through the provider. Asserts:
+   - `(method, fromWindowId: 7)` reaches A's service and **not** B's;
+   - `(method, fromWindowId: 9)` reaches B's and not A's;
+   - after A closes, `(method, fromWindowId: 7)` is **dropped** — asserted as "neither service saw
+     it", not as "no exception";
+   - after A closes, `(method, fromWindowId: 9)` still reaches B.
+
+The negative assertions are the point: they are what catches a router that hands the last-registered
+handler every message, and they are the assertions a call-count-only test would omit.
+
+**Open items carried to NFR Design**: none from the handoff; the three are resolved above. NFR Design
+inherits 10.1-10.4 as constraints.

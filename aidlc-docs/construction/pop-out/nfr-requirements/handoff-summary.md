@@ -35,6 +35,15 @@
 - The lockfile fence is four entries; any other pubspec/lock movement stops the step and is reported.
 
 ## Open Questions for Next Stage
-- How the router is wired into the provider graph so both controllers receive the *same* instance without `zip_core` owning an app provider: a `@Riverpod(keepAlive: true)` provider in `zip_core` holding the router and one enumerator, or an app-side construction passed into both controller constructors? (source: FD left the provider shape to NFR Design)
-- Whether `computePopOutFrame`'s main-window-centre parameter is fed from a real window geometry source this unit, or stays `null` (primary display) with the parameter reserved. (source: FD §3.4's recorded limitation)
-- Precise shape of the two-controller router test's recording installer so it proves window-id routing and not merely call count. (source: Q3 A's "reaching only the controller that created window 7")
+None. The three questions this document originally carried were resolved during the review
+(2026-10-21) and are recorded as section 10 of `nfr-requirements.md`:
+
+- Router and enumerator ownership -> **A1**: a keepAlive `zip_core` provider owns the router and the
+  single enumerator and exposes `createController(...)`; no app constructs them.
+- Main-window-centre parameter -> **C**: stays `null` in production; multi-monitor placement is a
+  Unit 9 platform check.
+- Two-controller router proof -> **C**: unit-level routing tests plus a two-real-controller test with
+  negative delivery assertions (a message for a closed window is dropped, not delivered to the other
+  controller).
+- Found during the review and added as constraints: the `PopOutMode` bootstrap must not depend on the
+  display list, and a pop-out must not close on an empty `displaysChanged` event.
