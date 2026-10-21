@@ -37,15 +37,15 @@ re-derived.
 
 ## Plan steps
 
-- [ ] Step 1: Read the FD handoff summary, then the four FD artifacts (Rule 2)
-- [ ] Step 2: Write this plan and its questions; verify every dependency claim against the pub cache and the shipped pubspecs before asking
-- [ ] Step 3: Collect answers; resolve ambiguity or contradiction with a clarification file
-- [ ] Step 4: Write `nfr-requirements.md` (testability, performance, reliability, security, maintainability, usability, observability; each with concrete numbers or a concrete strategy)
-- [ ] Step 5: Write `tech-stack-decisions.md` (dependency placement per package, versions, fences, lockfile expectations, rejected alternatives)
-- [ ] Step 6: Security Baseline compliance table (SECURITY-01..15) with blocking findings called out
-- [ ] Step 7: PBT compliance table (PBT-01..10) against the FD's POP-1..POP-8 properties
-- [ ] Step 8: Write `handoff-summary.md` (NFR Requirements -> NFR Design)
-- [ ] Step 9: Present for approval and stop
+- [x] Step 1: Read the FD handoff summary, then the four FD artifacts (Rule 2)
+- [x] Step 2: Write this plan and its questions; verify every dependency claim against the pub cache and the shipped pubspecs before asking
+- [x] Step 3: Collect answers; resolve ambiguity or contradiction with a clarification file
+- [x] Step 4: Write `nfr-requirements.md` (testability, performance, reliability, security, maintainability, usability, observability; each with concrete numbers or a concrete strategy)
+- [x] Step 5: Write `tech-stack-decisions.md` (dependency placement per package, versions, fences, lockfile expectations, rejected alternatives)
+- [x] Step 6: Security Baseline compliance table (SECURITY-01..15) with blocking findings called out
+- [x] Step 7: PBT compliance table (PBT-01..10) against the FD's POP-1..POP-8 properties
+- [x] Step 8: Write `handoff-summary.md` (NFR Requirements -> NFR Design)
+- [x] Step 9: Present for approval and stop
 
 ---
 
