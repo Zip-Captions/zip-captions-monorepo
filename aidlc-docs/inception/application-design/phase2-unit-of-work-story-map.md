@@ -15,6 +15,7 @@
 | S-18 | Viewer Capacity | U5 | Spike 2.1 (cap value) |
 | S-19 | Broadcast Viewer | U7 | Proto-14, Proto-15 |
 | S-20 | External Display Output | U8 | Proto-13; `screen_retriever` record |
+| S-21 | Pop-out Live Captions (PiP) | U8.1 | Proto-15; `window_manager` record; Phase 6 DoD PiP parity; spans zip_broadcast + zip_captions; blocks the v2.0 RC |
 | SR-01 | OAuth Flow Approach Review | U2 (Functional Design) | Blocks U2 Code Generation |
 | SR-02 | RLS and Realtime Authorization Policy Review | U3 (Functional Design) | Blocks U3 Code Generation |
 | SR-03 | Server-Side Log Configuration Review | U4 (Infrastructure Design) | Blocks U4 Code Generation |
@@ -55,6 +56,6 @@
 
 | Persona | Units |
 |---|---|
-| Jordan | U1, U2, U3, U4, U5, U6, U8, U9 |
+| Jordan | U1, U2, U3, U4, U5, U6, U8, U8.1, U9 |
 | Sam | U1, U3, U5, U7, U9 |
-| Alex (regression) | U2, U9 |
+| Alex (regression) | U2, U8.1, U9 |

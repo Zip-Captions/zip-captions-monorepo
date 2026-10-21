@@ -18,9 +18,19 @@ Rows depend on columns. "X" means a hard dependency (must be complete, or for pr
 | U6 ZB Broadcast UI | | | | P (Proto-11, 12) | | | | | X | | | |
 | U7 ZC Viewer | | | | P (Proto-14, 15) | | | | | X | | | |
 | U8 External Display | | | | P (Proto-13) | | | | | | | | |
+| U8.1 Pop-out (PiP) | | | | | | | | | | | | X (U8) |
 | U9 Integration | X | X | X | X | X | X | X | X | X | X | X | X |
 
 Units 6 and 7 get Unit 2, Unit 3, and Unit 3.1 indirectly, through Unit 5.
+
+**Unit 8.1 — Pop-out Live Captions (PiP), S-21** (inserted 2026-10-20, per PR #37 review
+decision D-1): the pop-out designed inside Unit 8 is split into its own unit. Depends only
+on Unit 8, which supplies the window machinery this unit **promotes to `zip_core`**
+(option A, approved 2026-10-20) so both apps consume one implementation rather than
+duplicating a window state machine or making one app depend on another. Blocks the v2.0
+RC and Unit 9. Desktop only for Phase 2; web Document PiP moves to Phase 5. Adds
+`desktop_multi_window` and `window_manager` to **both** apps; the supply-chain record is
+`aidlc-docs/construction/pop-out/functional-design/window-manager-security-10.md`.
 
 **Unit 3.1 — Signaling Channel Privacy** (inserted 2026-10-05, after Units 3 and 4
 shipped): corrects a privacy gap in Unit 3's signaling channel found while scoping Unit
@@ -55,7 +65,7 @@ Start ──┬── Spike 2.1 ────────────────
                                    (Build and Test + Documentation Refinement)
 ```
 
-**Text alternative:** Spikes 2.1, 2.2 and 2.3 and Unit 1 (Prototypes) can all start immediately. Unit 2 (Auth) needs Proto-10. Unit 3 needs Unit 2 and Spike 2.1. Unit 3.1 needs Unit 3. Unit 4 needs Spike 2.3. Unit 5 needs Units 3, 3.1 and 4 and Spike 2.1. Unit 6 needs Unit 5 and Proto-11 and Proto-12. Unit 7 needs Unit 5 and Proto-14 and Proto-15. Unit 8 needs only Proto-13. Unit 9 needs everything.
+**Text alternative:** Spikes 2.1, 2.2 and 2.3 and Unit 1 (Prototypes) can all start immediately. Unit 2 (Auth) needs Proto-10. Unit 3 needs Unit 2 and Spike 2.1. Unit 3.1 needs Unit 3. Unit 4 needs Spike 2.3. Unit 5 needs Units 3, 3.1 and 4 and Spike 2.1. Unit 6 needs Unit 5 and Proto-11 and Proto-12. Unit 7 needs Unit 5 and Proto-14 and Proto-15. Unit 8 needs only Proto-13. Unit 8.1 needs Unit 8. Unit 9 needs everything.
 
 ## Critical Path
 
@@ -80,6 +90,7 @@ Because units are built one at a time in the main checkout, this order keeps the
 | 8 | Unit 5 Transport + Output + Capacity | Critical path |
 | 9 | Unit 6 ZB Broadcast UI | After Unit 5 |
 | 10 | Unit 7 ZC Viewer | After Unit 5 |
+| 10.5 | Unit 8.1 Pop-out (PiP) | Inserted 2026-10-20; needs Unit 8's window machinery while it is fresh. Blocks the v2.0 RC |
 | 11 | Spike 2.2 | Any time before Unit 9; slot it in wherever it fits |
 | 12 | Unit 9 Integration | Last |
 
@@ -97,6 +108,8 @@ The order is a recommendation. Only the dependency matrix is binding.
 | Coturn endpoint + credential issuer | U4 | U5 | Contract is `TurnCredentialService` |
 | Local dev stack (Docker Compose) | U3, U4 | all | Additive services only; `docs/TEST_SETUP.md` updated at Documentation Refinement |
 | `CaptionOverlayTarget`, `OutputTargetSettings` | U8 | U6 (output target selection UI) | U6 lists the external display option added by U8 if it has landed; otherwise it is added in U9 |
+| `OverlayWindowMode`, `OverlayWindowController`, overlay codec, sub-engine entry | U8 | U8.1 | U8.1 moves these from `zip_broadcast` to `zip_core` (one implementation for both apps); it must not fork or copy the controller, codec or entry contract, and must not regress Unit 8's external display |
+| `windowManager` instance in the sub-engine | U8.1 | U9 (manual verification) | One global per process; the call must run in the sub-engine that owns the pop-out window, in both apps |
 
 ## Testing Checkpoints
 
