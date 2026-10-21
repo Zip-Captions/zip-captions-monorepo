@@ -21,7 +21,7 @@
 | Name | Type | Constraint for Next Stage |
 |---|---|---|
 | `OverlayMethodRouter` | new class in `zip_core` | reference-counted; first register installs, last unregister uninstalls; dispatch order = registration order |
-| `AlwaysOnTopInstaller` | seam + `_io`/`_stub` | only `window_manager` import; no window id; never throws to the caller |
+| `WindowConfigurator` | seam + `_io`/`_stub` | `configure(windowId, config)` over a first-party `MethodChannel`; no plugin import; never throws to the caller |
 | `popOutAvailability` | pure function | the single source of the UX-PIP-03 matrix; both apps call it |
 | `pop_out_geometry.dart` | pure functions | `computePopOutFrame` takes the main-window centre as a nullable parameter |
 | `runZipCaptions` | new bootstrap function in `zip_captions` | overlay path must not reach Google Fonts, logging, `SharedPreferences` or `Supabase.initialize` |
@@ -47,3 +47,61 @@ None. The three questions this document originally carried were resolved during 
   controller).
 - Found during the review and added as constraints: the `PopOutMode` bootstrap must not depend on the
   display list, and a pop-out must not close on an empty `displaysChanged` event.
+
+---
+
+## Revision 2026-10-21 (post pre-build review)
+
+Answers applied: RQ-1 A, RQ-2 A, RQ-3 A as amended. Read FD `handoff-summary.md`'s "Revision
+2026-10-21" section first; it lists the constraints and the verify-not-assume claims.
+
+### What changed in this document's source NFR-R
+- §1.2: the always-on-top installer assertions became `WindowConfigurator` assertions (floating +
+  decorated for `PopOutMode`), plus two new close-notification assertions.
+- §3.1: `window_manager` failure row replaced by native `configure`; unknown-id `subWindowClosed` row added.
+- §4.1: no new third-party dependency, so SECURITY-10's supply-chain question is gone; the macOS
+  plugin-set limitation is **withdrawn** and a runner-code-coverage limitation added.
+- §5.2: the overlay barrel is a separate library (R-M7).
+- §10.2: the "null display id is inert" reasoning is withdrawn; six guards are mandatory (R-M2).
+- §10.3: the frame is computed by the shell and passed in (R-M5).
+- §10.5: new — the owner's three answers and their effects.
+
+### Unchanged
+Dependency placement for `desktop_multi_window` and `screen_retriever`, the per-app test matrix, the
+lockfile fence's remaining expectation (`screen_retriever` positions only), the PBT plan, and every
+performance number.
+
+### Next stage inputs
+NFR Design inherits §10.1-10.5 plus the FD revision section. It must also settle the three items
+NFR-R §10.5 leaves to it: the router's provider wiring shape, the exact `configure` channel name per
+platform, and the per-platform chrome-allowance constants.
+
+## Revision 2 — 2026-10-21 (owner request changes)
+
+- §1.2 item 2: `ExternalDisplayMode` → `configure(floating: false, decorated: false)` is **pinned**
+  (was "either is acceptable"), with Unit 8's borderless surface recorded as dependent on it.
+- §1.2's close-notification paragraph: the transport is a first-party channel on the **main** engine
+  (`subWindowClosed {windowId}`), not `desktop_multi_window`'s internal window channel; the Dart seam
+  is `SubWindowClosedChannel` → `controller.onNativeWindowClosed(int)`; it does not pass through the
+  router. Tested in `zip_core` with a fake, including the app-initiated-close drop.
+- §3.1: the unknown-id row is now `subWindowClosed`.
+- Unchanged: every dependency decision, the lockfile fence, the PBT plan, all performance numbers.
+
+## APPROVED — 2026-10-21
+
+NFR Requirements (this document's source artifacts, revision 2) was **approved by James Petersen on
+2026-10-21** together with the Functional Design, after the pre-build review.
+
+**Next stage: NFR Design — NOT STARTED.**
+
+### Open item carried into NFR Design
+
+- **`SubWindowClosedChannel` registration order**: where the main-engine seam's channel handler is
+  registered relative to `WidgetsFlutterBinding.ensureInitialized()` and the app's startup work, its
+  lifetime owner, its `dispose()` with the container, and — critically — that it is listening before
+  any sub-window can be created, so a window cannot close unheard.
+
+### Constraint carried forward
+
+§10.1-10.5 of `nfr-requirements.md` are binding. NFR Design must carry R-M2's six guards, R-M3's
+router shape and R-M5's frame ownership into its own sections rather than re-deriving them.

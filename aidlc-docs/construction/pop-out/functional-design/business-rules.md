@@ -1,6 +1,6 @@
 # Business Rules — Unit 8.1: Pop-out Live Captions (S-21)
 
-**Status**: Draft for approval.
+**Status**: APPROVED 2026-10-21 by James Petersen (revised after the pre-build review: RQ-1 A / RQ-2 A / RQ-3 A-amended; revision 2 same day).
 **Convention**: `BR-PIP-xx` numbers are the contract's own (`pip-ux-parity.md` §8.4). `BR-U8.1-xx`
 are this unit's refactor/promotion rules, which the contract does not cover.
 
@@ -17,8 +17,10 @@ At most one pop-out exists, and it is a distinct window from the external displa
 second `createWindow`; the two modes use **two** controllers in the main engine (one per mode),
 because the external display window and the pop-out may be open simultaneously and are separate
 windows. Each controller still owns at most one window. `OverlayWindowMode` distinguishes them;
-`DesktopMultiWindowService` and the enumerator are each per-controller, exactly as Unit 8 shares
-one enumerator between the service and the controller.
+`DesktopMultiWindowService` is per-controller, and the **enumerator is shared** by both controllers
+and both window services (one platform observer, owned by the provider, never disposed by a
+controller) — see `business-logic-model.md` §4.1 and NFR-R §10.1. Corrected 2026-10-21 (R-m2): the
+earlier "each per-controller" sentence contradicted that decision.
 
 **Consequence to verify**: `overlayMethodHandlerInstaller` wraps a **single static**
 `DesktopMultiWindow.setMethodHandler` slot. Unit 8's rule "exactly one handler owner" therefore
@@ -40,10 +42,19 @@ without a second window.
 Closed by the toggle, the OS close button, or an open failure, the main window clears the hint and
 resets the toggle.
 - Toggle-off: `close(reason: CloseReason.toggleOff)` → `Off` → shell writes `popOutEnabled=false`.
-- OS close: the `'-1'` window-call seam → `WindowClosed` → shell writes `popOutEnabled=false`
-  (shipped, unchanged).
-- Open failure: `OpenFailed` → shell writes `popOutEnabled=false` and renders the failure copy
-  (shipped, unchanged).
+- OS close, primary path: the runner raises `subWindowClosed {windowId}` on a **first-party
+  channel registered on the main engine** (not `desktop_multi_window`'s internal window channel,
+  which is plugin-private), the main-engine Dart seam delivers it to
+  `controller.onNativeWindowClosed(windowId)` (RQ-3 A as amended 2026-10-21, transport corrected
+  2026-10-21) → `WindowClosed` → shell writes `popOutEnabled=false` in the same frame. Raised for
+  every sub-window including the external display; an id that does not match the open window is
+  dropped, which also drops app-initiated closes because `_takeWindow()` nulls the id first.
+- OS close, fallback: the `'-1'` window-call seam → `WindowClosed` → shell writes
+  `popOutEnabled=false` (shipped, unchanged). Lazy: it fires on the next window call, which may not
+  come while paused or idle (R-M6).
+- Open failure: `OpenFailed` → shell writes `popOutEnabled=false` and renders `popOutOpenFailed`
+  **next to the chrome toggle while the status is `Failed`**, not in the banner (R-M8, corrected
+  2026-10-21: the banner is not visible once `popOutEnabled` is false).
 
 **No persistence** (Q10 B), so no settings read-back can contradict what the user sees.
 
@@ -86,7 +97,7 @@ the pop-out. Remembering size/position (§8.9 "permitted, not required") is not 
 
 ### BR-PIP-11 — No caption content in logs or telemetry
 **Mechanism**: the promoted controller's logs carry fixed strings plus `runtimeType` (Unit 8's
-BR-U8-18 discipline, unchanged). New log sites in this unit: the `AlwaysOnTopInstaller` failure
+BR-U8-18 discipline, unchanged). New log sites in this unit: the `WindowConfigurator` failure
 (fixed string + `runtimeType`), the shell's pop-out toggles (no logging at all), and
 `PopOutCaptionTarget` (no logging). The window entry's "dropped update" warning stays as shipped
 and carries no payload.
@@ -99,8 +110,12 @@ from `Platform.isMacOS || isWindows || isLinux`); availability = the session/eng
 `domain-entities.md` §3.1. The table there is the normative rendering of this rule.
 
 ### BR-PIP-13 — Recognition unavailability is a disabled state, not a hidden one
-**Mechanism**: `sttEngineRegistryProvider.listAvailable().isEmpty` disables the toggle and renders
-`popOutUnavailableNoEngine` next to it. The control is never hidden for this cause.
+**Mechanism**: the app's own engine gate (RQ-2 A, corrected 2026-10-21) disables the toggle and
+renders `popOutUnavailableNoEngine` next to it — `broadcastEngineAvailableProvider` in Zip Broadcast
+(the audio-source/factory path, which `sttEngineRegistryProvider` never feeds) and
+`captionsEngineAvailableProvider` (`sttEngineProvider != null`) in Zip Captions. The control is
+never hidden for this cause. The earlier "empty registry" rule was unachievable in Zip Broadcast and
+would have disabled the pop-out on every machine (R-M1).
 
 ### BR-PIP-14 — No feature exists for users who cannot perform speech-to-text
 Restated, not implemented: the gate is "is there caption content to show", not "how was it
@@ -117,11 +132,13 @@ acceptable reasons for a test to change shape are enumerated in `business-logic-
 each one requires a note in the code summary.
 
 ### BR-U8.1-02 — `zip_core` stays platform-agnostic
-`desktop_multi_window` and `window_manager` are imported only by `_io` files selected through a
-conditional export. No `dart:html` anywhere. The two apps never import either plugin directly.
-**Verification**: `rg -l "package:desktop_multi_window|package:window_manager|package:screen_retriever"
-packages/zip_core/lib` returns exactly the three `_io` files (plus their stub/export siblings,
-which import nothing); `rg -l` over each app's `lib/` returns nothing.
+`desktop_multi_window` is imported only by `_io` files selected through a conditional export. No
+`dart:html` anywhere. The two apps never import the plugin directly. `window_manager` is not a
+dependency at all (RQ-1 A, 2026-10-21).
+**Verification**: `rg -l "package:desktop_multi_window|package:screen_retriever" packages/zip_core/lib`
+returns exactly the expected `_io` files (plus their stub/export siblings, which import nothing);
+`rg -l` over each app's `lib/` returns nothing; `rg window_manager` over all three packages returns
+nothing.
 
 ### BR-U8.1-03 — One implementation of the machinery
 No controller, codec, mode hierarchy, entry contract, bridge, window service or enumerator exists
@@ -132,17 +149,22 @@ in an app after this unit. The only per-app duplicates are the ~60-line caption-
 `DesktopMultiWindow.setMethodHandler` is a single static slot. The promoted installer contract is
 narrowed to: **install once per engine before the first window of any mode; uninstall only when no
 controller remains.** The controller keeps its `OverlayMethodHandlerInstaller?` seam (so tests can
-inject a fake) but production passes a shared, reference-counted dispatcher rather than the raw
-installer. A controller must still fail closed (`create_failed`) when the installer is `null`
-(Unit 8 R6), which the dispatcher satisfies by being non-null.
+inject a fake) but production passes an installer **closure bound to that controller's token**
+(`OverlayMethodRouter.installerFor(token)`), so the controller's existing `dispose()` call with
+`null` removes exactly its own handler. Dispatch is by window id, never by "who recognises the
+method" — the handler returns `Future<void>`, so no verdict exists to consult (R-M3). A controller
+must still fail closed (`create_failed`) when the installer is `null` (Unit 8 R6), which the router
+satisfies by never returning `null` in production.
 
 ### BR-U8.1-05 — A window's own settings are applied inside the engine that owns it
-`window_manager`'s `windowManager` is a per-process global bound to its own engine's main window.
-Every pop-out window property the plugin provides (always-on-top, resizable, minimum size) is set
-from the pop-out sub-engine's own Dart isolate, never from the main engine, never by window id.
-**Verification**: the `_io` installer has no window-id parameter, and `OverlayWindowEntry` awaits
-it inside the sub-engine before signalling ready. A Unit 9 manual check confirms the result
-(§8.8 item 15).
+Every pop-out window property (floating, decoration, minimum size) is applied from the pop-out
+sub-engine's own isolate, through the per-runner `configure` channel, never from the main engine.
+The sub-engine passes the window id it was launched with, because the native callback cannot know
+it (RQ-1 A, 2026-10-21: `window_manager` was removed for exactly this reason — its macOS
+`ensureInitialized` replaces `desktop_multi_window`'s window delegate, R-B2).
+**Verification**: `overlayWindowMain` awaits `configure` inside the sub-engine before signalling
+ready (once, not twice — R-M9); the main engine never calls it. A Unit 9 manual check confirms the
+result (§8.8 item 15).
 
 ### BR-U8.1-06 — The sub-engine never initialises app services
 `zip_captions`'s `main(List<String> args)` must route the overlay launch **before** Google Fonts

@@ -1,6 +1,6 @@
 # Domain Entities — Unit 8.1: Pop-out Live Captions (S-21)
 
-**Status**: Draft for approval.
+**Status**: APPROVED 2026-10-21 by James Petersen (revised after the pre-build review: RQ-1 A / RQ-2 A / RQ-3 A-amended; revision 2 same day).
 **Sources**: `pip-ux-parity.md` §8 (binding), S-21, `phase2-unit-of-work.md` Unit 8.1, the
 `window_manager` SECURITY-10 record, the shipped Unit 8 code, and the twelve answers to the
 Functional Design questions (`plans/pop-out-functional-design-plan.md`) plus the one
@@ -8,7 +8,7 @@ clarification (`plans/pop-out-functional-design-clarification-questions.md`, Q9 
 
 **Answers carried**: Q1 A (`PopOutMode`), Q2 A (`zip_core/src/output/overlay/` barrel, existing
 fence shape), Q3 A (config types move to `zip_core`, `zip_broadcast` re-exports), Q4 A
-(`AlwaysOnTopInstaller` in the sub-engine), Q5 A (`PopOutCaptionTarget` per app, controller guard
+(`WindowConfigurator` in the sub-engine), Q5 A (`PopOutCaptionTarget` per app, controller guard
 is the idempotence), Q6 A (optional controls parameter on `CaptionDisplayWidget`), Q7 A (shell
 header action + in-surface + inline banner), Q8 A (three active states; empty registry disables),
 Q9 **amended** (75% width, two rendered lines tall, bottom-anchored), Q10 B (no persistence),
@@ -48,30 +48,38 @@ Three groups. "Promoted" means the file moves from `zip_broadcast/lib/src/output
 
 | Type | Additive change | Why (source) |
 |---|---|---|
-| `DesktopWindowService` | `Future<void> setBounds(int windowId, Rect frame, {bool center = false})` and `Future<void> setAlwaysOnTop(int windowId, bool value)` | Q9 amended: the pop-out opens at a computed size and placement, and needs the always-on-top call. `setFrame` stays the external display's work-area path, unchanged (`toPlatformFrame` and its tests untouched). |
-| `DesktopMultiWindowService` (io) | implements the two new methods: `setBounds` → `setFrame(toPlatformFrame(...))` (same conversion; no new coordinate logic) or, when `center`, `WindowController.fromWindowId(id).setBounds`-plus-centre; `setAlwaysOnTop` → **throws** `UnsupportedError` (the plugin has no such call — the real call goes through 1.2.1) | SECURITY-10 §1: `desktop_multi_window` cannot do always-on-top. Keeping the throw makes any accidental use loud in tests. |
-| `DesktopMultiWindowService` (stub) | both throw `UnsupportedError`, as its other methods do | Consistent with the shipped stub. |
-| `overlayWindowMain` | new optional `AlwaysOnTopInstaller? alwaysOnTop` defaulting to the platform installer | Q4 A: the sub-engine must run the call itself. |
-| `OverlayWindowEntry` | new optional `AlwaysOnTopInstaller? alwaysOnTop` and `PopOutWindowHost? popOutHost`; when the launch's mode is `PopOutMode` it awaits `alwaysOnTop?.install()` before sending `overlayReady`, and builds `PopOutWindowBody` instead of `OverlayWindowBody` | Q4 A + Q6 A/Q9 amended: the pop-out window's own surface (with the in-surface toggle) and its raise-to-top happen inside the engine that owns it. |
+| `DesktopWindowService` | **no change** | R-m1 resolved 2026-10-21: `setBounds(…, {bool center})` and a throwing `setAlwaysOnTop` are dropped as dead surface. `setBounds` duplicated `setFrame`, `center` contradicted Q9's bottom-anchoring (the plugin maps it to `NSWindow.center()`), and the real always-on-top call is not this interface's job. `setFrame` serves both modes; `toPlatformFrame` and its tests are untouched. |
+| `overlayWindowMain` | new optional `WindowConfigurator? windowConfigurator` defaulting to the platform configurator | RQ-1 A: the sub-engine applies its own window configuration before ready (BLM §3.2 step 6). |
+| `OverlayWindowEntry` | new optional `PopOutWindowHost? popOutHost`; when the launch's mode is `PopOutMode` it builds `PopOutWindowBody` instead of `OverlayWindowBody` | Q6 A/Q9 amended. **R-M9 resolved**: it does **not** run the configuration step — that is `overlayWindowMain`'s (BLM §3.2), stated once. |
 
-#### 1.2.1 `AlwaysOnTopInstaller` (new, the `window_manager` fence)
+#### 1.2.1 `WindowConfigurator` (new, replaces the `window_manager` installer)
 
 ```
-typedef AlwaysOnTopInstaller = Future<void> Function();
+class WindowConfigurator {
+  Future<void> configure(int windowId, OverlayWindowConfig config);
+}
+
+class OverlayWindowConfig {
+  final bool floating;    // always-on-top
+  final bool decorated;   // title bar, close button, resize handles
+  final double minWidth;  // content size
+  final double minHeight;
+}
 ```
 
-- Declared in `zip_core/lib/src/output/overlay/always_on_top_installer.dart`.
-- Production const `alwaysOnTopInstaller` lives in
-  `zip_core/lib/src/output/overlay/always_on_top_installer_io.dart`, exported through a new
-  conditional export `always_on_top_installer.dart` → `..._stub.dart` /
-  `if (dart.library.io) ..._io.dart` (the same shape as `desktop_multi_window_service.dart`).
-- The io file is the **only** file in either app or `zip_core` that imports `window_manager`
-  (SECURITY-10 §5's import fence, restated).
-- Its body: `await windowManager.ensureInitialized(); await windowManager.setAlwaysOnTop(true);`
-  followed by `setResizable(true)` and `setMinimumSize(...)` using the pop-out constants. Each
-  step caught; a failure logs a fixed string and does not throw (the window still opens, just not
-  on top; Unit 9's item 15 check is what proves the happy path on each platform).
-- The stub's const is a no-op `Future<void> Function()`.
+- Declared in `zip_core/lib/src/output/overlay/window_configurator.dart`; the production
+  implementation in `..._io.dart` uses a `MethodChannel` and is exported through the same
+  conditional-export shape as `desktop_multi_window_service.dart`; `..._stub.dart` is a no-op.
+- The channel name and method are fixed (`BLM §3.2`): `configure({windowId, floating, decorated,
+  minWidth, minHeight})`. Both apps' runners implement it; Infrastructure Design owns the exact
+  channel name and the per-platform bodies.
+- **No `window_manager` import anywhere.** RQ-1 A (owner, 2026-10-21) removed the dependency: its
+  macOS `ensureInitialized` replaces `desktop_multi_window`'s window delegate, which is the only
+  path by which an OS close shuts the sub-engine down (R-B2). An additive native hook has no such
+  cost.
+- Each step caught; a failure logs a fixed string and does not throw (the window still opens, just
+  not floating; Unit 9's item 15 check is what proves the happy path on each platform).
+- The stub's instance is a no-op `Future<void>`-returning implementation.
 
 ### 1.3 New types
 
@@ -91,14 +99,25 @@ typedef AlwaysOnTopInstaller = Future<void> Function();
 | Package | Where | Version | Justification |
 |---|---|---|---|
 | `desktop_multi_window` | `zip_core`, `zip_captions` (already in `zip_broadcast`) | `^0.2.0` (the shipped pin) | The machinery in `zip_core` needs it behind the fence; `zip_captions` gains its first windowing. |
-| `window_manager` | `zip_core` only | `^0.5.1` | Approved 2026-10-20, record `pop-out/functional-design/window-manager-security-10.md`, tech-spec §6 row already present. `^0.5.1` resolves to the current 0.5.2; its own `screen_retriever: ^0.2.2` dependency is the pin `zip_broadcast` already uses, so no other lockfile movement is expected. |
-| `screen_retriever` | `zip_core` (already in `zip_broadcast`) | `^0.2.2` | The promoted display enumerator needs it. `zip_broadcast` keeps its own declaration or drops it — a decision for Infrastructure Design, since nothing in `zip_broadcast` will import it after the move. |
+| `screen_retriever` | `zip_core` (already in `zip_broadcast`) | `^0.2.2` | The promoted display enumerator needs it. `zip_broadcast` **removes** its own declaration (RQ-2 A, NFR-R Q2 A), because nothing in the app imports it after the move. |
 
-**The apps do not declare `window_manager`.** Its only Dart call site is in `zip_core`, behind the
-io fence; a per-app declaration would be an unused dependency (SECURITY-10 "no unused
-dependencies"). The native plugin still reaches each app's desktop build because `zip_core` is a
-path dependency the app resolves through. Infrastructure Design verifies this per platform
-(`generated_plugin_registrant`, `generated_plugins.cmake`, `Podfile.lock`).
+**`window_manager` is no longer a dependency of anything** (RQ-1 A, owner 2026-10-21). The row above
+was withdrawn with the dependency; `window-manager-security-10.md` is retired (kept in place as a
+closed record of the 2026-10-20 decision and its reversal), nothing imports it, and **no line is
+added to any `pubspec.yaml` and no row is added to `docs/04-technical-specification.md` §6**.
+
+**R-M10 resolved.** The NFR-R lockfile fence listed `window_manager_macos` entries that do not
+exist: 0.5.1 is a single package, not federated (`pubspec.yaml:31-32` → `path: ^1.8.2`,
+`screen_retriever: ^0.2.0`; one `macos/window_manager.podspec`). With the dependency removed the
+fence is now only `screen_retriever`'s position:
+
+| File | Expected movement |
+|---|---|
+| `pubspec.lock` (workspace) | none |
+| `packages/zip_broadcast/macos/Podfile.lock` | `screen_retriever_macos` **stays** — the plugin still reaches the app through `zip_core`; the earlier "−" row was wrong |
+| `packages/zip_captions/macos/Podfile.lock` | gains `desktop_multi_window` and `screen_retriever_macos` |
+
+Any other movement is reported, not committed silently.
 
 ---
 
@@ -143,9 +162,27 @@ path dependency the app resolves through. Infrastructure Design verifies this pe
 | any of the above | `RecordingActiveState`/`PausedState`/`ReconnectingState` | available | shown, **enabled** |
 | any of the above | `RecordingActiveState`/`PausedState`/`ReconnectingState` | none registered | shown, **disabled**, engine reason |
 
-The engine check reads `sttEngineRegistryProvider.listAvailable().isEmpty`. In `zip_captions`
-`main.dart` registers `FakeSttEngine` in debug builds only, so this gate is genuinely reachable in
-release; in `zip_broadcast` the engine is registered by the STT factory provider.
+**R-M1 resolved (RQ-2 A, owner 2026-10-21): the engine check is each app's own existing gate, not
+the registry.** `sttEngineRegistryProvider` was wrong for Zip Broadcast: nothing in
+`packages/zip_broadcast/lib` ever registers into it, because the app builds engines per audio source
+through `sttEngineFactoryProvider` (`stt_engine_factory_provider.dart:20-27`). The registry is
+therefore permanently empty there, and the gate would have disabled the pop-out with
+"No speech recognition engine" on every machine. `SttEngineRegistry` is also a plain class
+(`stt_engine_registry.dart:8-42`) with no stream or listenable, so watching it could not rebuild
+when `sherpa_model_catalog_provider.dart:106` unregisters at runtime.
+
+`popOutAvailability` therefore takes one boolean, `engineAvailable`, supplied by a per-app watchable
+provider — "whatever already gates that app's Start Captioning control":
+
+| App | Provider | Rule |
+|---|---|---|
+| `zip_broadcast` | new `broadcastEngineAvailableProvider` | true when the app's audio-source/factory path reports at least one usable source; it must rebuild when the source list changes, so it derives from the existing sources provider rather than the registry |
+| `zip_captions` | new `captionsEngineAvailableProvider` | `ref.watch(sttEngineProvider) != null` |
+
+`zip_core` keeps `engineAvailable` as a plain parameter and imports neither app. The `zip_captions`
+gate stays genuinely reachable in release (its debug-only `FakeSttEngine` registration in
+`main.dart:57` is irrelevant now, because that registration feeds `sttEngineProvider`, which the new
+provider reads).
 
 **Precedence**: `Unsupported` wins over everything (nothing renders). Engine-unavailable wins over
 session-inactive when both apply, because the engine is the cause the user can act on and
@@ -213,7 +250,7 @@ setting" is satisfied by construction.
 | Concern | Owner |
 |---|---|
 | Pop-out window existence, ready handshake, close paths, update coalescing | `OverlayWindowController` (promoted, unchanged) |
-| Always-on-top, resizable, minimum size of the pop-out window | `AlwaysOnTopInstaller` in the pop-out **sub-engine** |
+| Always-on-top, decorated, resizable, minimum size of the pop-out window | `WindowConfigurator` (native `configure` channel) in the pop-out **sub-engine**; close notification raised natively to the **main** engine |
 | Toggle idempotence and "open in progress" | the controller's `Opening`/`Open` guard; no UI flag (Q5 A) |
 | Popped-out flag, target registration, hint visibility | each app's shell (in-memory, Q10 B) |
 | Caption text / interim / activity | `PopOutCaptionTarget` reading the on-screen buffer, exactly as `CaptionOverlayTarget` does |
@@ -238,5 +275,5 @@ setting" is satisfied by construction.
 are not re-derived.
 
 No PBT properties are identified for `PopOutControls`, `PopOutBanner`, `PopOutWindowBody` or
-`AlwaysOnTopInstaller` — they are presentation or single-call platform seams, covered by widget
-tests and a fake installer.
+`WindowConfigurator` — they are presentation or single-call platform seams, covered by widget
+tests and a fake configurator.

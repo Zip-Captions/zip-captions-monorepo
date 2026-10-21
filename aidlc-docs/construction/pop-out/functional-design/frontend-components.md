@@ -1,6 +1,6 @@
 # Frontend Components — Unit 8.1: Pop-out Live Captions (S-21)
 
-**Status**: Draft for approval.
+**Status**: APPROVED 2026-10-21 by James Petersen (revised after the pre-build review: RQ-1 A / RQ-2 A / RQ-3 A-amended; revision 2 same day).
 **Authority**: `pip-ux-parity.md` §8.3 is the **sole** specification of both toggles. The approved
 Proto-15 contains only a theme toggle; it is not visual authority for this unit and nothing here
 is derived from it. Where §8.3 names a V1 label, the label is reproduced verbatim.
@@ -58,16 +58,22 @@ const CaptionDisplayWidget({required List<CaptionDisplayEntry> entries,
 Change: one optional parameter.
 
 ```
-final Widget? controls;      // rendered as a trailing row inside the list's last item region
+final Widget? controls;      // rendered in a fixed row below the scrolling list
 ```
 
 - Default `null` → byte-for-byte the current rendering at every existing call site (both apps'
   `RecordingScreen`s, the external display's `OverlayWindowBody`, and the widget tests).
-- When non-null, appended after the entry list inside the same `ListView` (so it scrolls with the
-  captions and never overlaps them), wrapped in a `Padding` that reuses the entry padding. For the
-  pop-out's two-line window, `controls` sits in the same column under the two caption lines and the
-  geometry accounts for its height (`domain-entities.md` §3.3).
+- When non-null, the widget's body becomes `Column[Expanded(ListView…), controls]`: the controls sit
+  **outside** the scrolling list, in a fixed row at the bottom of the caption container.
 - The widget stays platform-agnostic: it receives a `Widget`, never a callback about pop-outs.
+
+**R-M4 resolved (2026-10-21) — the first draft was wrong.** It appended `controls` *inside* the
+`ListView`, "after the entry list". That list renders newest-first (`entries[entries.length - 1 - i]`,
+`caption_display_widget.dart:84`) and auto-scrolls to the *end of the buffer*
+(`:50-52`, `:79-85`), so the last item sits beyond the oldest caption. In a two-line window the
+toggle would be scrolled out of view after about two entries, breaking UX-PIP-02 outright; with
+`reverse: true` (`:81`) it would be off the top edge instead. Rendering it outside the scrollable
+region is what `domain-entities.md` §3.3's geometry ("toggle row + two lines") already assumed.
 
 Rejected: `onTogglePopOut`/`isPoppedOut` parameters (Q6 B) — pop-out semantics inside a shared,
 platform-agnostic widget, and two more parameters to keep consistent across four call sites;
@@ -114,7 +120,8 @@ with a recording callback.
 | Where | Main window only, immediately above the caption surface, inside `RecordingScreen`'s column (both apps). |
 | Contents | `Text(popOutHint)` = `Captions are displaying in Picture-in-Picture`, plus a `TextButton` labelled `popOutReturn` = `Return to Window` that calls the same toggle. |
 | Styling | `colorScheme.secondaryContainer` background, `onSecondaryContainer` text, one line at the app's normal body size; it must not clip at large text sizes (wrapping text, `Row` with `Flexible`). |
-| Visibility | `shell.popOutEnabled` **and** the controller's status is `Opening` or `Open`. On `WindowClosed`/`OpenFailed`/`toggleOff`, `popOutEnabled` is already false, so the banner disappears in the same frame as the state change (BR-PIP-03). |
+| Visibility | `shell.popOutEnabled` **and** the controller's status is `Opening` or `Open`. On `WindowClosed`/`OpenFailed`/`toggleOff`, `popOutEnabled` is already false, so the banner disappears in the same frame as the state change (BR-PIP-03). **R-M6 caveat**: "the same frame" is true for `toggleOff`, `OpenFailed` and a native `subWindowClosed`; it is *not* true of the lazy `'-1'` fallback, which only fires on the next window call. |
+| Open-failure copy | **R-M8 resolved**: the banner is a success-and-progress affordance and is never visible while `Failed` (the shell has already cleared `popOutEnabled`). `popOutOpenFailed` renders next to the **chrome toggle**, while the controller's status is `Failed`, and clears when the status next leaves `Failed` — Unit 8's existing pattern for `ExternalDisplayControls`. |
 | Test hooks | `Key('popOutBanner')`, `Key('popOutReturn')`. |
 
 ## 6. Availability matrix rendering (UX-PIP-03/04, BR-PIP-12/13)
@@ -126,7 +133,7 @@ computed record:
 ({bool visible, bool enabled, String? reason}) popOutAvailability({
   required ExternalDisplayStatus status,     // controller status
   required RecordingState recording,         // recordingStateNotifier
-  required bool engineAvailable,             // registry.listAvailable().isNotEmpty
+  required bool engineAvailable,             // each app's own gate (domain-entities §3.1)
 })
 ```
 
@@ -163,3 +170,12 @@ is the app's established mechanism (Unit 7); `zip_broadcast` uses `ZipBroadcastL
 - A draggable divider, per-language windows, a manual caption source (§8.9).
 - Window chrome styling beyond `AppTheme` (§8.9).
 - Size/position memory (§8.9 "permitted, not required"; Q10 B excludes it entirely).
+---
+
+## 7. Scope note — the viewer surface (R-m7, 2026-10-21)
+
+`zip_captions`' `ViewerScreen` also renders `CaptionDisplayWidget`, so it will receive the optional
+`controls` parameter and could render a toggle. **The pop-out is out of scope for the viewer in
+S-21.** `popOutAvailability` is gated on recording state, and viewer captions do not flow through the
+caption bus, so a viewer pop-out would show an empty window. The viewer keeps `controls: null`;
+adding it is a future unit's decision, and would need its own rule for what a viewer pop-out mirrors.

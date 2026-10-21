@@ -1,6 +1,6 @@
 # NFR Requirements — Unit 8.1: Pop-out Live Captions (S-21)
 
-**Status**: Draft for approval.
+**Status**: APPROVED 2026-10-21 by James Petersen (revised after the pre-build review: RQ-1 A / RQ-2 A / RQ-3 A-amended; revision 2 same day).
 **Answers carried**: Q1 A (macOS full registrant, Windows/Linux per-plugin), Q2 A
 (`window_manager` in `zip_core` only), Q3 A (router: unit + two-controller + moved suite), Q4 A
 (assert the seam; floating is Unit 9), Q5 A (per-app tests), Q6 A (accept the adapter duplication,
@@ -19,27 +19,46 @@ rendered lines, bottom-anchored).
 
 | Layer | Technique | Why this layer is testable |
 |---|---|---|
-| Promoted controller, codec, geometry, availability, router | Real classes on hand-written fakes (`DesktopWindowService`, `DisplayEnumerator`, `OverlayMethodHandlerInstaller`, `AlwaysOnTopInstaller`) + the in-tree PBT shim | No plugin object is constructed anywhere in the suite (Unit 8's rule, inherited) |
+| Promoted controller, codec, geometry, availability, router | Real classes on hand-written fakes (`DesktopWindowService`, `DisplayEnumerator`, `OverlayMethodHandlerInstaller`, `WindowConfigurator`) + the in-tree PBT shim | No plugin object is constructed anywhere in the suite (Unit 8's rule, inherited) |
 | `OverlayMethodRouter` | Unit tests + a two-real-controller test with one recording installer | The failure mode being guarded (silent misrouting) is only visible with two controllers |
 | Both window bodies (`OverlayWindowApp`, `PopOutWindowBody`) | Widget tests with an injected `ValueNotifier` snapshot and injected copy | The widgets take no `BuildContext`-derived settings and no ARB |
 | Both apps' toggles, banner, availability rendering | Widget tests inside each app's own `ProviderScope`, one per §8.8 item per app | §8.8's per-app clause is enforced by the test tree, not by memory |
-| `AlwaysOnTopInstaller` | A fake installer + the seam assertions in §1.2 | The call's effect is platform-observable only; see Unit 9 |
+| `WindowConfigurator` | A fake configurator + the seam assertions in §1.2 | The call's effect is platform-observable only; see Unit 9 |
 | Sub-engine entry | `overlayWindowMain` with an injected bridge, pump and installer | The ordering (install before ready) is the contract |
 | `zip_captions` main routing | `runZipCaptions(args, runApp:)` in `lib/src/bootstrap.dart` with a recording `runApp` | Makes BR-U8.1-06 literal |
 | Runners (native) | Compile only: macOS via `flutter build macos --debug`; Windows/Linux via CI `build-verify.yml` | No toolchain locally for the latter two; stated, not claimed |
 
-### 1.2 Always-on-top: exactly what the suite asserts (Q4 A)
+### 1.2 Window configuration: exactly what the suite asserts (Q4 A, amended 2026-10-21)
 
-The suite asserts four things and nothing about visible floating:
+The seam is a `WindowConfigurator` (a native `configure` channel call), not a `window_manager`
+installer — RQ-1 A removed the dependency. The suite asserts four things and nothing about visible
+floating:
 
-1. For a `PopOutMode` launch, the installer is awaited **once** and **before** `overlayReady` is
-   sent (ordering asserted through a recorder that appends to one list).
-2. For an `ExternalDisplayMode` launch, the installer is **never** called (the external display is
-   not a floating window).
-3. An installer that throws still results in `overlayReady` being sent (a cosmetic failure must not
-   block the window).
-4. The production installer is not constructed in any test; the test platform's exported
-   `alwaysOnTopInstaller` (the `_stub`) is a no-op, and its invocation is a pure no-op `Future`.
+1. For a `PopOutMode` launch, `configure` is awaited **once**, with `floating: true` and
+   `decorated: true`, and **before** `overlayReady` is sent (ordering asserted through a recorder
+   that appends to one list).
+2. For an `ExternalDisplayMode` launch, `configure` is called with `floating: false` and
+   `decorated: false` — pinned, matching tech-stack §2. **Consequence to record**: Unit 8's
+   borderless surface now depends on `configure` succeeding; if it fails, the external display
+   window is decorated (cosmetic, logged fixed string, no state change, and no `OpenFailed`). The
+   test asserts the call and its arguments; it does not assert the native result.
+3. A configurator that throws still results in `overlayReady` being sent (a cosmetic failure must
+   not block the window).
+4. The production configurator is not constructed in any test; the test platform's exported
+   `windowConfigurator` (the `_stub`) is a no-op.
+
+**The close notification** (RQ-3 as amended, transport corrected 2026-10-21): the runner — not the
+sub-engine — raises `subWindowClosed {windowId}` on a **first-party channel registered on the main
+engine**, because `desktop_multi_window`'s window channel is plugin-internal (macOS
+`WindowChannel.swift:14` is not `public`; Windows/Linux expose only the plugin header) and cannot be
+emitted on by a runner. A main-engine Dart seam (`SubWindowClosedChannel`, `_io`/`_stub`, fake in
+tests) delivers it to `controller.onNativeWindowClosed(int windowId)`, which is listed as a
+permitted BR-U8.1-01 deviation. It does **not** flow through `OverlayMethodRouter` or
+`_handleWindowCall`. Tested in `zip_core` with the fake: an id matching the open window produces
+`WindowClosed` and clears the shell flag; an id matching no window is dropped; an app-initiated close
+followed by a late native event is dropped (the id was nulled by `_takeWindow()`). Raised for the
+external display too, which is recorded as a Unit 8 improvement, not a change to its states. The
+`'-1'` fallback keeps its Unit 8 tests unchanged.
 
 Explicitly **not** asserted: that the native window ends up floating. That is §8.8 item 15, a Unit 9
 manual check on real desktops, including the Linux "the WM enforces it" caveat and the accepted
@@ -70,7 +89,7 @@ bodies). It never carries an app-shell test.
 
 | Double | Package | Shape |
 |---|---|---|
-`FakeAlwaysOnTopInstaller` | `zip_core/test/helpers/` | records calls into a shared ordering log; can be told to throw |
+`FakeWindowConfigurator` | `zip_core/test/helpers/` | records calls into a shared ordering log, including the `OverlayWindowConfig` fields and window id; can be told to throw |
 | `FakeOverlayMethodHandlerInstaller` | `zip_core/test/helpers/` | same shape as Unit 8's proposed helper; records install/uninstall and lets a test invoke the handler |
 | `FakePopOutBridge` | `zip_core/test/helpers/` | records `send`/`sendPopOutToggle`, can push a `captionUpdate` |
 | overlay generators | `zip_core/test/helpers/overlay_generators.dart` | the FD's noted duplication; adds `arbitraryPopOutGeometryInput`, `arbitraryPopOutModeLaunch` |
@@ -121,14 +140,15 @@ changes, the same as `OverlayWindowApp`.
 | `createWindow` throws | `create_failed` → same | next toggle |
 | Ready handshake times out | `ready_timeout` → same | next toggle |
 | Window disappears (`'-1'`) | `WindowClosed` → flag cleared, hint gone | n/a |
-| `setBounds`/`show` throws non-`'-1'` | logged fixed string, ignored | n/a |
-| `window_manager` install fails | **window still opens and works**; fixed-string warning | none (by design) |
+| `setFrame`/`show` throws non-`'-1'` | logged fixed string, ignored | n/a |
+| native `configure` fails | **window still opens and works**, possibly undecorated/not floating; fixed-string warning | none (by design) |
+| native `subWindowClosed` for an unknown id | dropped (no state change, no log at info and above) | n/a |
 | `captionUpdate` decode fails | dropped, last frame stays | next update |
 | `popOutToggle` from a stale window | ignored | n/a |
 
-Rule: the only failure that is *not* fatal to the open is the always-on-top call, because a window
-that is not on top is still a usable pop-out, while an `OpenFailed` dialog for a working window is
-worse. This is a deliberate asymmetry, not an oversight, and is the direct answer to the FD's
+Rule: the only failure that is *not* fatal to the open is the window-configuration call, because a
+window that is not on top is still a usable pop-out, while an `OpenFailed` dialog for a working
+window is worse. This is a deliberate asymmetry, not an oversight, and is the direct answer to the FD's
 "no path leaves a window registered without a state that explains it": the window's state does
 explain itself, it just lacks one property.
 
@@ -139,7 +159,8 @@ retry loop around a native window call is how orphaned windows happen.
 
 - Two controllers per main engine, one enumerator shared between both (and with the window service).
   The enumerator opens **one** platform observer; `dispose` is idempotent.
-- The router holds at most two handlers and uninstalls the static slot when the last leaves.
+- The router holds at most two handlers and uninstalls the static slot when the last leaves. Each
+  controller's `dispose()` removes only its own token-bound handler (R-M3).
 - The pop-out sub-engine owns one window and no timers of its own (the controller's timers live in
   the main engine).
 - `zip_captions`' shell becomes stateful and must unregister its target and cancel its event
@@ -164,9 +185,9 @@ toggle-off, and the buffer keeps growing while popped out.
   (Unit 8 BR-U8-24); the mode token is validated (unknown → `null`, BR-U8.1-08); `popOutToggle` is
   accepted only from the current window id.
 - **No new network endpoint, no credential, no token, no key**. No RLS, no server change.
-- **Supply chain**: three plugin entries placed per Q2 A; the lockfile fence is in
-  `tech-stack-decisions.md`; no new transitive dependency beyond `window_manager`'s own `path`
-  (already in the graph) and its existing `screen_retriever: ^0.2.2`.
+- **Supply chain**: two plugin entries placed per Q2 A (`desktop_multi_window`, `screen_retriever`);
+  the lockfile fence is in `tech-stack-decisions.md`. `window_manager` is not added at all
+  (RQ-1 A, 2026-10-21), which removes SECURITY-10's supply-chain question entirely.
 - **Permissions**: none. Neither plugin requests a platform permission; the macOS app already ships
   the entitlements it needs, and `window_manager` adds no entitlement requirement (no
   `NSWindow`-level capability is gated).
@@ -187,7 +208,7 @@ toggle-off, and the buffer keeps growing while popped out.
 | SECURITY-07 Network configuration | N/A | No network config |
 | SECURITY-08 Application access control | N/A | No endpoint, no resource access |
 | SECURITY-09 Hardening | Compliant | Failure copy generic; no raw `Failed` code shown to the user; no debug/sample surface added |
-| SECURITY-10 Supply chain | Compliant | Approved dependency (`window-manager-security-10.md`), placement chosen to avoid unused declarations (Q2 A), lockfile fence named, no unvetted source |
+| SECURITY-10 Supply chain | Compliant | No new third-party dependency: `window_manager` was withdrawn (RQ-1 A, 2026-10-21) and `desktop_multi_window`/`screen_retriever` are already vetted (`screen-retriever-security-10.md`). Placement avoids unused declarations (Q2 A); lockfile fence named; the new native channel is first-party code in our own runners |
 | SECURITY-11 Secure design | Compliant | Separated concerns (machinery in `zip_core`, UI per app), one implementation, fail-closed default |
 | SECURITY-12 Authentication | N/A | Untouched |
 | SECURITY-13 Integrity | Compliant | Decode is allowlist-based (enum-by-name, known version, known mode token); no unsafe deserialisation |
@@ -200,9 +221,10 @@ toggle-off, and the buffer keeps growing while popped out.
 
 | Limitation | Why accepted |
 |---|---|
-| macOS pop-out does not float above another app's full-screen window | `NSFloatingWindowLevel`; `NSPanel` work in Backlog (accepted 2026-10-20) |
+| macOS pop-out does not float above another app's full-screen window | `NSFloatingWindowLevel`; `NSPanel` work in Backlog (accepted 2026-10-20). Unchanged by RQ-1 A: the native channel sets the same level. |
+| Native channel code lives in six runners and cannot be unit-tested | Two apps x three platforms; Windows/Linux are compile-checked by CI (after R-B4's fix), macOS by a debug build; behaviour is a Unit 9 manual check (accepted 2026-10-21 with RQ-1 A) |
 | Linux always-on-top depends on the window manager honouring `gtk_window_set_keep_above` | Platform behaviour, not application-controlled; Unit 9 checks on a real desktop |
-| macOS sub-engine receives the app's whole plugin set (Q1 A) | The generated registrant is all-or-nothing; the plugin's own example does the same; the extra channels are never called |
+| ~~macOS sub-engine receives the app's whole plugin set (Q1 A)~~ **Withdrawn 2026-10-21 (R-B1)** | The premise was wrong. Never use `RegisterGeneratedPlugins` in the window-created callback: `FlutterMultiWindowPlugin.register(with:)` calls `attachMainWindow`, which overwrites `windows[0]` with the sub-engine's channel, routing every `invokeMethod(0, …)` — `overlayReady` included — back into the sub-engine. Every open, Unit 8's included, would end in `ready_timeout`. The runners register the app's own single `configure` channel instead, as the plugin's examples register one named plugin. |
 
 ---
 
@@ -221,10 +243,16 @@ Three checks, recorded in the code summary:
 ### 5.2 Naming and placement
 
 - The promoted code keeps its class names, file names and logger prefixes become `zip_core.…`.
-- One barrel: `zip_core/lib/src/output/overlay/overlay.dart`, exported from `zip_core.dart`. The
-  barrel exports the public surface only (controller, modes, codec, snapshot, status, events,
-  activity, enumerator, display info, config/position, entry, installers, router, geometry,
-  availability, bridges). It does **not** re-export `desktop_multi_window` or `window_manager`.
+- **R-M7 resolved (2026-10-21)**: the barrel is a **separate public library**,
+  `package:zip_core/overlay.dart`, and `zip_core.dart` does **not** re-export it. Exporting the
+  overlay barrel from `zip_core.dart` is a compile error, because that library already exports
+  `Failed` (`ConnectionStatus`, `connection_status.dart:74`, through `models.dart:20`) and
+  `ExternalDisplayStatus` has a variant of the same name; every importer would get an
+  ambiguous-export error. The shipped code already works around the collision by aliasing
+  (`overlay_window_controller.dart:13-14`).
+- The barrel exports the public surface only (controller, modes, codec, snapshot, status, events,
+  activity, enumerator, display info, config/position, entry, configurator, router, geometry,
+  availability, bridges). It does **not** re-export `desktop_multi_window`.
 - `zip_broadcast`'s two model files become one-line `export` shims with a comment naming the
   condition for their deletion.
 
@@ -322,10 +350,18 @@ owns. Neither app passes `handlerInstaller`, `enumerator` or `windowService`.
   headless or display-less machine must still be able to pop out. The bootstrap rule becomes
   `isSupported && (mode == popOut || displaysAvailable)`, and its test is the display-less case with
   a pop-out request.
-- `_modeDisplayId` is a display-mode field. `PopOutMode` reuses `_openBounds` (the computed frame)
-  and leaves `_modeDisplayId` `null`, so the close path's display-lost branch is a no-op for
-  pop-out. This needs its own test: a pop-out open followed by an empty `displaysChanged` event must
-  not close the window (the external-display behaviour of D-5 is unchanged).
+- `_modeDisplayId` is a display-mode field. `PopOutMode` leaves it `null`.
+  ~~so the close path's display-lost branch is a no-op for pop-out~~
+  **WRONG — withdrawn 2026-10-21 (R-M2).** `_find(null)` returns the primary or first display
+  (`overlay_window_controller.dart:275-281`), so a null id is *not* inert. Six paths consult it and
+  each needs an explicit `_isPopOut` guard: the `Open` T15 re-frame (`:225-238`), the `Open`
+  display-lost close, the `Opening` empty-list fail (`:239-243`), `_runReady`'s frame (`:402-411`),
+  and `open()`/`_runOpen`'s `NoDisplays` (`:309-314`, `:345-353`). The test is the display-less and
+  display-removed cases with a pop-out open, asserting the window stays open and keeps its frame.
+  See FD `business-logic-model.md` §2 for the table.
+
+Also: the mode is supplied at **construction**, not read from the config at `open()` (§10.1 wins;
+`open()`'s config mode is validated against it and a mismatch fails as `create_failed`).
 
 ### 10.3 Main-window-centre parameter (Q2 -> C)
 
@@ -335,9 +371,12 @@ parameter is exercised through a fake in the geometry tests and by no real calle
 placement is recorded as a Unit 9 platform check, in the same list as the always-on-top floating
 check, so it is judged on a real multi-monitor desktop rather than guessed.
 
-Reasoning: `window_manager.getBounds()` would make this cheap, but it adds a platform call on the
-open path for behaviour that has not been seen on a real multi-monitor setup, and `getBounds` can
+Reasoning: a main-window-geometry call would make this cheap, but it adds a platform call on the
+open path for behaviour that has not been seen on a real multi-monitor setup, and such a call can
 throw before the main window is ready — a third failure mode on an already-bounded open sequence.
+(Originally this cited `window_manager.getBounds()`; that dependency was withdrawn under RQ-1 A, and
+the reasoning is unchanged without it: R-M5 settles that the **shell** computes the frame and passes
+it to `open(config, frame:)`, while the centre parameter stays `null`.)
 
 ### 10.4 Two-controller router proof (Q3 -> C)
 
@@ -357,5 +396,22 @@ Both layers, in `zip_core`:
 The negative assertions are the point: they are what catches a router that hands the last-registered
 handler every message, and they are the assertions a call-count-only test would omit.
 
-**Open items carried to NFR Design**: none from the handoff; the three are resolved above. NFR Design
-inherits 10.1-10.4 as constraints.
+### 10.5 Owner answers to the pre-build review (2026-10-21)
+
+The pre-build review (`plans/pop-out-pre-build-review.md`) found five blockers, ten major gaps and
+seven minor items; all 22 reproduced on re-verification. The three owner decisions:
+
+| ID | Answer | Effect on this document |
+|---|---|---|
+| RQ-1 | **A** — native per-runner window channel; drop `window_manager` | §1.2, §3.1, §4.1, §4.3 and the SECURITY-10 row rewritten; the accepted-limitation row for the macOS plugin set withdrawn (R-B1) and a runner-code row added. FD §3.2 is normative for the mechanism. |
+| RQ-2 | **A** — each app's own engine gate, not the registry | §1.3's per-app evidence table unchanged in shape; FD `domain-entities.md` §3.1 and BR-PIP-13 rewritten (R-M1). |
+| RQ-3 | **A as amended** — the close notification is raised **natively in the runner** and delivered to the **main** engine, tagged with the sub-window id from `configure`; the `'-1'` path stays as fallback | §1.2 gains the close-notification assertions; §3.1 gains the unknown-id row; FD §3.2 gains the per-platform hook table, the Linux handler-order finding, and the verify-in-Infrastructure-Design list. |
+
+RQ-3's premise — that a Dart message sent from the sub-engine at close time is likely lost because
+`desktop_multi_window` tears the engine down inside its own close handling — is taken as the owner's
+design rationale and is logged as a **claim to verify in Infrastructure Design**, not as established
+fact.
+
+**Open items carried to NFR Design**: none from the handoff; 10.1-10.5 are constraints. NFR Design
+must also carry R-M2's six guards, R-M3's router shape and R-M5's frame ownership into its own
+sections rather than re-deriving them.
