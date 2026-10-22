@@ -96,9 +96,13 @@ jobs:
         working-directory: packages/zip_captions
 
   build-macos:
-    name: macOS
+    name: macOS (${{ matrix.package }})
     runs-on: macos-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [zip_captions, zip_broadcast]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
@@ -120,16 +124,20 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
-        working-directory: packages/zip_captions
+        working-directory: packages/${{ matrix.package }}
 
       - name: Build macOS
         run: flutter build macos
-        working-directory: packages/zip_captions
+        working-directory: packages/${{ matrix.package }}
 
   build-linux:
-    name: Linux
+    name: Linux (${{ matrix.package }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [zip_captions, zip_broadcast]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
@@ -156,16 +164,20 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
-        working-directory: packages/zip_captions
+        working-directory: packages/${{ matrix.package }}
 
       - name: Build Linux
         run: flutter build linux
-        working-directory: packages/zip_captions
+        working-directory: packages/${{ matrix.package }}
 
   build-windows:
-    name: Windows
+    name: Windows (${{ matrix.package }})
     runs-on: windows-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [zip_captions, zip_broadcast]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
@@ -187,106 +199,8 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
-        working-directory: packages/zip_captions
+        working-directory: packages/${{ matrix.package }}
 
       - name: Build Windows
         run: flutter build windows
-        working-directory: packages/zip_captions
-
-  build-macos-zip-broadcast:
-    name: macOS (zip_broadcast)
-    runs-on: macos-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6.0.2
-
-      - name: Setup Flutter SDK
-        uses: subosito/flutter-action@v2.23.0
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
-      - name: Restore pub-cache
-        uses: actions/cache@v5.0.4
-        with:
-          path: ~/.pub-cache
-          key: pub-cache-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            pub-cache-${{ runner.os }}-
-
-      - name: Get dependencies
-        run: flutter pub get
-        working-directory: packages/zip_broadcast
-
-      - name: Build macOS
-        run: flutter build macos
-        working-directory: packages/zip_broadcast
-
-  build-linux-zip-broadcast:
-    name: Linux (zip_broadcast)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6.0.2
-
-      - name: Install Linux build dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y ninja-build libgtk-3-dev libsecret-1-dev
-
-      - name: Setup Flutter SDK
-        uses: subosito/flutter-action@v2.23.0
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
-      - name: Restore pub-cache
-        uses: actions/cache@v5.0.4
-        with:
-          path: ~/.pub-cache
-          key: pub-cache-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            pub-cache-${{ runner.os }}-
-
-      - name: Get dependencies
-        run: flutter pub get
-        working-directory: packages/zip_broadcast
-
-      - name: Build Linux
-        run: flutter build linux
-        working-directory: packages/zip_broadcast
-
-  build-windows-zip-broadcast:
-    name: Windows (zip_broadcast)
-    runs-on: windows-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6.0.2
-
-      - name: Setup Flutter SDK
-        uses: subosito/flutter-action@v2.23.0
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
-      - name: Restore pub-cache
-        uses: actions/cache@v5.0.4
-        with:
-          path: ~/.pub-cache
-          key: pub-cache-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            pub-cache-${{ runner.os }}-
-
-      - name: Get dependencies
-        run: flutter pub get
-        working-directory: packages/zip_broadcast
-
-      - name: Build Windows
-        run: flutter build windows
-        working-directory: packages/zip_broadcast
+        working-directory: packages/${{ matrix.package }}

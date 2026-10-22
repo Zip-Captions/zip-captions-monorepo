@@ -6,6 +6,11 @@
 #include "flutter_window.h"
 #include "utils.h"
 
+// Forward a custom-scheme link to an already-running instance (app_links).
+// Copied from the app_links 7.0.0 example. The lookup matches window class plus
+// title, so another process could spoof it; that residual risk is accepted and
+// recorded in aidlc-docs/audit.md ("R-B4 defect fix, follow-up (Windows
+// runner)").
 bool SendAppLinkToInstance(const std::wstring& title) {
   // Find our exact window
   HWND hwnd = ::FindWindow(L"FLUTTER_RUNNER_WIN32_WINDOW", title.c_str());

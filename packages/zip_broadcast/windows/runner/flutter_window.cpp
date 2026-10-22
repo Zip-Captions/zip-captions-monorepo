@@ -30,6 +30,9 @@ bool FlutterWindow::OnCreate() {
 
   // External display windows are caption surfaces, so they carry no frame.
   DesktopMultiWindowSetWindowCreatedCallback([](void* controller) {
+    if (!controller) {
+      return;
+    }
     auto* flutter_view_controller =
         reinterpret_cast<flutter::FlutterViewController*>(controller);
     HWND hwnd = GetAncestor(

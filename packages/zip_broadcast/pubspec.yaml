@@ -11,7 +11,12 @@ environment:
 
 dependencies:
   clock: ^1.1.0
-  desktop_multi_window: ^0.2.0
+  # desktop_multi_window: the native runner callbacks in windows/runner and
+  # linux/runner are written against 0.2.1's one-argument
+  # WindowCreatedCallback typedefs. Pinned to the minor so a 0.2.x header
+  # change cannot silently break the runners again; bump deliberately and let
+  # the zip_broadcast CI build jobs re-verify the header contract.
+  desktop_multi_window: ^0.2.1
   flutter:
     sdk: flutter
   flutter_localizations:
