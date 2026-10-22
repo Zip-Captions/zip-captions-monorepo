@@ -29,20 +29,21 @@ bool FlutterWindow::OnCreate() {
   RegisterPlugins(flutter_controller_->engine());
 
   // External display windows are caption surfaces, so they carry no frame.
-  DesktopMultiWindowSetWindowCreatedCallback(
-      flutter_controller_->engine(),
-      [](FlutterDesktopViewControllerRef controller, void* user_data) {
-        HWND hwnd = GetAncestor(
-            FlutterDesktopViewControllerGetView(controller)->GetNativeWindow(),
-            GA_ROOT);
-        LONG style = GetWindowLong(hwnd, GWL_STYLE);
-        style &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX |
-                   WS_MAXIMIZEBOX | WS_SYSMENU);
-        SetWindowLong(hwnd, GWL_STYLE, style);
-        SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
-                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-      },
-      nullptr);
+  DesktopMultiWindowSetWindowCreatedCallback([](void* controller) {
+    if (!controller) {
+      return;
+    }
+    auto* flutter_view_controller =
+        reinterpret_cast<flutter::FlutterViewController*>(controller);
+    HWND hwnd = GetAncestor(
+        flutter_view_controller->view()->GetNativeWindow(), GA_ROOT);
+    LONG style = GetWindowLong(hwnd, GWL_STYLE);
+    style &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
+               WS_SYSMENU);
+    SetWindowLong(hwnd, GWL_STYLE, style);
+    SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+  });
 
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 

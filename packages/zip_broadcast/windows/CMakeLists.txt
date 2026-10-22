@@ -57,6 +57,20 @@ add_subdirectory("runner")
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# local_auth_windows and permission_handler_windows compile with the legacy
+# /await option (set in each plugin's own windows/CMakeLists.txt), which pulls
+# in <experimental/coroutine>. Newer MSVC toolsets (VS 2026 / VC Tools 14.51+)
+# hard-error on that header (STL1011, C2338) unless this is defined. Scoped to
+# just these two plugin targets so unrelated targets keep the deprecation
+# diagnostic. Remove once both plugins drop /await for C++20 <coroutine>.
+foreach(_coroutine_workaround_target
+    local_auth_windows_plugin
+    permission_handler_windows_plugin)
+  if(TARGET ${_coroutine_workaround_target})
+    target_compile_definitions(${_coroutine_workaround_target} PRIVATE
+      "_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS")
+  endif()
+endforeach()
 
 # === Installation ===
 # Support files are copied into place next to the executable, so that it can

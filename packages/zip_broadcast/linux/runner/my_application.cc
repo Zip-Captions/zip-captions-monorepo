@@ -79,7 +79,11 @@ static void my_application_activate(GApplication* application) {
 
   // External display windows are caption surfaces, so they carry no frame.
   desktop_multi_window_plugin_set_window_created_callback(
-      view, [](FlView* created_view) {
+      [](FlPluginRegistry* registry) {
+        if (!registry) {
+          return;
+        }
+        FlView* created_view = FL_VIEW(registry);
         GtkWidget* toplevel = gtk_widget_get_toplevel(GTK_WIDGET(created_view));
         if (GTK_IS_WINDOW(toplevel)) {
           gtk_window_set_decorated(GTK_WINDOW(toplevel), FALSE);
