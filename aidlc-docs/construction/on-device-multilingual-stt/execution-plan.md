@@ -1,7 +1,7 @@
 # Execution Plan: On-Device Multilingual STT
 
 **Date**: 2026-10-20
-**Status**: OQ-1/OQ-2/OQ-3 RESOLVED 2026-10-20 (all option A). Functional Design plan answers collected 2026-10-20 (14/14, all option A; Q1 refined in review for the streaming-caption premise — the engine's decode strategy is sherpa-onnx's documented **simulated-streaming** pattern: interim re-decodes while the user speaks + final on VAD end-of-speech). Next: generate the FD stage artifacts and present for approval; NFR stages draft on flagged vendor data; Code Generation Parts 1+2 are hard-gated on the Spike 1.4 report (OQ-2).
+**Status**: PARKED (human decision, recorded 2026-10-21). OQ-1/OQ-2/OQ-3 RESOLVED (all option A). Functional Design plan answers collected 2026-10-20 (14/14, all option A; Q1 refined in review for the streaming-caption premise — the engine's decode strategy is sherpa-onnx's documented **simulated-streaming** pattern: interim re-decodes while the user speaks + final on VAD end-of-speech). The four FD artifacts + handoff summary are **written and committed, awaiting the human FD-approval gate** — that gate has NOT been passed. Pickup path: Section "Parking and Pickup" below and the unit `README.md`.
 **Unit number**: unassigned — see Open Question OQ-1 (roadmap placement is a human decision; this plan deliberately does not edit `docs/` or the inception unit-of-work artifacts).
 
 **Origin**: the research recorded in `aidlc-docs/construction/spikes/spike-1.4-plan.md` (Whistle vs. Sherpa-ONNX spike plan, including the "Sherpa-ONNX Language Coverage — Findings" section added 2026-10-20 from the indexed sherpa-onnx and cactus-needle docs).
@@ -56,7 +56,7 @@ Per AI-DLC Construction Phase and the established per-unit pattern (Units 2–8)
 
 | # | Stage | Plan (approval gate) | Artifacts on approval |
 |---|---|---|---|
-| 1 | Functional Design | `aidlc-docs/construction/plans/on-device-multilingual-stt-functional-design-plan.md` (written, pending approval) | `construction/on-device-multilingual-stt/functional-design/{business-logic-model,business-rules,domain-entities,frontend-components}.md` |
+| 1 | Functional Design | `aidlc-docs/construction/plans/on-device-multilingual-stt-functional-design-plan.md` (written; 14/14 answers recorded 2026-10-20) | `construction/on-device-multilingual-stt/functional-design/{business-logic-model,business-rules,domain-entities,frontend-components,handoff-summary}.md` — **written 2026-10-21, committed; the FD approval gate has NOT been passed — first action at pickup** |
 | 2 | NFR Requirements | `.../plans/on-device-multilingual-stt-nfr-requirements-plan.md` (written after Stage 1 approval) | `.../nfr-requirements/{nfr-requirements,tech-stack-decisions}.md` |
 | 3 | NFR Design | `.../plans/on-device-multilingual-stt-nfr-design-plan.md` (after Stage 2) | `.../nfr-design/{logical-components,nfr-design-patterns}.md` |
 | 4 | Infrastructure Design | `.../plans/on-device-multilingual-stt-infrastructure-design-plan.md` (after Stage 3) | `.../infrastructure-design/infrastructure-design.md` — model distribution: where the 640 MB download is served from (HuggingFace release vs. self-hosted mirror), catalog JSON hosting, `silero_vad.onnx` sourcing |
@@ -68,12 +68,12 @@ Build and Test is a Phase-level stage (runs when the phase's units complete), no
 ## Dependencies and gates
 
 1. **Spike 1.4 execution + report** — hard gate for Code Generation Part 2 only. Q7 (Parakeet viability on target) and Q3 (same-device A/B) determine whether this unit proceeds as specified, as desced, or in favor of the Whistle unit. Q1/Q2/Q5/Q6 determine the Whistle unit (out of scope here).
-2. **Unit 8 (External Display) PR #37 merged** — the other session's unattended run (`.agent/overnight-pipeline.md`) is in flight on `feature/external-display` and its scope fence forbids `zip_core`/`zip_captions` changes; conversely this unit touches exactly those packages. This unit's worktree is created from `develop` **after PR #37 merges**, and the worktree is rebased onto the merge before any Code Generation Part 2 work. (Planning stages are docs-only and unaffected.)
+2. **The concurrent unattended run must be complete and merged to `develop`** — as of this parking (2026-10-21) the other session's overnight run is **Unit 8.1: Pop-out Live Captions (S-21)**, working in this same checkout on `feature/popout-live-captions` (local only, never pushed; it opens a new PR at the end of its run). It is mid-run (FD/NFR-R/NFR-D approved and committed at head `72c7cd8`; Infrastructure Design and Code Generation not started). Unit 8 (External Display, PR #37) is already merged to `develop` — the earlier "wait for PR #37" gate is satisfied. This unit's worktree is created from `develop` **after the Unit 8.1 pop-out run's PR merges**, and the worktree is rebased onto that merge before any Code Generation Part 2 work. (Planning stages are docs-only and unaffected by the concurrent run.)
 3. **Spike 1.4 and this unit run in separate worktrees/branches**; the only shared surface is `develop`, and only via merged PRs (one unit per worktree, one worktree per PR).
 
 ## Coordination with the concurrent session
 
-Another session is actively building (Unit 8 overnight run; branch `feature/external-display`, PR #37). Collision-avoidance rules for all work under this plan:
+Another session is actively building (as of this parking: the **Unit 8.1 pop-out overnight run** — run config in `.agent/overnight-pipeline.md`, branch `feature/popout-live-captions` in this checkout, local only, opens its own PR at the end of the run). Collision-avoidance rules for all work under this plan:
 
 - **Create new files only** under `aidlc-docs/construction/on-device-multilingual-stt/` and `aidlc-docs/construction/plans/on-device-multilingual-stt-*`. No other file in the repository is edited by this unit's planning work.
 - **Do not touch**: `aidlc-docs/aidlc-state.md`, `aidlc-docs/audit.md`, `aidlc-docs/overnight-ledger.md`, `.agent/`, `docs/`, `stories/`, `aidlc-docs/inception/**`, any existing `aidlc-docs/construction/**` file or directory, `packages/**`, or the other session's branch/PR. The Unit 8 run owns `aidlc-state.md` and `audit.md` entries for its stages; this unit's entries are added at the normal approval points in its own session, after the Unit 8 run has written its own (or by a human, if ordering collides — flag, don't force).
@@ -90,3 +90,46 @@ Another session is actively building (Unit 8 overnight run; branch `feature/exte
 ## Verification gates (standing)
 
 `melos run analyze` (zero warnings/infos, `--fatal-infos`) and `melos run test` across all packages, per `AGENTS.md` and the pre-push hook. Package-level gates in Code Generation: `packages/zip_core` (the changed package) plus `zip_captions`/`zip_broadcast` as regression guards (no changes expected in the latter).
+
+## Parking and Pickup (recorded 2026-10-21, human decision)
+
+**Why parked.** The other session's Unit 8.1 pop-out overnight run owns this checkout
+(branch `feature/popout-live-captions`, local only). This unit is parked until that
+run completes and its PR merges to `develop`.
+
+**State at parking.**
+- All planning docs for this unit are committed on `feature/popout-live-captions`
+  (commits `a8fad31`…`218eba7` plus the FD-artifact commit that follows this edit)
+  and will land on `develop` via the pop-out run's PR — no separate docs PR needed,
+  and the pickup worktree (branched from `develop`) will contain the full corpus.
+- Functional Design: 14/14 answers recorded; the four FD artifacts + handoff summary
+  are **written but not approved**. The FD approval gate is the first open gate.
+- Spike 1.4: plan DRAFT (Q7 expanded for interim-cadence measurement); not approved,
+  not executed. Its report hard-gates Code Generation Parts 1+2 and feeds the NFR
+  param values (OQ-2: NFR may draft on flagged vendor data first).
+- Nothing downstream (NFR Requirements/Design, Infrastructure Design, Code
+  Generation) has started. No production code exists for this unit.
+- This unit was not registered in `aidlc-state.md` (owned by the running session);
+  the pickup session registers it at its first approval point.
+
+**Pickup procedure (next session).**
+1. Confirm the pop-out run finished: its PR merged to `develop` (and PR #40
+   `fix/zip-broadcast-runner-callbacks` merged too, if not already — it is not on
+   `develop` as of this parking). Read `.agent/overnight-pipeline.md` for how the
+   run concluded, and `aidlc-docs/audit.md` for its stage entries.
+2. `git submodule update --remote ai-dlc` (commit the pointer if it moved), per AGENTS.md.
+3. Create the worktree from the updated `develop`:
+   `git worktree add ../zip-captions-multilingual-stt -b feature/multilingual-on-device-stt`
+   (branch name is a proposal; unit number per OQ-1 = next free number, assigned by the human at approval).
+4. In the worktree, read in order: this unit's `README.md` (the pickup note),
+   `execution-plan.md`, `functional-design/handoff-summary.md`, then the four FD
+   artifacts. The handoff summary is the compressed source of binding decisions.
+5. **Gate 1 (human):** approve or revise the four FD artifacts (FD review gate).
+6. **Gate 2 (human):** approve the Spike 1.4 plan, then execute the spike
+   (device work per its methodology; the report feeds NFR values).
+7. Draft NFR Requirements and NFR Design (flagged data allowed per OQ-2; revise in
+   place when the spike report lands), then Infrastructure Design (model
+   distribution decisions), then Code Generation Part 1 (strict transcription, zero
+   open questions) and Part 2 (TDD-first, in the worktree).
+8. Open the PR targeting `develop` after Documentation Refinement; clean up the
+   worktree after merge.

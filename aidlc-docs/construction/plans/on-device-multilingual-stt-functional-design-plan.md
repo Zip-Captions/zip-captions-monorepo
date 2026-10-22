@@ -1,7 +1,8 @@
 # Functional Design Plan: On-Device Multilingual STT
 
 **Answers collected**: 2026-10-20, in-session, 14/14 (all option A). Q1 was refined during review for the project's streaming-caption premise: the engine's decode strategy is sherpa-onnx's documented **simulated-streaming** pattern (interim re-decodes while the user speaks + final on VAD end-of-speech), not final-only sentence mode.
-**Next step**: generate the Stage 6 artifacts (`business-logic-model.md`, `business-rules.md`, `domain-entities.md`, `frontend-components.md`) and present for approval.
+**Status (2026-10-21)**: PARKED per human decision. The Stage 6 artifacts are **written and committed** under `aidlc-docs/construction/on-device-multilingual-stt/functional-design/` (plus `handoff-summary.md`); the FD approval gate has **not** been passed.
+**Next step (at pickup)**: present the four artifacts for the human FD-approval gate (or revise them), then NFR Requirements. Full pickup procedure: `aidlc-docs/construction/on-device-multilingual-stt/README.md` and `execution-plan.md` "Parking and Pickup".
 
 **Stories**: S-01 (STT Engine Interface and Registry), S-02 (Platform-Native STT Implementation) — extended, not amended
 **Package**: `zip_core` (engine, catalog, models, providers); `zip_captions` (settings surface only)
@@ -194,4 +195,4 @@ The engine picker (shipped) lists registered engines; the model catalog UI (ship
 
 **Status: all 14 answers collected 2026-10-20 in-session (Q1–Q14, all option A).** No vague answers detected, so no clarification-questions file is required (Step 5). Q1 was refined during review for the project's streaming-caption premise (simulated-streaming decode strategy, recorded in Q1's text); the terminology fix ("offline" = model family, not network posture) is recorded in the Context section. One verification item remains for artifact generation: whether the `sherpa_onnx` Dart binding can force a language for an `nemo_transducer` model (Q5's premise) — to be checked against the pub-cache source, with the auto-detect-only design holding regardless of the answer.
 
-Next: generate `business-logic-model.md`, `business-rules.md`, `domain-entities.md`, and `frontend-components.md` under `aidlc-docs/construction/on-device-multilingual-stt/functional-design/` (per `.aidlc-rule-details/construction/functional-design.md` Step 6), present for review, and wait for explicit approval before NFR Requirements (Step 8).
+**Artifacts generated 2026-10-21** (Step 6): `business-logic-model.md`, `business-rules.md`, `domain-entities.md`, `frontend-components.md`, plus `handoff-summary.md` (project stage-handoff rule), under `aidlc-docs/construction/on-device-multilingual-stt/functional-design/`. All committed on `feature/popout-live-captions` (they land on `develop` via the pop-out run's PR). **Unit PARKED 2026-10-21 (human decision)** — the next action is Step 8: present the artifacts for explicit human approval before NFR Requirements. Pickup procedure: `aidlc-docs/construction/on-device-multilingual-stt/README.md`.
