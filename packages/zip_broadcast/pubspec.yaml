@@ -13,9 +13,10 @@ dependencies:
   clock: ^1.1.0
   # desktop_multi_window: the native runner callbacks in windows/runner and
   # linux/runner are written against 0.2.1's one-argument
-  # WindowCreatedCallback typedefs. Pinned to the minor so a 0.2.x header
-  # change cannot silently break the runners again; bump deliberately and let
-  # the zip_broadcast CI build jobs re-verify the header contract.
+  # WindowCreatedCallback typedefs, so 0.2.1 is the floor. The caret still
+  # admits any later 0.2.x: what catches a header change there is the
+  # committed pubspec.lock plus CI's desktop builds of both apps
+  # (build-verify.yml), so upgrade the lock deliberately and let CI re-verify.
   desktop_multi_window: ^0.2.1
   flutter:
     sdk: flutter
