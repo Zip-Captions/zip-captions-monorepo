@@ -1,6 +1,7 @@
 # Zip Captions — Build Verification: All Platforms
 # Manually triggered or on PRs to main/develop.
-# Verifies that zip_captions compiles on all target platforms.
+# Verifies that zip_captions compiles on all target platforms, and that
+# zip_broadcast compiles on each of its desktop target platforms.
 # All action versions pinned to specific patches (SECURITY-10).
 
 name: Build Verify
@@ -95,9 +96,13 @@ jobs:
         working-directory: packages/zip_captions
 
   build-macos:
-    name: macOS
+    name: macOS (${{ matrix.package }})
     runs-on: macos-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [zip_captions, zip_broadcast]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
@@ -119,16 +124,20 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
-        working-directory: packages/zip_captions
+        working-directory: packages/${{ matrix.package }}
 
       - name: Build macOS
         run: flutter build macos
-        working-directory: packages/zip_captions
+        working-directory: packages/${{ matrix.package }}
 
   build-linux:
-    name: Linux
+    name: Linux (${{ matrix.package }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [zip_captions, zip_broadcast]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
@@ -155,16 +164,20 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
-        working-directory: packages/zip_captions
+        working-directory: packages/${{ matrix.package }}
 
       - name: Build Linux
         run: flutter build linux
-        working-directory: packages/zip_captions
+        working-directory: packages/${{ matrix.package }}
 
   build-windows:
-    name: Windows
+    name: Windows (${{ matrix.package }})
     runs-on: windows-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [zip_captions, zip_broadcast]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
@@ -186,8 +199,8 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
-        working-directory: packages/zip_captions
+        working-directory: packages/${{ matrix.package }}
 
       - name: Build Windows
         run: flutter build windows
-        working-directory: packages/zip_captions
+        working-directory: packages/${{ matrix.package }}
