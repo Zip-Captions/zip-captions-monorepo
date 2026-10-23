@@ -7,18 +7,16 @@ import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/broadcast_session_state.dart';
 import 'package:zip_broadcast/src/models/browser_source_start_exception.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
-import 'package:zip_broadcast/src/models/overlay_config.dart';
-import 'package:zip_broadcast/src/models/overlay_position.dart';
 import 'package:zip_broadcast/src/output/browser_source/browser_source_server.dart';
 import 'package:zip_broadcast/src/output/browser_source/browser_source_target.dart';
 import 'package:zip_broadcast/src/output/overlay/caption_overlay_target.dart';
-import 'package:zip_core/overlay.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_broadcast/src/providers/broadcast_recording_notifier.dart';
 import 'package:zip_broadcast/src/providers/overlay_window_controller_provider.dart';
 import 'package:zip_broadcast/src/providers/settings_notifier.dart';
 import 'package:zip_broadcast/src/shell/zb_nav_drawer.dart';
 import 'package:zip_broadcast/src/shell/zb_nav_rail.dart';
+import 'package:zip_core/overlay.dart';
 import 'package:zip_core/zip_core.dart';
 
 /// Platform-adaptive shell for Zip Broadcast.
@@ -98,6 +96,11 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
         // stays true, and the controller reopens on the saved display when
         // it returns (T11).
         // No state change: the target stays registered.
+      case PopOutToggled():
+        // The pop-out's in-surface toggle. The shell owns the popped-out flag
+        // and the flag is wired in the pop-out unit (step 22); until then the
+        // event is reported and changes nothing.
+        break;
     }
   }
 

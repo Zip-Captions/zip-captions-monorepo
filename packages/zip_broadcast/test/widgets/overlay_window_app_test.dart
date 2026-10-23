@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zip_broadcast/src/models/overlay_config.dart';
-import 'package:zip_broadcast/src/models/overlay_position.dart';
-import 'package:zip_broadcast/src/output/overlay/caption_overlay_codec.dart';
-import 'package:zip_broadcast/src/output/overlay/caption_overlay_snapshot.dart';
-import 'package:zip_broadcast/src/output/overlay/overlay_activity.dart';
-import 'package:zip_broadcast/src/widgets/overlay_window_app.dart';
+import 'package:zip_core/overlay.dart';
 import 'package:zip_core/zip_core.dart';
 
 CaptionDisplayEntry _entry(String text, {bool isFinal = true}) =>
@@ -89,7 +84,10 @@ void main() {
   });
 
   testWidgets('the unavailable frame names the problem', (tester) async {
-    await tester.pumpWidget(const OverlayWindowUnavailableApp());
+    // Shape change 1: the copy is injected, because `zip_core` has no ARB.
+    await tester.pumpWidget(
+      const OverlayWindowUnavailableApp(message: 'Window unavailable'),
+    );
     await tester.pump();
 
     expect(find.text('Window unavailable'), findsOneWidget);

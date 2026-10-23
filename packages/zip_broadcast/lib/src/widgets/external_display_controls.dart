@@ -6,6 +6,7 @@ import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_broadcast/src/providers/overlay_window_controller_provider.dart';
+import 'package:zip_core/overlay.dart';
 
 /// The external display section of the output targets panel (F20).
 ///

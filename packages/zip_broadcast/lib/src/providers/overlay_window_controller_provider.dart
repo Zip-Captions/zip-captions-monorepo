@@ -1,10 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:zip_broadcast/src/output/overlay/desktop_multi_window_service.dart';
-import 'package:zip_broadcast/src/output/overlay/display_enumerator.dart';
 import 'package:zip_core/overlay.dart';
-import 'package:zip_broadcast/src/output/overlay/screen_retriever_display_enumerator.dart';
 
 part 'overlay_window_controller_provider.g.dart';
 

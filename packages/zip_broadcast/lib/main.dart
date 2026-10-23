@@ -9,8 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zip_broadcast/src/app.dart';
 import 'package:zip_broadcast/src/auth/auth_provider_config.dart';
-import 'package:zip_broadcast/src/output/overlay/overlay_window_entry.dart';
 import 'package:zip_broadcast/src/providers/broadcast_captioning_starter.dart';
+import 'package:zip_core/overlay.dart';
 import 'package:zip_core/zip_core.dart';
 
 void _initLogging() {

@@ -1,5 +1,5 @@
 import 'package:mocktail/mocktail.dart';
-import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
+import 'package:zip_core/overlay.dart';
 
 /// Mocktail mock for [DesktopWindowService].
 ///

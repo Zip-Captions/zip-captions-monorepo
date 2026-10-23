@@ -6,7 +6,6 @@ import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
-import 'package:zip_broadcast/src/output/overlay/overlay_activity.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_broadcast/src/providers/overlay_window_controller_provider.dart';
 import 'package:zip_broadcast/src/widgets/external_display_controls.dart';
@@ -14,6 +13,7 @@ import 'package:zip_core/overlay.dart';
 import 'package:zip_core/zip_core.dart' hide Failed;
 
 import '../helpers/fake_display_enumerator.dart';
+
 
 /// A window service that never opens a real window.
 class _StubWindow implements DesktopWindowService {

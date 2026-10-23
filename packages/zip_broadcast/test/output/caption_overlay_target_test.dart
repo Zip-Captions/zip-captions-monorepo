@@ -6,12 +6,12 @@ import 'dart:ui';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logging/logging.dart';
-import 'package:zip_broadcast/src/models/overlay_config.dart';
 import 'package:zip_broadcast/src/output/overlay/caption_overlay_target.dart';
 import 'package:zip_core/overlay.dart';
 import 'package:zip_core/zip_core.dart' hide Failed;
 
 import '../helpers/fake_display_enumerator.dart';
+
 
 DisplayInfo _display({double left = 0}) => DisplayInfo(
       id: 'primary',
