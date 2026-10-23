@@ -1,52 +1,22 @@
-// PBT generator library for zip_broadcast tests.
+// PBT generator library for the overlay window machinery (Unit 8.1).
 //
-// Centralized Generator<T> instances for zip_broadcast domain types.
+// Moved from zip_broadcast ahead of the promotion (FD BLM §7 shape change 4:
+// an app cannot import another package's test/ directory, so the overlay
+// generators live here and zip_broadcast keeps only the generators its own
+// remaining tests need).
 
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:zip_broadcast/src/models/obs_connection_state.dart';
-import 'package:zip_broadcast/src/models/output_target_settings.dart';
-import 'package:zip_broadcast/src/models/overlay_config.dart';
-import 'package:zip_broadcast/src/models/overlay_position.dart';
-import 'package:zip_broadcast/src/output/overlay/caption_overlay_codec.dart';
-import 'package:zip_broadcast/src/output/overlay/caption_overlay_snapshot.dart';
-import 'package:zip_broadcast/src/output/overlay/display_info.dart';
-import 'package:zip_broadcast/src/output/overlay/overlay_activity.dart';
+import 'package:zip_core/src/models/overlay_config.dart';
+import 'package:zip_core/src/models/overlay_position.dart';
+import 'package:zip_core/src/output/overlay/caption_overlay_codec.dart';
+import 'package:zip_core/src/output/overlay/caption_overlay_snapshot.dart';
+import 'package:zip_core/src/output/overlay/display_info.dart';
+import 'package:zip_core/src/output/overlay/overlay_activity.dart';
 import 'package:zip_core/zip_core.dart';
 
 import 'pbt.dart';
-
-/// Generates all sealed [ObsConnectionState] variants with plausible fields.
-final Generator<ObsConnectionState> arbitraryObsConnectionState =
-    any.choose(<ObsConnectionState>[
-  const ObsDisconnected(),
-  const ObsConnecting(),
-  const ObsConnected(),
-  const ObsReconnecting(attempt: 1, nextRetryMs: 1000),
-  const ObsReconnecting(attempt: 3, nextRetryMs: 4000),
-  const ObsReconnecting(attempt: 6, nextRetryMs: 30000),
-  const ObsError(message: 'connection failed'),
-  const ObsError(message: 'Could not connect to OBS after 10 minutes.'),
-]);
-
-/// Generates [OutputTargetSettings] with random bool toggles and a valid port.
-final Generator<OutputTargetSettings> arbitraryOutputTargetSettings =
-    any.combine5(
-  any.boolGen,
-  any.boolGen,
-  any.boolGen,
-  any.boolGen,
-  any.intInRange(1024, 65536),
-  (onScreen, obs, browser, overlay, port) =>
-      OutputTargetSettings(
-    onScreenEnabled: onScreen,
-    obsEnabled: obs,
-    browserSourceEnabled: browser,
-    overlayEnabled: overlay,
-    browserSourcePort: port,
-  ),
-);
 
 /// Generates a logical work-area [Rect] anywhere on a virtual desktop.
 final Generator<Rect> arbitraryBounds = any.combine4(
@@ -66,6 +36,7 @@ sealed class OverlayCommand {
 final class ToggleOnCommand extends OverlayCommand {
   /// Creates a [ToggleOnCommand].
   const ToggleOnCommand({required this.savedId});
+
   /// The broadcaster's saved display id, if any.
   final String? savedId;
 }
@@ -80,8 +51,10 @@ final class ToggleOffCommand extends OverlayCommand {
 final class DisplaysChangedCommand extends OverlayCommand {
   /// Creates a [DisplaysChangedCommand].
   const DisplaysChangedCommand({required this.keepSaved, required this.noise});
+
   /// Whether the saved display is still present.
   final bool keepSaved;
+
   /// Whether the surviving display's bounds moved (T15).
   final bool noise;
 }
@@ -120,6 +93,7 @@ final class CreateWindowFailsCommand extends OverlayCommand {
 final class CaptionEventCommand extends OverlayCommand {
   /// Creates a [CaptionEventCommand].
   const CaptionEventCommand({required this.activity});
+
   /// The recognition activity the snapshot carries.
   final OverlayActivity activity;
 }
@@ -195,8 +169,14 @@ final Generator<double> arbitraryDisplayHeight = any.doubleInRange(600, 2400);
 
 /// Scale factors a display realistically reports, including the degenerate
 /// `0` that the Windows conversion treats as `1`.
-final Generator<double> arbitraryScaleFactor =
-    any.choose<double>(<double>[0, 1, 1.25, 1.5, 2, 3]);
+final Generator<double> arbitraryScaleFactor = any.choose<double>(<double>[
+  0,
+  1,
+  1.25,
+  1.5,
+  2,
+  3,
+]);
 
 /// Generates a single [DisplayInfo]. Ids cover the opaque platform form, the
 /// Linux-normalised `display-<n>` form and the empty string; labels may be
@@ -235,8 +215,7 @@ List<DisplayInfo> _generateDisplayList(Random random) {
   });
 }
 
-const Generator<List<DisplayInfo>> arbitraryDisplayList =
-    _generateDisplayList;
+const Generator<List<DisplayInfo>> arbitraryDisplayList = _generateDisplayList;
 
 /// Generates a display list that contains a display with [id], honouring the
 /// at-most-one-primary rule.
@@ -293,7 +272,8 @@ String _generateCaptionText(Random random) {
 
 const Generator<String> _captionText = _generateCaptionText;
 
-CaptionDisplayEntry _generateSnapshotEntry(Random random) => CaptionDisplayEntry(
+CaptionDisplayEntry _generateSnapshotEntry(Random random) =>
+    CaptionDisplayEntry(
       // Each `key` travels as the entryId (BR-U8-24); the session and source
       // ids are never encoded.
       entryId: 'entry-${random.nextInt(1000)}-${random.nextInt(1000)}',
@@ -314,14 +294,19 @@ final Generator<DisplaySettings> _displaySettings = any.combine5(
   any.choose(CaptionFont.values),
   any.choose(ThemeModeSetting.values),
   any.intInRange(0, 10),
-  (scrollDirection, captionTextSize, captionFont, themeModeSetting, maxVisibleLines) =>
-      DisplaySettings(
-        scrollDirection: scrollDirection,
-        captionTextSize: captionTextSize,
-        captionFont: captionFont,
-        themeModeSetting: themeModeSetting,
-        maxVisibleLines: maxVisibleLines,
-      ),
+  (
+    scrollDirection,
+    captionTextSize,
+    captionFont,
+    themeModeSetting,
+    maxVisibleLines,
+  ) => DisplaySettings(
+    scrollDirection: scrollDirection,
+    captionTextSize: captionTextSize,
+    captionFont: captionFont,
+    themeModeSetting: themeModeSetting,
+    maxVisibleLines: maxVisibleLines,
+  ),
 );
 
 CaptionOverlaySnapshot _generateSnapshot(Random random) {
@@ -397,8 +382,8 @@ String _malformedWindowJson(Random random) {
           '"captionTextSize":"md","captionFont":"poppins",'
           '"themeModeSetting":"dark","maxVisibleLines":0}}}';
     case 6:
-      // Unknown launch mode.
-      return '{"v":1,"config":{"mode":"popOut","position":"top"},'
+      // Unknown launch mode token: neither of the two accepted modes.
+      return '{"v":1,"config":{"mode":"slideshow","position":"top"},'
           '"snapshot":{"v":1,"activity":"live","entries":[],"interim":null,'
           '"settings":{"scrollDirection":"bottomToTop",'
           '"captionTextSize":"md","captionFont":"poppins",'
@@ -423,3 +408,38 @@ String _malformedWindowJson(Random random) {
 }
 
 const Generator<String> arbitraryMalformedWindowJson = _malformedWindowJson;
+
+/// Scale factors a pop-out geometry input can see, matching the display
+/// generator's realistic set (including the degenerate `0`).
+const Generator<double> arbitraryTextScale = any.choose<double>(
+  <double>[1, 1.2, 1.5, 2, 3],
+);
+
+/// Generates a work-area width together with a text
+/// scaler, the two inputs POP-4's monotonicity clauses vary (FD §5).
+class PopOutGeometryInput {
+  /// Creates a [PopOutGeometryInput].
+  const PopOutGeometryInput({
+    required this.workAreaWidth,
+    required this.textScale,
+  });
+
+  /// The display work area's width in logical pixels.
+  final double workAreaWidth;
+
+  /// The window's text scaler.
+  final double textScale;
+}
+
+final Generator<PopOutGeometryInput> _popOutGeometryInput = any.combine2(
+  any.doubleInRange(320, 4000),
+  arbitraryTextScale,
+  (workAreaWidth, textScale) => PopOutGeometryInput(
+    workAreaWidth: workAreaWidth,
+    textScale: textScale,
+  ),
+);
+
+/// Generates a [PopOutGeometryInput] (PBT-07).
+const Generator<PopOutGeometryInput> arbitraryPopOutGeometryInput =
+    _popOutGeometryInput;
