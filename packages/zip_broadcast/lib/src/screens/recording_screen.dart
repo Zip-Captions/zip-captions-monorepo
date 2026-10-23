@@ -142,6 +142,7 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                         ? null
                         : PopOutInSurfaceToggle(
                             isPoppedOut: popOut.enabled,
+                            enabled: popOut.available,
                             onToggle: popOut.onToggle,
                           ),
                   ),

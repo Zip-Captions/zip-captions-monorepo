@@ -49,8 +49,7 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
     final entriesAsync = ref.watch(onScreenCaptionTargetProvider);
     final settings = ref.watch(displaySettingsProvider);
     final notifier = ref.read(displaySettingsProvider.notifier);
-    final recordingNotifier =
-        ref.read(recordingStateNotifierProvider.notifier);
+    final recordingNotifier = ref.read(recordingStateNotifierProvider.notifier);
 
     ref.listen<RecordingState>(recordingStateNotifierProvider, (prev, next) {
       if (next is StoppedState && context.mounted) {
@@ -82,6 +81,7 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                         ? null
                         : PopOutInSurfaceToggle(
                             isPoppedOut: popOut.enabled,
+                            enabled: popOut.available,
                             onToggle: popOut.onToggle,
                           ),
                   ),

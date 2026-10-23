@@ -45,10 +45,9 @@ class PopOutControls extends StatelessWidget {
 
   /// The disabled reason, when the control is disabled (BR-PIP-13).
   ///
-  /// It travels in the accessible hint rather than in painted text: the chrome
-  /// control shares the narrow layout's `AppBar` with the title and the menu
-  /// button, where a stacked button or a second line overflows. The in-surface
-  /// toggle carries the visible copy.
+  /// The chrome control carries it as its accessible hint; [PopOutChrome]
+  /// renders the same string as the visible `Text` beneath the control, which
+  /// is FD frontend-components §3's contract.
   final String? hint;
 
   @override
@@ -67,10 +66,10 @@ class PopOutControls extends StatelessWidget {
         : Icons.picture_in_picture_alt_outlined;
     // One line: the chrome control shares the `AppBar` with the title and the
     // menu button on the narrow layout, and its toolbar height is fixed. A
-    // stacked icon-over-label button or a reason line beneath it overflows
-    // that slot, so the label may ellipsize and the reason travels in the
-    // hint. ARB copy with no words and no spaces ("enter") still ellipsizes,
-    // deliberately: the accessible name is the semantics label, not the paint.
+    // stacked icon-over-label button does not fit that slot, so the label may
+    // ellipsize. ARB copy with no words and no spaces ("enter") still
+    // ellipsizes, deliberately: the accessible name is the semantics label,
+    // not the paint. The reason renders as visible text in [PopOutChrome].
     return Semantics(
       button: true,
       enabled: availability.enabled,
@@ -136,18 +135,40 @@ class PopOutChrome extends StatelessWidget {
     // The chrome control has to fit an `AppBar` action on the narrow layout,
     // where the toolbar's height is fixed and its horizontal space is what is
     // left after the title and the menu button. That rules out a stacked
-    // icon-over-label button and a reason line beneath it. One line, the same
-    // `TextButton.icon` in both layouts: on the rail the label has room, and
-    // in the `AppBar` the button may ellipsize, but neither clips and neither
-    // overflows. The reason travels in the semantics hint and in the in-surface
-    // toggle, which has the room for visible text.
-    return PopOutControls(
-      hint: reasonText,
-      status: status,
-      recording: recording,
-      engineAvailable: engineAvailable,
-      isPoppedOut: isPoppedOut,
-      onToggle: onToggle,
+    // icon-over-label button and a plainly sized reason line beneath it: the
+    // toolbar cannot grow, so the line is `Flexible` and capped at two lines
+    // (measured: a fixed-height line overflowed by 8 px). The button itself is
+    // one line, the same `TextButton.icon` in both layouts: on the rail the
+    // label has room, and in the `AppBar` it may ellipsize, but neither clips
+    // and neither overflows. FD frontend-components §3 requires the reason as
+    // visible text with `Key('popOutToggleReason')`, so it is here.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        PopOutControls(
+          hint: reasonText,
+          status: status,
+          recording: recording,
+          engineAvailable: engineAvailable,
+          isPoppedOut: isPoppedOut,
+          onToggle: onToggle,
+        ),
+        if (reasonText != null)
+          // Flexible so the line wraps instead of overflow the narrow
+          // `AppBar`'s fixed height; two lines fit inside the toolbar.
+          Flexible(
+            child: Text(
+              key: const Key('popOutToggleReason'),
+              reasonText,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -157,7 +178,13 @@ class PopOutChrome extends StatelessWidget {
 /// Inside the caption container, in the row above the captions, so it is
 /// usable from the pop-out window itself. It carries the two labels and the
 /// pill surface; the callback comes from the main window's shell or, in the
-/// pop-out engine, from [onToggle] wired to the bridge.
+/// pop-out engine, from the bridge.
+///
+/// Its icon and label say what it does: enter while the main window shows,
+/// exit inside the pop-out, which only exists while the session is active.
+/// [enabled] is FD frontend-components §4's `enabled`; the main window passes
+/// the shell's availability result, so it obeys §3's rule exactly, while the
+/// pop-out leaves it `true` (the window only exists because a session is on).
 class PopOutInSurfaceToggle extends StatelessWidget {
   /// Creates a [PopOutInSurfaceToggle].
   const PopOutInSurfaceToggle({
@@ -171,8 +198,8 @@ class PopOutInSurfaceToggle extends StatelessWidget {
   /// Whether the pop-out is currently on.
   final bool isPoppedOut;
 
-  /// The toggle action.
-  final VoidCallback onToggle;
+  /// The toggle action, or null when the caller has no bridge yet.
+  final VoidCallback? onToggle;
 
   /// Whether the control accepts taps.
   final bool enabled;
@@ -182,9 +209,14 @@ class PopOutInSurfaceToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = ZcStringsScope.of(context);
-    final label = isPoppedOut ? l10n.popOutExit : l10n.popOutEnter;
+    final copy = ZcStringsScope.of(context);
+    final text = isPoppedOut ? copy.popOutExit : copy.popOutEnter;
     final scheme = Theme.of(context).colorScheme;
+    // Popped out means "leave", wherever the toggle is drawn.
+    final icon = isPoppedOut
+        ? Icons.picture_in_picture_alt
+        : Icons.picture_in_picture_alt_outlined;
+    final canTap = enabled && onToggle != null;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -198,24 +230,22 @@ class PopOutInSurfaceToggle extends StatelessWidget {
                 ? const Key('popOutInSurfaceToggleWindow')
                 : const Key('popOutInSurfaceToggle'),
             borderRadius: BorderRadius.circular(99),
-            onTap: enabled ? onToggle : null,
+            onTap: canTap ? onToggle : null,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    isPoppedOut
-                        ? Icons.picture_in_picture_alt
-                        : Icons.picture_in_picture_alt_outlined,
+                    icon,
                     size: 18,
-                    color: enabled ? scheme.onSurface : scheme.outline,
+                    color: canTap ? scheme.onSurface : scheme.outline,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    label,
+                    text,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: enabled ? scheme.onSurface : scheme.outline,
+                      color: canTap ? scheme.onSurface : scheme.outline,
                     ),
                   ),
                 ],

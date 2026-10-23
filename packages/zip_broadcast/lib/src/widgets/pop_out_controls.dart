@@ -20,6 +20,7 @@ class PopOutControls extends StatelessWidget {
     required this.engineAvailable,
     required this.isPoppedOut,
     required this.onToggle,
+    this.hint,
     super.key,
   });
 
@@ -38,6 +39,13 @@ class PopOutControls extends StatelessWidget {
   /// The shell's toggle.
   final VoidCallback onToggle;
 
+  /// The disabled reason, when the control is disabled (BR-PIP-13).
+  ///
+  /// The chrome control carries it as its accessible hint; [PopOutChrome]
+  /// renders the same string as the visible `Text` beneath the control, which
+  /// is FD frontend-components §3's contract.
+  final String? hint;
+
   @override
   Widget build(BuildContext context) {
     final availability = popOutAvailability(
@@ -52,28 +60,17 @@ class PopOutControls extends StatelessWidget {
     final icon = isPoppedOut
         ? Icons.picture_in_picture_alt
         : Icons.picture_in_picture_alt_outlined;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Semantics(
-          button: true,
-          enabled: availability.enabled,
-          label: label,
-          hint: switch (availability.reason) {
-            PopOutUnavailableReason.noSession =>
-              l10n.popOutUnavailableNoSession,
-            PopOutUnavailableReason.noEngine => l10n.popOutUnavailableNoEngine,
-            null => null,
-          },
-          child: TextButton.icon(
-            key: const Key('popOutToggle'),
-            onPressed: availability.enabled ? onToggle : null,
-            icon: Icon(icon),
-            label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-        ),
-      ],
+    return Semantics(
+      button: true,
+      enabled: availability.enabled,
+      label: label,
+      hint: hint,
+      child: TextButton.icon(
+        key: const Key('popOutToggle'),
+        onPressed: availability.enabled ? onToggle : null,
+        icon: Icon(icon),
+        label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      ),
     );
   }
 }
@@ -131,6 +128,7 @@ class PopOutChrome extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         PopOutControls(
+          hint: reasonText,
           status: status,
           recording: recording,
           engineAvailable: engineAvailable,
@@ -138,11 +136,17 @@ class PopOutChrome extends StatelessWidget {
           onToggle: onToggle,
         ),
         if (reasonText != null)
-          Text(
-            key: const Key('popOutToggleReason'),
-            reasonText,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.outline,
+          // Flexible so the line wraps instead of overflow the narrow
+          // `AppBar`'s fixed height; two lines fit inside the toolbar.
+          Flexible(
+            child: Text(
+              key: const Key('popOutToggleReason'),
+              reasonText,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
             ),
           ),
         if (status is Failed)
@@ -177,8 +181,8 @@ class PopOutInSurfaceToggle extends StatelessWidget {
   /// Whether the pop-out is currently on.
   final bool isPoppedOut;
 
-  /// The toggle action.
-  final VoidCallback onToggle;
+  /// The toggle action, or null when there is no shell or bridge to call.
+  final VoidCallback? onToggle;
 
   /// Whether the control accepts taps.
   final bool enabled;
@@ -191,6 +195,11 @@ class PopOutInSurfaceToggle extends StatelessWidget {
     final l10n = ZipBroadcastLocalizations.of(context)!;
     final label = isPoppedOut ? l10n.popOutExit : l10n.popOutEnter;
     final scheme = Theme.of(context).colorScheme;
+    // Popped out means "leave", wherever the toggle is drawn (FD §4).
+    final icon = isPoppedOut
+        ? Icons.picture_in_picture_alt
+        : Icons.picture_in_picture_alt_outlined;
+    final canTap = enabled && onToggle != null;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -204,24 +213,22 @@ class PopOutInSurfaceToggle extends StatelessWidget {
                 ? const Key('popOutInSurfaceToggleWindow')
                 : const Key('popOutInSurfaceToggle'),
             borderRadius: BorderRadius.circular(99),
-            onTap: enabled ? onToggle : null,
+            onTap: canTap ? onToggle : null,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    isPoppedOut
-                        ? Icons.picture_in_picture_alt
-                        : Icons.picture_in_picture_alt_outlined,
+                    icon,
                     size: 18,
-                    color: enabled ? scheme.onSurface : scheme.outline,
+                    color: canTap ? scheme.onSurface : scheme.outline,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     label,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: enabled ? scheme.onSurface : scheme.outline,
+                      color: canTap ? scheme.onSurface : scheme.outline,
                     ),
                   ),
                 ],

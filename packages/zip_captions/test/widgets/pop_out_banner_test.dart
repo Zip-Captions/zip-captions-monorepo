@@ -17,6 +17,7 @@ Future<void> _pump(WidgetTester tester, Widget child) async {
       home: PopOutScope(
         enabled: true,
         onToggle: () {},
+        available: true,
         strings: _strings,
         child: Scaffold(body: Column(children: [child])),
       ),
@@ -60,6 +61,7 @@ void main() {
           home: PopOutScope(
             enabled: true,
             onToggle: () {},
+            available: true,
             strings: _strings,
             child: StatefulBuilder(
             builder: (context, setter) {

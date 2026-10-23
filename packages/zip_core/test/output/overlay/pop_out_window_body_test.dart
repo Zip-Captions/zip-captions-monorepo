@@ -122,8 +122,18 @@ void main() {
       ),
     );
 
-    final toggle = find.byIcon(Icons.picture_in_picture_alt_outlined);
+    // Finding 4: popped out, so the exit glyph and the exit label, not a
+    // static "enter" icon with no label.
+    final toggle = find.byKey(const Key('popOutInSurfaceToggleWindow'));
     expect(toggle, findsOneWidget);
+    expect(
+      find.descendant(
+        of: toggle,
+        matching: find.byIcon(Icons.picture_in_picture_alt),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(popOutWindowExitLabel), findsOneWidget);
 
     await tester.tap(toggle);
     await tester.pump();

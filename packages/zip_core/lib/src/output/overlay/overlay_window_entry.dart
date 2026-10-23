@@ -136,6 +136,12 @@ class _OverlayWindowEntryState extends State<OverlayWindowEntry> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      OverlayWindowApp(launch: widget.launch, snapshot: _snapshot);
+  Widget build(BuildContext context) => OverlayWindowApp(
+    launch: widget.launch,
+    snapshot: _snapshot,
+    // FD frontend-components §4: the pop-out's in-surface toggle sends
+    // `popOutToggle` and the main engine decides. The external display
+    // ignores the callback: its body has no toggle row.
+    onPopOutToggle: widget.bridge.sendPopOutToggle,
+  );
 }

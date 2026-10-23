@@ -113,6 +113,23 @@ The sub-engine's toggle widget takes a `VoidCallback`; the fact that it is a bri
 by `PopOutWindowBody`'s caller (`OverlayWindowEntry`), so the widget itself is testable in `zip_core`
 with a recording callback.
 
+**Amendment — review round 1 (2026-10-23).** Two points of §3 and §4 were contradicted by the
+as-built widgets, and this note records the decision that now holds in both apps. It does not change
+`pip-ux-parity.md` §8.3, which stays the sole authority on the toggle contract.
+
+1. **§3's disabled reason is visible text in both apps.** `zip_captions` carried the reason only in
+   the `Semantics(hint:)` and had no `Key('popOutToggleReason')`, while `zip_broadcast` rendered the
+   `Text`; each app's tests locked its own decision in. Finding 2 resolved in favour of §3 as
+   written: the reason is a visible `Text` under `Key('popOutToggleReason')` beneath the control,
+   in `PopOutChrome` in both apps, and it remains in the semantics hint as well. In the narrow
+   layout the line is `Flexible`, `maxLines: 2`, `TextOverflow.ellipsis`, because the `AppBar`'s
+   toolbar height cannot grow past its minimum by a second line that wraps at large text sizes.
+2. **§4's "in the main window it obeys §3's `enabled`/reason" is now true.** Both shells compute
+   `popOutAvailability` once per build and pass `enabled` into `PopOutScope` (a new `available`
+   field); each `RecordingScreen` passes it to `PopOutInSurfaceToggle.enabled`. The parameter is
+   therefore live in production (finding 3). In the pop-out window the toggle stays `enabled: true`,
+   as §4 already said, because the window only exists while a session is active.
+
 ## 5. `PopOutBanner` — hint and return (UX-PIP-05)
 
 | Aspect | Specification |
@@ -150,6 +167,7 @@ the matrix cannot diverge between them. `visible = status is! Unsupported`;
 | Surface | Opaque, `colorScheme.surface`, `Scaffold` with no app bar. Safe-area padded. |
 | Theme | `MaterialApp(theme: AppTheme.light(), darkTheme: AppTheme.dark(), themeMode: from snapshot)` — a theme change reaches it on the next frame because the snapshot carries `DisplaySettings` (BR-PIP-09). Shares the `_themeModeOf` mapping with `OverlayWindowApp` via one internal helper. |
 | Content | `CaptionDisplayWidget(entries: [...entries, ?interim], settings: settings, controls: inSurfaceToggle)`, bottom-anchored, no position selector (the pop-out is bottom-anchored by geometry, not by `CaptionPosition`). |
+| Toggle | The body builds the toggle itself: the exit action always (the window is popped out by definition), the filled `Icons.picture_in_picture_alt` glyph, and the exit label. `zip_core` has no ARB, so the shipped English default is `popOutWindowExitLabel` and `PopOutWindowBody.toggleLabel` lets the pumping app pass its localized string (round-1 finding 4). |
 | Activity | `standby` renders an empty opaque surface; `live` and `paused` render the buffer (Unit 8's matrix, minus the top/bottom choice). |
 | Caption text in chrome | none: no window title derived from captions (BR-U8.1-09). |
 | Scroll | `DisplaySettings.scrollDirection` is honoured by the shared widget; the two-line geometry assumes bottom-anchored, newest-visible. |

@@ -25,6 +25,7 @@ Future<void> _pump(WidgetTester tester, Widget child) async {
       home: PopOutScope(
         enabled: false,
         onToggle: () {},
+        available: true,
         strings: _strings,
         child: Scaffold(body: Center(child: child)),
       ),
@@ -121,10 +122,9 @@ void main() {
         find.byKey(const Key('popOutToggle')),
       );
       expect(button.onPressed, isNull);
-      // The reason is the control's semantics hint: the chrome control has to
-      // fit an AppBar action, so the visible text lives in the in-surface
-      // toggle, which has the room.
-      expect(_hint(tester), 'no-session');
+      // FD frontend-components §3: the reason is visible text beneath the
+      // control, under its own key, and in the semantics hint as well.
+      expect(find.byKey(const Key('popOutToggleReason')), findsOneWidget);
       // The label stays: the feature must be discoverable while unavailable.
       expect(find.text('enter'), findsOneWidget);
 
@@ -149,7 +149,7 @@ void main() {
         find.byKey(const Key('popOutToggle')),
       );
       expect(button.onPressed, isNull);
-      expect(_hint(tester), 'no-engine');
+      expect(find.byKey(const Key('popOutToggleReason')), findsOneWidget);
     });
 
     testWidgets('shows the open-failure line when the window service failed',
@@ -193,6 +193,7 @@ void main() {
         ),
       );
       expect(_hint(tester) ?? '', isEmpty);
+      expect(find.byKey(const Key('popOutToggleReason')), findsNothing);
     });
   });
 

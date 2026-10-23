@@ -36,8 +36,7 @@ class _FakeBridge implements OverlayWindowBridge {
 
 /// Records the `configure` call so a widget test never reaches a channel.
 class _FakeConfigurator implements WindowConfigurator {
-  final List<(int, OverlayWindowConfig)> calls =
-      <(int, OverlayWindowConfig)>[];
+  final List<(int, OverlayWindowConfig)> calls = <(int, OverlayWindowConfig)>[];
 
   @override
   Future<void> configure(int windowId, OverlayWindowConfig config) async {
@@ -162,6 +161,38 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(OverlayWindowEntry), findsOneWidget);
+    });
+
+    testWidgets('the in-window toggle asks the main engine to toggle', (
+      tester,
+    ) async {
+      final bridge = _FakeBridge();
+      final encoded = encodeLaunch(
+        OverlayWindowLaunch(
+          config: const OverlayConfig(mode: PopOutMode()),
+          snapshot: _launch().snapshot,
+        ),
+      );
+      await overlayWindowMain(
+        ['multi_window', '3', encoded],
+        bridge: bridge,
+        windowConfigurator: _FakeConfigurator(),
+        pump: (widget) => tester.pumpWidget(widget),
+      );
+      await tester.pump();
+
+      // Finding 1: the pop-out's only exit affordance must reach the bridge.
+      // `live` + popped out means the exit glyph and the exit label.
+
+      // Finding 1: the body's own toggle is the pop-out's only exit
+      // affordance, and it must reach the bridge.
+      final toggle = find.byType(InkWell);
+      expect(toggle, findsOneWidget);
+
+      await tester.tap(toggle);
+      await tester.pump();
+
+      expect(bridge.toggleRequests, hasLength(1));
     });
 
     testWidgets('a good captionUpdate replaces the frame', (tester) async {

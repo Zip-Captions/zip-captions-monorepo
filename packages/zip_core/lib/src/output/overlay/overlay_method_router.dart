@@ -1,8 +1,7 @@
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:logging/logging.dart';
-// The handler typedefs still live in zip_broadcast until the promotion (step
-// 11) moves overlay_window_controller.dart into zip_core; this import is
-// re-pointed then and leaves no trace.
+// The handler typedefs live with the controller, which owns them; importing
+// them here lets a caller type a handler without reaching into it.
 import 'package:zip_core/src/output/overlay/overlay_window_controller.dart'
     show OverlayMethodHandler, OverlayMethodHandlerInstaller;
 
@@ -47,8 +46,8 @@ class OverlayMethodRouter {
   /// Registers [handler] for the window [windowIdOf] reports.
   ///
   /// The handler is called only when `windowIdOf()` is non-null **and** equal
-  /// to the message's `fromWindowId`. [windowIdOf] is consulted at dispatch,
-  /// never at registration, so a controller may register in `_bootstrap`
+  /// to the message's `fromWindowId`. `windowIdOf` is consulted at dispatch,
+  /// never at registration, so a controller may register from its constructor
   /// before it has a window.
   OverlayHandlerToken register(
     int? Function() windowIdOf,
@@ -126,10 +125,8 @@ class _Registration {
 ///
 /// Its signature is `Future<dynamic> Function(MethodCall, int)` at the plugin
 /// boundary; the controller's handler returns `Future<void>`, so the adapter
-/// discards the (always `null`) result. Routed through this one function so
-/// the router can be constructed before the promotion completes — step 11
-/// moves `overlayMethodHandlerInstaller` out of `zip_broadcast`, after which
-/// this is the same call the app used.
+/// discards the (always `null`) result. One function, so the router is the
+/// only place that writes the plugin's single static slot.
 void _installedSlot(OverlayMethodHandler? handler) {
   DesktopMultiWindow.setMethodHandler(
     handler == null

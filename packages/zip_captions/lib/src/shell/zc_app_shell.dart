@@ -58,15 +58,27 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
       case OpenFailed():
         _setPoppedOut(false);
       case DisplayLost():
-      case PopOutToggled():
-        // A pop-out is never framed to a display, and a toggle request is
-        // already handled by `_togglePopOut`; neither changes the flag.
+        // A pop-out is never framed to a display, so it cannot lose one.
         break;
+      case PopOutToggled():
+        // The pop-out's in-surface toggle (FD BLM §3.3) asks to leave. The
+        // shell owns the flag, so it closes through the same `_togglePopOut`
+        // path the chrome toggle and the banner use. Closing needs no
+        // geometry, so the shell's captured context is not needed here.
+        _closePopOut();
     }
   }
 
   /// Maps the app's recording state onto the availability rule's vocabulary.
   static RecordingState _popOutRecordingState(RecordingState state) => state;
+
+  /// Ends the popped-out state and the window behind it: the close half of
+  /// `_togglePopOut`, for callers with no `BuildContext`.
+  void _closePopOut() {
+    _setPoppedOut(false);
+    ref.read(captionOutputTargetRegistryProvider).remove(_popOutTarget);
+    unawaited(_popOutTarget.hide());
+  }
 
   void _setPoppedOut(bool value) {
     if (_popOutEnabled == value) return;
@@ -78,9 +90,7 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
   /// up here (UX-PIP-01, UX-PIP-02, UX-PIP-05).
   void _togglePopOut(BuildContext context) {
     if (_popOutEnabled) {
-      _setPoppedOut(false);
-      ref.read(captionOutputTargetRegistryProvider).remove(_popOutTarget);
-      unawaited(_popOutTarget.hide());
+      _closePopOut();
       return;
     }
     final controller = ref.read(popOutWindowControllerProvider);
@@ -162,9 +172,15 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
     // the pop-out widgets can read it non-nullably through `PopOutScope`.
     if (strings == null) return widget.child;
 
+    final recordingState = _popOutRecordingState(recording);
+    final availability = popOutAvailability(
+      status: popOutStatus,
+      recording: recordingState,
+      engineAvailable: engineAvailable,
+    );
     final chrome = PopOutChrome(
       status: popOutStatus,
-      recording: _popOutRecordingState(recording),
+      recording: recordingState,
       engineAvailable: engineAvailable,
       isPoppedOut: _popOutEnabled,
       onToggle: () => _togglePopOut(context),
@@ -173,6 +189,7 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
     return PopOutScope(
       enabled: _popOutEnabled,
       onToggle: () => _togglePopOut(context),
+      available: availability.enabled,
       strings: strings,
       child: _buildScaffold(context, location, width, strings, chrome),
     );

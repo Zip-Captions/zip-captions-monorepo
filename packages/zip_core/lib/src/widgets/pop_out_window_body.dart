@@ -1,6 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:zip_core/src/models/caption_display_entry.dart';
+import 'package:zip_core/src/models/display_settings.dart';
 import 'package:zip_core/src/output/overlay/overlay_activity.dart';
-import 'package:zip_core/zip_core.dart';
+import 'package:zip_core/src/widgets/caption_display_widget.dart';
+
+/// The pop-out toggle's shipped English labels.
+///
+/// `zip_core` has no ARB (FD BLM §7 shape change 1), so the window passes its
+/// app's copy in whole, the same way the unavailable frame does.
+/// These are the defaults, and both apps' ARB carries the identical wording
+/// for `popOutEnter` and `popOutExit`.
+const String popOutWindowEnterLabel = 'Picture in Picture';
+
+/// The label the pop-out's toggle carries: inside the window the action is
+/// always to leave.
+const String popOutWindowExitLabel = 'Exit Picture in Picture';
 
 /// What the pop-out window renders (FD frontend-components §7).
 ///
@@ -9,8 +23,9 @@ import 'package:zip_core/zip_core.dart';
 /// widget's `controls` so it sits **outside** the scrolling list (R-M4) and
 /// stays visible however many captions arrive.
 ///
-/// The pop-out has no banner and no chrome toggle: UX-PIP-05's hint belongs to
-/// the main window and a two-line window cannot host app chrome.
+/// The pop-out has no banner: UX-PIP-05's hint belongs to the main window. The
+/// toggle is the way back, and it is the only one, so it renders the exit
+/// action with its own icon and label (`windowToggle`, FD §4).
 class PopOutWindowBody extends StatelessWidget {
   /// Creates a [PopOutWindowBody].
   const PopOutWindowBody({
@@ -19,6 +34,7 @@ class PopOutWindowBody extends StatelessWidget {
     required this.interim,
     required this.settings,
     this.onTogglePopOut,
+    this.toggleLabel = popOutWindowExitLabel,
     super.key,
   });
 
@@ -41,6 +57,9 @@ class PopOutWindowBody extends StatelessWidget {
   /// anything.
   final VoidCallback? onTogglePopOut;
 
+  /// The toggle's visible label, [popOutWindowExitLabel] by default.
+  final String toggleLabel;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -55,6 +74,7 @@ class PopOutWindowBody extends StatelessWidget {
                   entries: [...entries, ?interim],
                   settings: settings,
                   controls: _InSurfaceToggle(
+                    label: toggleLabel,
                     onPressed: onTogglePopOut,
                   ),
                 ),
@@ -64,30 +84,50 @@ class PopOutWindowBody extends StatelessWidget {
   }
 }
 
-/// The pop-out's own in-surface toggle.
+/// The pop-out's own in-surface toggle (FD frontend-components §4).
 ///
-/// `zip_core` has no ARB, so the window passes this pill in whole: the label
-/// carries the label; this widget draws the icon.
-/// When no callback is supplied (a widget test, or a caller with no bridge)
-/// the control still renders so the layout is unchanged.
+/// The pop-out is by definition popped out, so this is always the exit action:
+/// the filled glyph and the given label. The main window's copy of the toggle
+/// lives in each app, because only the apps have ARB (BR-U8-22, R-M7 keeps
+/// `zip_core.dart` free of the app widgets).
 class _InSurfaceToggle extends StatelessWidget {
-  const _InSurfaceToggle({required this.onPressed});
+  const _InSurfaceToggle({required this.label, required this.onPressed});
 
+  final String label;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final enabled = onPressed != null;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Material(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(99),
         child: InkWell(
+          key: const Key('popOutInSurfaceToggleWindow'),
           borderRadius: BorderRadius.circular(99),
           onTap: onPressed,
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Icon(Icons.picture_in_picture_alt_outlined),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.picture_in_picture_alt,
+                  size: 18,
+                  color: enabled ? scheme.onSurface : scheme.outline,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: enabled ? scheme.onSurface : scheme.outline,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

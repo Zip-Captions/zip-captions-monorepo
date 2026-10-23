@@ -218,8 +218,18 @@ void main() {
       );
       expect(toggle.onPressed, isNull);
       expect(find.byKey(const Key('popOutToggleReason')), findsOneWidget);
-      // The in-surface toggle sits inside the caption surface and stays usable:
-      // the window exists only because a session is running.
+      // FD frontend-components §4: the in-surface toggle obeys the same rule
+      // as the chrome toggle in the main window, so no engine disables both.
+      final surface = tester.widget<PopOutInSurfaceToggle>(
+        find.byType(PopOutInSurfaceToggle),
+      );
+      expect(surface.enabled, isFalse);
+    });
+
+    testWidgets('the in-surface toggle is enabled while a session runs',
+        (tester) async {
+      await _pumpRecording(tester);
+
       final surface = tester.widget<PopOutInSurfaceToggle>(
         find.byType(PopOutInSurfaceToggle),
       );

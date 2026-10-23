@@ -149,3 +149,34 @@ partition.
 The eight manual checks in the plan §7 (float, decoration, resize/move, min size,
 OS-close promptness, external display still borderless, multi-monitor placement,
 `window.delegate` intact) are unverified here by design.
+
+## Review round 1
+
+Round-1 review of PR 41 returned CHANGES_REQUESTED (0 blockers, 1 major, 4 minors, 1 nit). Every
+finding was addressed in code or by a recorded decision; nothing outside the list changed.
+
+| # | Severity | Resolution | Evidence |
+|---|---|---|---|
+| 1 | Major | **Fixed.** `OverlayWindowEntry.build` now passes `onPopOutToggle: widget.bridge.sendPopOutToggle` to `OverlayWindowApp`, which already forwarded it to `PopOutWindowBody` (FD §4, plan M06/M09). The pop-out's in-surface toggle is a real exit control. | `overlay_window_entry_test.dart` — "the in-window toggle asks the main engine to toggle": a `PopOutMode` launch through `overlayWindowMain`, one tap on the body's toggle, `bridge.toggleRequests` has length 1. |
+| 2 | Minor | **Fixed, aligned on FD §3 as written** (visible `Text` + key) rather than on the hint. `zip_captions`' `PopOutChrome` now renders `Key('popOutToggleReason')` beneath the control, exactly as `zip_broadcast` does; the reason stays in the semantics hint. The line is `Flexible`/`maxLines: 2`/ellipsis in both apps because the narrow `AppBar` overflowed by 8 px with a fixed-height line. FD §3 is untouched; the decision and its reason are recorded as an amendment in `functional-design/frontend-components.md` (§4 amendment note, item 1). | `pop_out_controls_test.dart` (both apps): the no-session and no-engine cases assert the key once and assert it is absent when the status leaves `Failed`; the layout assertions in `zc_app_shell_chrome_test`, `navigation_test` and `viewer_routes_shell_test` pass with no `RenderFlex` overflow. |
+| 3 | Minor | **Fixed.** Both shells compute `popOutAvailability` once per build and pass `available` through `PopOutScope` to `RecordingScreen`, which passes it to `PopOutInSurfaceToggle.enabled`. FD §4's "obeys §3's enabled/reason" is now true; the parameter is live. The amendment note records it (item 2). | `zip_broadcast/test/shell/pop_out_shell_test.dart` "no engine disables the chrome toggle with its reason" now asserts `surface.enabled == false`, and a new "in-surface toggle is enabled while a session runs" asserts the positive case. |
+| 4 | Minor | **Fixed.** `PopOutWindowBody` builds the window's toggle through the same shape as the app widgets: `isPoppedOut: true` (the exit glyph, `Icons.picture_in_picture_alt`), `windowToggle: true` (the window key), and a visible exit label (`popOutWindowExitLabel`, overridable via `toggleLabel`). It can no longer show an "enter" glyph with no label. | `pop_out_window_body_test.dart`: the injected toggle is found by `Key('popOutInSurfaceToggleWindow')`, contains `Icons.picture_in_picture_alt`, and shows `popOutWindowExitLabel`; the tap still fires the callback. |
+| 5 | Minor | **Fixed.** Z20 now builds its payload with `encodeLaunch` from a real `PopOutMode` `OverlayWindowLaunch` instead of the undecodable `{"v":1}`. New cases: a decoded payload reaches `OverlayWindowEntry` (not the unavailable frame); a good payload calls `configure` once *before* the `runApp` pump. The 2-argument assertion is corrected to the 0.2.1 contract: `isOverlayWindowLaunch(['multi_window', '7'])` is **false**, because 0.2.1 always passes three arguments. | `packages/zip_captions/test/bootstrap_test.dart` — 4 tests, all passing. The configure case mocks `WindowConfiguratorChannel` (the device has no native side, and an unmocked channel would throw) and asserts the order `configure` → pump. |
+| 6 | Nit | **Fixed.** The six stale comments now describe the shipped behaviour: `pop_out_window_body.dart` (the toggle is the body's own, with an icon and label — the "caller supplies the pill" text is gone); `overlay_method_router.dart` (the typedefs live with the controller; no "step 11" / promotion text; `_bootstrap` → constructor; the slot comment no longer describes the pre-promotion state); `zb_app_shell.dart` (no "step 22, until then it changes nothing" — the pop-out toggle now closes the pop-out); `pop_out_geometry.dart` (`mainWindowCentre` is always null in the shipped callers). Both apps' `PopOutInSurfaceToggle` doc no longer claims the pop-out supplies labels through a parameter that does not exist. | `dart analyze --fatal-infos` clean in all three packages (no `comment_references` or unused-parameter infos). |
+
+Behaviour changed beyond the direct fix, with its evidence:
+
+- **The pop-out's own toggle now closes the window (finding 6's comment, made true).** Both shells'
+  `_onPopOutEvent` handles `PopOutToggled()` by calling a new `_closePopOut()` (the close half of
+  `_togglePopOut`). Without finding 1 this event could never arrive from the window, so nothing was
+  observable before. Closing needs no geometry, so no `BuildContext` is stored. Covered by the
+  round-1 entry test (the message reaches the bridge) and the existing shell tests (the close path
+  is the one the banner's return already exercises: `pop_out_shell_test` in both apps).
+- **The pop-out toggle is disabled when no bridge is supplied.** `onToggle` is nullable and
+  `onTap` is `canTap = enabled && onToggle != null`, so a widget test with no callback renders a
+  non-interactive pill rather than a dead tap target (the old behaviour). The `zip_core` body test
+  keeps passing an explicit callback.
+
+Gates re-run after the fixes, in order: `zip_core` analyze clean, 915 passed / 4 skipped;
+`zip_broadcast` analyze clean, 178 passed; `zip_captions` analyze clean, 176 passed; both
+`flutter build macos --debug` builds succeeded.

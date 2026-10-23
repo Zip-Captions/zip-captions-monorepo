@@ -112,9 +112,9 @@ double _resolvedLineHeight(DisplaySettings settings, TextTheme textTheme) {
 /// place the window": the caller then opens without a frame and the plugin's
 /// own placement stands.
 ///
-/// [mainWindowCentre] is null in production this unit (NFR-R §10.3): the
-/// documented fallback picks the primary display. The parameter exists so a
-/// later unit can pass a real centre without changing this function's shape.
+/// [mainWindowCentre] is always null in the shipped callers (NFR-R §10.3), so
+/// the display resolves to the primary; the parameter exists so a later unit
+/// can pass the real window centre without changing this function's shape.
 ///
 /// The frame is the **outer** frame: the content size plus
 /// [chromeAllowance]'s top inset for [platform]. Placement is bottom-anchored

@@ -115,9 +115,9 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
         // it returns (T11).
         // No state change: the target stays registered.
       case PopOutToggled():
-        // The pop-out's in-surface toggle. The shell owns the popped-out flag
-        // and the flag is wired in the pop-out unit (step 22); until then the
-        // event is reported and changes nothing.
+        // A toggle request from the external display's window would arrive
+        // here; that window has no toggle, so it never does. The pop-out's own
+        // toggle is handled in `_onPopOutEvent`.
         break;
     }
   }
@@ -133,11 +133,13 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
       case OpenFailed():
         _setPoppedOut(false);
       case DisplayLost():
-      case PopOutToggled():
-        // A pop-out is never framed to a display, so DisplayLost cannot come
-        // from it; a toggle request is handled below in `_togglePopOut`'s
-        // path and never changes the flag on its own.
+        // A pop-out is never framed to a display, so it cannot lose one.
         break;
+      case PopOutToggled():
+        // The pop-out's in-surface toggle (FD BLM §3.3) asks to leave. The
+        // shell owns the flag, so it closes through the same path the chrome
+        // toggle and the banner use. Closing needs no geometry.
+        _closePopOut();
     }
   }
 
@@ -157,6 +159,14 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
         BroadcastStoppedState() => const RecordingState.stopped(sessionId: ''),
       };
 
+  /// Ends the popped-out state and the window behind it: the close half of
+  /// `_togglePopOut`, for callers with no live context.
+  void _closePopOut() {
+    _setPoppedOut(false);
+    _registry.remove(_popOutTarget);
+    unawaited(_popOutTarget.hide());
+  }
+
   /// The one writer of `_popOutEnabled`.
   void _setPoppedOut(bool value) {
     if (_popOutEnabled == value) return;
@@ -172,9 +182,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
   /// re-attaches on every build.
   void _togglePopOut() {
     if (_popOutEnabled) {
-      _setPoppedOut(false);
-      _registry.remove(_popOutTarget);
-      unawaited(_popOutTarget.hide());
+      _closePopOut();
       return;
     }
     final controller = ref.read(popOutWindowControllerProvider);
@@ -421,6 +429,13 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     // rebuild comes from `setState`.
     final popOutRecording = _popOutRecordingState(broadcastState);
     final popOutEngineAvailable = ref.watch(broadcastEngineAvailableProvider);
+    // FD frontend-components §4: the in-surface toggle obeys the same rule as
+    // the chrome toggle, so the two can never disagree.
+    final popOutAvailable = popOutAvailability(
+      status: popOutState,
+      recording: popOutRecording,
+      engineAvailable: popOutEngineAvailable,
+    ).enabled;
 
     final Widget content;
     if (width > _desktopBreakpoint) {
@@ -499,6 +514,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
       child: PopOutScope(
         enabled: _popOutEnabled,
         onToggle: _togglePopOut,
+        available: popOutAvailable,
         child: content,
       ),
     );
