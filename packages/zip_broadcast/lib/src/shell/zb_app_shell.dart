@@ -10,12 +10,17 @@ import 'package:zip_broadcast/src/models/output_target_settings.dart';
 import 'package:zip_broadcast/src/output/browser_source/browser_source_server.dart';
 import 'package:zip_broadcast/src/output/browser_source/browser_source_target.dart';
 import 'package:zip_broadcast/src/output/overlay/caption_overlay_target.dart';
+import 'package:zip_broadcast/src/output/overlay/pop_out_caption_target.dart';
+import 'package:zip_broadcast/src/providers/broadcast_engine_available_provider.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_broadcast/src/providers/broadcast_recording_notifier.dart';
 import 'package:zip_broadcast/src/providers/overlay_window_controller_provider.dart';
+import 'package:zip_broadcast/src/providers/pop_out_providers.dart';
 import 'package:zip_broadcast/src/providers/settings_notifier.dart';
 import 'package:zip_broadcast/src/shell/zb_nav_drawer.dart';
 import 'package:zip_broadcast/src/shell/zb_nav_rail.dart';
+import 'package:zip_broadcast/src/widgets/pop_out_controls.dart';
+import 'package:zip_broadcast/src/widgets/pop_out_scope.dart';
 import 'package:zip_core/overlay.dart';
 import 'package:zip_core/zip_core.dart';
 
@@ -44,6 +49,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
 
   late final BrowserSourceTarget _browserSourceTarget;
   late final CaptionOverlayTarget _overlayTarget;
+  late final PopOutCaptionTarget _popOutTarget;
   late final CaptionOutputTargetRegistry _registry;
 
   bool _browserSourceRegistered = false;
@@ -52,6 +58,12 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
   bool _overlayRegistered = false;
   String? _overlayDisplayId;
   StreamSubscription<OverlayEvent>? _overlayEvents;
+
+  // The pop-out's state is in-memory (Q10 B): there is no persisted key and
+  // no settings write on any pop-out path, so `popOutEnabled` is a pure
+  // function of this flag and the controller's status.
+  bool _popOutEnabled = false;
+  StreamSubscription<OverlayEvent>? _popOutEvents;
 
   @override
   void initState() {
@@ -64,12 +76,18 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
       registry: ref.read(captionOutputTargetRegistryProvider),
       displaySettings: () => ref.read(displaySettingsProvider),
     );
+    _popOutTarget = PopOutCaptionTarget(
+      controller: ref.read(popOutWindowControllerProvider),
+      registry: ref.read(captionOutputTargetRegistryProvider),
+      displaySettings: () => ref.read(displaySettingsProvider),
+    );
     _registry = ref.read(captionOutputTargetRegistryProvider);
 
     // BR-U8-15: the shell is what switches the output off when the window
     // goes away on its own. Display loss keeps the output on (D-4): the
     // controller waits for the saved display to come back.
     _overlayEvents = _overlayTarget.events.listen(_onOverlayEvent);
+    _popOutEvents = _popOutTarget.events.listen(_onPopOutEvent);
 
     // Register transcript target (always active).
     ref.read(transcriptWriterTargetProvider);
@@ -104,6 +122,90 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     }
   }
 
+  /// Reacts to the pop-out's lifecycle events (BR-PIP-03).
+  ///
+  /// Every one of them ends the popped-out state: the window is gone or it
+  /// never opened. Turning the flag off in the same callback is what makes the
+  /// banner and the toggle label change in the frame the state does.
+  void _onPopOutEvent(OverlayEvent event) {
+    switch (event) {
+      case WindowClosed():
+      case OpenFailed():
+        _setPoppedOut(false);
+      case DisplayLost():
+      case PopOutToggled():
+        // A pop-out is never framed to a display, so DisplayLost cannot come
+        // from it; a toggle request is handled below in `_togglePopOut`'s
+        // path and never changes the flag on its own.
+        break;
+    }
+  }
+
+  /// Maps the broadcast session onto the availability rule's recording state.
+  ///
+  /// The rule is `zip_core`'s and speaks `RecordingState`; this app's state
+  /// machine is its own five-variant type. Reconnecting counts as active (the
+  /// recognition session is still the reason the captions flow), mirroring
+  /// `CaptionOverlayTarget._activityFor`.
+  static RecordingState _popOutRecordingState(BroadcastSessionState state) =>
+      switch (state) {
+        BroadcastActiveState() => const RecordingState.recording(sessionId: ''),
+        BroadcastPausedState() => const RecordingState.paused(sessionId: ''),
+        BroadcastReconnectingState() =>
+          const RecordingState.reconnecting(sessionId: ''),
+        BroadcastIdleState() => const RecordingState.idle(),
+        BroadcastStoppedState() => const RecordingState.stopped(sessionId: ''),
+      };
+
+  /// The one writer of `_popOutEnabled`.
+  void _setPoppedOut(bool value) {
+    if (_popOutEnabled == value) return;
+    if (!mounted) return;
+    setState(() => _popOutEnabled = value);
+  }
+
+  /// The chrome toggle, the in-surface toggle and the banner's return all end
+  /// up here (UX-PIP-01, UX-PIP-02, UX-PIP-05).
+  ///
+  /// One method for both directions: closing is context-free, and opening
+  /// takes its geometry from the element's own context, which Flutter
+  /// re-attaches on every build.
+  void _togglePopOut() {
+    if (_popOutEnabled) {
+      _setPoppedOut(false);
+      _registry.remove(_popOutTarget);
+      unawaited(_popOutTarget.hide());
+      return;
+    }
+    final controller = ref.read(popOutWindowControllerProvider);
+    if (controller.status is Opening || controller.status is Open) return;
+    final context = _shellContext;
+    if (context == null) return;
+    final geometry = popOutFrameFor(
+      context: context,
+      displays: ref.read(displayListProvider).value ?? const <DisplayInfo>[],
+      settings: ref.read(displaySettingsProvider),
+    );
+    _setPoppedOut(true);
+    _registry.add(_popOutTarget);
+    unawaited(
+      _popOutTarget.show(
+        _popOutConfig,
+        frame: geometry.displayId == null ? null : geometry.frame,
+      ),
+    );
+  }
+
+  /// The shell's own element context, captured in [build].
+  ///
+  /// Capturing it once is what lets the toggle be a plain `VoidCallback`: the
+  /// geometry needs a context, and the controls are built by this widget, so
+  /// their closures already have one.
+  BuildContext? _shellContext;
+
+  /// The launch configuration for the pop-out, with the shell's frame.
+  OverlayConfig get _popOutConfig => const OverlayConfig(mode: PopOutMode());
+
   void _unregisterOverlay() {
     if (!_overlayRegistered) return;
     _registry.remove(_overlayTarget);
@@ -122,6 +224,8 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
   void dispose() {
     unawaited(_overlayEvents?.cancel());
     _overlayEvents = null;
+    unawaited(_popOutEvents?.cancel());
+    _popOutEvents = null;
     _browserSourceDesiredEnabled = false;
     if (_browserSourceRegistered) {
       _registry.remove(_browserSourceTarget);
@@ -132,6 +236,10 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     if (_overlayRegistered) {
       _registry.remove(_overlayTarget);
       unawaited(_overlayTarget.hide());
+    }
+    if (_popOutEnabled) {
+      _registry.remove(_popOutTarget);
+      unawaited(_popOutTarget.hide());
     }
     super.dispose();
   }
@@ -299,12 +407,20 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
       (prev, next) => _syncTargets(next),
     );
 
+    // The toggle's geometry needs a context; this is the one the shell owns.
+    _shellContext = context;
+
     final location = GoRouterState.of(context).matchedLocation;
     final width = MediaQuery.of(context).size.width;
     final broadcastState = ref.watch(broadcastRecordingNotifierProvider);
     final isBroadcastActive = broadcastState is BroadcastActiveState ||
         broadcastState is BroadcastPausedState ||
         broadcastState is BroadcastReconnectingState;
+    final popOutState = ref.watch(popOutWindowControllerProvider).status;
+    // The launch flag changes in `_togglePopOut`, not in this watch; the
+    // rebuild comes from `setState`.
+    final popOutRecording = _popOutRecordingState(broadcastState);
+    final popOutEngineAvailable = ref.watch(broadcastEngineAvailableProvider);
 
     final Widget content;
     if (width > _desktopBreakpoint) {
@@ -322,6 +438,13 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
               context.go('/settings');
             },
             isBroadcastActive: isBroadcastActive,
+            headerAction: PopOutChrome(
+              status: popOutState,
+              recording: popOutRecording,
+              engineAvailable: popOutEngineAvailable,
+              isPoppedOut: _popOutEnabled,
+              onToggle: _togglePopOut,
+            ),
           ),
           const VerticalDivider(width: 1),
           Expanded(child: widget.child),
@@ -348,6 +471,15 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
                 onPressed: () => Scaffold.of(ctx).openDrawer(),
               ),
             ),
+            actions: [
+              PopOutChrome(
+                status: popOutState,
+                recording: popOutRecording,
+                engineAvailable: popOutEngineAvailable,
+                isPoppedOut: _popOutEnabled,
+                onToggle: _togglePopOut,
+              ),
+            ],
           ),
           body: widget.child,
           drawer: ZbNavDrawer(
@@ -362,7 +494,14 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
       );
     }
 
-    return ZbSignOutScope(requestSignOut: _requestSignOut, child: content);
+    return ZbSignOutScope(
+      requestSignOut: _requestSignOut,
+      child: PopOutScope(
+        enabled: _popOutEnabled,
+        onToggle: _togglePopOut,
+        child: content,
+      ),
+    );
   }
 }
 

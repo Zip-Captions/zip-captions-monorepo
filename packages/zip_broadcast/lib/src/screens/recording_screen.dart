@@ -14,6 +14,8 @@ import 'package:zip_broadcast/src/providers/obs_connection_notifier.dart';
 import 'package:zip_broadcast/src/providers/settings_notifier.dart';
 import 'package:zip_broadcast/src/widgets/appearance_panel.dart';
 import 'package:zip_broadcast/src/widgets/audio_level_row.dart';
+import 'package:zip_broadcast/src/widgets/pop_out_controls.dart';
+import 'package:zip_broadcast/src/widgets/pop_out_scope.dart';
 import 'package:zip_broadcast/src/widgets/status_pill.dart';
 import 'package:zip_broadcast/src/widgets/zb_recording_controls_bar.dart';
 import 'package:zip_core/zip_core.dart';
@@ -109,6 +111,7 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
 
     final entries = entriesAsync.valueOrNull ?? const [];
     final isPaused = sessionState.isPaused;
+    final popOut = PopOutScope.of(context);
 
     return Scaffold(
       body: Stack(
@@ -120,6 +123,10 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                 outputSettings: outputSettings,
               ),
               AudioLevelRow(visible: !isPaused),
+              // UX-PIP-05: the hint lives above the caption surface, in the
+              // main window only, and disappears with the flag (R-M6: the same
+              // frame for every close path except the lazy `'-1'` fallback).
+              if (popOut?.enabled ?? false) PopOutBanner(onReturn: popOut!.onToggle),
               Expanded(
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
@@ -131,6 +138,12 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                   child: CaptionDisplayWidget(
                     entries: entries,
                     settings: settings,
+                    controls: popOut == null
+                        ? null
+                        : PopOutInSurfaceToggle(
+                            isPoppedOut: popOut.enabled,
+                            onToggle: popOut.onToggle,
+                          ),
                   ),
                 ),
               ),
