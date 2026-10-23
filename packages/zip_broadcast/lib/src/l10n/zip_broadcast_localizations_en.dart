@@ -492,4 +492,27 @@ class ZipBroadcastLocalizationsEn extends ZipBroadcastLocalizations {
 
   @override
   String get cancel => 'Cancel';
+
+  @override
+  String get popOutEnter => 'Picture in Picture';
+
+  @override
+  String get popOutExit => 'Exit Picture in Picture';
+
+  @override
+  String get popOutHint => 'Captions are displaying in Picture-in-Picture';
+
+  @override
+  String get popOutReturn => 'Return to Window';
+
+  @override
+  String get popOutUnavailableNoSession =>
+      'Start captioning to pop captions out';
+
+  @override
+  String get popOutUnavailableNoEngine =>
+      'No speech recognition engine is available on this device';
+
+  @override
+  String get popOutOpenFailed => 'The pop-out window could not be opened';
 }
