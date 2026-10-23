@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:zip_broadcast/src/models/overlay_config.dart';
 import 'package:zip_broadcast/src/output/overlay/caption_overlay_snapshot.dart';
 import 'package:zip_broadcast/src/output/overlay/overlay_activity.dart';
-import 'package:zip_broadcast/src/output/overlay/overlay_event.dart';
-import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart';
+import 'package:zip_core/overlay.dart';
 import 'package:zip_core/zip_core.dart';
 
 /// The caption output target for the external display window.

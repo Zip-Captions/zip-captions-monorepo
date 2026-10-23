@@ -5,7 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_broadcast/src/models/obs_settings.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
-import 'package:zip_broadcast/src/output/overlay/caption_position.dart';
+import 'package:zip_core/overlay.dart';
 
 part 'broadcast_providers.g.dart';
 

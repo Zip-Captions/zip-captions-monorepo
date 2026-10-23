@@ -407,11 +407,18 @@ String _malformedWindowJson(Random random) {
   }
 }
 
-const Generator<String> arbitraryMalformedWindowJson = _malformedWindowJson;
+/// Generates the malformed pop-out snapshots FP-2 feeds the decoders.
+///
+/// `final`, not `const`: the alias form is a method call in a constant
+/// expression, which is a compile error, so `prefer_const_declarations` is
+/// unsound for this declaration and is suppressed here rather than by keeping
+/// an unbuildable `const`.
+// ignore: prefer_const_declarations
+final Generator<String> arbitraryMalformedWindowJson = _malformedWindowJson;
 
 /// Scale factors a pop-out geometry input can see, matching the display
 /// generator's realistic set (including the degenerate `0`).
-const Generator<double> arbitraryTextScale = any.choose<double>(
+final Generator<double> arbitraryTextScale = any.choose<double>(
   <double>[1, 1.2, 1.5, 2, 3],
 );
 
@@ -441,5 +448,5 @@ final Generator<PopOutGeometryInput> _popOutGeometryInput = any.combine2(
 );
 
 /// Generates a [PopOutGeometryInput] (PBT-07).
-const Generator<PopOutGeometryInput> arbitraryPopOutGeometryInput =
+final Generator<PopOutGeometryInput> arbitraryPopOutGeometryInput =
     _popOutGeometryInput;

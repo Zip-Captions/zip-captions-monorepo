@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:zip_broadcast/src/output/overlay/external_display_status.dart';
 import 'package:zip_core/src/models/recording_state.dart';
+import 'package:zip_core/src/output/overlay/external_display_status.dart';
 
 /// Why the pop-out control is not enabled.
 ///

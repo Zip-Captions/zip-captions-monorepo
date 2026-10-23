@@ -2,12 +2,9 @@
 // ahead of the window machinery (FD BLM §7 shape change 4; PBT-07).
 import 'dart:math';
 
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zip_core/src/models/overlay_config.dart';
 import 'package:zip_core/src/models/overlay_position.dart';
 import 'package:zip_core/src/output/overlay/caption_overlay_codec.dart';
-import 'package:zip_core/src/output/overlay/caption_overlay_snapshot.dart';
 import 'package:zip_core/src/output/overlay/overlay_window_mode.dart';
 
 import '../../helpers/overlay_generators.dart';

@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:zip_broadcast/src/output/overlay/display_info.dart';
 import 'package:zip_core/src/models/display_settings.dart';
+import 'package:zip_core/src/output/overlay/display_info.dart';
 
 /// The pop-out window's numbers, all in logical pixels.
 ///

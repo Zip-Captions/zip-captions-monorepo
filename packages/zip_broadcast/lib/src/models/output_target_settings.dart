@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:zip_broadcast/src/output/overlay/caption_position.dart';
+import 'package:zip_core/overlay.dart';
 
 part 'output_target_settings.freezed.dart';
 

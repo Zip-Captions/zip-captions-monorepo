@@ -6,8 +6,7 @@
 // nothing emitted and nothing logged.
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zip_core/src/output/overlay/sub_window_closed_channel_io.dart';
-import 'package:zip_core/src/output/overlay/sub_window_closed_channel_stub.dart';
+import 'package:zip_core/src/output/overlay/sub_window_closed_channel.dart';
 
 /// Drives the channel's handler exactly as Flutter's binary messenger would.
 Future<void> _call(
@@ -15,11 +14,10 @@ Future<void> _call(
   String method, [
   Object? arguments,
 ]) async {
-  final handler = TestDefaultBinaryMessengerBinding
-      .instance.defaultBinaryMessenger;
-  final codec = const StandardMethodCodec();
+  const codec = StandardMethodCodec();
   final data = codec.encodeMethodCall(MethodCall(method, arguments));
-  await handler.handlePlatformMessage(
+  await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .handlePlatformMessage(
     SubWindowClosedChannel.channelName,
     data,
     (_) {},
@@ -33,8 +31,7 @@ void main() {
     late MethodChannelSubWindowClosedChannel channel;
 
     setUp(() {
-      channel = MethodChannelSubWindowClosedChannel();
-      channel.install();
+      channel = MethodChannelSubWindowClosedChannel()..install();
     });
 
     tearDown(() => channel.dispose());
@@ -116,8 +113,9 @@ void main() {
       channel.closed.listen(null, onDone: () => done = true);
       await Future<void>.delayed(Duration.zero);
 
-      channel.dispose();
-      channel.dispose();
+      channel
+        ..dispose()
+        ..dispose();
       await Future<void>.delayed(Duration.zero);
 
       expect(done, isTrue);
@@ -126,8 +124,7 @@ void main() {
 
   group('NoopSubWindowClosedChannel', () {
     test('never emits anything', () async {
-      const stub = NoopSubWindowClosedChannel();
-      stub.install();
+      final stub = const NoopSubWindowClosedChannel()..install();
 
       expect(await stub.closed.isEmpty, isTrue);
 

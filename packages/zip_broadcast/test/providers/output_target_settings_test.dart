@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
-import 'package:zip_broadcast/src/output/overlay/caption_position.dart';
+import 'package:zip_core/overlay.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_core/zip_core.dart';
 

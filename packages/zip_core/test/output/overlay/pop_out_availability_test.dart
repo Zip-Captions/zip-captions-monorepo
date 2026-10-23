@@ -8,51 +8,53 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zip_broadcast/src/output/overlay/display_info.dart';
-import 'package:zip_broadcast/src/output/overlay/external_display_status.dart';
-import 'package:zip_broadcast/src/output/overlay/overlay_activity.dart';
 import 'package:zip_core/src/models/recording_state.dart';
+import 'package:zip_core/src/output/overlay/display_info.dart';
+import 'package:zip_core/src/output/overlay/external_display_status.dart';
+import 'package:zip_core/src/output/overlay/overlay_activity.dart';
 import 'package:zip_core/src/output/overlay/pop_out_availability.dart';
 
 DisplayInfo _display() => const DisplayInfo(
-      id: 'primary',
-      label: 'primary',
-      bounds: Rect.fromLTWH(0, 0, 1920, 1080),
-      scaleFactor: 1,
-      isPrimary: true,
-    );
+  id: 'primary',
+  label: 'primary',
+  bounds: Rect.fromLTWH(0, 0, 1920, 1080),
+  scaleFactor: 1,
+  isPrimary: true,
+);
 
 List<ExternalDisplayStatus> _allStatuses() => <ExternalDisplayStatus>[
-      const Unsupported(),
-      const NoDisplays(),
-      const Off(),
-      const Opening(),
-      const Open(activity: OverlayActivity.live, displayId: 'primary'),
-      const WaitingForDisplay(displayId: 'primary'),
-      const Failed(reason: 'create_failed'),
-    ];
+  const Unsupported(),
+  const NoDisplays(),
+  const Off(),
+  const Opening(),
+  const Open(activity: OverlayActivity.live, displayId: 'primary'),
+  const WaitingForDisplay(displayId: 'primary'),
+  const Failed(reason: 'create_failed'),
+];
 
 List<RecordingState> _allRecordingStates() => <RecordingState>[
-      const RecordingState.idle(),
-      const RecordingState.recording(sessionId: 'a'),
-      const RecordingState.paused(sessionId: 'a'),
-      const RecordingState.reconnecting(sessionId: 'a'),
-      const RecordingState.stopped(sessionId: 'a'),
-    ];
+  const RecordingState.idle(),
+  const RecordingState.recording(sessionId: 'a'),
+  const RecordingState.paused(sessionId: 'a'),
+  const RecordingState.reconnecting(sessionId: 'a'),
+  const RecordingState.stopped(sessionId: 'a'),
+];
 
 String _describe(ExternalDisplayStatus status, RecordingState recording) =>
     '${status.runtimeType} / ${recording.runtimeType}';
 
 void main() {
-  test('the domain has the seven statuses and five recording states expected',
-      () {
-    expect(_allStatuses().map((s) => s.runtimeType).toSet(), hasLength(7));
-    expect(
-      _allRecordingStates().map((s) => s.runtimeType).toSet(),
-      hasLength(5),
-    );
-    expect(_display().isPrimary, isTrue);
-  });
+  test(
+    'the domain has the seven statuses and five recording states expected',
+    () {
+      expect(_allStatuses().map((s) => s.runtimeType).toSet(), hasLength(7));
+      expect(
+        _allRecordingStates().map((s) => s.runtimeType).toSet(),
+        hasLength(5),
+      );
+      expect(_display().isPrimary, isTrue);
+    },
+  );
 
   group('the 7 x 5 x 2 matrix', () {
     for (final status in _allStatuses()) {
@@ -106,13 +108,15 @@ void main() {
       }
     });
 
-    test('a stopped session is not active, even though it carries the mixin',
-        () {
-      const stopped = RecordingState.stopped(sessionId: 'a');
+    test(
+      'a stopped session is not active, even though it carries the mixin',
+      () {
+        const stopped = RecordingState.stopped(sessionId: 'a');
 
-      expect(stopped, isA<ActiveSessionState>());
-      expect(popOutSessionActive(stopped), isFalse);
-    });
+        expect(stopped, isA<ActiveSessionState>());
+        expect(popOutSessionActive(stopped), isFalse);
+      },
+    );
 
     test('the engine reason wins when both reasons apply', () {
       final result = popOutAvailability(

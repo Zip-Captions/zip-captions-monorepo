@@ -5,7 +5,7 @@
 // N-01. The install slot is a recorder, so no plugin object is constructed.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zip_core/src/output/overlay/overlay_method_router.dart';
-import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart'
+import 'package:zip_core/src/output/overlay/overlay_window_controller.dart'
     show OverlayMethodHandler;
 
 /// Records what the router installs into the engine's one static slot.
@@ -43,8 +43,9 @@ void main() {
     final seen = <String>[];
     var aWindow = <int?>[7];
     var bWindow = <int?>[9];
-    router.register(() => aWindow.single, _recorder(seen, 'a'));
-    router.register(() => bWindow.single, _recorder(seen, 'b'));
+    router
+      ..register(() => aWindow.single, _recorder(seen, 'a'))
+      ..register(() => bWindow.single, _recorder(seen, 'b'));
 
     await slot.deliver('captionUpdate', 7);
     expect(seen, ['a:captionUpdate:7']);
@@ -59,9 +60,9 @@ void main() {
   test('unregistering one leaves the other', () async {
     final seen = <String>[];
     final aToken = router.register(() => 7, _recorder(seen, 'a'));
-    router.register(() => 9, _recorder(seen, 'b'));
-
-    router.unregister(aToken);
+    router
+      ..register(() => 9, _recorder(seen, 'b'))
+      ..unregister(aToken);
     await slot.deliver('overlayReady', 7);
     await slot.deliver('overlayReady', 9);
 
@@ -83,8 +84,9 @@ void main() {
 
   test('a duplicate unregister is a no-op', () {
     final a = router.register(() => 7, _recorder([], 'a'));
-    router.unregister(a);
-    router.unregister(a);
+    router
+      ..unregister(a)
+      ..unregister(a);
 
     expect(slot.calls, ['install', 'uninstall']);
   });
@@ -108,8 +110,7 @@ void main() {
     expect(seen, isEmpty);
   });
 
-  test('installerFor maps null to unregister of exactly its own token',
-      () async {
+  test('installerFor maps null to its own token only', () async {
     final seen = <String>[];
     final a = router.register(() => 7, _recorder(seen, 'a'));
     final installer = router.installerFor(a);
@@ -137,8 +138,9 @@ void main() {
   });
 
   test('dispose clears the slot unconditionally', () {
-    router.register(() => 7, _recorder([], 'a'));
-    router.dispose();
+    router
+      ..register(() => 7, _recorder([], 'a'))
+      ..dispose();
 
     expect(slot.calls, ['install', 'uninstall']);
     expect(slot.current, isNull);

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:logging/logging.dart';
-import 'package:zip_broadcast/src/output/overlay/display_enumerator.dart';
+import 'package:zip_core/src/output/overlay/display_enumerator.dart';
 
 /// One controller's claim on the engine's single display enumerator.
 ///

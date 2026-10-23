@@ -5,31 +5,30 @@
 // allowance added once), not the numbers' platform truth.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zip_broadcast/src/output/overlay/display_info.dart';
 import 'package:zip_core/src/models/display_settings.dart';
 import 'package:zip_core/src/models/enums.dart';
+import 'package:zip_core/src/output/overlay/display_info.dart';
 import 'package:zip_core/src/output/overlay/pop_out_geometry.dart';
 
 DisplayInfo _display({
   String id = 'primary',
   Rect bounds = const Rect.fromLTWH(0, 0, 1920, 1080),
   bool isPrimary = true,
-}) =>
-    DisplayInfo(
-      id: id,
-      label: id,
-      bounds: bounds,
-      scaleFactor: 1,
-      isPrimary: isPrimary,
-    );
+}) => DisplayInfo(
+  id: id,
+  label: id,
+  bounds: bounds,
+  scaleFactor: 1,
+  isPrimary: isPrimary,
+);
 
 DisplaySettings _settings(CaptionTextSize size) => DisplaySettings(
-      scrollDirection: ScrollDirection.bottomToTop,
-      captionTextSize: size,
-      captionFont: CaptionFont.atkinsonHyperlegible,
-      themeModeSetting: ThemeModeSetting.system,
-      maxVisibleLines: 0,
-    );
+  scrollDirection: ScrollDirection.bottomToTop,
+  captionTextSize: size,
+  captionFont: CaptionFont.atkinsonHyperlegible,
+  themeModeSetting: ThemeModeSetting.system,
+  maxVisibleLines: 0,
+);
 
 void main() {
   final textTheme = Typography.material2021().black;
@@ -75,25 +74,27 @@ void main() {
       );
     });
 
-    test('width is three quarters of the work area, never below the minimum',
-        () {
-      expect(
-        popOutSize(
-          _settings(CaptionTextSize.md),
-          textTheme,
-          workAreaWidth: 1920,
-        ).width,
-        1440,
-      );
-      expect(
-        popOutSize(
-          _settings(CaptionTextSize.md),
-          textTheme,
-          workAreaWidth: 200,
-        ).width,
-        PopOutGeometry.minWidth,
-      );
-    });
+    test(
+      'width is three quarters of the work area, never below the minimum',
+      () {
+        expect(
+          popOutSize(
+            _settings(CaptionTextSize.md),
+            textTheme,
+            workAreaWidth: 1920,
+          ).width,
+          1440,
+        );
+        expect(
+          popOutSize(
+            _settings(CaptionTextSize.md),
+            textTheme,
+            workAreaWidth: 200,
+          ).width,
+          PopOutGeometry.minWidth,
+        );
+      },
+    );
 
     test('a work area narrower than the minimum clamps to the minimum', () {
       // The minimum is a content floor: a display too small for it is a Unit 9
@@ -216,13 +217,13 @@ void main() {
 
     test('the allowance differs per platform but the width never does', () {
       double heightFor(TargetPlatform platform) => computePopOutFrame(
-            displays: [_display()],
-            mainWindowCentre: null,
-            settings: _settings(CaptionTextSize.md),
-            textTheme: textTheme,
-            textScaler: 1,
-            platform: platform,
-          ).frame.height;
+        displays: [_display()],
+        mainWindowCentre: null,
+        settings: _settings(CaptionTextSize.md),
+        textTheme: textTheme,
+        textScaler: 1,
+        platform: platform,
+      ).frame.height;
 
       final macos = heightFor(TargetPlatform.macOS);
 

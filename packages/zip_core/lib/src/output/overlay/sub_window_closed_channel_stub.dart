@@ -1,4 +1,4 @@
-import 'package:zip_core/src/output/overlay/sub_window_closed_channel_io.dart';
+import 'package:zip_core/src/output/overlay/sub_window_closed_channel_contract.dart';
 
 /// The no-op close channel for platforms that cannot host a sub-window.
 ///

@@ -3,7 +3,7 @@ import 'package:logging/logging.dart';
 // The handler typedefs still live in zip_broadcast until the promotion (step
 // 11) moves overlay_window_controller.dart into zip_core; this import is
 // re-pointed then and leaves no trace.
-import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart'
+import 'package:zip_core/src/output/overlay/overlay_window_controller.dart'
     show OverlayMethodHandler, OverlayMethodHandlerInstaller;
 
 /// One controller's claim on the engine's single method-handler slot.

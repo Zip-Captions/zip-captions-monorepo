@@ -8,11 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:logging/logging.dart';
 import 'package:zip_broadcast/src/models/overlay_config.dart';
 import 'package:zip_broadcast/src/output/overlay/caption_overlay_target.dart';
-import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
-import 'package:zip_broadcast/src/output/overlay/display_info.dart';
-import 'package:zip_broadcast/src/output/overlay/external_display_status.dart';
-import 'package:zip_broadcast/src/output/overlay/overlay_event.dart';
-import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart';
+import 'package:zip_core/overlay.dart';
 import 'package:zip_core/zip_core.dart' hide Failed;
 
 import '../helpers/fake_display_enumerator.dart';

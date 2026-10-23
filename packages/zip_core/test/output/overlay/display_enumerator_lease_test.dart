@@ -8,12 +8,13 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zip_broadcast/src/output/overlay/display_enumerator.dart';
+import 'package:zip_core/src/output/overlay/display_enumerator.dart';
 import 'package:zip_core/src/output/overlay/display_enumerator_lease.dart';
 
-/// A minimal enumerator that records disposal. The moved `FakeDisplayEnumerator`
-/// helper arrives with the controller suite in step 11; this test needs only
-/// the disposal signal.
+/// A minimal enumerator that records disposal.
+///
+/// This test needs only the disposal signal, so it keeps its own four-line
+/// fake rather than the shared one.
 class _CountingEnumerator implements DisplayEnumerator {
   bool isDisposed = false;
   final List<String> calls = <String>[];
@@ -79,27 +80,29 @@ void main() {
       expect(host.outstanding, 1);
     });
 
-    test('host.dispose disposes regardless, and a later release is a no-op',
-        () async {
-      final shared = _CountingEnumerator();
-      final host = DisplayEnumeratorHost(shared);
-      final a = host.lease();
-      host.lease();
+    test(
+      'host.dispose disposes regardless, and a later release is a no-op',
+      () async {
+        final shared = _CountingEnumerator();
+        final host = DisplayEnumeratorHost(shared);
+        final a = host.lease();
+        host.lease();
 
-      await host.dispose();
-      expect(shared.isDisposed, isTrue);
+        await host.dispose();
+        expect(shared.isDisposed, isTrue);
 
-      final disposeCount = shared.calls.where((c) => c == 'dispose').length;
-      await a.dispose();
-      await host.dispose();
+        final disposeCount = shared.calls.where((c) => c == 'dispose').length;
+        await a.dispose();
+        await host.dispose();
 
-      expect(
-        shared.calls.where((c) => c == 'dispose').length,
-        disposeCount,
-        reason: 'the shared instance is disposed exactly once',
-      );
-      expect(host.outstanding, 0);
-    });
+        expect(
+          shared.calls.where((c) => c == 'dispose').length,
+          disposeCount,
+          reason: 'the shared instance is disposed exactly once',
+        );
+        expect(host.outstanding, 0);
+      },
+    );
 
     test('a lease delegates every member to the shared instance', () async {
       final shared = _CountingEnumerator();

@@ -5,20 +5,20 @@
 // produce: any work-area width, any text scale, any caption size tier.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zip_broadcast/src/output/overlay/display_info.dart';
 import 'package:zip_core/src/models/display_settings.dart';
 import 'package:zip_core/src/models/enums.dart';
+import 'package:zip_core/src/output/overlay/display_info.dart';
 import 'package:zip_core/src/output/overlay/pop_out_geometry.dart';
 
 import '../../helpers/pbt.dart';
 
 DisplaySettings _settingsFor(CaptionTextSize size) => DisplaySettings(
-      scrollDirection: ScrollDirection.bottomToTop,
-      captionTextSize: size,
-      captionFont: CaptionFont.atkinsonHyperlegible,
-      themeModeSetting: ThemeModeSetting.system,
-      maxVisibleLines: 0,
-    );
+  scrollDirection: ScrollDirection.bottomToTop,
+  captionTextSize: size,
+  captionFont: CaptionFont.atkinsonHyperlegible,
+  themeModeSetting: ThemeModeSetting.system,
+  maxVisibleLines: 0,
+);
 
 void main() {
   final textTheme = Typography.material2021().black;
@@ -55,15 +55,16 @@ void main() {
     expect(result.height, greaterThanOrEqualTo(PopOutGeometry.minHeight));
   });
 
-  Glados(inputs).test('width is monotone non-decreasing in work-area width',
-      (input) {
+  Glados(inputs).test('width is monotone non-decreasing in work-area width', (
+    input,
+  ) {
     final (size, workAreaWidth, textScaler) = input;
     Size sizeFor(double width) => popOutSize(
-          _settingsFor(size),
-          textTheme,
-          textScaler: textScaler,
-          workAreaWidth: width,
-        );
+      _settingsFor(size),
+      textTheme,
+      textScaler: textScaler,
+      workAreaWidth: width,
+    );
 
     final narrow = sizeFor(workAreaWidth);
     final wide = sizeFor(workAreaWidth + 100);
@@ -72,15 +73,16 @@ void main() {
     expect(wide.width, lessThanOrEqualTo(workAreaWidth + 100));
   });
 
-  Glados(inputs).test('height is monotone non-decreasing in text scale',
-      (input) {
+  Glados(inputs).test('height is monotone non-decreasing in text scale', (
+    input,
+  ) {
     final (size, workAreaWidth, textScaler) = input;
     Size sizeFor(double scale) => popOutSize(
-          _settingsFor(size),
-          textTheme,
-          textScaler: scale,
-          workAreaWidth: workAreaWidth,
-        );
+      _settingsFor(size),
+      textTheme,
+      textScaler: scale,
+      workAreaWidth: workAreaWidth,
+    );
 
     final small = sizeFor(textScaler);
     final large = sizeFor(textScaler + 0.5);

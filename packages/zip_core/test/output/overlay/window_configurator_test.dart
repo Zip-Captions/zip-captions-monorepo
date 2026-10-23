@@ -34,20 +34,20 @@ void main() {
       calls = <MethodCall>[];
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel(WindowConfiguratorChannel.name),
-        (call) async {
-          calls.add(call);
-          return null;
-        },
-      );
+            const MethodChannel(WindowConfiguratorChannel.name),
+            (call) async {
+              calls.add(call);
+              return null;
+            },
+          );
     });
 
     tearDown(() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel(WindowConfiguratorChannel.name),
-        null,
-      );
+            const MethodChannel(WindowConfiguratorChannel.name),
+            null,
+          );
     });
 
     test('sends every property the native side needs, once', () async {
@@ -81,9 +81,9 @@ void main() {
     test('a missing native implementation never escapes', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel(WindowConfiguratorChannel.name),
-        null,
-      );
+            const MethodChannel(WindowConfiguratorChannel.name),
+            null,
+          );
 
       await expectLater(
         MethodChannelWindowConfigurator().configure(7, config),
@@ -94,9 +94,9 @@ void main() {
     test('a native error never escapes', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel(WindowConfiguratorChannel.name),
-        (call) async => throw PlatformException(code: 'failed'),
-      );
+            const MethodChannel(WindowConfiguratorChannel.name),
+            (call) async => throw PlatformException(code: 'failed'),
+          );
 
       await expectLater(
         MethodChannelWindowConfigurator().configure(7, config),
@@ -110,12 +110,12 @@ void main() {
       var called = false;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel(WindowConfiguratorChannel.name),
-        (call) async {
-          called = true;
-          return null;
-        },
-      );
+            const MethodChannel(WindowConfiguratorChannel.name),
+            (call) async {
+              called = true;
+              return null;
+            },
+          );
 
       await const NoopWindowConfigurator().configure(7, config);
 
