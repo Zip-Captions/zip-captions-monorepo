@@ -1,9 +1,12 @@
 // Z24: the pop-out wiring in this app's shell (FD frontend-components §1,
 // §8.8 items 1, 2, 7, 11, 14 asserted per app).
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_captions/src/l10n/zc_strings.dart';
 import 'package:zip_captions/src/providers/pop_out_providers.dart';
@@ -15,6 +18,7 @@ import 'package:zip_captions/src/widgets/pop_out_scope.dart';
 import 'package:zip_core/overlay.dart';
 import 'package:zip_core/zip_core.dart';
 
+import '../helpers/fake_display_enumerator.dart';
 import '../helpers/fake_pop_out_controller.dart';
 import '../helpers/fake_recording_state_notifier.dart';
 
@@ -56,6 +60,8 @@ Future<FakeRecordingStateNotifier> _pump(
   RecordingState state =
       const RecordingState.recording(sessionId: 'test-session'),
   OverlayWindowController? controller,
+  List<DisplayInfo> displays = const <DisplayInfo>[],
+  Stream<ExternalDisplayStatus>? statuses,
 }) async {
   tester.view.physicalSize = Size(width, 812);
   tester.view.devicePixelRatio = 1.0;
@@ -80,8 +86,10 @@ Future<FakeRecordingStateNotifier> _pump(
           controller ?? fakePopOutController(),
         ),
         displayListProvider.overrideWith(
-          (ref) => Stream<List<DisplayInfo>>.value(const <DisplayInfo>[]),
+          (ref) => Stream<List<DisplayInfo>>.value(displays),
         ),
+        if (statuses != null)
+          popOutStatusProvider.overrideWith((ref) => statuses),
       ],
       child: MaterialApp.router(
         theme: ThemeData(splashFactory: NoSplash.splashFactory),
@@ -194,4 +202,170 @@ void main() {
       expect(scope.strings, same(_strings));
     });
   });
+
+  group('pop-out shell geometry (review round 3)', () {
+    // Finding 2: the frame must come from the controller's live display list,
+    // not from the auto-dispose `displayListProvider` the shell never watches.
+    // The provider is deliberately fed an empty list here: the enumerator the
+    // controller was built over holds the one display.
+    testWidgets('the toggle computes a frame from the controller displays',
+        (tester) async {
+      final ready = _Ready();
+      final enumerator = FakeDisplayEnumerator(initial: const [_display]);
+      final window = _FrameWindow();
+      final controller = _controllerOver(window, enumerator, ready.install);
+      addTearDown(controller.dispose);
+      window.onCreated = (id) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => unawaited(ready.handler!('overlayReady', id)),
+        );
+      };
+      await _pump(tester, controller: controller);
+
+      await tester.pumpAndSettle();
+      expect(controller.displays, const [_display]);
+
+      await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
+      await tester.pumpAndSettle();
+
+      // A non-null frame with a non-null display id reached the platform.
+      expect(window.calls, contains('setFrame'));
+      final frame = window.frames.single;
+      // Same computation as the shell's, from the shell's own context.
+      expect(
+        frame,
+        popOutFrameFor(
+          context: tester.element(find.byType(PopOutScope)),
+          displays: controller.displays,
+          settings: DisplaySettings.defaults(),
+        ).frame,
+      );
+      expect(frame.height, greaterThan(0));
+      expect(frame.width, greaterThan(0));
+    });
+
+    // Finding 3: the chrome reads the controller's status once at build, so a
+    // status that changes afterwards never reaches the toggle. The provider
+    // carries the change instead.
+    testWidgets('a status change to Unsupported hides the toggle',
+        (tester) async {
+      final statuses = StreamController<ExternalDisplayStatus>.broadcast();
+      addTearDown(statuses.close);
+      await _pump(tester, statuses: statuses.stream);
+
+      expect(find.byKey(const Key('popOutToggle')), findsOneWidget);
+
+      statuses.add(const Unsupported());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('popOutToggle')), findsNothing);
+    });
+
+    // Finding 4: the external display's unregister path and the pop-out's must
+    // not diverge; a window the OS closed is no longer fed captions.
+    testWidgets('a window closed on its own leaves the caption fan-out',
+        (tester) async {
+      final ready = _Ready();
+      final enumerator = FakeDisplayEnumerator(initial: const [_display]);
+      final window = _FrameWindow();
+      final controller = _controllerOver(window, enumerator, ready.install);
+      addTearDown(controller.dispose);
+      window.onCreated = (id) {
+        // The sub-engine reports ready one frame after creation.
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => unawaited(ready.handler!('overlayReady', id)),
+        );
+      };
+      await _pump(tester, controller: controller);
+
+      await tester.pumpAndSettle();
+      final registry = ProviderScope.containerOf(
+        tester.element(find.byType(PopOutScope)),
+      ).read(captionOutputTargetRegistryProvider);
+      final before = registry.activeTargets.length;
+
+      await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
+      await tester.pumpAndSettle();
+      expect(registry.activeTargets, hasLength(before + 1));
+
+      controller.onNativeWindowClosed(7);
+      await tester.pumpAndSettle();
+
+      expect(registry.activeTargets, hasLength(before));
+    });
+  });
+}
+
+const _display = DisplayInfo(
+  id: 'primary',
+  label: 'Primary',
+  bounds: Rect.fromLTWH(0, 0, 1920, 1080),
+  scaleFactor: 1,
+  isPrimary: true,
+);
+
+OverlayWindowController _controllerOver(
+  _FrameWindow window,
+  DisplayEnumerator enumerator, [
+  OverlayMethodHandlerInstaller? installer,
+]) =>
+    OverlayWindowController(
+      windowService: window,
+      enumerator: enumerator,
+      handlerInstaller: installer ?? (_) {},
+      log: Logger('test.popOutShell.frame'),
+      mode: const PopOutMode(),
+    );
+
+/// Holds the method handler the controller installs, so the test can deliver
+/// the sub-engine's `overlayReady` the way the router does.
+class _Ready {
+  OverlayMethodHandler? handler;
+
+  // Named as a method, matching this project's `_FakeAuthNotifier.setState`
+  // precedent, not a setter.
+  // ignore: use_setters_to_change_properties
+  void install(OverlayMethodHandler? next) => handler = next;
+}
+
+/// A window service that records the frame it was given.
+class _FrameWindow implements DesktopWindowService {
+  /// The id every created window reports.
+  static const _id = 7;
+
+  /// Completes the ready handshake for the id about to be returned, as the
+  /// sub-engine's entry point does one frame after creation.
+  void Function(int windowId)? onCreated;
+  final List<String> calls = <String>[];
+  final List<Rect> frames = <Rect>[];
+
+  @override
+  bool get isSupported => true;
+
+  @override
+  Future<int> createWindow(String arguments) async {
+    calls.add('createWindow');
+    onCreated?.call(_id);
+    return _id;
+  }
+
+  @override
+  Future<void> closeWindow(int windowId) async => calls.add('closeWindow');
+
+  @override
+  Future<void> invokeMethod(
+    int windowId,
+    String method,
+    dynamic arguments,
+  ) async =>
+      calls.add('invokeMethod:$method');
+
+  @override
+  Future<void> setFrame(int windowId, Rect frame) async {
+    calls.add('setFrame');
+    frames.add(frame);
+  }
+
+  @override
+  Future<void> show(int windowId) async => calls.add('show');
 }

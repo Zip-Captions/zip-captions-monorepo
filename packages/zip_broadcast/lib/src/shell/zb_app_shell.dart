@@ -131,6 +131,11 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     switch (event) {
       case WindowClosed():
       case OpenFailed():
+        // Both end the target: the registry disposes it with the window, so
+        // leaving it registered would keep a dead target in the caption fan-out
+        // while the external display's own path (`_unregisterOverlay`) does
+        // not (review round 3, finding 4).
+        _unregisterPopOut();
         _setPoppedOut(false);
       case DisplayLost():
         // A pop-out is never framed to a display, so it cannot lose one.
@@ -163,9 +168,16 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
   /// `_togglePopOut`, for callers with no live context.
   void _closePopOut() {
     _setPoppedOut(false);
-    _registry.remove(_popOutTarget);
+    _unregisterPopOut();
     unawaited(_popOutTarget.hide());
   }
+
+  /// Removes the target from the caption fan-out, if it is registered.
+  ///
+  /// The registry's `remove` disposes the target; that is what makes the
+  /// unregister on a closed window safe (the controller is already `Off`, so
+  /// the dispose's close is a no-op).
+  void _unregisterPopOut() => _registry.remove(_popOutTarget);
 
   /// The one writer of `_popOutEnabled`.
   void _setPoppedOut(bool value) {
@@ -189,9 +201,14 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     if (controller.status is Opening || controller.status is Open) return;
     final context = _shellContext;
     if (context == null) return;
+    // The controller's own list, kept current by the enumerator, is the one
+    // the geometry must read: `displayListProvider` is auto-dispose and only
+    // `ExternalDisplayControls` watches it, which is not mounted on
+    // `/recording`, so reading it here always yields null (review round 3,
+    // finding 2).
     final geometry = popOutFrameFor(
       context: context,
-      displays: ref.read(displayListProvider).value ?? const <DisplayInfo>[],
+      displays: controller.displays,
       settings: ref.read(displaySettingsProvider),
     );
     _setPoppedOut(true);
@@ -424,7 +441,11 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     final isBroadcastActive = broadcastState is BroadcastActiveState ||
         broadcastState is BroadcastPausedState ||
         broadcastState is BroadcastReconnectingState;
-    final popOutState = ref.watch(popOutWindowControllerProvider).status;
+    // Watched, not read: the controller's status changes after build (a
+    // failed display probe leaves it `Unsupported`) and the chrome must
+    // follow (review round 3, finding 3).
+    final popOutState =
+        ref.watch(popOutStatusProvider).valueOrNull ?? const Off();
     // The launch flag changes in `_togglePopOut`, not in this watch; the
     // rebuild comes from `setState`.
     final popOutRecording = _popOutRecordingState(broadcastState);

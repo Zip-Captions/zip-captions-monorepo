@@ -33,6 +33,7 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
   static const _desktopBreakpoint = 768.0;
 
   late final PopOutCaptionTarget _popOutTarget;
+  late final CaptionOutputTargetRegistry _registry;
   StreamSubscription<OverlayEvent>? _popOutEvents;
 
   // Q10 B: no persisted key and no settings write on any pop-out path, so the
@@ -42,9 +43,10 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
   @override
   void initState() {
     super.initState();
+    _registry = ref.read(captionOutputTargetRegistryProvider);
     _popOutTarget = PopOutCaptionTarget(
       controller: ref.read(popOutWindowControllerProvider),
-      registry: ref.read(captionOutputTargetRegistryProvider),
+      registry: _registry,
       displaySettings: () => ref.read(displaySettingsProvider),
     );
     _popOutEvents = _popOutTarget.events.listen(_onPopOutEvent);
@@ -56,6 +58,11 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
     switch (event) {
       case WindowClosed():
       case OpenFailed():
+        // Both end the target: the registry disposes it with the window, so
+        // leaving it registered would keep a dead target in the caption fan-out
+        // while the external display's own path (`_unregisterOverlay`) does
+        // not (review round 3, finding 4).
+        _unregisterPopOut();
         _setPoppedOut(false);
       case DisplayLost():
         // A pop-out is never framed to a display, so it cannot lose one.
@@ -76,9 +83,16 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
   /// `_togglePopOut`, for callers with no `BuildContext`.
   void _closePopOut() {
     _setPoppedOut(false);
-    ref.read(captionOutputTargetRegistryProvider).remove(_popOutTarget);
+    _unregisterPopOut();
     unawaited(_popOutTarget.hide());
   }
+
+  /// Removes the target from the caption fan-out, if it is registered.
+  ///
+  /// The registry's `remove` disposes the target; that is what makes the
+  /// unregister on a closed window safe (the controller is already `Off`, so
+  /// the dispose's close is a no-op).
+  void _unregisterPopOut() => _registry.remove(_popOutTarget);
 
   void _setPoppedOut(bool value) {
     if (_popOutEnabled == value) return;
@@ -95,13 +109,17 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
     }
     final controller = ref.read(popOutWindowControllerProvider);
     if (controller.status is Opening || controller.status is Open) return;
+    // The controller's own list, kept current by the enumerator, is the one
+    // the geometry must read: `displayListProvider` is auto-dispose and this
+    // shell never watches it, so reading it here always yields null (review
+    // round 3, finding 2).
     final geometry = popOutFrameFor(
       context: context,
-      displays: ref.read(displayListProvider).value ?? const <DisplayInfo>[],
+      displays: controller.displays,
       settings: ref.read(displaySettingsProvider),
     );
     _setPoppedOut(true);
-    ref.read(captionOutputTargetRegistryProvider).add(_popOutTarget);
+    _registry.add(_popOutTarget);
     unawaited(
       _popOutTarget.show(
         const OverlayConfig(mode: PopOutMode()),
@@ -115,7 +133,9 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
     unawaited(_popOutEvents?.cancel());
     _popOutEvents = null;
     if (_popOutEnabled) {
-      ref.read(captionOutputTargetRegistryProvider).remove(_popOutTarget);
+      // The registry is held, not read through `ref`: `ref` is unusable once
+      // the element is unmounting.
+      _registry.remove(_popOutTarget);
       unawaited(_popOutTarget.hide());
     }
     super.dispose();
@@ -165,7 +185,11 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
     final width = MediaQuery.of(context).size.width;
     final strings = ref.watch(zcStringsProvider).valueOrNull;
     final recording = ref.watch(recordingStateNotifierProvider);
-    final popOutStatus = ref.watch(popOutWindowControllerProvider).status;
+    // Watched, not read: the controller's status changes after build (a
+    // failed display probe leaves it `Unsupported`) and the chrome must
+    // follow (review round 3, finding 3).
+    final popOutStatus =
+        ref.watch(popOutStatusProvider).valueOrNull ?? const Off();
     final engineAvailable = ref.watch(captionsEngineAvailableProvider);
 
     // The copy is loaded from the ARB before the shell renders its chrome, so

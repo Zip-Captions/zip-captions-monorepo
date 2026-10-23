@@ -264,3 +264,68 @@ assignable" while the new form compiles. CI on the real runners is the gate.
 Gates after the fix: `zip_core` analyze clean, 915 passed / 4 skipped; `zip_broadcast` analyze
 clean, 178 passed; `zip_captions` analyze clean, 176 passed; both `flutter build macos --debug`
 builds succeeded.
+
+## Review round 3
+
+Round-3 review of PR 41 returned 2 major, 2 minor and 1 nit. All five are fixed in code or in this
+document; nothing outside the list changed. Dependency set is unchanged
+(`desktop_multi_window ^0.2.1` in both apps, `screen_retriever ^0.2.2` in `zip_core` only,
+none in `zip_broadcast`); no `window_manager`; no new dependency. Native edits are confined to
+the four runner files. Dart edits are confined to the two shells, `zip_captions`'
+`pop_out_providers.dart` (and its generated part) and the two shell test files.
+
+| # | Severity | Resolution | Evidence |
+|---|---|---|---|
+| 1 | Major | **Fixed.** The Windows `configure` reader rejected every call: `StandardMessageCodec` writes a Dart `int` that fits in 32 bits as int32, so the Windows codec delivers `windowId` as `int32_t` and `std::get_if<int64_t>` returned null. `int_value` in both `flutter_window.cpp` files now accepts `int32_t` as well as `int64_t` and widens with `static_cast<int64_t>`. The rest of the payload was audited against the reader types (table below): every other key already matched. | Static: the accepted variants are now `int64_t` and `int32_t`; the full key/type table below. CI on the Windows runners is the real gate — this machine cannot compile a Windows target. |
+| 2 | Major | **Fixed.** Both shells' `_togglePopOut` now read `controller.displays` (`overlay_window_controller.dart:207`, kept current by the enumerator at `:238-240`) instead of `ref.read(displayListProvider).value`, which is auto-dispose and unwatched by the shell. The geometry therefore resolves a display and the pop-out opens on the computed 2-line strip. | `zip_captions/test/widgets/pop_out_shell_test.dart` — "the toggle computes a frame from the controller displays": the provider is overridden with an empty list while the controller's enumerator holds one display; the test drives the real ready handshake and asserts the `Rect` handed to `setFrame` equals the geometry computed from `controller.displays`. `zip_broadcast/test/shell/pop_out_shell_test.dart` — "the toggle hands the computed frame to setFrame": same shape on `/recording`; the frame equals `computePopOutFrame(displays: controller.displays, ...)`. Both tests fail against the old provider read (verified by re-applying it) and pass now. |
+| 3 | Minor | **Fixed.** Both shells now `ref.watch(popOutStatusProvider)` instead of reading `controller.status` once at build. `zip_captions` gained the provider (already present in `zip_broadcast`), mirroring its implementation: replay the current value, then `yield* controller.statusChanges`. The shells fall back to `const Off()` while the first value is pending. A controller that becomes `Unsupported` (failed display probe) now hides the toggle and its in-surface counterpart. | `zip_captions/test/widgets/pop_out_shell_test.dart` — "a status change to Unsupported hides the toggle": the provider is driven by a `StreamController`, emits `Unsupported`, and the `popOutToggle` disappears. |
+| 4 | Minor | **Fixed.** Both shells' `_onPopOutEvent` now call a shared `_unregisterPopOut()` on `WindowClosed` / `OpenFailed` (and `_closePopOut` uses the same helper), so the pop-out path matches the external display's `_unregisterOverlay`: the target leaves the caption fan-out and is disposed with it. The registry's `remove` disposes the target; the dispose's `close(dispose)` is a no-op on an already-`Off` controller. | `zip_captions/test/widgets/pop_out_shell_test.dart` — "a window closed on its own leaves the caption fan-out": after a native close, `registry.activeTargets` is back to its pre-toggle size. The test fails against the old handler and passes now. |
+| 5 | Nit | **Fixed, as "document the leak as intentional".** The double reference on `sub_window_events` is gone: the single owned reference (from `fl_method_channel_new`) is stored in the accessor directly, with no extra `g_object_ref`, and a comment records that the one reference is held for the engine's lifetime. Each sub-window's `configure` channel is documented as deliberately leaked at its creation site (the window's own `destroy` hook is the app's, not the channel's, so nothing here could unref it in time). This section documents `7fe4c06`. | `my_application.cc` (both apps): one `fl_method_channel_new` result assigned to `SubWindowEventsRef()`, no `g_object_ref`; comments at both sites. |
+
+### Payload type audit (finding 1)
+
+The `configure` payload is built in one place,
+`zip_core/lib/src/output/overlay/window_configurator.dart:57-63`, from
+`OverlayWindowConfig` (`zip_core/lib/src/models/overlay_window_config.dart`): `windowId` is the
+`int` parameter of `configure`, `floating`/`decorated` are `bool`, `minWidth`/`minHeight` are
+`double` (defaults `0` typed as double). No other key is sent. Dart's `StandardMessageCodec`
+(`message_codecs.dart:386-409`, local Flutter 3.41.7) writes `bool` as `_valueTrue`/`_valueFalse`,
+`double` as `_valueFloat64`, and `int` as `_valueInt32` when `-0x7fffffff - 1 <= value <=
+0x7fffffff`, else `_valueInt64`.
+
+| Key | Dart type (source) | Dart encoding (`message_codecs.dart`) | Windows reader (`flutter_window.cpp`) | Linux reader (`my_application.cc`) | macOS | Result |
+|---|---|---|---|---|---|---|
+| `windowId` | `int` (parameter, `window_configurator.dart:58`) | `_valueInt32` for every id ≤ 0x7fffffff (`:397-400`), `_valueInt64` above | `int_value`: was `get_if<int64_t>` only → **fixed** to accept `int32_t` and `int64_t` | `FL_VALUE_TYPE_INT`, read with `fl_value_get_int` (`FL_VALUE_TYPE_INT` covers both widths) | `as? Int` (`NSNumber`, width-agnostic) | **fixed (Windows)**; Linux/macOS were already correct |
+| `floating` | `bool` (`OverlayWindowConfig.floating`) | `_valueTrue`/`_valueFalse` (`:302-303`) | `bool_value`: `get_if<bool>` | `FL_VALUE_TYPE_BOOL` | `as? Bool` | OK |
+| `decorated` | `bool` (`OverlayWindowConfig.decorated`) | `_valueTrue`/`_valueFalse` | `bool_value`: `get_if<bool>` | `FL_VALUE_TYPE_BOOL` | `as? Bool` | OK |
+| `minWidth` | `double` (`OverlayWindowConfig.minWidth`, `@Default(0)` typed `double`) | `_valueFloat64` (`:305-307`) | `double_value`: `get_if<double>` | `FL_VALUE_TYPE_FLOAT` | `as? Double` | OK |
+| `minHeight` | `double` (`OverlayWindowConfig.minHeight`) | `_valueFloat64` | `double_value`: `get_if<double>` | `FL_VALUE_TYPE_FLOAT` | `as? Double` | OK |
+
+Four runner files were checked: `zip_captions` and `zip_broadcast` `windows/runner/flutter_window.cpp`
+(identical payload readers) and `zip_captions` and `zip_broadcast` `linux/runner/my_application.cc`
+(identical handler). The only mismatch was `windowId` on Windows. No sizing or geometry is sent as
+an `int`: the minimum size is two doubles, and the frame itself travels over the plugin's own
+`setFrame` call, not this channel. The Windows `subWindowClosed` event the runners emit goes the
+other way and builds its `EncodableValue` from an `int64_t`, which the Dart codec decodes as `int`
+— unaffected.
+
+### Round-2 n1 — resolved, not a defect
+
+Round-2 finding n1 does not reproduce. `PopOutCaptionTarget.hide()` closes the controller with
+`CloseReason.toggleOff`, but on the event path the preceding `registry.remove(_popOutTarget)`
+already disposed the target, whose `dispose()` closes with `CloseReason.dispose`; the second
+close takes the window id as null and is a no-op (`_runClose` captures and nulls the id before
+its first await). Recorded here as resolved-not-a-defect, not as a code change.
+
+### CI-fix record — `7fe4c06`
+
+`7fe4c06 fix(zip_captions,zip_broadcast): link flutter_wrapper_plugin on Windows runner` is the
+third commit in this branch's CI-fix series, after `56a6fec` (the compile defects documented in
+the section above). It fixes the Windows link step: the runners' CMake target now links the
+`flutter_wrapper_plugin` library that the runner sources reference, so `flutter_window.cpp`
+resolves at link time on both Windows apps. It changed no Dart, test or l10n file. CI on the
+Windows runners is the gate for it, as for finding 1 above.
+
+Gates re-run after the round-3 fixes, in order: `zip_core` analyze clean (`No issues found!`),
+915 passed / 4 skipped; `zip_broadcast` analyze clean, 179 passed; `zip_captions` analyze clean,
+179 passed; both `flutter build macos --debug` builds succeeded.

@@ -11,6 +11,7 @@ import 'package:zip_broadcast/src/providers/overlay_window_controller_provider.d
 import 'package:zip_broadcast/src/widgets/pop_out_controls.dart';
 import 'package:zip_broadcast/src/widgets/pop_out_scope.dart';
 import 'package:zip_core/overlay.dart';
+import 'package:zip_core/zip_core.dart' show DisplaySettings;
 
 import '../helpers/fake_display_enumerator.dart';
 import '../helpers/fake_notifiers.dart';
@@ -47,8 +48,13 @@ class _Window implements DesktopWindowService {
       calls.add('invokeMethod:$method');
 
   @override
-  Future<void> setFrame(int windowId, Rect frame) async =>
-      calls.add('setFrame');
+  Future<void> setFrame(int windowId, Rect frame) async {
+    calls.add('setFrame');
+    frames.add(frame);
+  }
+
+  /// Every frame handed to [setFrame], in order (review round 3, finding 2).
+  final List<Rect> frames = <Rect>[];
 
   @override
   Future<void> show(int windowId) async => calls.add('show');
@@ -234,6 +240,40 @@ void main() {
         find.byType(PopOutInSurfaceToggle),
       );
       expect(surface.enabled, isTrue);
+    });
+
+    // Finding 2: the pop-out's frame is computed from the controller's live
+    // display list, not from the auto-dispose `displayListProvider`, which
+    // only `ExternalDisplayControls` watches and which is not mounted on
+    // `/recording`.
+    testWidgets('the toggle hands the computed frame to setFrame',
+        (tester) async {
+      final graph = await _pumpRecording(tester);
+
+      await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
+      await tester.pumpAndSettle();
+
+      expect(graph.window.calls, contains('setFrame'));
+      final frame = graph.window.frames.single;
+      // Only the controller's list can produce a frame. The provider this
+      // test overrides with the same list is auto-dispose and unmounted on
+      // `/recording`, and `computePopOutFrame` answers `Rect.zero` with a null
+      // display id for an empty list — exactly what the old read handed on.
+      final fromController = computePopOutFrame(
+        displays: graph.controller.displays,
+        mainWindowCentre: null,
+        settings: DisplaySettings.defaults(),
+        textTheme: Theme.of(
+          tester.element(find.byType(PopOutScope)),
+        ).textTheme,
+        textScaler: 1,
+        platform: ThemeData().platform,
+      );
+      expect(fromController.displayId, _display.id);
+      expect(frame, fromController.frame);
+      expect(frame.width, greaterThan(0));
+      expect(frame.height, greaterThan(0));
+      expect(frame.bottom, _display.bounds.bottom);
     });
 
     testWidgets('the scope carries the flag and the toggle to the screen',

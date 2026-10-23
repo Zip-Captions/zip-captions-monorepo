@@ -111,12 +111,23 @@ void InstallConfigureChannel(flutter::FlutterViewController* controller) {
           result->Error("configure_invalid");
           return;
         }
+        // The Dart side sends `int`s through `StandardMessageCodec`, which
+        // writes any value that fits in 32 bits as int32 and only the rest as
+        // int64 (`message_codecs.dart`, `_valueInt32`). The decode side
+        // therefore hands back `int32_t` for every id a window can have; a
+        // reader that accepted only `int64_t` rejected every `configure` call
+        // on Windows. Both widths are the same number here (review round 3,
+        // finding 1).
         auto int_value = [args](const char* key) -> std::optional<int64_t> {
           auto it = args->find(flutter::EncodableValue(key));
           if (it == args->end()) return std::nullopt;
-          const auto* value = std::get_if<int64_t>(&it->second);
-          if (!value) return std::nullopt;
-          return *value;
+          if (const auto* wide = std::get_if<int64_t>(&it->second)) {
+            return *wide;
+          }
+          if (const auto* narrow = std::get_if<int32_t>(&it->second)) {
+            return static_cast<int64_t>(*narrow);
+          }
+          return std::nullopt;
         };
         auto bool_value = [args](const char* key) -> std::optional<bool> {
           auto it = args->find(flutter::EncodableValue(key));

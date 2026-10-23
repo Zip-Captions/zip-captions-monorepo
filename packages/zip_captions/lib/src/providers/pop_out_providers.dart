@@ -35,6 +35,20 @@ OverlayWindowController popOutWindowController(Ref ref) {
 Stream<List<DisplayInfo>> displayList(Ref ref) =>
     ref.watch(popOutWindowControllerProvider).enumerator.changes;
 
+/// The pop-out's status, replaying the current one first (the stream is a
+/// broadcast, and the controller starts `Off`).
+///
+/// The shell watches this rather than reading `controller.status` once at
+/// build, so a status change — a failed display probe leaves the controller
+/// `Unsupported` — reaches the chrome and its toggle (review round 3,
+/// finding 3). It mirrors `zip_broadcast`'s provider of the same name.
+@riverpod
+Stream<ExternalDisplayStatus> popOutStatus(Ref ref) async* {
+  final controller = ref.watch(popOutWindowControllerProvider);
+  yield controller.status;
+  yield* controller.statusChanges;
+}
+
 /// The frame the pop-out should occupy, as the shell computes it (R-M5).
 ///
 /// The shell is the only component with the three inputs: a `BuildContext`

@@ -75,5 +75,31 @@ final displayListProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DisplayListRef = AutoDisposeStreamProviderRef<List<DisplayInfo>>;
+String _$popOutStatusHash() => r'2423e201a14b9009f016481f0801f4076354df06';
+
+/// The pop-out's status, replaying the current one first (the stream is a
+/// broadcast, and the controller starts `Off`).
+///
+/// The shell watches this rather than reading `controller.status` once at
+/// build, so a status change — a failed display probe leaves the controller
+/// `Unsupported` — reaches the chrome and its toggle (review round 3,
+/// finding 3). It mirrors `zip_broadcast`'s provider of the same name.
+///
+/// Copied from [popOutStatus].
+@ProviderFor(popOutStatus)
+final popOutStatusProvider =
+    AutoDisposeStreamProvider<ExternalDisplayStatus>.internal(
+      popOutStatus,
+      name: r'popOutStatusProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$popOutStatusHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef PopOutStatusRef = AutoDisposeStreamProviderRef<ExternalDisplayStatus>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

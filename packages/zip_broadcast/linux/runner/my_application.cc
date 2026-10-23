@@ -203,8 +203,10 @@ static void my_application_activate(GApplication* application) {
       fl_engine_get_binary_messenger(fl_view_get_engine(view)),
       "zip_core/overlay_sub_window_events",
       FL_METHOD_CODEC(fl_standard_method_codec_new()));
-  SubWindowEventsRef() =
-      static_cast<FlMethodChannel*>(g_object_ref(sub_window_events));
+  // The one reference the process keeps for the main engine's lifetime, held
+  // by the accessor and never released: the close path may run long after the
+  // window teardown steps (review round 3, finding 5).
+  SubWindowEventsRef() = sub_window_events;
 
   // Sub-windows are caption surfaces, not app windows. Unit 8 stripped their
   // decoration here unconditionally; this unit moves every styling decision
@@ -218,6 +220,10 @@ static void my_application_activate(GApplication* application) {
         }
         FlView* created_view = FL_VIEW(registry);
 
+        // Deliberately leaked: the channel lives as long as its sub-window,
+        // and the window's teardown is not a place to run plugin code. The
+        // destroy hook below is the app's own, not this channel's, so nothing
+        // here would unref it in time anyway (review round 3, finding 5).
         FlMethodChannel* configure = fl_method_channel_new(
             fl_engine_get_binary_messenger(fl_view_get_engine(created_view)),
             "zip_core/overlay_window_configure",
