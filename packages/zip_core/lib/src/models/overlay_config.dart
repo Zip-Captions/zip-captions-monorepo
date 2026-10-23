@@ -16,6 +16,13 @@ abstract class OverlayConfig with _$OverlayConfig {
     /// Where the caption text sits inside the surface (top/bottom).
     @Default(OverlayPositionBottom()) OverlayPosition position,
 
+    /// The pop-out's toggle label, localized by the app that opens it.
+    ///
+    /// `zip_core` has no ARB (FD BLM §7 shape change 1), so the app passes its
+    /// copy through the launch payload; the default is the shipped English
+    /// wording. The external display ignores it: it renders no toggle.
+    String? popOutToggleLabel,
+
     /// Shipped Phase 1 field. **Never applied:** the external display renders
     /// an opaque surface (B-8, BR-U8-26).
     @Default(0.9) double opacity,

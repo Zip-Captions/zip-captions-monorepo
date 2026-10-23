@@ -7,6 +7,7 @@ import 'package:zip_core/src/models/overlay_position.dart';
 import 'package:zip_core/src/output/overlay/caption_overlay_codec.dart';
 import 'package:zip_core/src/output/overlay/caption_overlay_snapshot.dart';
 import 'package:zip_core/src/output/overlay/overlay_activity.dart';
+import 'package:zip_core/src/output/overlay/overlay_window_mode.dart';
 import 'package:zip_core/zip_core.dart';
 
 const _settings = DisplaySettings(
@@ -150,6 +151,61 @@ void main() {
 
         expect(decodeLaunch(encodeLaunch(launch)), launch);
       }
+    });
+
+    test('a pop-out toggle label survives the round trip', () {
+      const launch = OverlayWindowLaunch(
+        config: OverlayConfig(
+          mode: PopOutMode(),
+          popOutToggleLabel: 'Salir de Picture-in-Picture',
+        ),
+        snapshot: CaptionOverlaySnapshot(
+          activity: OverlayActivity.standby,
+          entries: [],
+          settings: _settings,
+        ),
+      );
+
+      final decoded = decodeLaunch(encodeLaunch(launch));
+
+      expect(decoded, isNotNull);
+      expect(decoded!.config.popOutToggleLabel, 'Salir de Picture-in-Picture');
+    });
+
+    test('an absent pop-out toggle label decodes as null', () {
+      const launch = OverlayWindowLaunch(
+        config: OverlayConfig(mode: PopOutMode()),
+        snapshot: CaptionOverlaySnapshot(
+          activity: OverlayActivity.standby,
+          entries: [],
+          settings: _settings,
+        ),
+      );
+
+      expect(
+        decodeLaunch(encodeLaunch(launch))!.config.popOutToggleLabel,
+        isNull,
+      );
+    });
+
+    test('a non-string pop-out toggle label is rejected', () {
+      final decoded =
+          jsonDecode(
+                encodeLaunch(
+                  const OverlayWindowLaunch(
+                    config: OverlayConfig(mode: PopOutMode()),
+                    snapshot: CaptionOverlaySnapshot(
+                      activity: OverlayActivity.standby,
+                      entries: [],
+                      settings: _settings,
+                    ),
+                  ),
+                ),
+              )
+              as Map<String, Object?>;
+      (decoded['config']! as Map<String, Object?>)['popOutToggleLabel'] = 7;
+
+      expect(decodeLaunch(jsonEncode(decoded)), isNull);
     });
 
     test('a custom position is encoded as the decodable fallback', () {

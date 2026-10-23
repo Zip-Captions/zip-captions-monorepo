@@ -102,6 +102,8 @@ class OverlayWindowApp extends StatelessWidget {
                   interim: frame.interim,
                   settings: frame.settings,
                   onTogglePopOut: onPopOutToggle,
+                  toggleLabel:
+                      launch.config.popOutToggleLabel ?? popOutWindowExitLabel,
                 )
               : OverlayWindowBody(
                   activity: frame.activity,

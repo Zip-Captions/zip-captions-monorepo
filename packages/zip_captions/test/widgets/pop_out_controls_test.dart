@@ -43,8 +43,9 @@ String? _hint(WidgetTester tester) =>
 
 void main() {
   group('PopOutChrome (B31)', () {
-    testWidgets('shows the enter label and fires the toggle when available',
-        (tester) async {
+    testWidgets('shows the enter label and fires the toggle when available', (
+      tester,
+    ) async {
       var toggled = 0;
       await _pump(
         tester,
@@ -53,6 +54,11 @@ void main() {
           recording: const RecordingState.recording(sessionId: 's'),
           engineAvailable: true,
           isPoppedOut: false,
+          reason: popOutAvailability(
+            status: const Off(),
+            recording: const RecordingState.recording(sessionId: 's'),
+            engineAvailable: true,
+          ).reason,
           onToggle: () => toggled++,
         ),
       );
@@ -79,6 +85,11 @@ void main() {
             recording: const RecordingState.recording(sessionId: 's'),
             engineAvailable: true,
             isPoppedOut: true,
+            reason: popOutAvailability(
+              status: status,
+              recording: const RecordingState.recording(sessionId: 's'),
+              engineAvailable: true,
+            ).reason,
             onToggle: () {},
           ),
         );
@@ -87,8 +98,9 @@ void main() {
       }
     });
 
-    testWidgets('renders nothing when the platform is unsupported',
-        (tester) async {
+    testWidgets('renders nothing when the platform is unsupported', (
+      tester,
+    ) async {
       await _pump(
         tester,
         PopOutChrome(
@@ -96,6 +108,11 @@ void main() {
           recording: const RecordingState.recording(sessionId: 's'),
           engineAvailable: true,
           isPoppedOut: false,
+          reason: popOutAvailability(
+            status: const Unsupported(),
+            recording: const RecordingState.recording(sessionId: 's'),
+            engineAvailable: true,
+          ).reason,
           onToggle: () {},
         ),
       );
@@ -104,8 +121,9 @@ void main() {
       expect(find.byKey(const Key('popOutToggleReason')), findsNothing);
     });
 
-    testWidgets('is disabled with a visible reason and no session',
-        (tester) async {
+    testWidgets('is disabled with a visible reason and no session', (
+      tester,
+    ) async {
       var toggled = 0;
       await _pump(
         tester,
@@ -114,6 +132,11 @@ void main() {
           recording: const RecordingState.idle(),
           engineAvailable: true,
           isPoppedOut: false,
+          reason: popOutAvailability(
+            status: const Off(),
+            recording: const RecordingState.idle(),
+            engineAvailable: true,
+          ).reason,
           onToggle: () => toggled++,
         ),
       );
@@ -132,8 +155,9 @@ void main() {
       expect(toggled, 0);
     });
 
-    testWidgets('is disabled with a visible reason and no engine',
-        (tester) async {
+    testWidgets('is disabled with a visible reason and no engine', (
+      tester,
+    ) async {
       await _pump(
         tester,
         PopOutChrome(
@@ -141,6 +165,11 @@ void main() {
           recording: const RecordingState.recording(sessionId: 's'),
           engineAvailable: false,
           isPoppedOut: false,
+          reason: popOutAvailability(
+            status: const Off(),
+            recording: const RecordingState.recording(sessionId: 's'),
+            engineAvailable: false,
+          ).reason,
           onToggle: () {},
         ),
       );
@@ -152,8 +181,9 @@ void main() {
       expect(find.byKey(const Key('popOutToggleReason')), findsOneWidget);
     });
 
-    testWidgets('shows the open-failure line when the window service failed',
-        (tester) async {
+    testWidgets('shows the open-failure line when the window service failed', (
+      tester,
+    ) async {
       await _pump(
         tester,
         PopOutChrome(
@@ -161,6 +191,11 @@ void main() {
           recording: const RecordingState.recording(sessionId: 's'),
           engineAvailable: true,
           isPoppedOut: false,
+          reason: popOutAvailability(
+            status: const Failed(reason: 'create_failed'),
+            recording: const RecordingState.recording(sessionId: 's'),
+            engineAvailable: true,
+          ).reason,
           onToggle: () {},
         ),
       );
@@ -168,8 +203,9 @@ void main() {
       expect(_hint(tester), isNotNull);
     });
 
-    testWidgets('clears the failure line when the status leaves Failed',
-        (tester) async {
+    testWidgets('clears the failure line when the status leaves Failed', (
+      tester,
+    ) async {
       await _pump(
         tester,
         PopOutChrome(
@@ -177,6 +213,11 @@ void main() {
           recording: const RecordingState.recording(sessionId: 's'),
           engineAvailable: true,
           isPoppedOut: false,
+          reason: popOutAvailability(
+            status: const Failed(reason: 'create_failed'),
+            recording: const RecordingState.recording(sessionId: 's'),
+            engineAvailable: true,
+          ).reason,
           onToggle: () {},
         ),
       );
@@ -189,6 +230,11 @@ void main() {
           recording: const RecordingState.recording(sessionId: 's'),
           engineAvailable: true,
           isPoppedOut: false,
+          reason: popOutAvailability(
+            status: const Off(),
+            recording: const RecordingState.recording(sessionId: 's'),
+            engineAvailable: true,
+          ).reason,
           onToggle: () {},
         ),
       );
@@ -198,8 +244,9 @@ void main() {
   });
 
   group('PopOutInSurfaceToggle', () {
-    testWidgets('uses the main-window key and fires the toggle',
-        (tester) async {
+    testWidgets('uses the main-window key and fires the toggle', (
+      tester,
+    ) async {
       var toggled = 0;
       await _pump(
         tester,

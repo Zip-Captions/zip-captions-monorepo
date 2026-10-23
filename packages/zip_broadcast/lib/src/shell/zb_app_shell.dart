@@ -229,7 +229,11 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
   BuildContext? _shellContext;
 
   /// The launch configuration for the pop-out, with the shell's frame.
-  OverlayConfig get _popOutConfig => const OverlayConfig(mode: PopOutMode());
+  /// The pop-out's open config, carrying this app's localized toggle label.
+  OverlayConfig get _popOutConfig => OverlayConfig(
+        mode: const PopOutMode(),
+        popOutToggleLabel: ZipBroadcastLocalizations.of(context)?.popOutExit,
+      );
 
   void _unregisterOverlay() {
     if (!_overlayRegistered) return;
@@ -452,11 +456,12 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     final popOutEngineAvailable = ref.watch(broadcastEngineAvailableProvider);
     // FD frontend-components §4: the in-surface toggle obeys the same rule as
     // the chrome toggle, so the two can never disagree.
-    final popOutAvailable = popOutAvailability(
+    final popOutAvailabilityResult = popOutAvailability(
       status: popOutState,
       recording: popOutRecording,
       engineAvailable: popOutEngineAvailable,
-    ).enabled;
+    );
+    final popOutAvailable = popOutAvailabilityResult.enabled;
 
     final Widget content;
     if (width > _desktopBreakpoint) {
@@ -479,6 +484,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
               recording: popOutRecording,
               engineAvailable: popOutEngineAvailable,
               isPoppedOut: _popOutEnabled,
+              reason: popOutAvailabilityResult.reason,
               onToggle: _togglePopOut,
             ),
           ),
@@ -513,6 +519,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
                 recording: popOutRecording,
                 engineAvailable: popOutEngineAvailable,
                 isPoppedOut: _popOutEnabled,
+                reason: popOutAvailabilityResult.reason,
                 onToggle: _togglePopOut,
               ),
             ],

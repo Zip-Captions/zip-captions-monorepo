@@ -89,6 +89,7 @@ class PopOutChrome extends StatelessWidget {
     required this.recording,
     required this.engineAvailable,
     required this.isPoppedOut,
+    required this.reason,
     required this.onToggle,
     super.key,
   });
@@ -105,6 +106,12 @@ class PopOutChrome extends StatelessWidget {
   /// Whether the pop-out is currently on.
   final bool isPoppedOut;
 
+  /// The disabled reason the shell already computed, or null when enabled.
+  ///
+  /// The shell computes `popOutAvailability` once per build and passes the
+  /// result here, so the chrome does not recompute it (review round 4, n4).
+  final PopOutUnavailableReason? reason;
+
   /// The shell's toggle.
   final VoidCallback onToggle;
 
@@ -112,11 +119,6 @@ class PopOutChrome extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = ZipBroadcastLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final reason = popOutAvailability(
-      status: status,
-      recording: recording,
-      engineAvailable: engineAvailable,
-    ).reason;
     final reasonText = switch (reason) {
       PopOutUnavailableReason.noSession => l10n.popOutUnavailableNoSession,
       PopOutUnavailableReason.noEngine => l10n.popOutUnavailableNoEngine,

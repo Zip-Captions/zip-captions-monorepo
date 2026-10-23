@@ -354,3 +354,43 @@ Standing caveat: CI green on Windows and Linux proves compilation only. That the
 borderless and the pop-out is topmost and minimum-sized on Windows, and that the computed frame lands
 on a real display, are runtime properties for the Unit 9 device checks. Nothing in this stage verified
 them on hardware.
+
+## Morning-review follow-ups (n3, n4, n6)
+
+Three items parked from review rounds 3 and 4, addressed on request.
+
+### n3 — the pop-out toggle label is now localized
+
+Previously `PopOutWindowBody` rendered `popOutWindowExitLabel`, a `zip_core` constant, so no app
+could localize it even though both ARBs carry `popOutExit`. The label now travels with the open
+request:
+
+- `OverlayConfig.popOutToggleLabel` (`String?`, optional) carries the app's copy.
+- The launch codec encodes it under `config.popOutToggleLabel` only when non-null, and
+  `_decodeConfig` rejects a non-string value (returns null, keeping decode total).
+- `OverlayWindowApp` reads `launch.config.popOutToggleLabel`, falling back to the shipped English
+  constant, so an older payload without the key still renders correctly.
+- `zip_captions` passes `_strings?.popOutExit` from the shell; `zip_broadcast` passes
+  `ZipBroadcastLocalizations.of(context)?.popOutExit` from `_popOutConfig`.
+
+The shell caches the loaded copy in `_strings` because the toggle callbacks are built above
+`PopOutScope` and cannot read it through the tree.
+
+Tests: codec round trip, absent-label decode (null), non-string rejection; and two
+`OverlayWindowApp` widget tests proving the config label renders and the constant is the fallback.
+
+### n4 — the duplicated availability computation is gone
+
+`PopOutChrome` recomputed `popOutAvailability` although the shell had already done so. Both shells
+now compute it once and pass `reason` into `PopOutChrome`, which no longer calls
+`popOutAvailability`. `PopOutControls` still computes its own `availability` for the button's
+enabled state; that is the control's own concern and was not the duplication flagged.
+
+### n6 — the integrated scope assertion exists in `zip_captions`
+
+Two new shell tests drive the real path (`popOutAvailability` -> `PopOutScope.available` ->
+`PopOutInSurfaceToggle.enabled`) with and without an engine, including the visible reason key. This
+is what round 4 noted was missing relative to `zip_broadcast`.
+
+Gates after the change: `zip_core` 918 passed / 4 skipped, `zip_broadcast` 181, `zip_captions` 181,
+`dart analyze --fatal-infos` clean in all three, both macOS `--debug` builds succeed.

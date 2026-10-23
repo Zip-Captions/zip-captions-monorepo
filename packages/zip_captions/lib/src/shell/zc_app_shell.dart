@@ -33,6 +33,9 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
   static const _desktopBreakpoint = 768.0;
 
   late final PopOutCaptionTarget _popOutTarget;
+
+  /// The loaded copy, cached for the pop-out toggle's label.
+  ZcStrings? _strings;
   late final CaptionOutputTargetRegistry _registry;
   StreamSubscription<OverlayEvent>? _popOutEvents;
 
@@ -122,7 +125,10 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
     _registry.add(_popOutTarget);
     unawaited(
       _popOutTarget.show(
-        const OverlayConfig(mode: PopOutMode()),
+        OverlayConfig(
+          mode: const PopOutMode(),
+          popOutToggleLabel: _strings?.popOutExit,
+        ),
         frame: geometry.displayId == null ? null : geometry.frame,
       ),
     );
@@ -195,6 +201,10 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
     // The copy is loaded from the ARB before the shell renders its chrome, so
     // the pop-out widgets can read it non-nullably through `PopOutScope`.
     if (strings == null) return widget.child;
+    // Cached for `_togglePopOut`: the toggle callbacks are built above the
+    // `PopOutScope`, so they cannot read the copy through the tree. The label
+    // is passed into the window's launch config (review round 4, n3).
+    _strings = strings;
 
     final recordingState = _popOutRecordingState(recording);
     final availability = popOutAvailability(
@@ -207,6 +217,7 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
       recording: recordingState,
       engineAvailable: engineAvailable,
       isPoppedOut: _popOutEnabled,
+      reason: availability.reason,
       onToggle: () => _togglePopOut(context),
     );
 

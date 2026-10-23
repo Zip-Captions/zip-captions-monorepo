@@ -19,13 +19,12 @@ CaptionOverlaySnapshot _frame({
   List<CaptionDisplayEntry> entries = const [],
   CaptionDisplayEntry? interim,
   DisplaySettings? settings,
-}) =>
-    CaptionOverlaySnapshot(
-      activity: activity,
-      entries: entries,
-      interim: interim,
-      settings: settings ?? DisplaySettings.defaults(),
-    );
+}) => CaptionOverlaySnapshot(
+  activity: activity,
+  entries: entries,
+  interim: interim,
+  settings: settings ?? DisplaySettings.defaults(),
+);
 
 Future<void> _pump(
   WidgetTester tester,
@@ -53,15 +52,17 @@ void main() {
     expect(find.byType(Scaffold), findsOneWidget);
   });
 
-  testWidgets('live renders the buffer through the shipped widget',
-      (tester) async {
+  testWidgets('live renders the buffer through the shipped widget', (
+    tester,
+  ) async {
     await _pump(tester, _frame(entries: [_entry('hello')]));
 
     expect(find.text('hello'), findsOneWidget);
   });
 
-  testWidgets('paused keeps the frozen buffer and the pause row',
-      (tester) async {
+  testWidgets('paused keeps the frozen buffer and the pause row', (
+    tester,
+  ) async {
     await _pump(
       tester,
       _frame(
@@ -109,8 +110,9 @@ void main() {
     expect(align.alignment, Alignment.topCenter);
   });
 
-  testWidgets('the surface colour follows the snapshot theme setting',
-      (tester) async {
+  testWidgets('the surface colour follows the snapshot theme setting', (
+    tester,
+  ) async {
     Color surfaceFor(ThemeModeSetting setting) {
       final theme = switch (setting) {
         ThemeModeSetting.dark => AppTheme.dark(),
@@ -141,9 +143,8 @@ void main() {
     );
     await tester.pump();
 
-    Color painted() => tester
-        .widget<Scaffold>(find.byType(Scaffold))
-        .backgroundColor!;
+    Color painted() =>
+        tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor!;
 
     expect(painted(), surfaceFor(ThemeModeSetting.light));
 
@@ -158,8 +159,9 @@ void main() {
     expect(painted(), surfaceFor(ThemeModeSetting.dark));
   });
 
-  testWidgets('the surface is opaque even when the config asks otherwise',
-      (tester) async {
+  testWidgets('the surface is opaque even when the config asks otherwise', (
+    tester,
+  ) async {
     await _pump(
       tester,
       _frame(entries: [_entry('hello')]),
@@ -169,5 +171,33 @@ void main() {
 
     final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
     expect(scaffold.backgroundColor?.a, 1);
+  });
+  // n3 (review round 4): the pop-out's toggle label is the app's copy, passed
+  // through `OverlayConfig` and the launch codec, not a `zip_core` constant.
+  testWidgets('the pop-out toggle shows the label the config carries', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _frame(entries: [_entry('hello')]),
+      config: const OverlayConfig(
+        mode: PopOutMode(),
+        popOutToggleLabel: 'Salir de Picture-in-Picture',
+      ),
+    );
+
+    expect(find.text('Salir de Picture-in-Picture'), findsOneWidget);
+  });
+
+  testWidgets('the pop-out toggle falls back to the shipped English label', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _frame(entries: [_entry('hello')]),
+      config: const OverlayConfig(mode: PopOutMode()),
+    );
+
+    expect(find.text(popOutWindowExitLabel), findsOneWidget);
   });
 }

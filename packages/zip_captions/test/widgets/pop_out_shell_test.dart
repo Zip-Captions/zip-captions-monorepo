@@ -201,6 +201,38 @@ void main() {
       expect(scope.enabled, isFalse);
       expect(scope.strings, same(_strings));
     });
+
+    // Finding n6 (review round 4): the integrated path, not the pure function.
+    // The shell computes `popOutAvailability` once and passes `.enabled` into
+    // `PopOutScope`; the screen reads it back and hands it to the in-surface
+    // toggle. Broadcast asserted this end to end; this app did not.
+    testWidgets('the scope availability disables the in-surface toggle',
+        (tester) async {
+      await _pump(tester, engine: false);
+
+      final scope = tester.widget<PopOutScope>(find.byType(PopOutScope));
+      expect(scope.available, isFalse);
+
+      final surface = tester.widget<PopOutInSurfaceToggle>(
+        find.byType(PopOutInSurfaceToggle),
+      );
+      expect(surface.enabled, isFalse);
+      expect(find.byKey(const Key('popOutToggleReason')), findsOneWidget);
+    });
+
+    testWidgets('the scope availability enables the in-surface toggle',
+        (tester) async {
+      await _pump(tester);
+
+      final scope = tester.widget<PopOutScope>(find.byType(PopOutScope));
+      expect(scope.available, isTrue);
+
+      final surface = tester.widget<PopOutInSurfaceToggle>(
+        find.byType(PopOutInSurfaceToggle),
+      );
+      expect(surface.enabled, isTrue);
+      expect(find.byKey(const Key('popOutToggleReason')), findsNothing);
+    });
   });
 
   group('pop-out shell geometry (review round 3)', () {

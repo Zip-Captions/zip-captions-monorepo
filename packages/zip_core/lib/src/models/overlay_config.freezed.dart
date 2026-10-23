@@ -23,6 +23,13 @@ mixin _$OverlayConfig {
   /// Where the caption text sits inside the surface (top/bottom).
   OverlayPosition get position => throw _privateConstructorUsedError;
 
+  /// The pop-out's toggle label, localized by the app that opens it.
+  ///
+  /// `zip_core` has no ARB (FD BLM §7 shape change 1), so the app passes its
+  /// copy through the launch payload; the default is the shipped English
+  /// wording. The external display ignores it: it renders no toggle.
+  String? get popOutToggleLabel => throw _privateConstructorUsedError;
+
   /// Shipped Phase 1 field. **Never applied:** the external display renders
   /// an opaque surface (B-8, BR-U8-26).
   double get opacity => throw _privateConstructorUsedError;
@@ -41,7 +48,12 @@ abstract class $OverlayConfigCopyWith<$Res> {
     $Res Function(OverlayConfig) then,
   ) = _$OverlayConfigCopyWithImpl<$Res, OverlayConfig>;
   @useResult
-  $Res call({OverlayWindowMode mode, OverlayPosition position, double opacity});
+  $Res call({
+    OverlayWindowMode mode,
+    OverlayPosition position,
+    String? popOutToggleLabel,
+    double opacity,
+  });
 }
 
 /// @nodoc
@@ -61,6 +73,7 @@ class _$OverlayConfigCopyWithImpl<$Res, $Val extends OverlayConfig>
   $Res call({
     Object? mode = null,
     Object? position = null,
+    Object? popOutToggleLabel = freezed,
     Object? opacity = null,
   }) {
     return _then(
@@ -73,6 +86,10 @@ class _$OverlayConfigCopyWithImpl<$Res, $Val extends OverlayConfig>
                 ? _value.position
                 : position // ignore: cast_nullable_to_non_nullable
                       as OverlayPosition,
+            popOutToggleLabel: freezed == popOutToggleLabel
+                ? _value.popOutToggleLabel
+                : popOutToggleLabel // ignore: cast_nullable_to_non_nullable
+                      as String?,
             opacity: null == opacity
                 ? _value.opacity
                 : opacity // ignore: cast_nullable_to_non_nullable
@@ -92,7 +109,12 @@ abstract class _$$OverlayConfigImplCopyWith<$Res>
   ) = __$$OverlayConfigImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({OverlayWindowMode mode, OverlayPosition position, double opacity});
+  $Res call({
+    OverlayWindowMode mode,
+    OverlayPosition position,
+    String? popOutToggleLabel,
+    double opacity,
+  });
 }
 
 /// @nodoc
@@ -111,6 +133,7 @@ class __$$OverlayConfigImplCopyWithImpl<$Res>
   $Res call({
     Object? mode = null,
     Object? position = null,
+    Object? popOutToggleLabel = freezed,
     Object? opacity = null,
   }) {
     return _then(
@@ -123,6 +146,10 @@ class __$$OverlayConfigImplCopyWithImpl<$Res>
             ? _value.position
             : position // ignore: cast_nullable_to_non_nullable
                   as OverlayPosition,
+        popOutToggleLabel: freezed == popOutToggleLabel
+            ? _value.popOutToggleLabel
+            : popOutToggleLabel // ignore: cast_nullable_to_non_nullable
+                  as String?,
         opacity: null == opacity
             ? _value.opacity
             : opacity // ignore: cast_nullable_to_non_nullable
@@ -138,6 +165,7 @@ class _$OverlayConfigImpl implements _OverlayConfig {
   const _$OverlayConfigImpl({
     this.mode = const ExternalDisplayMode(),
     this.position = const OverlayPositionBottom(),
+    this.popOutToggleLabel,
     this.opacity = 0.9,
   });
 
@@ -151,6 +179,14 @@ class _$OverlayConfigImpl implements _OverlayConfig {
   @JsonKey()
   final OverlayPosition position;
 
+  /// The pop-out's toggle label, localized by the app that opens it.
+  ///
+  /// `zip_core` has no ARB (FD BLM §7 shape change 1), so the app passes its
+  /// copy through the launch payload; the default is the shipped English
+  /// wording. The external display ignores it: it renders no toggle.
+  @override
+  final String? popOutToggleLabel;
+
   /// Shipped Phase 1 field. **Never applied:** the external display renders
   /// an opaque surface (B-8, BR-U8-26).
   @override
@@ -159,7 +195,7 @@ class _$OverlayConfigImpl implements _OverlayConfig {
 
   @override
   String toString() {
-    return 'OverlayConfig(mode: $mode, position: $position, opacity: $opacity)';
+    return 'OverlayConfig(mode: $mode, position: $position, popOutToggleLabel: $popOutToggleLabel, opacity: $opacity)';
   }
 
   @override
@@ -170,11 +206,14 @@ class _$OverlayConfigImpl implements _OverlayConfig {
             (identical(other.mode, mode) || other.mode == mode) &&
             (identical(other.position, position) ||
                 other.position == position) &&
+            (identical(other.popOutToggleLabel, popOutToggleLabel) ||
+                other.popOutToggleLabel == popOutToggleLabel) &&
             (identical(other.opacity, opacity) || other.opacity == opacity));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, mode, position, opacity);
+  int get hashCode =>
+      Object.hash(runtimeType, mode, position, popOutToggleLabel, opacity);
 
   /// Create a copy of OverlayConfig
   /// with the given fields replaced by the non-null parameter values.
@@ -189,6 +228,7 @@ abstract class _OverlayConfig implements OverlayConfig {
   const factory _OverlayConfig({
     final OverlayWindowMode mode,
     final OverlayPosition position,
+    final String? popOutToggleLabel,
     final double opacity,
   }) = _$OverlayConfigImpl;
 
@@ -199,6 +239,14 @@ abstract class _OverlayConfig implements OverlayConfig {
   /// Where the caption text sits inside the surface (top/bottom).
   @override
   OverlayPosition get position;
+
+  /// The pop-out's toggle label, localized by the app that opens it.
+  ///
+  /// `zip_core` has no ARB (FD BLM §7 shape change 1), so the app passes its
+  /// copy through the launch payload; the default is the shipped English
+  /// wording. The external display ignores it: it renders no toggle.
+  @override
+  String? get popOutToggleLabel;
 
   /// Shipped Phase 1 field. **Never applied:** the external display renders
   /// an opaque surface (B-8, BR-U8-26).

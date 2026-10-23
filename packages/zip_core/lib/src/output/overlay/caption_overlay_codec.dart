@@ -239,6 +239,8 @@ abstract final class CaptionOverlayCodec {
           // default instead of an undecodable value.
           OverlayPositionCustom() => 'bottom',
         },
+        if (config.popOutToggleLabel != null)
+          'popOutToggleLabel': config.popOutToggleLabel,
       };
 
   static CaptionOverlaySnapshot? _decodeSnapshot(Map<Object?, Object?> json) {
@@ -349,7 +351,16 @@ abstract final class CaptionOverlayCodec {
       default:
         return null;
     }
-    return OverlayConfig(mode: mode, position: position);
+    final popOutToggleLabel = raw['popOutToggleLabel'];
+    if (popOutToggleLabel != null &&
+        popOutToggleLabel is! String) {
+      return null;
+    }
+    return OverlayConfig(
+      mode: mode,
+      position: position,
+      popOutToggleLabel: popOutToggleLabel as String?,
+    );
   }
 
   /// Looks up an enum value by name, returning `null` for anything unknown.
