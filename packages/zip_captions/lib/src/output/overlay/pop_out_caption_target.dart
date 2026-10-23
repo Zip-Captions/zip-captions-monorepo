@@ -16,13 +16,24 @@ class PopOutCaptionTarget implements CaptionOutputTarget {
     required OverlayWindowController controller,
     required CaptionOutputTargetRegistry registry,
     required DisplaySettings Function() displaySettings,
+    required RecordingState Function() recordingState,
   })  : _controller = controller,
         _registry = registry,
-        _displaySettings = displaySettings;
+        _displaySettings = displaySettings,
+        _recordingState = recordingState;
 
   final OverlayWindowController _controller;
   final CaptionOutputTargetRegistry _registry;
   final DisplaySettings Function() _displaySettings;
+
+  /// The app's session state, read when the window is shown.
+  ///
+  /// The target is registered only while a session is already active
+  /// (BR-PIP-12), so the bus's `SessionStateEvent` was published before this
+  /// target subscribed. Seeding from this value on [show] is what keeps the
+  /// first frames `live` instead of the blank `standby` surface (review round
+  /// 5, finding 2).
+  final RecordingState Function() _recordingState;
 
   OverlayActivity _activity = OverlayActivity.standby;
 
@@ -40,8 +51,15 @@ class PopOutCaptionTarget implements CaptionOutputTarget {
   /// [frame] is the shell's geometry (R-M5): the shell has the context, the
   /// settings and the text scaler, the controller has none of them. A null
   /// frame means "no display known", and the platform's own placement stands.
-  Future<void> show(OverlayConfig config, {Rect? frame}) =>
-      _controller.open(config, frame: frame);
+  ///
+  /// The activity is seeded from the live session state and pushed before the
+  /// open, so the held snapshot the controller replays on ready already says
+  /// `live` rather than the initial `standby`.
+  Future<void> show(OverlayConfig config, {Rect? frame}) {
+    _activity = _activityFor(_recordingState());
+    _pushSnapshot();
+    return _controller.open(config, frame: frame);
+  }
 
   /// Closes the pop-out because the user switched it off.
   Future<void> hide() => _controller.close(reason: CloseReason.toggleOff);

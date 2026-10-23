@@ -51,6 +51,9 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
       controller: ref.read(popOutWindowControllerProvider),
       registry: _registry,
       displaySettings: () => ref.read(displaySettingsProvider),
+      // Read at show time from the notifier itself: the session's state
+      // event may have been published before the target existed (finding 2).
+      recordingState: () => ref.read(recordingStateNotifierProvider),
     );
     _popOutEvents = _popOutTarget.events.listen(_onPopOutEvent);
   }

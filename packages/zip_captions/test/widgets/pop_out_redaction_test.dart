@@ -150,6 +150,7 @@ void main() {
       controller: controller,
       registry: registry,
       displaySettings: DisplaySettings.defaults,
+      recordingState: () => const RecordingState.recording(sessionId: 's'),
     );
 
     registry

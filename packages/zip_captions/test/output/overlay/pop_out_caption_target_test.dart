@@ -72,6 +72,7 @@ void main() {
   late CaptionOutputTargetRegistry registry;
   late CaptionBus bus;
   late DisplaySettings settings;
+  late RecordingState recording;
   late PopOutCaptionTarget target;
   late OnScreenCaptionTarget screen;
 
@@ -88,10 +89,12 @@ void main() {
     bus = CaptionBus();
     registry = CaptionOutputTargetRegistry(bus);
     settings = DisplaySettings.defaults();
+    recording = const RecordingState.idle();
     target = PopOutCaptionTarget(
       controller: controller,
       registry: registry,
       displaySettings: () => settings,
+      recordingState: () => recording,
     );
     screen = OnScreenCaptionTarget(targetId: 'on_screen');
   }
@@ -236,6 +239,33 @@ void main() {
     final status = controller.status;
     expect(status, isA<Open>());
     expect((status as Open).activity, OverlayActivity.standby);
+
+    registry.remove(screen);
+  });
+
+  // Review round 5, finding 2: the shell registers the target only once a
+  // session is already recording, so no `SessionStateEvent` ever reaches it.
+  // Without seeding, every result pushed `standby` and the window showed the
+  // blank standby surface.
+  test('registered after the session started pushes live, not standby',
+      () async {
+    build();
+    // The session is recording; the target is built now, after the
+    // `SessionStateEvent` the bus already published.
+    recording = const RecordingState.recording(sessionId: 's');
+    registry
+      ..add(screen)
+      ..add(target);
+    await _settle();
+    await openPopOut();
+
+    bus.publish(result('first', isFinal: true));
+    await _settle();
+    await _settle();
+
+    final status = controller.status;
+    expect(status, isA<Open>());
+    expect((status as Open).activity, OverlayActivity.live);
 
     registry.remove(screen);
   });

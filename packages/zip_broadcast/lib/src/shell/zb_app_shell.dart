@@ -80,6 +80,12 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
       controller: ref.read(popOutWindowControllerProvider),
       registry: ref.read(captionOutputTargetRegistryProvider),
       displaySettings: () => ref.read(displaySettingsProvider),
+      // Read at show time and mapped through this app's own session state:
+      // its `SessionStateEvent` may have been published before the target
+      // existed (finding 2).
+      recordingState: () => _popOutRecordingState(
+        ref.read(broadcastRecordingNotifierProvider),
+      ),
     );
     _registry = ref.read(captionOutputTargetRegistryProvider);
 

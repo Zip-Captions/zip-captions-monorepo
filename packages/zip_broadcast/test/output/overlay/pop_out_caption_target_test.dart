@@ -69,6 +69,7 @@ void main() {
   late CaptionOutputTargetRegistry registry;
   late CaptionBus bus;
   late DisplaySettings settings;
+  late RecordingState recording;
   late PopOutCaptionTarget target;
   late OnScreenCaptionTarget screen;
 
@@ -85,10 +86,12 @@ void main() {
     bus = CaptionBus();
     registry = CaptionOutputTargetRegistry(bus);
     settings = DisplaySettings.defaults();
+    recording = const RecordingState.idle();
     target = PopOutCaptionTarget(
       controller: controller,
       registry: registry,
       displaySettings: () => settings,
+      recordingState: () => recording,
     );
     screen = OnScreenCaptionTarget(targetId: 'on_screen');
   }
@@ -251,6 +254,33 @@ void main() {
 
       // Nothing caption-shaped is logged; the state reached the window.
       expect(controller.status, isA<Open>());
+
+      registry.remove(screen);
+    });
+  });
+
+  // Review round 5, finding 2: the shell registers the target only once a
+  // session is already active, so no `SessionStateEvent` ever reaches it.
+  test('registered after the session started pushes live, not standby', () {
+    fakeAsync((fake) {
+      build();
+      // The session is running; the target is built now, after the
+      // `SessionStateEvent` the bus already published.
+      recording = const RecordingState.recording(sessionId: 's');
+      registry
+        ..add(screen)
+        ..add(target);
+      fake.flushMicrotasks();
+      openPopOut(fake);
+
+      bus.publish(result('first', isFinal: true));
+      fake
+        ..elapse(const Duration(milliseconds: 60))
+        ..elapse(captionUpdateInterval + const Duration(milliseconds: 1));
+
+      final status = controller.status;
+      expect(status, isA<Open>());
+      expect((status as Open).activity, OverlayActivity.live);
 
       registry.remove(screen);
     });
