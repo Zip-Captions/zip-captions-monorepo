@@ -197,8 +197,8 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
     // Watched, not read: the controller's status changes after build (a
     // failed display probe leaves it `Unsupported`) and the chrome must
     // follow (review round 3, finding 3).
-    final popOutStatus =
-        ref.watch(popOutStatusProvider).valueOrNull ?? const Off();
+    final popOutStatus = ref.watch(popOutStatusProvider).valueOrNull ??
+        ref.watch(popOutWindowControllerProvider).status;
     final engineAvailable = ref.watch(captionsEngineAvailableProvider);
 
     // The copy is loaded from the ARB before the shell renders its chrome, so
@@ -228,6 +228,7 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
       enabled: _popOutEnabled,
       onToggle: () => _togglePopOut(context),
       available: availability.enabled,
+      visible: availability.visible,
       strings: strings,
       child: _buildScaffold(context, location, width, strings, chrome),
     );

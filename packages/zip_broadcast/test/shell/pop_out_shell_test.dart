@@ -8,6 +8,7 @@ import 'package:zip_broadcast/src/providers/audio_input_config_notifier.dart';
 import 'package:zip_broadcast/src/providers/broadcast_recording_notifier.dart';
 import 'package:zip_broadcast/src/providers/obs_connection_notifier.dart';
 import 'package:zip_broadcast/src/providers/overlay_window_controller_provider.dart';
+import 'package:zip_broadcast/src/providers/pop_out_providers.dart';
 import 'package:zip_broadcast/src/widgets/pop_out_controls.dart';
 import 'package:zip_broadcast/src/widgets/pop_out_scope.dart';
 import 'package:zip_core/overlay.dart';
@@ -159,6 +160,98 @@ Future<_Graph> _pumpRecording(
   return graph;
 }
 
+/// A pop-out controller on a platform without multi-window support.
+OverlayWindowController _unsupportedController() => OverlayWindowController(
+      windowService: _UnsupportedWindow(),
+      enumerator: FakeDisplayEnumerator(),
+      handlerInstaller: (_) {},
+      log: Logger('test.unsupportedPopOut'),
+      mode: const PopOutMode(),
+    );
+
+/// A window service for a platform that cannot create windows.
+class _UnsupportedWindow implements DesktopWindowService {
+  @override
+  bool get isSupported => false;
+
+  @override
+  Future<int> createWindow(String arguments) async =>
+      throw UnsupportedError('no windows');
+
+  @override
+  Future<void> closeWindow(int windowId) async {}
+
+  @override
+  Future<void> invokeMethod(
+    int windowId,
+    String method,
+    dynamic arguments,
+  ) async {}
+
+  @override
+  Future<void> setFrame(int windowId, Rect frame) async {}
+
+  @override
+  Future<void> show(int windowId) async {}
+}
+
+/// Pumps `/recording` on a platform without sub-windows, settled.
+Future<void> _pumpUnsupported(WidgetTester tester) async {
+  final prefs = await SharedPreferences.getInstance();
+  await tester.pumpWidget(
+    buildZbApp(
+      prefs: prefs,
+      initialLocation: '/recording',
+      popOutController: _unsupportedController(),
+      overrides: [
+        externalDisplayStatusProvider.overrideWith(
+          (ref) => Stream<ExternalDisplayStatus>.value(const Unsupported()),
+        ),
+        displayListProvider.overrideWith(
+          (ref) => const Stream<List<DisplayInfo>>.empty(),
+        ),
+        broadcastRecordingNotifierProvider.overrideWith(
+          FakeActiveBroadcastRecordingNotifier.new,
+        ),
+        obsConnectionNotifierProvider
+            .overrideWith(FakeDisconnectedObsConnectionNotifier.new),
+        audioInputConfigNotifierProvider
+            .overrideWith(FakeOneInputAudioInputConfigNotifier.new),
+      ],
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+/// The same, on the first built frame only, with a status stream that never
+/// emits: the shell has only the controller's synchronous status to render.
+Future<void> _pumpFirstFrameUnsupported(WidgetTester tester) async {
+  final prefs = await SharedPreferences.getInstance();
+  await tester.pumpWidget(
+    buildZbApp(
+      prefs: prefs,
+      initialLocation: '/recording',
+      popOutController: _unsupportedController(),
+      overrides: [
+        popOutStatusProvider.overrideWith(
+          (ref) => const Stream<ExternalDisplayStatus>.empty(),
+        ),
+        displayListProvider.overrideWith(
+          (ref) => const Stream<List<DisplayInfo>>.empty(),
+        ),
+        broadcastRecordingNotifierProvider.overrideWith(
+          FakeActiveBroadcastRecordingNotifier.new,
+        ),
+        obsConnectionNotifierProvider
+            .overrideWith(FakeDisconnectedObsConnectionNotifier.new),
+        audioInputConfigNotifierProvider
+            .overrideWith(FakeOneInputAudioInputConfigNotifier.new),
+      ],
+    ),
+  );
+  await tester.pump();
+}
+
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
@@ -283,6 +376,29 @@ void main() {
       final scope = tester.widget<PopOutScope>(find.byType(PopOutScope));
       expect(scope.enabled, isFalse);
       expect(find.byKey(const Key('popOutBanner')), findsNothing);
+    });
+  });
+
+  // Review round 5, finding 3: on a platform that cannot host a sub-window the
+  // in-surface toggle must not render at all (UX-PIP-04, BR-U8.1-11), and the
+  // chrome must not flash for one frame while the status provider loads.
+  group('pop-out on an unsupported platform (review round 5)', () {
+    testWidgets('the in-surface toggle does not render', (tester) async {
+      await _pumpUnsupported(tester);
+
+      expect(find.byKey(const Key('popOutInSurfaceToggle')), findsNothing);
+      expect(find.byKey(const Key('popOutToggle')), findsNothing);
+    });
+
+    // The fallback used to be `const Off()`, which is visible; the shell must
+    // fall back to the controller's synchronous status instead.
+    testWidgets('the chrome does not flash on the first frame',
+        (tester) async {
+      await _pumpFirstFrameUnsupported(tester);
+
+      final chrome = tester.widget<PopOutChrome>(find.byType(PopOutChrome));
+      expect(chrome.status, isA<Unsupported>());
+      expect(find.byKey(const Key('popOutToggle')), findsNothing);
     });
   });
 }

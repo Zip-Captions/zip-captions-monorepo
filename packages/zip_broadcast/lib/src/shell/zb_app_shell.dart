@@ -454,8 +454,8 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     // Watched, not read: the controller's status changes after build (a
     // failed display probe leaves it `Unsupported`) and the chrome must
     // follow (review round 3, finding 3).
-    final popOutState =
-        ref.watch(popOutStatusProvider).valueOrNull ?? const Off();
+    final popOutState = ref.watch(popOutStatusProvider).valueOrNull ??
+        ref.watch(popOutWindowControllerProvider).status;
     // The launch flag changes in `_togglePopOut`, not in this watch; the
     // rebuild comes from `setState`.
     final popOutRecording = _popOutRecordingState(broadcastState);
@@ -549,6 +549,7 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
         enabled: _popOutEnabled,
         onToggle: _togglePopOut,
         available: popOutAvailable,
+        visible: popOutAvailabilityResult.visible,
         child: content,
       ),
     );

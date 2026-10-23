@@ -235,6 +235,76 @@ void main() {
     });
   });
 
+  // Review round 5, finding 3: on a platform that cannot host a sub-window the
+  // in-surface toggle must not render at all (UX-PIP-04, BR-U8.1-11), and the
+  // chrome must not flash for one frame while the status provider loads.
+  group('pop-out on an unsupported platform (review round 5)', () {
+    testWidgets('the in-surface toggle does not render', (tester) async {
+      await _pump(
+        tester,
+        statuses: Stream<ExternalDisplayStatus>.value(const Unsupported()),
+      );
+
+      expect(find.byKey(const Key('popOutInSurfaceToggle')), findsNothing);
+      expect(find.byKey(const Key('popOutToggle')), findsNothing);
+    });
+
+    // The fallback used to be `const Off()`, which is visible, so an
+    // unsupported platform rendered the chrome until the provider's first
+    // value arrived a frame later.
+    testWidgets('the chrome does not flash on the first frame',
+        (tester) async {
+      tester.view.physicalSize = const Size(1024, 812);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            transcriptWriterTargetProvider.overrideWith((_) {}),
+            recordingStateNotifierProvider.overrideWith(
+              () => FakeRecordingStateNotifier(
+                const RecordingState.recording(sessionId: 'test-session'),
+              ),
+            ),
+            onScreenCaptionTargetProvider.overrideWith(
+              (ref) => const Stream.empty(),
+            ),
+            // Synchronous, so the shell builds its chrome on the very first
+            // frame: that is the frame the old `?? const Off()` fallback made
+            // visible on an unsupported platform.
+            zcStringsProvider.overrideWith((ref) => _strings),
+            sttEngineProvider.overrideWithValue(FakeSttEngine()),
+            // The controller is synchronous `Unsupported` (an unsupported
+            // platform), and the status stream never emits, so the shell has
+            // only the synchronous status to render on the first frame.
+            popOutWindowControllerProvider.overrideWithValue(
+              fakeUnsupportedPopOutController(),
+            ),
+            // A never-emitting stream, so the provider has no value.
+            popOutStatusProvider.overrideWith(
+              (ref) => const Stream<ExternalDisplayStatus>.empty(),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: ThemeData(splashFactory: NoSplash.splashFactory),
+            routerConfig: _router(),
+          ),
+        ),
+      );
+      // The first built frame, without settling: this is the paint the old
+      // `?? const Off()` fallback made visible on an unsupported platform.
+      await tester.pump();
+
+      final chrome = tester.widget<PopOutChrome>(find.byType(PopOutChrome));
+      expect(chrome.status, isA<Unsupported>());
+      expect(find.byKey(const Key('popOutToggle')), findsNothing);
+    });
+  });
+
   group('pop-out shell geometry (review round 3)', () {
     // Finding 2: the frame must come from the controller's live display list,
     // not from the auto-dispose `displayListProvider` the shell never watches.

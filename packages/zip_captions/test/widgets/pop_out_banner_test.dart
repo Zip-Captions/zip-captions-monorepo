@@ -18,6 +18,7 @@ Future<void> _pump(WidgetTester tester, Widget child) async {
         enabled: true,
         onToggle: () {},
         available: true,
+        visible: true,
         strings: _strings,
         child: Scaffold(body: Column(children: [child])),
       ),
@@ -62,6 +63,7 @@ void main() {
             enabled: true,
             onToggle: () {},
             available: true,
+            visible: true,
             strings: _strings,
             child: StatefulBuilder(
             builder: (context, setter) {

@@ -138,7 +138,9 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                   child: CaptionDisplayWidget(
                     entries: entries,
                     settings: settings,
-                    controls: popOut == null
+                    // UX-PIP-04 / BR-U8.1-11: on a platform that cannot host
+                    // a sub-window nothing renders, not even a disabled pill.
+                    controls: popOut == null || !popOut.visible
                         ? null
                         : PopOutInSurfaceToggle(
                             isPoppedOut: popOut.enabled,
