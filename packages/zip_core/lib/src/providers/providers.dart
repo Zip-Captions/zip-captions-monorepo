@@ -14,6 +14,7 @@ export 'ice_server_provider_provider.dart';
 export 'locale_info_provider.dart';
 export 'locale_provider.dart';
 export 'on_screen_caption_target_provider.dart';
+export 'overlay_window_host_provider.dart';
 export 'recording_state_notifier.dart';
 export 'resolved_locale_id_provider.dart';
 export 'sherpa_model_catalog_provider.dart';
