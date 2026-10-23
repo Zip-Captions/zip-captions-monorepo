@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:zip_core/src/output/overlay/desktop_window_service.dart';
 import 'package:zip_core/src/output/overlay/display_enumerator.dart';
-import 'package:zip_core/src/output/overlay/overlay_window_controller.dart';
 import 'package:zip_core/src/output/overlay/screen_retriever_display_enumerator.dart';
 
 /// Production [DesktopWindowService] backed by the `desktop_multi_window`
@@ -139,24 +138,4 @@ Rect toPlatformFrame(
       // identity here so the function stays total.
       return frame;
   }
-}
-
-/// The production [OverlayMethodHandlerInstaller].
-///
-/// Wraps the plugin's single static handler slot, adapting its `MethodCall`
-/// and `fromWindowId` into the controller's handler signature. Passing `null`
-/// uninstalls. Kept by the promotion for the app that still resolves it
-/// directly; `OverlayMethodRouter` owns the slot in production (BR-U8.1-04),
-/// so nothing installs through this value while the router exists.
-const OverlayMethodHandlerInstaller overlayMethodHandlerInstaller =
-    _installMethodHandler;
-
-void _installMethodHandler(OverlayMethodHandler? handler) {
-  if (handler == null) {
-    DesktopMultiWindow.setMethodHandler(null);
-    return;
-  }
-  DesktopMultiWindow.setMethodHandler(
-    (call, fromWindowId) => handler(call.method, fromWindowId),
-  );
 }

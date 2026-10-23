@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:logging/logging.dart';
 import 'package:zip_core/src/output/overlay/desktop_multi_window_service.dart';
+import 'package:zip_core/src/output/overlay/desktop_window_service.dart';
 import 'package:zip_core/src/output/overlay/display_enumerator.dart';
 import 'package:zip_core/src/output/overlay/display_enumerator_lease.dart';
 import 'package:zip_core/src/output/overlay/overlay_method_router.dart';
@@ -31,8 +32,10 @@ class OverlayWindowHost {
     OverlayMethodRouter? router,
     DisplayEnumerator? enumerator,
     SubWindowClosedChannel? closeChannel,
+    DesktopWindowService Function(DisplayEnumerator lease)? windowService,
     Logger? log,
-  })  : _router = router ??
+  })  : _windowService = windowService ?? _defaultWindowService,
+        _router = router ??
             OverlayMethodRouter(log: _child(log, 'OverlayMethodRouter')),
         _log = log ?? Logger('zip_core.OverlayWindowHost'),
         _enumeratorHost = DisplayEnumeratorHost(
@@ -51,6 +54,14 @@ class OverlayWindowHost {
   static Logger? _child(Logger? parent, String name) =>
       parent == null ? null : Logger('${parent.name}.$name');
 
+  /// The production window service: the plugin behind the conditional export,
+  /// built over the controller's display lease.
+  static DesktopWindowService _defaultWindowService(
+    DisplayEnumerator lease,
+  ) =>
+      DesktopMultiWindowService.withEnumerator(lease);
+
+  final DesktopWindowService Function(DisplayEnumerator lease) _windowService;
   final Logger _log;
   final OverlayMethodRouter _router;
   final DisplayEnumeratorHost _enumeratorHost;
@@ -77,15 +88,28 @@ class OverlayWindowHost {
   /// line still says which window produced it without either app importing
   /// the other's name. The returned controller is owned by the caller, which
   /// must dispose it; this host only tracks it for logs.
+  ///
+  /// The controller registers with the router **before** it is built, so the
+  /// token it receives names a live registration (review round 5, finding 1).
+  /// `windowIdOf` is read at dispatch, never at registration, so closing over
+  /// the not-yet-assigned controller is safe. The controller's own
+  /// `_bootstrap` then replaces the placeholder handler through
+  /// `installerFor`, and its `dispose()`'s `call(null)` maps to
+  /// `unregister(token)`.
   OverlayWindowController createController({
     required OverlayWindowMode mode,
     required String prefix,
   }) {
+    late final OverlayWindowController controller;
+    final token = _router.register(
+      () => controller.windowId,
+      (_, _) async {},
+    );
     final lease = _enumeratorHost.lease();
-    final controller = OverlayWindowController(
-      windowService: DesktopMultiWindowService.withEnumerator(lease),
+    controller = OverlayWindowController(
+      windowService: _windowService(lease),
       enumerator: lease,
-      handlerInstaller: _router.installerFor(OverlayHandlerToken()),
+      handlerInstaller: _router.installerFor(token),
       log: Logger('zip_core.$prefix'),
       mode: mode,
       closeChannel: _closeChannel,
