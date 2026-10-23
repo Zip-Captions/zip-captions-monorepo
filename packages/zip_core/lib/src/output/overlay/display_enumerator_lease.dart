@@ -14,7 +14,7 @@ import 'package:zip_broadcast/src/output/overlay/display_enumerator.dart';
 /// [dispose] releases only this controller's share (NFR Design §3).
 ///
 /// The shared instance is disposed by the last release, or by
-/// [DisplayEnumeratorHost.dispose] (or whatever owns the shared instance),
+/// `DisplayEnumeratorHost.dispose` (or whatever owns the shared instance),
 /// whichever comes first. [dispose] is idempotent, so a double release is a
 /// no-op.
 class DisplayEnumeratorLease implements DisplayEnumerator {
@@ -56,7 +56,7 @@ class DisplayEnumeratorLease implements DisplayEnumerator {
 
 /// Reference-counts one shared [DisplayEnumerator] for a set of leases.
 ///
-/// Owned by `OverlayWindowHost` (NFR Design §2). [leases] issues a lease and
+/// Owned by `OverlayWindowHost` (NFR Design §2). `lease()` issues a lease and
 /// increments the count; [dispose] disposes the shared instance regardless of
 /// outstanding leases, and a later release then finds it already disposed and
 /// does nothing (logged at `INFO` by the shared instance's own idempotence).
