@@ -166,5 +166,37 @@
   "viewerInvalidInputBody": "That broadcast link is invalid. Check the URL and try again.",
   "@viewerInvalidInputBody": {
     "description": "Copy shown when the deep-linked broadcast link is invalid"
+  },
+  "popOutEnter": "Picture in Picture",
+  "@popOutEnter": {
+    "description": "Pop-out live captions (S-21): popOutEnter"
+  },
+  "popOutExit": "Exit Picture in Picture",
+  "@popOutExit": {
+    "description": "Pop-out live captions (S-21): popOutExit"
+  },
+  "popOutHint": "Captions are displaying in Picture-in-Picture",
+  "@popOutHint": {
+    "description": "Pop-out live captions (S-21): popOutHint"
+  },
+  "popOutReturn": "Return to Window",
+  "@popOutReturn": {
+    "description": "Pop-out live captions (S-21): popOutReturn"
+  },
+  "popOutUnavailableNoSession": "Start captioning to pop captions out",
+  "@popOutUnavailableNoSession": {
+    "description": "Pop-out live captions (S-21): popOutUnavailableNoSession"
+  },
+  "popOutUnavailableNoEngine": "No speech recognition engine is available on this device",
+  "@popOutUnavailableNoEngine": {
+    "description": "Pop-out live captions (S-21): popOutUnavailableNoEngine"
+  },
+  "popOutOpenFailed": "The pop-out window could not be opened",
+  "@popOutOpenFailed": {
+    "description": "Pop-out live captions (S-21): popOutOpenFailed"
+  },
+  "overlayWindowUnavailable": "Window unavailable",
+  "@overlayWindowUnavailable": {
+    "description": "Pop-out live captions (S-21): overlayWindowUnavailable"
   }
 }

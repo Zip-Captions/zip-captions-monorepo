@@ -10,8 +10,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_captions/src/l10n/zc_strings.dart';
+import 'package:zip_captions/src/providers/pop_out_providers.dart';
 import 'package:zip_captions/src/shell/zc_app_shell.dart';
+import 'package:zip_core/overlay.dart';
 import 'package:zip_core/zip_core.dart';
+
+import '../helpers/fake_pop_out_controller.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -72,6 +76,23 @@ Future<void> _pump(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         transcriptWriterTargetProvider.overrideWith((_) {}),
+        // The shell only builds its chrome once the copy has loaded, exactly
+        // as it does in the app; without this the ARB would be read through
+        // `rootBundle` and the shell would render the bare child.
+        zcStringsProvider.overrideWith(
+          (ref) async => const ZcStrings.fromMap({
+            'navJoinBroadcast': 'Join Broadcast',
+            'joinBroadcastSubmit': 'Join',
+          }),
+        ),
+        // The shell now owns a pop-out target. The controller runs over fakes
+        // so no platform channel or display observer is opened per test.
+        popOutWindowControllerProvider.overrideWithValue(
+          fakePopOutController(),
+        ),
+        displayListProvider.overrideWith(
+          (ref) => Stream<List<DisplayInfo>>.value(const <DisplayInfo>[]),
+        ),
         ...overrides,
       ],
       child: MaterialApp.router(

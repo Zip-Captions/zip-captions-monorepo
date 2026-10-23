@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zip_captions/src/providers/settings_notifier.dart';
 import 'package:zip_captions/src/widgets/appearance_panel.dart';
+import 'package:zip_captions/src/widgets/pop_out_controls.dart';
+import 'package:zip_captions/src/widgets/pop_out_scope.dart';
 import 'package:zip_captions/src/widgets/recording_controls_bar.dart';
 import 'package:zip_core/zip_core.dart';
 
@@ -58,6 +60,7 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
     });
 
     final entries = entriesAsync.valueOrNull ?? const [];
+    final popOut = PopOutScope.of(context);
 
     return Scaffold(
       body: Stack(
@@ -66,10 +69,21 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
             onTap: () => setState(() => _showAppearancePanel = false),
             child: Column(
               children: [
+                // UX-PIP-05: the hint lives above the caption surface, in the
+                // main window only, and disappears with the flag (R-M6: every
+                // close path except the lazy `'-1'` fallback).
+                if (popOut?.enabled ?? false)
+                  PopOutBanner(onReturn: popOut!.onToggle),
                 Expanded(
                   child: CaptionDisplayWidget(
                     entries: entries,
                     settings: settings,
+                    controls: popOut == null
+                        ? null
+                        : PopOutInSurfaceToggle(
+                            isPoppedOut: popOut.enabled,
+                            onToggle: popOut.onToggle,
+                          ),
                   ),
                 ),
                 RecordingControlsBar(
