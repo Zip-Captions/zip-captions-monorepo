@@ -394,3 +394,45 @@ is what round 4 noted was missing relative to `zip_broadcast`.
 
 Gates after the change: `zip_core` 918 passed / 4 skipped, `zip_broadcast` 181, `zip_captions` 181,
 `dart analyze --fatal-infos` clean in all three, both macOS `--debug` builds succeed.
+
+## Review round 5
+
+Round-5 review of PR 41 at `3556a3d` returned CHANGES_REQUESTED: one blocker, two major, one minor and
+one nit. All five are fixed in code or in this document. No dependency, pubspec, lockfile or `docs/`
+change. Native edits are the two macOS `MainFlutterWindow.swift` files only.
+
+The blocker was structural: rounds 1, 2 and 4 marked the router clean because the router tests pass in
+isolation, but nothing in production ever called `OverlayMethodRouter.register` — `createController`
+handed out an installer for a token it had never registered — and `zip_broadcast`'s external display
+bypassed the router entirely.
+
+| # | Severity | Cause | Fix | Test | File:line |
+|---|---|---|---|---|---|
+| 1a | Blocker | `createController` passed `installerFor(OverlayHandlerToken())` for a fresh, unregistered token; `installerFor` only replaces an existing registration's handler. | Register first: `_router.register(() => controller.windowId, ...)`, then hand the controller `installerFor(token)`. `windowIdOf` is read at dispatch, so closing over the `late` controller is safe. | `overlay_window_host_test.dart` "a host-built controller reaches Open over a delivered overlayReady" — fails pre-fix with `slot.current == null` ("the router never installed"). | `zip_core/lib/src/output/overlay/overlay_window_host.dart:94-121` |
+| 1b | Blocker | `zip_broadcast`'s `overlayWindowControllerProvider` built its own enumerator and installed `overlayMethodHandlerInstaller` directly, taking the plugin's single slot from the router. | Build it from `overlayWindowHostProvider.createController(mode: ExternalDisplayMode())`; `displayList` reads `overlayWindowHostProvider.displays`. The `overlayMethodHandlerInstaller` export is removed from both window-service files. | `overlay_window_host_test.dart` "two host-built controllers each receive only their own message" — fails pre-fix with `slot.calls == []`. | `zip_broadcast/lib/src/providers/overlay_window_controller_provider.dart:16-24`; `zip_core/lib/src/output/overlay/desktop_multi_window_service_io.dart` (export removed) |
+| 2 | Major | The target is registered only while a session is active, so the bus's `SessionStateEvent` was already gone; `_activity` stayed `standby` and the window rendered the blank standby surface. | `PopOutCaptionTarget` takes `recordingState`; `show()` seeds `_activity = _activityFor(recordingState())` and pushes a snapshot before `open`. Both shells pass a read-time probe. | "registered after the session started pushes live, not standby" in both apps — fails pre-fix with `Expected: live, Actual: standby`. | `zip_captions/lib/src/output/overlay/pop_out_caption_target.dart:56-61` (seed at `:59`); `zip_broadcast/.../pop_out_caption_target.dart:56-61`; shells at `zc_app_shell.dart:56`, `zb_app_shell.dart:86` |
+| 3 | Major | Screens rendered `PopOutInSurfaceToggle` whenever a scope existed, and `PopOutScope` carried no visibility flag; the shells fell back to `const Off()` while the status stream loaded, flashing the chrome for one frame on unsupported platforms. | `PopOutScope` gained `visible`; the screens pass `controls: null` when `!visible`; the fallback is the controller's synchronous `status`. | "the in-surface toggle does not render" and "the chrome does not flash on the first frame" in both apps — fail pre-fix with the toggle found / `Expected: Unsupported, Actual: Off`. | `zip_captions/lib/src/widgets/pop_out_scope.dart:69`, `recording_screen.dart:80-84`, `zc_app_shell.dart:199-206`; broadcast equivalents |
+| 4 | Minor | The `willClose` observer returned at the `windowIds` guard before removing its token, so an observer for a window whose `configure` never recorded an id leaked for the process lifetime. | Remove the observer token before the `windowIds` guard. | Not unit-tested (Swift runner has no test target in this repo); reviewed by inspection. | `zip_captions/macos/Runner/MainFlutterWindow.swift:104-115`; `zip_broadcast/.../MainFlutterWindow.swift:104-115` |
+| 5 | Nit | `MainFlutterWindow.swift:35-36` called `floating: false, decorated: false` the pop-out's properties; they are the external display's. | Comment corrected in both files. The existing `// ignore` directives were left alone as instructed. | Documentation only. | `zip_captions/macos/Runner/MainFlutterWindow.swift:32-37`; `zip_broadcast/.../MainFlutterWindow.swift:32-37` |
+
+### Left undone
+
+- **Manual macOS check.** Still owed, same as every prior round: start a session in each app, pop out,
+  confirm the window opens within 10 s with live captions and the exit toggle, return using the
+  in-window toggle; in `zip_broadcast` confirm the external display still opens, shows captions and
+  closes. This is the only thing that can prove findings 1-3 on a real window.
+- **Finding 4** has no automated test: neither app has a Swift test target, and the CI macOS build only
+  compiles the runner.
+
+### Gates after the change
+
+| Gate | Result |
+|---|---|
+| `dart analyze --fatal-infos` — `zip_core` | clean |
+| `flutter test` — `zip_core` | 920 passed, 4 skipped |
+| `dart analyze --fatal-infos` — `zip_broadcast` | clean |
+| `flutter test` — `zip_broadcast` | 184 passed |
+| `dart analyze --fatal-infos` — `zip_captions` | clean |
+| `flutter test` — `zip_captions` | 184 passed |
+| `flutter build macos --debug` — `zip_broadcast` | built |
+| `flutter build macos --debug` — `zip_captions` | built |
