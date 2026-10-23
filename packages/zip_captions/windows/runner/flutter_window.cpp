@@ -27,10 +27,15 @@ std::map<HWND, SIZE>& WindowMinSizes() {
   return sizes;
 }
 
-// The main engine's close channel (ID §4b).
-flutter::MethodChannel<flutter::EncodableValue>* SubWindowEvents() {
+// The main engine's close channel (ID §4b). The accessor hands out the storage
+// itself so the registration site can assign to it.
+flutter::MethodChannel<flutter::EncodableValue>*& SubWindowEventsRef() {
   static flutter::MethodChannel<flutter::EncodableValue>* channel = nullptr;
   return channel;
+}
+
+flutter::MethodChannel<flutter::EncodableValue>* SubWindowEvents() {
+  return SubWindowEventsRef();
 }
 
 // Raises `subWindowClosed` for |hwnd| if the runner recorded an id for it.
@@ -206,8 +211,12 @@ bool FlutterWindow::OnCreate() {
           flutter_controller_->engine()->messenger(),
           "zip_core/overlay_sub_window_events",
           &flutter::StandardMethodCodec::GetInstance());
-  sub_window_events.release()->SetMethodCallHandler(nullptr);
-  SubWindowEvents() = sub_window_events.release();
+  // Deliberately leaked: the channel lives as long as the main engine, and the
+  // window's teardown is not a place to run plugin code.
+  flutter::MethodChannel<flutter::EncodableValue>* channel =
+      sub_window_events.release();
+  channel->SetMethodCallHandler(nullptr);
+  SubWindowEventsRef() = channel;
 
   // Sub-windows are caption surfaces, not app windows. Unit 8 stripped their
   // decoration here unconditionally; this unit moves every styling decision

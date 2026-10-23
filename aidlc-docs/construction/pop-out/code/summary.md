@@ -180,3 +180,87 @@ Behaviour changed beyond the direct fix, with its evidence:
 Gates re-run after the fixes, in order: `zip_core` analyze clean, 915 passed / 4 skipped;
 `zip_broadcast` analyze clean, 178 passed; `zip_captions` analyze clean, 176 passed; both
 `flutter build macos --debug` builds succeeded.
+
+## CI fix: Windows/Linux runner compile errors
+
+Round-2 CI on `ac86839` failed Windows (both apps) and Linux (both apps) at compile time;
+macOS, iOS, Android and the test matrix passed. Both defects were in this unit's native runner
+code — no Dart, test or l10n file changed. Four files only:
+`my_application.cc` (both apps) and `flutter_window.cpp` (both apps).
+
+### DEFECT 1 — assignment to a function call
+
+`SubWindowEvents()` is declared as a function *returning* a pointer (`my_application.cc:32`,
+`flutter_window.cpp:31`), but the registration site assigned to it
+(`my_application.cc:205`, `flutter_window.cpp:209`/`:210`). That is not assignable — Windows
+C2106 ("left operand must be an l-value") and Linux "expression is not assignable".
+
+The storage moved into a reference accessor and the pointer-returning read helper now delegates
+to it, so the read path at line 48 keeps its null guard unchanged:
+
+```cpp
+FlMethodChannel*& SubWindowEventsRef() {
+  static FlMethodChannel* channel = nullptr;
+  return channel;
+}
+
+FlMethodChannel* SubWindowEvents() { return SubWindowEventsRef(); }
+```
+
+The assignment site uses `SubWindowEventsRef()`. No `SubWindowEvents() =` remains anywhere.
+
+### DEFECT 2 — `fl_plugin_registrar_get_messenger` mismatch (Linux)
+
+`fl_plugin_registry_get_registrar_for_plugin()` returns an `FlPluginRegistrar*`, but it was passed
+*straight into* `fl_plugin_registrar_get_messenger()` without materialising the registrar in a
+local, in a nested call (and, in the window-created callback, from an `FlPluginRegistry*`). The
+nested form did not type-check against the 3.38.x Linux embedder headers. The messenger is taken
+from the view's engine instead, which is the same messenger the registry's registrar exposes:
+
+```cpp
+fl_engine_get_binary_messenger(fl_view_get_engine(view))
+```
+
+Both occurrences in each Linux file were changed (the `sub_window_events` channel and the
+`configure` channel in the window-created callback). The `configure` callback's
+`FL_VIEW(registry)` argument is left as-is; `FlPluginRegistry` and `FlView` share the object at
+that call site (the plugin itself passes `FL_PLUGIN_REGISTRY(fl_view)`).
+
+Header evidence: `fl_plugin_registry.h` declares
+`FlPluginRegistrar* fl_plugin_registry_get_registrar_for_plugin(FlPluginRegistry*, const gchar*)`;
+`fl_plugin_registrar.h` declares
+`FlBinaryMessenger* fl_plugin_registrar_get_messenger(FlPluginRegistrar*)` (registrar, not
+registry); `fl_engine.h` declares
+`FlBinaryMessenger* fl_engine_get_binary_messenger(FlEngine*)`; `fl_view.h` declares
+`FlEngine* fl_view_get_engine(FlView*)`.
+
+### Windows ownership
+
+The old block released twice in intent: `sub_window_events.release()->SetMethodCallHandler(nullptr)`
+leaked the first object and then assigned a second `release()` to the static (which never
+compiled anyway). Rewritten so exactly one `release()` transfers ownership to the static:
+
+```cpp
+flutter::MethodChannel<flutter::EncodableValue>* channel =
+    sub_window_events.release();
+channel->SetMethodCallHandler(nullptr);
+SubWindowEventsRef() = channel;
+```
+
+One release, one owner (the static, deliberately leaked for the engine's lifetime), no double
+release. Linux keeps its single `g_object_ref` for the app's lifetime.
+
+The `"destroy"` / `delete-event` / observer logic and both `configure` handlers are untouched —
+the diff contains no change to `OnSubWindowDestroy`, `OnConfigureMethodCall`, `SubWindowProc`,
+`WindowIds` or `WindowMinSizes`.
+
+### Verification
+
+The Windows and Linux targets cannot be built on the gate machine; the fix was statically
+verified: each changed region was syntax-checked with clang against header stubs declaring the
+real signatures, and the *old* assignment form was reproduced failing with "expression is not
+assignable" while the new form compiles. CI on the real runners is the gate.
+
+Gates after the fix: `zip_core` analyze clean, 915 passed / 4 skipped; `zip_broadcast` analyze
+clean, 178 passed; `zip_captions` analyze clean, 176 passed; both `flutter build macos --debug`
+builds succeeded.

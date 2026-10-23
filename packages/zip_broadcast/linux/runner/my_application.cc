@@ -28,11 +28,14 @@ std::map<GtkWindow*, int64_t>& WindowIds() {
 }
 
 // The main engine's close channel (ID §4b). Owns a reference for the app's
-// lifetime.
-FlMethodChannel* SubWindowEvents() {
+// lifetime. The accessor hands out the storage itself so the registration site
+// can assign to it.
+FlMethodChannel*& SubWindowEventsRef() {
   static FlMethodChannel* channel = nullptr;
   return channel;
 }
+
+FlMethodChannel* SubWindowEvents() { return SubWindowEventsRef(); }
 
 // Raises `subWindowClosed` for |window| if the runner recorded an id for it.
 // Fire-and-forget: nothing on the close path waits for a Dart reply.
@@ -197,13 +200,11 @@ static void my_application_activate(GApplication* application) {
 
   // Registered once, on the main engine, before any sub-window can exist.
   FlMethodChannel* sub_window_events = fl_method_channel_new(
-      fl_plugin_registrar_get_messenger(
-          fl_plugin_registry_get_registrar_for_plugin(FL_PLUGIN_REGISTRY(view),
-                                                      "zip_core_overlay")),
+      fl_engine_get_binary_messenger(fl_view_get_engine(view)),
       "zip_core/overlay_sub_window_events",
       FL_METHOD_CODEC(fl_standard_method_codec_new()));
-  SubWindowEvents() = static_cast<FlMethodChannel*>(
-      g_object_ref(sub_window_events));
+  SubWindowEventsRef() =
+      static_cast<FlMethodChannel*>(g_object_ref(sub_window_events));
 
   // Sub-windows are caption surfaces, not app windows. Unit 8 stripped their
   // decoration here unconditionally; this unit moves every styling decision
@@ -218,7 +219,7 @@ static void my_application_activate(GApplication* application) {
         FlView* created_view = FL_VIEW(registry);
 
         FlMethodChannel* configure = fl_method_channel_new(
-            fl_plugin_registrar_get_messenger(registry),
+            fl_engine_get_binary_messenger(fl_view_get_engine(created_view)),
             "zip_core/overlay_window_configure",
             FL_METHOD_CODEC(fl_standard_method_codec_new()));
         fl_method_channel_set_method_call_handler(
