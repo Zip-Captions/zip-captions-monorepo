@@ -31,8 +31,8 @@
 | `OverlayWindowBridge.sendPopOutToggle` | NEW method | `'popOutToggle'` to window 0; main engine routes to the shell |
 
 ## Constraints
-- `zip_core` gains `desktop_multi_window`, `screen_retriever`, `window_manager`; the apps declare only `desktop_multi_window` (and `zip_broadcast` may drop `screen_retriever`). NFR Requirements must decide whether the apps keep direct `window_manager` declarations (design says no: no Dart call site).
-- No new native code; runner edits are callbacks/registration only.
+- `zip_core` gains `desktop_multi_window` (`^0.2.1`) and `screen_retriever` (`^0.2.2`); `zip_captions` also declares `desktop_multi_window`; `zip_broadcast` drops its own `screen_retriever` declaration and keeps `desktop_multi_window`. **`window_manager` is not a dependency of anything** (RQ-1 A; corrected at Infrastructure Design, this line still listed it).
+- No new native source file; runner edits are the two channel registrations and the close hook inside the existing window-created callback / `OnCreate` / `my_application_activate` (Infrastructure Design §4, §9).
 - Caption text never in logs; the promoted code already honours this and new sites must too.
 - Deferred, not claimed: §8.8 8-10; `PopOutContentMode` picker; size/position memory; web.
 - The `pip-ux-parity.md` UX-PIP-10 amendment is pending Documentation Refinement, not this unit's code.

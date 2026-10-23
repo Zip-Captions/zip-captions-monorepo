@@ -98,7 +98,7 @@ class OverlayWindowConfig {
 
 | Package | Where | Version | Justification |
 |---|---|---|---|
-| `desktop_multi_window` | `zip_core`, `zip_captions` (already in `zip_broadcast`) | `^0.2.0` (the shipped pin) | The machinery in `zip_core` needs it behind the fence; `zip_captions` gains its first windowing. |
+| `desktop_multi_window` | `zip_core`, `zip_captions` (already in `zip_broadcast`) | `^0.2.1` (the shipped pin; corrected at Infrastructure Design from `^0.2.0`) | The machinery in `zip_core` needs it behind the fence; `zip_captions` gains its first windowing. |
 | `screen_retriever` | `zip_core` (already in `zip_broadcast`) | `^0.2.2` | The promoted display enumerator needs it. `zip_broadcast` **removes** its own declaration (RQ-2 A, NFR-R Q2 A), because nothing in the app imports it after the move. |
 
 **`window_manager` is no longer a dependency of anything** (RQ-1 A, owner 2026-10-21). The row above
@@ -143,9 +143,9 @@ Any other movement is reported, not committed silently.
 | `ZcAppShell` | modified | Same toggle wiring as `ZbAppShell`'s new parts, but on a **stateless** shell today — becomes a `ConsumerStatefulWidget` to own the one target and the in-memory flag, matching `ZbAppShell`'s precedent. |
 | `PopOutCaptionTarget` (`zip_captions` copy) | new class | Q5 A allows one thin adapter per app, because the bus/registry imports differ and `zip_broadcast`'s adapter is not importable. Its body is ~60 lines and has no logic beyond `_pushSnapshot`/`_activityFor`; the duplication is the app-local adapter, not the machinery. |
 | `RecordingScreen` | modified | Passes `controls:` into its `CaptionDisplayWidget`. |
-| `main(List<String> args)` | modified | `zip_captions`'s `main()` becomes `main(List<String> args)` and routes `isOverlayWindowLaunch(args)` before `GoogleFonts`/logging/Supabase/`ProviderContainer`, exactly as `zip_broadcast` does. |
+| `main(List<String> args)` | modified | `zip_captions`'s `main()` becomes `main(List<String> args)` and delegates to `runZipCaptions(args, {runApp, isWeb})` in `lib/src/bootstrap.dart` (Infrastructure Design ID-1, the authoritative seam: `nfr-requirements.md:28`), which routes `isOverlayWindowLaunch(args)` before `GoogleFonts`/logging/Supabase/`ProviderContainer`. `zip_broadcast` keeps its inline branch. |
 | `ZcStrings` + `l10n/arb/app_en.arb` | modified | Pop-out keys (3.2). `ZcStrings` is the app's only ARB reader (Unit 7's decision), so the shell reads through it. |
-| `pubspec.yaml` | modified | `desktop_multi_window: ^0.2.0` added. |
+| `pubspec.yaml` | modified | `desktop_multi_window: ^0.2.1` added. |
 | Three runners | modified | Window-created callback + plugin registration (Infrastructure Design). |
 
 ---

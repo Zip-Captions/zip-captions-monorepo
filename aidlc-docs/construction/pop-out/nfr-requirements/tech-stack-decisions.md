@@ -10,13 +10,13 @@ clarification Q1 A.
 
 | Package | Dependency | Change | Version | Justification |
 |---|---|---|---|---|
-| `zip_core` | `desktop_multi_window` | **new** | `^0.2.0` | The promoted window service and bridge need it, behind the `_io` fence. Same constraint `zip_broadcast` already ships. |
+| `zip_core` | `desktop_multi_window` | **new** | `^0.2.1` | The promoted window service and bridge need it, behind the `_io` fence. Same constraint `zip_broadcast` already ships. |
 | `zip_core` | `screen_retriever` | **new** | `^0.2.2` | The promoted display enumerator needs it. The pin is chosen for the monorepo floor (0.3.0 needs Dart 3.13 / Flutter 3.47), exactly as `zip_broadcast`'s comment records. |
 | `zip_core` | `window_manager` | **not added** | — | **Withdrawn 2026-10-21 (RQ-1 A).** Its macOS `ensureInitialized` replaces `desktop_multi_window`'s window delegate, which is the only path from an OS close to `shutDownEngine()` (R-B2), and it cannot restore the decoration the runners strip (R-B3). Replaced by a first-party native `configure` channel. |
-| `zip_broadcast` | `desktop_multi_window` | unchanged | `^0.2.0` | Its runners compile against the plugin; it also has no reason to stop declaring it. |
+| `zip_broadcast` | `desktop_multi_window` | unchanged | `^0.2.1` | Its runners compile against the plugin; it also has no reason to stop declaring it. |
 | `zip_broadcast` | `screen_retriever` | **removed** | — | After the move nothing in the app imports it. SECURITY-10 forbids unused dependencies. |
 | `zip_broadcast` | `window_manager` | **not added** | — | Not a dependency of anything (RQ-1 A). |
-| `zip_captions` | `desktop_multi_window` | **new** | `^0.2.0` | Its first windowing: `main` routing, the sub-engine entry, the runner callbacks. |
+| `zip_captions` | `desktop_multi_window` | **new** | `^0.2.1` | Its first windowing: `main` routing, the sub-engine entry, the runner callbacks. |
 | `zip_captions` | `window_manager` | **not added** | — | Same: withdrawn entirely. |
 | `zip_captions` | `screen_retriever` | **not declared** | — | No app import; it arrives through `zip_core`. |
 
@@ -80,9 +80,13 @@ The draft's `window_manager_macos` entries were fabricated — there is one
 `macos/window_manager.podspec`, not a federation. As written, the fence would have stopped the build
 on a false "unexpected lockfile movement".
 
-Generated, not committed, listed so the build evidence can be read: each app's
-`windows/flutter/generated_plugins.cmake`, `linux/flutter/generated_plugin_registrant.cc` and
-`macos/Flutter/GeneratedPluginRegistrant.swift`.
+**Tracked, not generated-only** (corrected at Infrastructure Design ID-4: `git ls-files` confirms
+all ten are in the repository; `flutter pub get` regenerates them and the diff is committed). The
+movement is not "none in `zip_broadcast`": because this unit removes `screen_retriever` from
+`zip_broadcast`'s pubspec, that app **loses** `screen_retriever_macos` / `_windows` / `_linux` from
+its registrants, and `zip_captions` gains `desktop_multi_window` plus `screen_retriever_*`. See
+`aidlc-docs/construction/pop-out/infrastructure-design/infrastructure-design.md` §6 for the exact
+per-file table. Files are tool-generated, never hand-edited.
 
 **Rule**: any other movement is reported in the code summary, not committed silently. This mirrors
 Unit 8's `screen_retriever` fence.
@@ -95,7 +99,7 @@ Unit 8's `screen_retriever` fence.
 |---|---|---|
 | Fakes for window service / enumerator / handler installer / always-on-top / bridge | hand-written fakes in `zip_core/test/helpers/` | `mocktail` mocks are the project's choice where a collaborator has no behaviour to script; these five all record ordering or push events, which is the hand-written-fake pattern Unit 5-8 use |
 | Property testing | in-tree `test/helpers/pbt.dart` shim, copied to `zip_core/test/helpers/pbt.dart` | `glados` is incompatible with Dart 3; the shim is the project decision (Unit 7) and Unit 8 already relies on it |
-| Async timing | `fake_async` | already a dev dependency of all three packages |
+| Async timing | `fake_async` | already a dev dependency of `zip_core` (`pubspec.yaml:66`) and `zip_broadcast` (`:64`) — corrected at Infrastructure Design: `zip_captions` has **neither** `fake_async` nor `mocktail` (`packages/zip_captions/pubspec.yaml`), so `zip_captions` tests use `testWidgets` + `tester.pump`, and controller-timing tests stay in `zip_core` |
 | App-level widget tests | `flutter_test` + the per-app harnesses (`zb_test_harness.dart`, Zip Captions' existing helpers) | no new framework |
 
 No new dev dependency is introduced.
@@ -122,7 +126,7 @@ No new dev dependency is introduced.
 
 | Concern | Choice | Version |
 |---|---|---|
-| Window creation | `desktop_multi_window` | `^0.2.0` |
+| Window creation | `desktop_multi_window` | `^0.2.1` |
 | Always-on-top, decoration, minimum size | first-party `configure` `MethodChannel` per runner | n/a (our code) |
 | Display enumeration | `screen_retriever` | `^0.2.2` |
 | Error/exception handling | existing `try`/`on Object` + `Logger` | unchanged |
