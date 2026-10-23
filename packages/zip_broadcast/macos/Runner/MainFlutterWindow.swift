@@ -32,7 +32,7 @@ class MainFlutterWindow: NSWindow {
     // Sub-windows are caption surfaces, not app windows. Unit 8 stripped their
     // decoration here unconditionally; this unit moves every styling decision
     // into the `configure` channel, so the external display still arrives
-    // borderless (the pop-out window properties are `floating: false,
+    // borderless (its window properties are `floating: false,
     // decorated: false`) and the pop-out asks for a floating decorated frame
     // (BR-U8.1-04). The runner is mode-blind: it applies what Dart sends.
     FlutterMultiWindowPlugin.setOnWindowCreatedCallback { [weak self] controller in
@@ -103,11 +103,14 @@ class MainFlutterWindow: NSWindow {
     ) { [weak self] note in
       guard let self, let closed = note.object as? NSWindow else { return }
       let closedKey = ObjectIdentifier(closed)
-      guard let id = self.windowIds.removeValue(forKey: closedKey) else {
-        return
-      }
+      // Removed before the id lookup: a window whose `configure` never
+      // recorded an id still ends here, and its observer must not outlive it
+      // in `closeObservers`.
       if let token = self.closeObservers.removeValue(forKey: closedKey) {
         NotificationCenter.default.removeObserver(token)
+      }
+      guard let id = self.windowIds.removeValue(forKey: closedKey) else {
+        return
       }
       // Fire-and-forget: the close path must not wait for a Dart reply.
       self.subWindowEvents?.invokeMethod(
