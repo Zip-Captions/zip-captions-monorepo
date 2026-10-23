@@ -277,7 +277,7 @@ the four runner files. Dart edits are confined to the two shells, `zip_captions`
 | # | Severity | Resolution | Evidence |
 |---|---|---|---|
 | 1 | Major | **Fixed.** The Windows `configure` reader rejected every call: `StandardMessageCodec` writes a Dart `int` that fits in 32 bits as int32, so the Windows codec delivers `windowId` as `int32_t` and `std::get_if<int64_t>` returned null. `int_value` in both `flutter_window.cpp` files now accepts `int32_t` as well as `int64_t` and widens with `static_cast<int64_t>`. The rest of the payload was audited against the reader types (table below): every other key already matched. | Static: the accepted variants are now `int64_t` and `int32_t`; the full key/type table below. CI on the Windows runners is the real gate — this machine cannot compile a Windows target. |
-| 2 | Major | **Fixed.** Both shells' `_togglePopOut` now read `controller.displays` (`overlay_window_controller.dart:207`, kept current by the enumerator at `:238-240`) instead of `ref.read(displayListProvider).value`, which is auto-dispose and unwatched by the shell. The geometry therefore resolves a display and the pop-out opens on the computed 2-line strip. | `zip_captions/test/widgets/pop_out_shell_test.dart` — "the toggle computes a frame from the controller displays": the provider is overridden with an empty list while the controller's enumerator holds one display; the test drives the real ready handshake and asserts the `Rect` handed to `setFrame` equals the geometry computed from `controller.displays`. `zip_broadcast/test/shell/pop_out_shell_test.dart` — "the toggle hands the computed frame to setFrame": same shape on `/recording`; the frame equals `computePopOutFrame(displays: controller.displays, ...)`. Both tests fail against the old provider read (verified by re-applying it) and pass now. |
+| 2 | Major | **Fixed.** Both shells' `_togglePopOut` now read `controller.displays` (`overlay_window_controller.dart:207`, kept current by the enumerator at `:238-240`) instead of `ref.read(displayListProvider).value`, which is auto-dispose and unwatched by the shell. The geometry therefore resolves a display and the pop-out opens on the computed 2-line strip. | `zip_captions/test/widgets/pop_out_shell_test.dart` — "the toggle computes a frame from the controller displays": the provider is overridden with an empty list while the controller's enumerator holds one display; the test drives the real ready handshake and asserts the `Rect` handed to `setFrame` equals the geometry computed from `controller.displays`. `zip_broadcast/test/shell/pop_out_shell_test.dart` — "the toggle hands the computed frame to setFrame": same shape on `/recording`; the test target reaches `setFrame` with the geometry computed from `controller.displays`. Both tests fail against the old provider read (verified by re-applying it) and pass now. With the old read the broadcast test fails because the pop-out opened with **no `setFrame` at all** (`Actual: ['createWindow', 'show']`), not because it received a wrong rectangle — the regression was a lost frame, and the tests pin that. |
 | 3 | Minor | **Fixed.** Both shells now `ref.watch(popOutStatusProvider)` instead of reading `controller.status` once at build. `zip_captions` gained the provider (already present in `zip_broadcast`), mirroring its implementation: replay the current value, then `yield* controller.statusChanges`. The shells fall back to `const Off()` while the first value is pending. A controller that becomes `Unsupported` (failed display probe) now hides the toggle and its in-surface counterpart. | `zip_captions/test/widgets/pop_out_shell_test.dart` — "a status change to Unsupported hides the toggle": the provider is driven by a `StreamController`, emits `Unsupported`, and the `popOutToggle` disappears. |
 | 4 | Minor | **Fixed.** Both shells' `_onPopOutEvent` now call a shared `_unregisterPopOut()` on `WindowClosed` / `OpenFailed` (and `_closePopOut` uses the same helper), so the pop-out path matches the external display's `_unregisterOverlay`: the target leaves the caption fan-out and is disposed with it. The registry's `remove` disposes the target; the dispose's `close(dispose)` is a no-op on an already-`Off` controller. | `zip_captions/test/widgets/pop_out_shell_test.dart` — "a window closed on its own leaves the caption fan-out": after a native close, `registry.activeTargets` is back to its pre-toggle size. The test fails against the old handler and passes now. |
 | 5 | Nit | **Fixed, as "document the leak as intentional".** The double reference on `sub_window_events` is gone: the single owned reference (from `fl_method_channel_new`) is stored in the accessor directly, with no extra `g_object_ref`, and a comment records that the one reference is held for the engine's lifetime. Each sub-window's `configure` channel is documented as deliberately leaked at its creation site (the window's own `destroy` hook is the app's, not the channel's, so nothing here could unref it in time). This section documents `7fe4c06`. | `my_application.cc` (both apps): one `fl_method_channel_new` result assigned to `SubWindowEventsRef()`, no `g_object_ref`; comments at both sites. |
@@ -298,8 +298,8 @@ The `configure` payload is built in one place,
 | `windowId` | `int` (parameter, `window_configurator.dart:58`) | `_valueInt32` for every id ≤ 0x7fffffff (`:397-400`), `_valueInt64` above | `int_value`: was `get_if<int64_t>` only → **fixed** to accept `int32_t` and `int64_t` | `FL_VALUE_TYPE_INT`, read with `fl_value_get_int` (`FL_VALUE_TYPE_INT` covers both widths) | `as? Int` (`NSNumber`, width-agnostic) | **fixed (Windows)**; Linux/macOS were already correct |
 | `floating` | `bool` (`OverlayWindowConfig.floating`) | `_valueTrue`/`_valueFalse` (`:302-303`) | `bool_value`: `get_if<bool>` | `FL_VALUE_TYPE_BOOL` | `as? Bool` | OK |
 | `decorated` | `bool` (`OverlayWindowConfig.decorated`) | `_valueTrue`/`_valueFalse` | `bool_value`: `get_if<bool>` | `FL_VALUE_TYPE_BOOL` | `as? Bool` | OK |
-| `minWidth` | `double` (`OverlayWindowConfig.minWidth`, `@Default(0)` typed `double`) | `_valueFloat64` (`:305-307`) | `double_value`: `get_if<double>` | `FL_VALUE_TYPE_FLOAT` | `as? Double` | OK |
-| `minHeight` | `double` (`OverlayWindowConfig.minHeight`) | `_valueFloat64` | `double_value`: `get_if<double>` | `FL_VALUE_TYPE_FLOAT` | `as? Double` | OK |
+| `minWidth` | `double` (`OverlayWindowConfig.minWidth`, `@Default(0)` typed `double`) | `_valueFloat64` (`:305-307`); the external display sends `0.0`, the pop-out `200.0` — both typed `double`, never `int` | `double_value`: `get_if<double>` | `FL_VALUE_TYPE_FLOAT` | `as? Double` | OK |
+| `minHeight` | `double` (`OverlayWindowConfig.minHeight`) | `_valueFloat64`; external display `0.0`, pop-out `120.0` | `double_value`: `get_if<double>` | `FL_VALUE_TYPE_FLOAT` | `as? Double` | OK |
 
 Four runner files were checked: `zip_captions` and `zip_broadcast` `windows/runner/flutter_window.cpp`
 (identical payload readers) and `zip_captions` and `zip_broadcast` `linux/runner/my_application.cc`
@@ -329,3 +329,28 @@ Windows runners is the gate for it, as for finding 1 above.
 Gates re-run after the round-3 fixes, in order: `zip_core` analyze clean (`No issues found!`),
 915 passed / 4 skipped; `zip_broadcast` analyze clean, 179 passed; `zip_captions` analyze clean,
 179 passed; both `flutter build macos --debug` builds succeeded.
+
+## Review round 4 (confirm-fix)
+
+Round-4 re-review of PR 41 at `fbdac9a` returned APPROVE: all five round-3 findings verified fixed
+in code, with the payload audit re-derived independently and the new shell tests mutation-tested
+against the pre-fix tree (reverting the finding-2 fix makes both fail; on `7fe4c06` the broadcast
+test fails because no `setFrame` was issued at all). No blockers, no majors.
+
+Two documentation-accuracy notes were applied here, with no code change:
+
+- The finding-2 evidence row now states the actual pre-fix failure mode (no `setFrame` at all,
+  `Actual: ['createWindow', 'show']`) rather than implying a wrong rectangle.
+- The payload audit rows for `minWidth`/`minHeight` now record the values actually sent: the
+  external display sends `0.0`/`0.0` and the pop-out `200.0`/`120.0`, typed `double` in every case,
+  so the Windows `get_if<double>` reader is correct for both modes.
+
+Three further observations from round 4 were reviewed and need no action: `WM_GETMINMAXINFO` with
+`{0,0}` for the external display is correct given its configured values; the sub-engine fallback
+copy (`OverlayWindowUnavailableApp`) is unlocalized but only reachable on an invalid launch payload;
+the two Windows runner files differ by a single blank line.
+
+Standing caveat: CI green on Windows and Linux proves compilation only. That the external display is
+borderless and the pop-out is topmost and minimum-sized on Windows, and that the computed frame lands
+on a real display, are runtime properties for the Unit 9 device checks. Nothing in this stage verified
+them on hardware.
