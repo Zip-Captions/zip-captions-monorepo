@@ -148,7 +148,9 @@ partition.
 
 The eight manual checks in the plan §7 (float, decoration, resize/move, min size,
 OS-close promptness, external display still borderless, multi-monitor placement,
-`window.delegate` intact) are unverified here by design.
+`window.delegate` intact) are unverified here by design. Runtime checks A7 and B4 (OS close of
+the pop-out and of the external display) are Unit 9 exit criteria since 2026-10-23; see
+"Review round 7 fixes" below.
 
 ## Review round 1
 
@@ -505,4 +507,50 @@ the in-surface toggle in the main window; no rail control at any point.
 | `dart analyze --fatal-infos` — both apps | clean (`zip_core` unchanged) |
 | `flutter test` — `zip_broadcast` | 190 passed |
 | `flutter test` — `zip_captions` | 190 passed |
+| `flutter build macos --debug` — both apps | built |
+
+## Review round 7 fixes
+
+Independent review round 7 (PR #41, 2026-10-24) approved the code with four minors and five nits.
+The owner directed m1-m4 fixed and A7/B4 deferred. Both apps; `zip_core` unchanged. The design
+changes are the third amendment in FD `frontend-components.md` §5.
+
+| # | Finding | Change | Pinning tests | Mutation check |
+|---|---|---|---|---|
+| m1 | The R6-3 test's "the next open clears it" was vacuous: the next open replaced the caption surface with the return panel, so the in-surface toggle (and its line) were gone either way. `zip_broadcast` had no clearing test after `f2bfb1b`. `zip_captions`' two chrome "failure line" tests only compared a semantics hint with null and the empty string. | Tests only; the code was correct. | R6-3 test (captions) and "a failed open shows the reason under the in-surface toggle" (broadcast) now return to the window and read the in-surface toggle again. The chrome failure tests in both apps assert the line's key. | `openFailed: true` hard-wired now fails both apps' tests; before, it passed all of them. |
+| m2 | On the narrow layout an open started from the `AppBar` on a screen with no caption surface failed silently. | `PopOutChrome` renders `popOutOpenFailed` (`Key('popOutToggleOpenFailed')`) while `Failed`. It shows one status line at most, and the reason outranks the failure. The control is bounded at 220 px. | Chrome: "shows the open-failure line while the open has failed", "clears the failure line when the status leaves Failed", "a disabled reason outranks the failure line" (both apps); captions "its ... line fits a 375 px AppBar" (English copy, both lines). Shell: captions "a failed open from a screen with no caption surface shows the reason by the chrome control" (Home); broadcast "the narrow chrome reason line fits the AppBar" and "a failed open shows the reason by the narrow chrome control". | Removing the width bound fails the 375 px tests in both apps. |
+| m3 | The R6-1 deadlock is a live `develop` defect from Unit 8, not only this branch's. | Records only (below). | — | — |
+| m4 | The return panel overflowed a short caption area: 52 px at a 160 px area and 2x text. | The panel's column scrolls inside the panel (`SingleChildScrollView`, the 24 px padding moved inside it). | "fits a short caption area at large text sizes" (both apps' banner suites): no exception, and the return action can be scrolled to and tapped. | Restoring the plain padding fails the test. |
+
+**Found while fixing m2 (pre-existing, fixed with it)**: the narrow chrome's reason line overflowed
+the 375 px `AppBar` by 319 px with the shipped copy. The round-1 amendment's `Flexible` bounded only
+its height, and every earlier narrow test used sentinel strings or an unsupported controller. It is
+the same 319 px the overnight ledger recorded before round 1. The width bound fixes both lines. In
+the test font (Ahem, one em per glyph) the exit label alone also overflowed by 3.3 px in the Open
+state, which a large text scale or a longer translation reproduces in the shipped font; the bound
+covers that too.
+
+**m3, for the record**: on `develop`, Unit 8's controller (`zip_broadcast/lib/src/output/overlay/
+overlay_window_controller.dart`) also shows the window only in `_runReady` after `overlayReady`. Its
+macOS runner callback never starts the sub-engine, and `desktop_multi_window` resolves to the same
+lock entry. Unit 8's external display has therefore never opened on macOS. Unit 8's record claims a
+macOS build only and leaves the window check owed (`external-display/code/unit8-summary.md`), so
+nothing there claimed otherwise. Fix round 6's runner change (`7e58f89`) fixes it for both apps when
+PR #41 merges. Windows and Linux start their engines at window creation and were not affected.
+
+**A7 and B4 deferred to Unit 9** (owner direction, 2026-10-23): the two OS-close checks still need
+Accessibility granted to the verifying host. They are recorded as Unit 9 exit criteria, with
+pass conditions, in `inception/application-design/phase2-unit-of-work.md` (Unit 9). They add to the
+eight manual checks in "What Unit 9 must still check by hand" above; A7 overlaps check 4
+(OS-close promptness) and supersedes its "banner" wording with the return panel.
+
+Not done: no runtime run of these changes (widget tests only), and the five nits are left as
+recorded on the PR, apart from n3's stale rail comments in `PopOutChrome`, which the m2 edit
+rewrote.
+
+| Gate | Result |
+|---|---|
+| `dart analyze --fatal-infos lib test` — both apps | clean (`zip_core` unchanged) |
+| `flutter test` — `zip_broadcast` | 195 passed |
+| `flutter test` — `zip_captions` | 195 passed |
 | `flutter build macos --debug` — both apps | built |

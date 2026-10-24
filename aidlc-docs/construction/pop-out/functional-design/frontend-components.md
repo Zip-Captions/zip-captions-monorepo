@@ -190,6 +190,28 @@ toggle. Both apps.
 4. **§5 R-M8**: `popOutOpenFailed` renders beneath the **in-surface toggle**, in every layout, not
    next to the chrome toggle. Clearing is unchanged (when the status leaves `Failed`).
 
+**Amendment — review round 7 (2026-10-24), owner direction (James Petersen).** "fix the m1, m2, m3,
+and m4 findings". Review round 7 found two gaps in the second amendment. First, the narrow `AppBar`
+control also starts an open from screens with no caption surface, where item 4's line is never on
+screen, so the failure was silent there (m2). Second, the return panel could clip in a short caption
+area at large text sizes, which this section's styling rule forbids (m4). Both apps. What changes:
+
+1. **§5 R-M8, item 4 widened**: the in-surface toggle keeps its `popOutOpenFailed` line, and the
+   narrow `AppBar` control (`PopOutChrome`) **also** renders `popOutOpenFailed` beneath itself
+   (`Key('popOutToggleOpenFailed')`) while the controller reports `Failed`. The rationale is item 3's
+   own: the chrome appears on screens with no caption surface. Clearing is unchanged.
+2. **One chrome status line at most**: the toolbar's height is fixed, so `PopOutChrome` shows either
+   the reason or the failure line. A disabled control's reason outranks a failure from an earlier
+   attempt, because the reason is what the user can act on now (BR-PIP-13).
+3. **Chrome width bound**: `PopOutChrome` is at most 220 logical pixels wide. Inside that bound the
+   status line wraps to two lines and ellipsizes, and the button label ellipsizes; the semantics
+   label still carries the full text. With the shipped English copy, an unbounded reason line pushed
+   the 375 px `AppBar`'s actions 319 px past its edge. That is a defect in the round-1 amendment's
+   `Flexible` line, which bounded only the height.
+4. **§5 Styling, the return panel**: the panel's contents scroll inside the panel when the caption
+   area is shorter than they are, instead of clipping. The centred layout, colours, copy and keys are
+   unchanged.
+
 ## 6. Availability matrix rendering (UX-PIP-03/04, BR-PIP-12/13)
 
 Rendered once, in `PopOutControls`; `PopOutInSurfaceToggle` in the main window reuses the same

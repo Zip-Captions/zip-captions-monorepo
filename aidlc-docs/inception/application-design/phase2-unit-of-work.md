@@ -260,6 +260,15 @@ Functional Design fixes the real channel/topic shape.
 
 **Dependencies**: Units 1-8.1 and all spikes.
 
+**Exit criteria carried in from Unit 8.1 (deferred 2026-10-23 by James Petersen, so PR #41 could be approved)**: Unit 8.1's two OS-close runtime checks could not be run during its review rounds, because both need synthetic input through System Events and Accessibility was never granted to the verifying host. They move here as Unit 9 exit criteria. Unit 9 does not close until both pass on macOS in a debug build, with Accessibility granted to the host that drives them, and are recorded with evidence. If a check is run on Windows or Linux too, record that platform; if not, say so.
+
+| Id | App | Check | Passes when |
+|---|---|---|---|
+| A7 | Zip Captions (repeat in Zip Broadcast, per Unit 8.1's B1) | Pop the captions out, then close the pop-out window from the OS (title-bar close button, or Cmd-W with the pop-out focused) | The main window's return panel goes away and the captions come back in the same frame; the chrome and in-surface controls read "Picture in Picture" again; the controller is `Off`; no window is left behind in `CGWindowListCopyWindowInfo` |
+| B4 | Zip Broadcast | Turn the external display on, then close its window from the OS | The output switches off at once through `subWindowClosed`, not at the next failed window call (the `'-1'` fallback); the output setting and status pill read off; no window is left behind |
+
+The evidence trail is the PR #41 thread (runtime comments of 2026-10-23 and 2026-10-24) and `aidlc-docs/construction/pop-out/code/summary.md`, section "Review round 7 fixes".
+
 ---
 
 ## Construction Stage Summary
