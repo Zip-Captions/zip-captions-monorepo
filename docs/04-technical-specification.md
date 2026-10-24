@@ -265,20 +265,18 @@ These are pre-approved and do not need per-use justification:
 | `very_good_analysis` | Linting |
 | `build_runner` | Code generation |
 | `melos` | Monorepo management |
-| `window_manager` | Always-on-top desktop window control for the pop-out (S-21) |
 | `screen_retriever` | Display enumeration for external display output (S-20) |
 
-**`window_manager`** (approved 2026-10-20, Unit 8.1 / S-21, used by **both** apps). Required
-because `desktop_multi_window` 0.2.1 exposes no always-on-top, window-level or topmost API
-on any of its three backends, and S-21's core acceptance criterion is that the pop-out
-window stays above every other application's window. `window_manager` provides
-`setAlwaysOnTop` and `WindowOptions.alwaysOnTop` backed by the platform's own
-above-normal-window primitive (`NSWindow.level` on macOS, `HWND_TOPMOST` on Windows,
-`gtk_window_set_keep_above` on Linux). The call must run inside the sub-engine that owns
-the pop-out window, because `windowManager` is a per-process global bound to its own main
-window. MIT licensed, no data egress, cannot observe transcript content. Known limitation:
-on macOS it does not float above another application's full-screen window. Full record:
-`aidlc-docs/construction/pop-out/functional-design/window-manager-security-10.md`.
+**No `window_manager` dependency** (withdrawn 2026-10-21, Unit 8.1 / S-21). It was approved
+2026-10-20 for always-on-top and then removed at the pre-build review: its macOS
+`ensureInitialized` assigns `windowManager.mainWindow`, whose setter does
+`_mainWindow?.delegate = self`, replacing `desktop_multi_window`'s window delegate — the only path
+by which an OS close removes the window and shuts the sub-engine down. The pop-out's window
+properties (floating, decoration, minimum size) are applied instead by a small per-runner method
+channel that the existing `desktop_multi_window` window-created callback registers on the new
+sub-engine, so no delegate is replaced and no dependency is added. The closed 2026-10-20 record is
+retained at `aidlc-docs/construction/pop-out/functional-design/window-manager-security-10.md` for
+the audit trail only.
 
 **`desktop_multi_window`** (Phase 1 in `zip_broadcast`; `zip_captions` gains it in Unit 8.1).
 Creates the secondary windows the caption overlay and the pop-out render into. Unit 8.1

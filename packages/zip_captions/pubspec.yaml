@@ -10,6 +10,13 @@ environment:
   flutter: '>=3.38.0'
 
 dependencies:
+  # desktop_multi_window: the pop-out window (Unit 8.1, S-21) is created by the
+  # promoted machinery in zip_core, but this app's runners include the plugin's
+  # headers directly, so the declaration documents that coupling and keeps the
+  # native plugin in this app's registrant (Infrastructure Design §7).
+  # SECURITY-10: already an approved, shipped dependency of zip_broadcast;
+  # 0.2.1 is the floor the runner callbacks are written against.
+  desktop_multi_window: ^0.2.1
   file_selector: ^1.0.0
   flutter:
     sdk: flutter

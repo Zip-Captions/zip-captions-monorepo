@@ -30,7 +30,7 @@ final obsSettingsNotifierProvider =
 
 typedef _$ObsSettingsNotifier = Notifier<ObsSettings>;
 String _$outputTargetSettingsNotifierHash() =>
-    r'96bdcfff21780499113e202372b1afcf17946c6e';
+    r'c60213711023fe8188da4dcebb591753be6634df';
 
 /// Manages [OutputTargetSettings] persistence via `SharedPreferences`.
 ///

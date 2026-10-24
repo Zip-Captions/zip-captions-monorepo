@@ -38,16 +38,6 @@ dependencies:
   logging: ^1.3.0
   obs_websocket: ^5.0.0
   riverpod_annotation: ^2.6.1
-  # screen_retriever: display enumeration and connect/disconnect events for the
-  # external display target (Unit 8, S-20). Its supply-chain justification is
-  # the SECURITY-10 record at
-  # aidlc-docs/construction/external-display/functional-design/
-  # screen-retriever-security-10.md: 16 releases, MIT, federated by leanflutter,
-  # read-only display metadata (no network, no telemetry, no permissions), and
-  # imported in exactly one file (screen_retriever_display_enumerator_io.dart).
-  # Pinned ^0.2.2 because 0.3.0 requires Dart ^3.13.0 / Flutter >=3.47.0
-  # (monorepo floor: >=3.10.0 / >=3.38.0).
-  screen_retriever: ^0.2.2
   shared_preferences: ^2.5.0
   shelf: ^1.4.2
   shelf_router: ^1.1.4

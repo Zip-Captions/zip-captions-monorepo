@@ -960,6 +960,48 @@ abstract class ZipBroadcastLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get cancel;
+
+  /// Chrome toggle label while the pop-out is closed (UX-PIP-01, V1 LABELS.documentPip)
+  ///
+  /// In en, this message translates to:
+  /// **'Picture in Picture'**
+  String get popOutEnter;
+
+  /// Chrome toggle label while the pop-out is open (UX-PIP-01)
+  ///
+  /// In en, this message translates to:
+  /// **'Exit Picture in Picture'**
+  String get popOutExit;
+
+  /// Banner shown in the main window while popped out (UX-PIP-05)
+  ///
+  /// In en, this message translates to:
+  /// **'Captions are displaying in Picture-in-Picture'**
+  String get popOutHint;
+
+  /// Banner action that closes the pop-out (UX-PIP-05)
+  ///
+  /// In en, this message translates to:
+  /// **'Return to Window'**
+  String get popOutReturn;
+
+  /// Visible reason under the disabled toggle when no session is active (BR-PIP-12)
+  ///
+  /// In en, this message translates to:
+  /// **'Start captioning to pop captions out'**
+  String get popOutUnavailableNoSession;
+
+  /// Visible reason under the disabled toggle when no engine is available (BR-PIP-13)
+  ///
+  /// In en, this message translates to:
+  /// **'No speech recognition engine is available on this device'**
+  String get popOutUnavailableNoEngine;
+
+  /// Failure line next to the toggle while the controller reports Failed
+  ///
+  /// In en, this message translates to:
+  /// **'The pop-out window could not be opened'**
+  String get popOutOpenFailed;
 }
 
 class _ZipBroadcastLocalizationsDelegate

@@ -9,8 +9,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zip_captions/src/l10n/zc_strings.dart';
+import 'package:zip_captions/src/providers/pop_out_providers.dart';
 import 'package:zip_captions/src/shell/zc_app_shell.dart';
+import 'package:zip_core/overlay.dart';
 import 'package:zip_core/zip_core.dart';
+
+import 'helpers/fake_pop_out_controller.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -60,6 +65,20 @@ Future<void> _pump(WidgetTester tester, GoRouter router) async {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         transcriptWriterTargetProvider.overrideWith((_) {}),
+        // The shell builds its chrome only once the copy has loaded, so the
+        // BackButtonListener branch (the one under test) is only reachable
+        // with the ARB values supplied.
+        zcStringsProvider.overrideWith(
+          (ref) async => const ZcStrings.fromMap({}),
+        ),
+        // The shell owns a pop-out target; fakes keep the test off any
+        // platform channel.
+        popOutWindowControllerProvider.overrideWithValue(
+          fakePopOutController(),
+        ),
+        displayListProvider.overrideWith(
+          (ref) => Stream<List<DisplayInfo>>.value(const <DisplayInfo>[]),
+        ),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),

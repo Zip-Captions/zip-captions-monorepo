@@ -641,5 +641,33 @@
   "cancel": "Cancel",
   "@cancel": {
     "description": "Dismisses the waiting-for-display state without forgetting the chosen display"
+  },
+  "popOutEnter": "Picture in Picture",
+  "@popOutEnter": {
+    "description": "Chrome toggle label while the pop-out is closed (UX-PIP-01, V1 LABELS.documentPip)"
+  },
+  "popOutExit": "Exit Picture in Picture",
+  "@popOutExit": {
+    "description": "Chrome toggle label while the pop-out is open (UX-PIP-01)"
+  },
+  "popOutHint": "Captions are displaying in Picture-in-Picture",
+  "@popOutHint": {
+    "description": "Banner shown in the main window while popped out (UX-PIP-05)"
+  },
+  "popOutReturn": "Return to Window",
+  "@popOutReturn": {
+    "description": "Banner action that closes the pop-out (UX-PIP-05)"
+  },
+  "popOutUnavailableNoSession": "Start captioning to pop captions out",
+  "@popOutUnavailableNoSession": {
+    "description": "Visible reason under the disabled toggle when no session is active (BR-PIP-12)"
+  },
+  "popOutUnavailableNoEngine": "No speech recognition engine is available on this device",
+  "@popOutUnavailableNoEngine": {
+    "description": "Visible reason under the disabled toggle when no engine is available (BR-PIP-13)"
+  },
+  "popOutOpenFailed": "The pop-out window could not be opened",
+  "@popOutOpenFailed": {
+    "description": "Failure line next to the toggle while the controller reports Failed"
   }
 }

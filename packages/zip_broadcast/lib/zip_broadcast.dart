@@ -11,6 +11,4 @@ export 'src/output/browser_source/browser_source_server.dart';
 export 'src/output/browser_source/browser_source_target.dart';
 export 'src/output/obs/obs_websocket_target.dart';
 export 'src/output/overlay/caption_overlay_target.dart';
-export 'src/output/overlay/desktop_multi_window_service.dart';
-export 'src/output/overlay/desktop_window_service.dart';
 export 'src/providers/broadcast_providers.dart';

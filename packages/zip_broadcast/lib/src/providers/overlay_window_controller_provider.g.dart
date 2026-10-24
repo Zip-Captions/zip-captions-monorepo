@@ -7,12 +7,17 @@ part of 'overlay_window_controller_provider.dart';
 // **************************************************************************
 
 String _$overlayWindowControllerHash() =>
-    r'8fcd0cfe2774c01f96172008f4b6294c87d619a1';
+    r'47b6af6efa155fe8987790e9f7e82702d6520e08';
 
 /// The one external display window controller, alive for the app container.
 ///
-/// Kept alive: the controller owns a window, a timer and a platform display
-/// observer, so it is a long-lived resource rather than a per-watch value.
+/// Built from the engine's one host (NFR Design §2), exactly like the pop-out,
+/// so the router is the only writer of `desktop_multi_window`'s single
+/// method-handler slot and both controllers share one display observer and one
+/// close channel (review round 5, finding 1).
+///
+/// Keeping the controller alive is what keeps its window, timer and display
+/// observer alive: it is a resource, not a per-watch value.
 ///
 /// Copied from [overlayWindowController].
 @ProviderFor(overlayWindowController)
@@ -57,9 +62,12 @@ final externalDisplayStatusProvider =
 // ignore: unused_element
 typedef ExternalDisplayStatusRef =
     AutoDisposeStreamProviderRef<ExternalDisplayStatus>;
-String _$displayListHash() => r'dbc98a7ea53cf517cde4f82c4724c56b495705d4';
+String _$displayListHash() => r'0c10ad315c3322914ddd0b3b32411d5424c31813';
 
 /// The connected displays, per the enumerator's event contract.
+///
+/// Reads the host's shared list rather than the controller's lease: the host
+/// owns the one observer now, and the controls want the engine's list.
 ///
 /// Copied from [displayList].
 @ProviderFor(displayList)

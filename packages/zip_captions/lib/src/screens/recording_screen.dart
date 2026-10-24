@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zip_captions/src/providers/settings_notifier.dart';
 import 'package:zip_captions/src/widgets/appearance_panel.dart';
+import 'package:zip_captions/src/widgets/pop_out_controls.dart';
+import 'package:zip_captions/src/widgets/pop_out_scope.dart';
 import 'package:zip_captions/src/widgets/recording_controls_bar.dart';
 import 'package:zip_core/zip_core.dart';
 
@@ -47,8 +49,7 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
     final entriesAsync = ref.watch(onScreenCaptionTargetProvider);
     final settings = ref.watch(displaySettingsProvider);
     final notifier = ref.read(displaySettingsProvider.notifier);
-    final recordingNotifier =
-        ref.read(recordingStateNotifierProvider.notifier);
+    final recordingNotifier = ref.read(recordingStateNotifierProvider.notifier);
 
     ref.listen<RecordingState>(recordingStateNotifierProvider, (prev, next) {
       if (next is StoppedState && context.mounted) {
@@ -58,6 +59,7 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
     });
 
     final entries = entriesAsync.valueOrNull ?? const [];
+    final popOut = PopOutScope.of(context);
 
     return Scaffold(
       body: Stack(
@@ -66,12 +68,32 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
             onTap: () => setState(() => _showAppearancePanel = false),
             child: Column(
               children: [
-                Expanded(
-                  child: CaptionDisplayWidget(
-                    entries: entries,
-                    settings: settings,
+                // UX-PIP-05 as v1 ships it: while popped out the captions are
+                // in the pop-out, so the hint and the return action take the
+                // caption surface's place in the main window. They go with
+                // the flag (R-M6: every close path except the lazy `'-1'`
+                // fallback). The caption target stays watched above, so the
+                // pop-out keeps its source.
+                if (popOut?.enabled ?? false)
+                  Expanded(child: PopOutBanner(onReturn: popOut!.onToggle))
+                else
+                  Expanded(
+                    child: CaptionDisplayWidget(
+                      entries: entries,
+                      settings: settings,
+                      // UX-PIP-04 / BR-U8.1-11: on a platform that cannot host
+                      // a sub-window nothing renders, not even a disabled pill.
+                      controls: popOut == null || !popOut.visible
+                          ? null
+                          : PopOutInSurfaceToggle(
+                              isPoppedOut: popOut.enabled,
+                              enabled: popOut.available,
+                              onToggle: popOut.onToggle,
+                              reason: popOut.reason,
+                              openFailed: popOut.openFailed,
+                            ),
+                    ),
                   ),
-                ),
                 RecordingControlsBar(
                   state: state,
                   onPause: recordingNotifier.pause,

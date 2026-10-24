@@ -174,6 +174,32 @@ class ZcStrings {
 
   /// The ended copy when the name is unknown.
   String get endedBodyNameless => _value('viewerEndedBodyNameless');
+
+  /// The pop-out's enter label (UX-PIP-01).
+  String get popOutEnter => _value('popOutEnter');
+
+  /// The pop-out's exit label (UX-PIP-01).
+  String get popOutExit => _value('popOutExit');
+
+  /// The hint above the caption surface while popped out (UX-PIP-05).
+  String get popOutHint => _value('popOutHint');
+
+  /// The banner's return action (UX-PIP-05).
+  String get popOutReturn => _value('popOutReturn');
+
+  /// The disabled reason when no session is running (BR-PIP-12/13).
+  String get popOutUnavailableNoSession =>
+      _value('popOutUnavailableNoSession');
+
+  /// The disabled reason when the device has no recognition engine.
+  String get popOutUnavailableNoEngine => _value('popOutUnavailableNoEngine');
+
+  /// Shown next to the toggle while the controller reports a failure.
+  String get popOutOpenFailed => _value('popOutOpenFailed');
+
+  /// The sub-window's fallback frame when its payload does not decode.
+  String get overlayWindowUnavailable => _value('overlayWindowUnavailable');
+
 }
 
 /// Provides the loaded [ZcStrings] for the app lifetime.

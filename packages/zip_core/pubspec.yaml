@@ -19,6 +19,14 @@ dependencies:
   app_links: ^7.0.0
   archive: ^3.6.1
   crypto: ^3.0.6
+  # desktop_multi_window: the promoted window machinery (Unit 8.1) needs it
+  # behind the _io fence. SECURITY-10: already an approved, shipped dependency
+  # of zip_broadcast (Phase 1) with the runner callbacks written against
+  # 0.2.1's one-argument WindowCreatedCallback typedefs, so 0.2.1 is the floor.
+  # zip_captions re-declares it because its runners include the plugin headers
+  # directly (Infrastructure Design §7). Read-only window creation over a
+  # first-party platform channel: no network, no telemetry, no permissions.
+  desktop_multi_window: ^0.2.1
   dio: ^5.7.0
   drift: ^2.20.0
   drift_flutter: ^0.2.3
@@ -48,6 +56,16 @@ dependencies:
   permission_handler: ^11.3.1
   record: ^5.1.2
   riverpod_annotation: ^2.6.1
+  # screen_retriever: display enumeration and connect/disconnect events for the
+  # promoted external display enumerator (Unit 8.1). Its supply-chain
+  # justification is the SECURITY-10 record at
+  # aidlc-docs/construction/external-display/functional-design/
+  # screen-retriever-security-10.md: 16 releases, MIT, federated by leanflutter,
+  # read-only display metadata (no network, no telemetry, no permissions), and
+  # imported in exactly one file (screen_retriever_display_enumerator_io.dart).
+  # Pinned ^0.2.2 because 0.3.0 requires Dart ^3.13.0 / Flutter >=3.47.0
+  # (monorepo floor: >=3.10.0 / >=3.38.0).
+  screen_retriever: ^0.2.2
   shared_preferences: ^2.5.0
   sherpa_onnx: ^1.10.31
   speech_to_text: ^7.0.0
