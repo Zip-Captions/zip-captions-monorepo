@@ -1,30 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:logging/logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:zip_broadcast/src/output/overlay/desktop_multi_window_service.dart';
-import 'package:zip_broadcast/src/output/overlay/display_enumerator.dart';
-import 'package:zip_broadcast/src/output/overlay/external_display_status.dart';
-import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart';
-import 'package:zip_broadcast/src/output/overlay/screen_retriever_display_enumerator.dart';
+import 'package:zip_core/overlay.dart';
+import 'package:zip_core/zip_core.dart' show overlayWindowHostProvider;
 
 part 'overlay_window_controller_provider.g.dart';
 
 /// The one external display window controller, alive for the app container.
 ///
-/// Kept alive: the controller owns a window, a timer and a platform display
-/// observer, so it is a long-lived resource rather than a per-watch value.
+/// Built from the engine's one host (NFR Design §2), exactly like the pop-out,
+/// so the router is the only writer of `desktop_multi_window`'s single
+/// method-handler slot and both controllers share one display observer and one
+/// close channel (review round 5, finding 1).
+///
+/// Keeping the controller alive is what keeps its window, timer and display
+/// observer alive: it is a resource, not a per-watch value.
 @Riverpod(keepAlive: true)
 OverlayWindowController overlayWindowController(Ref ref) {
-  // One enumerator, shared by the window service (which needs the primary's
-  // height and the target display's scale to convert frames) and the
-  // controller (which watches the same list). A second instance would open a
-  // second platform observer that nothing disposes.
-  final enumerator = ScreenRetrieverDisplayEnumerator();
-  final controller = OverlayWindowController(
-    windowService: DesktopMultiWindowService.withEnumerator(enumerator),
-    enumerator: enumerator,
-    handlerInstaller: overlayMethodHandlerInstaller,
-    log: Logger('zip_broadcast.OverlayWindowController'),
+  final host = ref.watch(overlayWindowHostProvider);
+  final controller = host.createController(
+    mode: const ExternalDisplayMode(),
+    prefix: 'zip_broadcast.OverlayWindowController',
   );
   ref.onDispose(controller.dispose);
   return controller;
@@ -44,6 +39,9 @@ Stream<ExternalDisplayStatus> externalDisplayStatus(Ref ref) async* {
 }
 
 /// The connected displays, per the enumerator's event contract.
+///
+/// Reads the host's shared list rather than the controller's lease: the host
+/// owns the one observer now, and the controls want the engine's list.
 @riverpod
 Stream<List<DisplayInfo>> displayList(Ref ref) =>
-    ref.watch(overlayWindowControllerProvider).enumerator.changes;
+    ref.watch(overlayWindowHostProvider).displays;

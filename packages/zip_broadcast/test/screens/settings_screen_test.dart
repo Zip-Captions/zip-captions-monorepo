@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:zip_broadcast/src/output/overlay/display_info.dart';
-import 'package:zip_broadcast/src/output/overlay/external_display_status.dart'
-    hide Failed;
 import 'package:zip_broadcast/src/providers/obs_connection_notifier.dart';
 import 'package:zip_broadcast/src/providers/overlay_window_controller_provider.dart';
 import 'package:zip_broadcast/src/widgets/external_display_controls.dart';
+import 'package:zip_core/overlay.dart';
 import 'package:zip_core/zip_core.dart' hide Failed;
 
 import '../helpers/fake_notifiers.dart';

@@ -20,6 +20,7 @@ class CaptionDisplayWidget extends ConsumerStatefulWidget {
   const CaptionDisplayWidget({
     required this.entries,
     required this.settings,
+    this.controls,
     super.key,
   });
 
@@ -28,6 +29,12 @@ class CaptionDisplayWidget extends ConsumerStatefulWidget {
 
   /// Display settings controlling font, size, and scroll direction.
   final DisplaySettings settings;
+
+  /// A control row pinned above the list, outside the scrolling area (R-M4).
+  ///
+  /// The caption windows pass their in-surface toggle here; every other caller
+  /// leaves it null and keeps the list full-height.
+  final Widget? controls;
 
   @override
   ConsumerState<CaptionDisplayWidget> createState() =>
@@ -76,7 +83,7 @@ class _CaptionDisplayWidgetState extends ConsumerState<CaptionDisplayWidget> {
           )
         : null;
 
-    return ListView.builder(
+    final list = ListView.builder(
       controller: _scrollController,
       reverse: settings.scrollDirection == ScrollDirection.bottomToTop,
       itemCount: entries.length,
@@ -110,6 +117,13 @@ class _CaptionDisplayWidgetState extends ConsumerState<CaptionDisplayWidget> {
           ),
         );
       },
+    );
+
+    final controls = widget.controls;
+    if (controls == null) return list;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [controls, Expanded(child: list)],
     );
   }
 }

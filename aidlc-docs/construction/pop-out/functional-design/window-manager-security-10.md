@@ -1,4 +1,46 @@
-# Window Manager Dependency Record (SECURITY-10)
+# Window Manager Dependency Record (SECURITY-10) — RETIRED 2026-10-21
+
+> **STATUS: RETIRED. This dependency was withdrawn before any code was written.**
+>
+> **Decision**: on 2026-10-21 the project owner approved RQ-1 option A of the pre-build review
+> (`aidlc-docs/construction/plans/pop-out-pre-build-review.md`): `window_manager` is **not** a
+> dependency of any package. It is replaced by a per-runner native method channel registered on the
+> `desktop_multi_window` sub-engine.
+>
+> **Why the 2026-10-20 approval did not survive** (both verified in plugin source, see
+> `plugin-src/` in the review evidence):
+> 1. **R-B2 — delegate replacement.** macOS `ensureInitialized` sets
+>    `windowManager.mainWindow = registrar.view.window`, and that property's setter does
+>    `_mainWindow?.delegate = self` (`window_manager-0.5.1/macos/.../WindowManager.swift:54-63`).
+>    That replaces `desktop_multi_window`'s `FlutterWindow` delegate
+>    (`desktop_multi_window-0.2.1/macos/Classes/FlutterWindow.swift:85`), which is the **only** path
+>    from an OS close to `onClose` (`:102-110`) → `windows.removeValue`
+>    (`MultiWindowManager.swift:123-125`) → `deinit` → `shutDownEngine()` (`FlutterWindow.swift:91-99`).
+>    Consequence: no `'-1'` to the main engine (the shell stays "popped out" forever) and one leaked
+>    Flutter engine per open/close cycle.
+> 2. **It cannot restore the decoration.** The shipped runners strip the title bar from every
+>    sub-window, and `setTitleBarStyle` never re-inserts `.titled`
+>    (`window_manager-0.5.1/macos/.../WindowManager.swift:379-401`); on Windows it only stores a
+>    style string. So "decorated and resizable" (the owner's Q9 amendment) was unachievable.
+>
+> Also corrected: §2 of the original record claimed the plugin's own example registers the generated
+> plugin set in the callback. It does not — it registers one named plugin per callback on all three
+> platforms (`desktop_multi_window-0.2.1/example/...`). And registering the *generated* set would
+> have been worse, not fine: `FlutterMultiWindowPlugin.register(with:)` calls `attachMainWindow`,
+> which overwrites `windows[0]` with the sub-engine's channel
+> (`FlutterMultiWindowPlugin.swift:8-23`, `MultiWindowManager.swift:29-33`), routing every
+> `invokeMethod(0, …)` — `overlayReady` included — back into the sub-engine.
+>
+> **What is still true from this record**: `desktop_multi_window` 0.2.1 has no always-on-top,
+> window-level or topmost API on any backend (§1's core finding, re-verified). That is why a native
+> channel exists at all; it is simply ours rather than a third-party plugin's.
+>
+> **Acceptance criteria this record used to cover** now belong to `business-logic-model.md` §3.2 and
+> BR-U8.1-05. Nothing in the repository imports `window_manager`.
+>
+> **Original record follows unmodified.**
+
+---
 
 **Unit**: Unit 8.1 — Pop-out Live Captions (S-21)
 **Dependency**: `window_manager`

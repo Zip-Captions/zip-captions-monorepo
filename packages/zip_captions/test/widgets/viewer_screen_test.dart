@@ -110,6 +110,19 @@ CaptionWireMessage _caption(String text) => Caption(
 
 void main() {
   group('ViewerScreen', () {
+    testWidgets('its caption surface has no pop-out control (Z26)', (
+      tester,
+    ) async {
+      // FD frontend-components §7: the viewer is out of the pop-out's scope,
+      // so `CaptionDisplayWidget` there keeps its null `controls` default.
+      await _pumpViewer(tester);
+
+      final surface = tester.widget<CaptionDisplayWidget>(
+        find.byType(CaptionDisplayWidget),
+      );
+      expect(surface.controls, isNull);
+    });
+
     testWidgets('joins the route broadcast on entry', (tester) async {
       final harness = await _pumpViewer(tester);
 

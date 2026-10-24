@@ -210,6 +210,11 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                   ),
                 const Divider(height: 1),
                 Expanded(
+                  // FD frontend-components §7: the viewer has no pop-out
+                  // control, so `controls` keeps its null default here. The
+                  // omission is the scope decision, recorded by
+                  // `viewer_screen_test.dart`'s assertion rather than by an
+                  // explicit `null`.
                   child: CaptionDisplayWidget(
                     entries: captions,
                     settings: ref.watch(displaySettingsProvider),

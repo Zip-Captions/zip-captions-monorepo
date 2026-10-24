@@ -15,19 +15,14 @@ import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zip_broadcast/src/l10n/zip_broadcast_localizations.dart';
 import 'package:zip_broadcast/src/models/output_target_settings.dart';
-import 'package:zip_broadcast/src/models/overlay_position.dart';
-import 'package:zip_broadcast/src/output/overlay/caption_overlay_codec.dart';
-import 'package:zip_broadcast/src/output/overlay/caption_position.dart';
-import 'package:zip_broadcast/src/output/overlay/desktop_window_service.dart';
-import 'package:zip_broadcast/src/output/overlay/display_enumerator.dart';
-import 'package:zip_broadcast/src/output/overlay/external_display_status.dart';
-import 'package:zip_broadcast/src/output/overlay/overlay_window_controller.dart';
 import 'package:zip_broadcast/src/providers/broadcast_providers.dart';
 import 'package:zip_broadcast/src/providers/overlay_window_controller_provider.dart';
 import 'package:zip_broadcast/src/shell/zb_app_shell.dart';
+import 'package:zip_core/overlay.dart';
 import 'package:zip_core/zip_core.dart' hide Failed;
 
 import '../helpers/fake_display_enumerator.dart';
+
 
 class _FakeAuthNotifier extends AuthNotifier {
   _FakeAuthNotifier(this._initial);
