@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zip_broadcast/src/models/broadcast_session_state.dart';
 import 'package:zip_broadcast/src/providers/audio_input_config_notifier.dart';
 import 'package:zip_broadcast/src/providers/broadcast_recording_notifier.dart';
 import 'package:zip_broadcast/src/providers/obs_connection_notifier.dart';
@@ -30,9 +31,16 @@ class _Window implements DesktopWindowService {
   /// Completes the ready handshake for the id about to be returned.
   void Function(int windowId)? onCreated;
 
+  /// When true, the next `createWindow` throws (and the flag resets).
+  bool failNextCreate = false;
+
   @override
   Future<int> createWindow(String arguments) async {
     calls.add('createWindow');
+    if (failNextCreate) {
+      failNextCreate = false;
+      throw StateError('no window');
+    }
     final id = _next++;
     onCreated?.call(id);
     return id;
@@ -125,10 +133,20 @@ class _Graph {
   void windowGone() => controller.onNativeWindowClosed(controller.windowId!);
 }
 
+/// An active session whose `stop` publishes the stopped state, as the real
+/// notifier does once the engines have stopped.
+class _StoppableRecordingNotifier extends FakeActiveBroadcastRecordingNotifier {
+  @override
+  Future<void> stop() async {
+    state = const BroadcastStoppedState(sessionId: 'test-session');
+  }
+}
+
 Future<_Graph> _pumpRecording(
   WidgetTester tester, {
   bool display = true,
   bool engine = true,
+  BroadcastRecordingNotifier? notifier,
 }) async {
   final graph = _Graph(display: display);
   final prefs = await SharedPreferences.getInstance();
@@ -145,7 +163,9 @@ Future<_Graph> _pumpRecording(
           (ref) => Stream<List<DisplayInfo>>.value(graph.displayList),
         ),
         broadcastRecordingNotifierProvider.overrideWith(
-          FakeActiveBroadcastRecordingNotifier.new,
+          notifier == null
+              ? FakeActiveBroadcastRecordingNotifier.new
+              : () => notifier,
         ),
         obsConnectionNotifierProvider
             .overrideWith(FakeDisconnectedObsConnectionNotifier.new),
@@ -275,8 +295,9 @@ void main() {
       await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
       await tester.pump();
       // The in-surface toggle left with the captions (UX-PIP-05 as v1 ships
-      // it); the chrome toggle is the second activation the window offers.
-      await tester.tap(find.byKey(const Key('popOutToggle')));
+      // it), and the wide layout has no chrome control (fix round 6), so the
+      // return action is the second activation the window offers.
+      await tester.tap(find.byKey(const Key('popOutReturn')));
       await tester.pumpAndSettle();
 
       expect(graph.window.calls.where((c) => c == 'createWindow'), hasLength(1));
@@ -333,21 +354,66 @@ void main() {
       expect(find.byKey(const Key('popOutBanner')), findsNothing);
     });
 
-    testWidgets('no engine disables the chrome toggle with its reason',
+    // Fix round 6 (owner direction): the wide layout has no chrome control, so
+    // the in-surface toggle carries the disabled reason as visible text.
+    testWidgets('no engine disables the in-surface toggle with its reason',
         (tester) async {
       await _pumpRecording(tester, engine: false);
 
-      final toggle = tester.widget<TextButton>(
-        find.byKey(const Key('popOutToggle')),
-      );
-      expect(toggle.onPressed, isNull);
-      expect(find.byKey(const Key('popOutToggleReason')), findsOneWidget);
-      // FD frontend-components §4: the in-surface toggle obeys the same rule
-      // as the chrome toggle in the main window, so no engine disables both.
       final surface = tester.widget<PopOutInSurfaceToggle>(
         find.byType(PopOutInSurfaceToggle),
       );
       expect(surface.enabled, isFalse);
+      expect(find.byKey(const Key('popOutInSurfaceReason')), findsOneWidget);
+    });
+
+    // Fix round 6 (owner direction): the pop-out control is not in the left
+    // sidebar at all.
+    testWidgets('the desktop rail carries no pop-out control', (tester) async {
+      await _pumpRecording(tester);
+
+      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.byType(PopOutChrome), findsNothing);
+      expect(find.byKey(const Key('popOutToggle')), findsNothing);
+    });
+
+    // Fix round 6 (owner direction): a session that stops closes the pop-out
+    // and resets the control, as a stop does when nothing is popped out.
+    testWidgets('stopping the session closes the pop-out and resets it',
+        (tester) async {
+      final notifier = _StoppableRecordingNotifier();
+      final graph = await _pumpRecording(tester, notifier: notifier);
+
+      await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
+      await tester.pumpAndSettle();
+      expect(graph.controller.status, isA<Open>());
+
+      await notifier.stop();
+      await tester.pumpAndSettle();
+
+      expect(graph.window.calls, contains('closeWindow'));
+      expect(graph.controller.status, isA<Off>());
+      final scope = tester.widget<PopOutScope>(find.byType(PopOutScope));
+      expect(scope.enabled, isFalse);
+    });
+
+    // R6-3 moved: the open-failure line sits under the in-surface toggle.
+    testWidgets('a failed open shows the reason under the in-surface toggle',
+        (tester) async {
+      final graph = await _pumpRecording(tester);
+      graph.window.failNextCreate = true;
+
+      await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
+      await tester.pumpAndSettle();
+
+      expect(graph.controller.status, isA<Failed>());
+      expect(
+        find.descendant(
+          of: find.byType(PopOutInSurfaceToggle),
+          matching: find.byKey(const Key('popOutOpenFailed')),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('the in-surface toggle is enabled while a session runs',
@@ -419,6 +485,11 @@ void main() {
     // fall back to the controller's synchronous status instead.
     testWidgets('the chrome does not flash on the first frame',
         (tester) async {
+      // Narrow: the `AppBar` is the one layout that carries a chrome control
+      // (the rail has none since fix round 6).
+      tester.view.physicalSize = const Size(375, 812);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
       await _pumpFirstFrameUnsupported(tester);
 
       final chrome = tester.widget<PopOutChrome>(find.byType(PopOutChrome));

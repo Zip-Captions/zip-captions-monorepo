@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zip_captions/src/l10n/zc_strings.dart';
+import 'package:zip_core/overlay.dart' show PopOutUnavailableReason;
 
 /// What [PopOutScope] hands its descendants: whether the pop-out is on, and
 /// the one toggle action.
@@ -16,6 +17,8 @@ class PopOutState {
     required this.onToggle,
     required this.available,
     required this.visible,
+    this.reason,
+    this.openFailed = false,
   });
 
   /// Whether the pop-out window is on.
@@ -36,6 +39,16 @@ class PopOutState {
   /// it to render no control rather than a permanently disabled one (review
   /// round 5, finding 3).
   final bool visible;
+
+  /// Why the toggle is disabled, or null when it is enabled or hidden.
+  ///
+  /// The wide layout has no chrome control (fix round 6), so the in-surface
+  /// toggle renders this as visible text (BR-PIP-13).
+  final PopOutUnavailableReason? reason;
+
+  /// Whether the last open failed and the controller still reports it (FD
+  /// frontend-components §5, R-M8), rendered under the in-surface toggle.
+  final bool openFailed;
 }
 
 /// Exposes the shell's pop-out state to the screens (UX-PIP-05, UX-PIP-02),
@@ -50,6 +63,8 @@ class PopOutScope extends InheritedWidget {
     required this.visible,
     required this.strings,
     required super.child,
+    this.reason,
+    this.openFailed = false,
     super.key,
   });
 
@@ -68,6 +83,12 @@ class PopOutScope extends InheritedWidget {
   /// Whether any pop-out control renders at all (UX-PIP-04, BR-U8.1-11).
   final bool visible;
 
+  /// Why the toggle is disabled, or null when it is enabled or hidden.
+  final PopOutUnavailableReason? reason;
+
+  /// Whether the last open failed and the controller still reports it.
+  final bool openFailed;
+
   /// The loaded copy. The shell only builds its chrome once the ARB has
   /// loaded, so a screen can read it non-nullably.
   final ZcStrings strings;
@@ -81,6 +102,8 @@ class PopOutScope extends InheritedWidget {
       onToggle: scope.onToggle,
       available: scope.available,
       visible: scope.visible,
+      reason: scope.reason,
+      openFailed: scope.openFailed,
     );
   }
 
@@ -90,6 +113,8 @@ class PopOutScope extends InheritedWidget {
       oldWidget.onToggle != onToggle ||
       oldWidget.available != available ||
       oldWidget.visible != visible ||
+      oldWidget.reason != reason ||
+      oldWidget.openFailed != openFailed ||
       oldWidget.strings != strings;
 }
 

@@ -10,7 +10,6 @@ class ZcNavRail extends StatelessWidget {
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.onSettingsTap,
-    this.headerAction,
     super.key,
   });
 
@@ -24,31 +23,12 @@ class ZcNavRail extends StatelessWidget {
   /// Called when the Settings icon is tapped.
   final VoidCallback onSettingsTap;
 
-  /// A control pinned above the destinations (the pop-out toggle, UX-PIP-01).
-  ///
-  /// Null renders nothing, which is what the web build and the widget tests
-  /// that predate the pop-out pass.
-  final Widget? headerAction;
-
-  /// The width the rail's `leading` slot needs for a labelled control.
-  ///
-  /// `NavigationRailLabelType.all` sizes the rail to its destination labels,
-  /// and the leading slot is unconstrained; without an explicit width a
-  /// labelled control's `Text` asks for the whole rail.
-  static const double _leadingWidth = 72;
-
   @override
   Widget build(BuildContext context) {
     return NavigationRail(
       selectedIndex: selectedIndex < 0 ? null : selectedIndex,
       onDestinationSelected: onDestinationSelected,
       labelType: NavigationRailLabelType.all,
-      leading: headerAction == null
-          ? null
-          : Padding(
-              padding: const EdgeInsets.only(top: 8, bottom: 16),
-              child: SizedBox(width: _leadingWidth, child: headerAction),
-            ),
       trailing: Expanded(
         child: Align(
           alignment: Alignment.bottomCenter,

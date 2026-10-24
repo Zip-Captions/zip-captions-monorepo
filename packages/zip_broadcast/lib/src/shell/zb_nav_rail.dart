@@ -14,7 +14,6 @@ class ZbNavRail extends StatelessWidget {
     required this.onDestinationSelected,
     required this.onSettingsTap,
     this.isBroadcastActive = false,
-    this.headerAction,
     super.key,
   });
 
@@ -31,19 +30,6 @@ class ZbNavRail extends StatelessWidget {
   /// When true, a live-broadcast indicator is shown on the Broadcast
   /// destination regardless of which screen is active.
   final bool isBroadcastActive;
-
-  /// A control pinned above the destinations (the pop-out toggle, UX-PIP-01).
-  ///
-  /// Null renders nothing, which is what the web build and the widget tests
-  /// that predate the pop-out pass.
-  final Widget? headerAction;
-
-  /// The width the rail's `leading` slot needs for a labelled control.
-  ///
-  /// `NavigationRailLabelType.all` sizes the rail to its destination labels,
-  /// and the leading slot is unconstrained; without an explicit width the
-  /// control's `Text` asks for the whole rail.
-  static const double _leadingWidth = 72;
 
   @override
   Widget build(BuildContext context) {
@@ -68,15 +54,6 @@ class ZbNavRail extends StatelessWidget {
       selectedIndex: selectedIndex < 0 ? null : selectedIndex,
       onDestinationSelected: onDestinationSelected,
       labelType: NavigationRailLabelType.all,
-      // The rail's own column is narrower than a labelled `TextButton.icon`
-      // and `NavigationRail` hands its `leading` a loose width, so the control
-      // is given the rail's width explicitly instead of sizing itself.
-      leading: headerAction == null
-          ? null
-          : Padding(
-              padding: const EdgeInsets.only(top: 8, bottom: 16),
-              child: SizedBox(width: _leadingWidth, child: headerAction),
-            ),
       trailing: Expanded(
         child: Align(
           alignment: Alignment.bottomCenter,

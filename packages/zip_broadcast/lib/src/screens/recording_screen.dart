@@ -151,6 +151,8 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                               isPoppedOut: popOut.enabled,
                               enabled: popOut.available,
                               onToggle: popOut.onToggle,
+                              reason: popOut.reason,
+                              openFailed: popOut.openFailed,
                             ),
                     ),
                   ),

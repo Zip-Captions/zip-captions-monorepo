@@ -12,7 +12,7 @@ import 'package:zip_captions/src/shell/zc_nav_rail.dart';
 import 'package:zip_captions/src/widgets/pop_out_controls.dart';
 import 'package:zip_captions/src/widgets/pop_out_scope.dart';
 import 'package:zip_core/overlay.dart';
-import 'package:zip_core/zip_core.dart';
+import 'package:zip_core/zip_core.dart' hide Failed;
 
 /// Platform-adaptive shell wrapping all routed screens with navigation chrome.
 ///
@@ -194,6 +194,12 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
     final width = MediaQuery.of(context).size.width;
     final strings = ref.watch(zcStringsProvider).valueOrNull;
     final recording = ref.watch(recordingStateNotifierProvider);
+    // Owner direction (fix round 6): a session that ends closes the pop-out
+    // and resets the control, exactly as a stop does when nothing is popped
+    // out, so the next session starts with the captions in the main window.
+    ref.listen<RecordingState>(recordingStateNotifierProvider, (_, next) {
+      if (_popOutEnabled && !popOutSessionActive(next)) _closePopOut();
+    });
     // Watched, not read: the controller's status changes after build (a
     // failed display probe leaves it `Unsupported`) and the chrome must
     // follow (review round 3, finding 3).
@@ -229,6 +235,8 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
       onToggle: () => _togglePopOut(context),
       available: availability.enabled,
       visible: availability.visible,
+      reason: availability.reason,
+      openFailed: popOutStatus is Failed,
       strings: strings,
       child: _buildScaffold(context, location, width, strings, chrome),
     );
@@ -243,13 +251,14 @@ class _ZcAppShellState extends ConsumerState<ZcAppShell> {
   ) {
     final child = widget.child;
     if (width > _desktopBreakpoint) {
+      // No pop-out control in the rail (owner direction, fix round 6): on the
+      // wide layout the in-surface toggle is the entry point.
       return Row(
         children: [
           ZcNavRail(
             selectedIndex: _railIndex(location),
             onDestinationSelected: (i) => context.go(_railDestination(i)),
             onSettingsTap: () => context.go('/settings'),
-            headerAction: chrome,
           ),
           const VerticalDivider(width: 1),
           Expanded(child: child),

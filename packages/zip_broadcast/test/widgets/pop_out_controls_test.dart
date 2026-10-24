@@ -170,9 +170,9 @@ void main() {
       expect(find.text(l10n.popOutUnavailableNoSession), findsNothing);
     });
 
-    testWidgets('shows the open-failure line when the window service failed', (
-      tester,
-    ) async {
+    // Fix round 6 (owner direction): the open-failure line moved to the
+    // in-surface toggle, which is the entry point in every layout.
+    testWidgets('carries no open-failure line', (tester) async {
       await _pump(
         tester,
         PopOutChrome(
@@ -189,48 +189,55 @@ void main() {
         ),
       );
 
-      expect(
-        find.text(_l10n(tester).popOutOpenFailed),
-        findsOneWidget,
+      expect(find.byKey(const Key('popOutOpenFailed')), findsNothing);
+    });
+  });
+
+  // Fix round 6 (owner direction): with no chrome control on the wide layout,
+  // the in-surface toggle carries the status lines FD §3 and §5 require.
+  group('PopOutInSurfaceToggle status lines', () {
+    testWidgets('shows the open-failure line while the open has failed', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        PopOutInSurfaceToggle(
+          isPoppedOut: false,
+          onToggle: () {},
+          openFailed: true,
+        ),
       );
+
+      expect(find.byKey(const Key('popOutOpenFailed')), findsOneWidget);
+      expect(find.text(_l10n(tester).popOutOpenFailed), findsOneWidget);
     });
 
-    testWidgets('clears the failure line when the status leaves Failed', (
-      tester,
-    ) async {
+    testWidgets('shows no failure line otherwise', (tester) async {
       await _pump(
         tester,
-        PopOutChrome(
-          status: const Failed(reason: 'create_failed'),
-          recording: const RecordingState.recording(sessionId: 's'),
-          engineAvailable: true,
-          isPoppedOut: false,
-          reason: popOutAvailability(
-            status: const Failed(reason: 'create_failed'),
-            recording: const RecordingState.recording(sessionId: 's'),
-            engineAvailable: true,
-          ).reason,
-          onToggle: () {},
-        ),
+        PopOutInSurfaceToggle(isPoppedOut: false, onToggle: () {}),
       );
-      expect(find.byKey(const Key('popOutOpenFailed')), findsOneWidget);
 
+      expect(find.byKey(const Key('popOutOpenFailed')), findsNothing);
+      expect(find.byKey(const Key('popOutInSurfaceReason')), findsNothing);
+    });
+
+    testWidgets('shows the disabled reason as visible text', (tester) async {
       await _pump(
         tester,
-        PopOutChrome(
-          status: const Off(),
-          recording: const RecordingState.recording(sessionId: 's'),
-          engineAvailable: true,
+        PopOutInSurfaceToggle(
           isPoppedOut: false,
-          reason: popOutAvailability(
-            status: const Off(),
-            recording: const RecordingState.recording(sessionId: 's'),
-            engineAvailable: true,
-          ).reason,
           onToggle: () {},
+          enabled: false,
+          reason: PopOutUnavailableReason.noEngine,
         ),
       );
-      expect(find.byKey(const Key('popOutOpenFailed')), findsNothing);
+
+      expect(find.byKey(const Key('popOutInSurfaceReason')), findsOneWidget);
+      expect(
+        find.text(_l10n(tester).popOutUnavailableNoEngine),
+        findsOneWidget,
+      );
     });
   });
 

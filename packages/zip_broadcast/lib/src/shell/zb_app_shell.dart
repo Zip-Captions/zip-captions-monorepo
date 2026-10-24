@@ -22,7 +22,7 @@ import 'package:zip_broadcast/src/shell/zb_nav_rail.dart';
 import 'package:zip_broadcast/src/widgets/pop_out_controls.dart';
 import 'package:zip_broadcast/src/widgets/pop_out_scope.dart';
 import 'package:zip_core/overlay.dart';
-import 'package:zip_core/zip_core.dart';
+import 'package:zip_core/zip_core.dart' hide Failed;
 
 /// Platform-adaptive shell for Zip Broadcast.
 ///
@@ -448,6 +448,18 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
     final location = GoRouterState.of(context).matchedLocation;
     final width = MediaQuery.of(context).size.width;
     final broadcastState = ref.watch(broadcastRecordingNotifierProvider);
+    // Owner direction (fix round 6): a session that ends closes the pop-out
+    // and resets the control, exactly as a stop does when nothing is popped
+    // out, so the next session starts with the captions in the main window.
+    ref.listen<BroadcastSessionState>(
+      broadcastRecordingNotifierProvider,
+      (_, next) {
+        if (_popOutEnabled &&
+            !popOutSessionActive(_popOutRecordingState(next))) {
+          _closePopOut();
+        }
+      },
+    );
     final isBroadcastActive = broadcastState is BroadcastActiveState ||
         broadcastState is BroadcastPausedState ||
         broadcastState is BroadcastReconnectingState;
@@ -484,15 +496,9 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
               if (location == '/settings') return;
               context.go('/settings');
             },
+            // No pop-out control in the rail (owner direction, fix round 6):
+            // on the wide layout the in-surface toggle is the entry point.
             isBroadcastActive: isBroadcastActive,
-            headerAction: PopOutChrome(
-              status: popOutState,
-              recording: popOutRecording,
-              engineAvailable: popOutEngineAvailable,
-              isPoppedOut: _popOutEnabled,
-              reason: popOutAvailabilityResult.reason,
-              onToggle: _togglePopOut,
-            ),
           ),
           const VerticalDivider(width: 1),
           Expanded(child: widget.child),
@@ -550,6 +556,8 @@ class _ZbAppShellState extends ConsumerState<ZbAppShell> {
         onToggle: _togglePopOut,
         available: popOutAvailable,
         visible: popOutAvailabilityResult.visible,
+        reason: popOutAvailabilityResult.reason,
+        openFailed: popOutState is Failed,
         child: content,
       ),
     );

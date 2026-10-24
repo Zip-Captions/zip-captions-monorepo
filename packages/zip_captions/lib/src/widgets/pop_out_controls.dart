@@ -170,22 +170,8 @@ class PopOutChrome extends StatelessWidget {
               ),
             ),
           ),
-        // FD frontend-components §5 (R-M8): the open-failure line sits next to
-        // the chrome toggle while the controller reports `Failed`, and goes
-        // when the status next leaves it (fix round 6, R6-3). Flexible for the
-        // same fixed-height `AppBar` reason as the line above.
-        if (status is Failed)
-          Flexible(
-            child: Text(
-              key: const Key('popOutOpenFailed'),
-              l10n.popOutOpenFailed,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.error,
-              ),
-            ),
-          ),
+        // The open-failure line is the in-surface toggle's, not this one's:
+        // the wide layout has no chrome control (fix round 6).
       ],
     );
   }
@@ -210,6 +196,8 @@ class PopOutInSurfaceToggle extends StatelessWidget {
     required this.onToggle,
     this.enabled = true,
     this.windowToggle = false,
+    this.reason,
+    this.openFailed = false,
     super.key,
   });
 
@@ -225,6 +213,16 @@ class PopOutInSurfaceToggle extends StatelessWidget {
   /// Whether this instance lives inside the pop-out window (its own key).
   final bool windowToggle;
 
+  /// Why the control is disabled, rendered as visible text beneath it
+  /// (BR-PIP-13). The wide layout has no chrome control (fix round 6), so
+  /// this is where the reason is seen there.
+  final PopOutUnavailableReason? reason;
+
+  /// Whether the last open failed: `popOutOpenFailed` renders beneath the
+  /// control while the controller reports `Failed` (FD frontend-components
+  /// §5, R-M8, moved here in fix round 6).
+  final bool openFailed;
+
   @override
   Widget build(BuildContext context) {
     final copy = ZcStringsScope.of(context);
@@ -235,6 +233,11 @@ class PopOutInSurfaceToggle extends StatelessWidget {
         ? Icons.picture_in_picture_alt
         : Icons.picture_in_picture_alt_outlined;
     final canTap = enabled && onToggle != null;
+    final reasonText = switch (reason) {
+      PopOutUnavailableReason.noSession => copy.popOutUnavailableNoSession,
+      PopOutUnavailableReason.noEngine => copy.popOutUnavailableNoEngine,
+      null => null,
+    };
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -271,6 +274,28 @@ class PopOutInSurfaceToggle extends StatelessWidget {
             ),
           ),
         ),
+        if (reasonText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              key: const Key('popOutInSurfaceReason'),
+              reasonText,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: scheme.outline,
+              ),
+            ),
+          ),
+        if (openFailed)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              key: const Key('popOutOpenFailed'),
+              copy.popOutOpenFailed,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: scheme.error,
+              ),
+            ),
+          ),
       ],
     );
   }

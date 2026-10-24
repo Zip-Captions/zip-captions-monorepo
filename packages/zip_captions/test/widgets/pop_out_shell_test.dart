@@ -52,6 +52,30 @@ GoRouter _router() => GoRouter(
       ],
     );
 
+/// [_router] plus `/history`, where a stopped session lands (BR-U5-01).
+GoRouter _sessionRouter() => GoRouter(
+      initialLocation: '/recording',
+      routes: [
+        ShellRoute(
+          builder: (context, state, child) => ZcAppShell(child: child),
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (_, _) => const SizedBox(key: Key('home')),
+            ),
+            GoRoute(
+              path: '/recording',
+              builder: (_, _) => const RecordingScreen(),
+            ),
+            GoRoute(
+              path: '/history',
+              builder: (_, _) => const SizedBox(key: Key('history')),
+            ),
+          ],
+        ),
+      ],
+    );
+
 /// Pumps the shell around [RecordingScreen] at [width] logical pixels.
 Future<FakeRecordingStateNotifier> _pump(
   WidgetTester tester, {
@@ -62,6 +86,7 @@ Future<FakeRecordingStateNotifier> _pump(
   OverlayWindowController? controller,
   List<DisplayInfo> displays = const <DisplayInfo>[],
   Stream<ExternalDisplayStatus>? statuses,
+  GoRouter? router,
 }) async {
   tester.view.physicalSize = Size(width, 812);
   tester.view.devicePixelRatio = 1.0;
@@ -93,7 +118,7 @@ Future<FakeRecordingStateNotifier> _pump(
       ],
       child: MaterialApp.router(
         theme: ThemeData(splashFactory: NoSplash.splashFactory),
-        routerConfig: _router(),
+        routerConfig: router ?? _router(),
       ),
     ),
   );
@@ -185,12 +210,75 @@ void main() {
       expect(find.byKey(const Key('popOutBanner')), findsNothing);
     });
 
-    testWidgets('the desktop rail carries the same chrome control',
-        (tester) async {
+    // Fix round 6 (owner direction): the pop-out control is not in the left
+    // sidebar at all; the in-surface toggle is the wide layout's entry point.
+    testWidgets('the desktop rail carries no pop-out control', (tester) async {
       await _pump(tester, width: 1024);
 
       expect(find.byType(NavigationRail), findsOneWidget);
-      expect(find.byType(PopOutChrome), findsOneWidget);
+      expect(find.byType(PopOutChrome), findsNothing);
+      expect(find.byKey(const Key('popOutToggle')), findsNothing);
+      expect(find.byKey(const Key('popOutInSurfaceToggle')), findsOneWidget);
+    });
+
+    testWidgets('no engine shows the reason under the in-surface toggle',
+        (tester) async {
+      await _pump(tester, width: 1024, engine: false);
+
+      expect(
+        find.descendant(
+          of: find.byType(PopOutInSurfaceToggle),
+          matching: find.byKey(const Key('popOutInSurfaceReason')),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('no-engine'), findsOneWidget);
+    });
+
+    // Fix round 6 (owner direction): a session that stops closes the pop-out
+    // and resets the control, as a stop does when nothing is popped out, so a
+    // fresh session does not start popped out.
+    testWidgets('stopping the session closes the pop-out and resets it',
+        (tester) async {
+      final window = _FrameWindow();
+      final ready = _Ready();
+      final controller = _controllerOver(
+        window,
+        FakeDisplayEnumerator(initial: const [_display]),
+        ready.install,
+      );
+      addTearDown(controller.dispose);
+      window.onCreated = (id) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => unawaited(ready.handler!('overlayReady', id)),
+        );
+      };
+      final router = _sessionRouter();
+      final notifier = await _pump(
+        tester,
+        width: 1024,
+        controller: controller,
+        router: router,
+      );
+
+      await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
+      await tester.pumpAndSettle();
+      expect(controller.status, isA<Open>());
+
+      await notifier.stop();
+      await tester.pumpAndSettle();
+
+      expect(window.calls, contains('closeWindow'));
+      expect(controller.status, isA<Off>());
+      expect(tester.widget<PopOutScope>(find.byType(PopOutScope)).enabled,
+          isFalse);
+
+      // A fresh session starts with the captions in the main window.
+      router.go('/recording');
+      await tester.pumpAndSettle();
+      expect(notifier.calls.where((c) => c == 'start'), isNotEmpty);
+      expect(find.byKey(const Key('popOutBanner')), findsNothing);
+      expect(find.byType(CaptionDisplayWidget), findsOneWidget);
     });
 
     testWidgets('the mobile AppBar carries the same chrome control',
@@ -280,7 +368,9 @@ void main() {
     // value arrived a frame later.
     testWidgets('the chrome does not flash on the first frame',
         (tester) async {
-      tester.view.physicalSize = const Size(1024, 812);
+      // Narrow: the `AppBar` is the one layout that carries a chrome control
+      // (the rail has none since fix round 6).
+      tester.view.physicalSize = const Size(375, 812);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
@@ -336,29 +426,6 @@ void main() {
   // the same inputs on every read, including after the status provider is
   // rebuilt, and that "no session" is disabled with its reason.
   group('pop-out availability after a session (R6-2)', () {
-    GoRouter sessionRouter() => GoRouter(
-          initialLocation: '/recording',
-          routes: [
-            ShellRoute(
-              builder: (context, state, child) => ZcAppShell(child: child),
-              routes: [
-                GoRoute(
-                  path: '/',
-                  builder: (_, _) => const SizedBox(key: Key('home')),
-                ),
-                GoRoute(
-                  path: '/recording',
-                  builder: (_, _) => const RecordingScreen(),
-                ),
-                GoRoute(
-                  path: '/history',
-                  builder: (_, _) => const SizedBox(key: Key('history')),
-                ),
-              ],
-            ),
-          ],
-        );
-
     ({bool enabled, bool reason}) readChrome(WidgetTester tester) {
       final button = tester.widget<TextButton>(
         find.byKey(const Key('popOutToggle')),
@@ -374,13 +441,14 @@ void main() {
 
     testWidgets('start, stop, Home reads disabled with its reason, twice',
         (tester) async {
-      tester.view.physicalSize = const Size(1024, 812);
+      // Narrow: the `AppBar` carries the chrome control on every screen.
+      tester.view.physicalSize = const Size(375, 812);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final notifier = FakeRecordingStateNotifier(const RecordingState.idle());
-      final router = sessionRouter();
+      final router = _sessionRouter();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -446,14 +514,22 @@ void main() {
         mode: const PopOutMode(),
       );
       addTearDown(controller.dispose);
-      await _pump(tester, controller: controller);
+      // The wide layout has no chrome control (owner direction), so the line
+      // sits under the in-surface toggle, where the open was asked for.
+      await _pump(tester, controller: controller, width: 1024);
 
       await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
       await tester.pumpAndSettle();
 
       expect(controller.status, isA<Failed>());
       expect(find.byKey(const Key('popOutBanner')), findsNothing);
-      expect(find.byKey(const Key('popOutOpenFailed')), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(PopOutInSurfaceToggle),
+          matching: find.byKey(const Key('popOutOpenFailed')),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('open-failed'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
