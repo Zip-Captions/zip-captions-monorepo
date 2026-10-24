@@ -35,12 +35,23 @@ Future<void> _pump(WidgetTester tester, Widget child) async {
   await tester.pump();
 }
 
-/// The chrome control's semantics hint, which carries its disabled reason.
-///
-/// The hint merges upwards from the button into the surrounding
-/// `Semantics(container: …)`, so it is read from the card, not the button.
-String? _hint(WidgetTester tester) =>
-    tester.getSemantics(find.byType(PopOutChrome)).hint;
+/// A chrome control at [status], with the reason the shell would compute.
+PopOutChrome _chrome(
+  ExternalDisplayStatus status, {
+  RecordingState recording = const RecordingState.recording(sessionId: 's'),
+}) =>
+    PopOutChrome(
+      status: status,
+      recording: recording,
+      engineAvailable: true,
+      isPoppedOut: false,
+      reason: popOutAvailability(
+        status: status,
+        recording: recording,
+        engineAvailable: true,
+      ).reason,
+      onToggle: () {},
+    );
 
 void main() {
   group('PopOutChrome (B31)', () {
@@ -182,65 +193,100 @@ void main() {
       expect(find.byKey(const Key('popOutToggleReason')), findsOneWidget);
     });
 
-    testWidgets('shows the open-failure line when the window service failed', (
+    // Review round 7, m2: the narrow `AppBar` control is reachable from screens
+    // with no caption surface, so it carries its own open-failure line.
+    testWidgets('shows the open-failure line while the open has failed', (
       tester,
     ) async {
-      await _pump(
-        tester,
-        PopOutChrome(
-          status: const Failed(reason: 'create_failed'),
-          recording: const RecordingState.recording(sessionId: 's'),
-          engineAvailable: true,
-          isPoppedOut: false,
-          reason: popOutAvailability(
-            status: const Failed(reason: 'create_failed'),
-            recording: const RecordingState.recording(sessionId: 's'),
-            engineAvailable: true,
-          ).reason,
-          onToggle: () {},
-        ),
-      );
+      await _pump(tester, _chrome(const Failed(reason: 'create_failed')));
 
-      expect(_hint(tester), isNotNull);
+      expect(find.byKey(const Key('popOutToggleOpenFailed')), findsOneWidget);
+      expect(find.text('open-failed'), findsOneWidget);
     });
 
     testWidgets('clears the failure line when the status leaves Failed', (
       tester,
     ) async {
-      await _pump(
-        tester,
-        PopOutChrome(
-          status: const Failed(reason: 'create_failed'),
-          recording: const RecordingState.recording(sessionId: 's'),
-          engineAvailable: true,
-          isPoppedOut: false,
-          reason: popOutAvailability(
-            status: const Failed(reason: 'create_failed'),
-            recording: const RecordingState.recording(sessionId: 's'),
-            engineAvailable: true,
-          ).reason,
-          onToggle: () {},
-        ),
-      );
-      expect(_hint(tester), isNotNull);
+      await _pump(tester, _chrome(const Failed(reason: 'create_failed')));
+      expect(find.byKey(const Key('popOutToggleOpenFailed')), findsOneWidget);
 
+      await _pump(tester, _chrome(const Off()));
+      expect(find.byKey(const Key('popOutToggleOpenFailed')), findsNothing);
+      expect(find.byKey(const Key('popOutToggleReason')), findsNothing);
+    });
+
+    // Review round 7, m2: the shipped copy is a full sentence and the narrow
+    // `AppBar` is 375 px wide. Unbounded, the reason line pushed the actions
+    // 319 px past the edge; the sentinel strings above are too short to show
+    // it, so this pumps the English copy.
+    for (final (line, status, engine) in const [
+      ('popOutToggleReason', Off(), false),
+      ('popOutToggleOpenFailed', Failed(reason: 'create_failed'), true),
+    ]) {
+      testWidgets('its $line line fits a 375 px AppBar', (tester) async {
+        tester.view.physicalSize = const Size(375, 812);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        const english = ZcStrings.fromMap({
+          'popOutEnter': 'Picture in Picture',
+          'popOutExit': 'Exit Picture in Picture',
+          'popOutUnavailableNoSession': 'Start captioning to pop captions out',
+          'popOutUnavailableNoEngine':
+              'No speech recognition engine is available on this device',
+          'popOutOpenFailed': 'The pop-out window could not be opened',
+        });
+        const recording = RecordingState.recording(sessionId: 's');
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: PopOutScope(
+              enabled: false,
+              onToggle: () {},
+              available: true,
+              visible: true,
+              strings: english,
+              child: Scaffold(
+                appBar: AppBar(
+                  title: const Text('Caption'),
+                  leading: const Icon(Icons.menu),
+                  actions: [
+                    PopOutChrome(
+                      status: status,
+                      recording: recording,
+                      engineAvailable: engine,
+                      isPoppedOut: false,
+                      reason: popOutAvailability(
+                        status: status,
+                        recording: recording,
+                        engineAvailable: engine,
+                      ).reason,
+                      onToggle: () {},
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(Key(line)), findsOneWidget);
+      });
+    }
+
+    // The toolbar cannot grow, so the chrome shows one status line at most: a
+    // disabled control's reason outranks a failure from an earlier attempt.
+    testWidgets('a disabled reason outranks the failure line', (tester) async {
       await _pump(
         tester,
-        PopOutChrome(
-          status: const Off(),
-          recording: const RecordingState.recording(sessionId: 's'),
-          engineAvailable: true,
-          isPoppedOut: false,
-          reason: popOutAvailability(
-            status: const Off(),
-            recording: const RecordingState.recording(sessionId: 's'),
-            engineAvailable: true,
-          ).reason,
-          onToggle: () {},
+        _chrome(
+          const Failed(reason: 'create_failed'),
+          recording: const RecordingState.idle(),
         ),
       );
-      expect(_hint(tester) ?? '', isEmpty);
-      expect(find.byKey(const Key('popOutToggleReason')), findsNothing);
+
+      expect(find.byKey(const Key('popOutToggleReason')), findsOneWidget);
+      expect(find.byKey(const Key('popOutToggleOpenFailed')), findsNothing);
     });
   });
 

@@ -414,6 +414,56 @@ void main() {
         ),
         findsOneWidget,
       );
+
+      // Review round 7, m1: the next open replaces the caption surface with
+      // the return panel, so the line is read again only after returning.
+      await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
+      await tester.pumpAndSettle();
+      expect(graph.controller.status, isA<Open>());
+      await tester.tap(find.byKey(const Key('popOutReturn')));
+      await tester.pumpAndSettle();
+
+      expect(graph.controller.status, isA<Off>());
+      expect(find.byType(PopOutInSurfaceToggle), findsOneWidget);
+      expect(find.byKey(const Key('popOutOpenFailed')), findsNothing);
+    });
+
+    // Review round 7, m2: the chrome's status lines are full sentences in the
+    // shipped copy, and the narrow `AppBar` is 375 px wide; neither line may
+    // push the toolbar's actions past its edge.
+    testWidgets('the narrow chrome reason line fits the AppBar',
+        (tester) async {
+      tester.view.physicalSize = const Size(375, 812);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      await _pumpRecording(tester, engine: false);
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('popOutToggleReason')), findsOneWidget);
+    });
+
+    // Review round 7, m2: the narrow `AppBar` control carries its own failure
+    // line, because it also works from screens with no caption surface.
+    testWidgets('a failed open shows the reason by the narrow chrome control',
+        (tester) async {
+      tester.view.physicalSize = const Size(375, 812);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      final graph = await _pumpRecording(tester);
+      graph.window.failNextCreate = true;
+
+      await tester.tap(find.byKey(const Key('popOutToggle')));
+      await tester.pumpAndSettle();
+
+      expect(graph.controller.status, isA<Failed>());
+      expect(find.byKey(const Key('popOutToggleOpenFailed')), findsOneWidget);
+
+      // The chrome stays on screen through the next open, so the line's
+      // absence here is a real read.
+      await tester.tap(find.byKey(const Key('popOutToggle')));
+      await tester.pumpAndSettle();
+      expect(graph.controller.status, isA<Open>());
+      expect(find.byKey(const Key('popOutToggleOpenFailed')), findsNothing);
     });
 
     testWidgets('the in-surface toggle is enabled while a session runs',

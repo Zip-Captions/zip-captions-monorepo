@@ -26,6 +26,24 @@ Future<void> _pump(WidgetTester tester, Widget child) async {
 ZipBroadcastLocalizations _l10n(WidgetTester tester) =>
     ZipBroadcastLocalizations.of(tester.element(find.byType(Scaffold)))!;
 
+/// A chrome control at [status], with the reason the shell would compute.
+PopOutChrome _chrome(
+  ExternalDisplayStatus status, {
+  RecordingState recording = const RecordingState.recording(sessionId: 's'),
+}) =>
+    PopOutChrome(
+      status: status,
+      recording: recording,
+      engineAvailable: true,
+      isPoppedOut: false,
+      reason: popOutAvailability(
+        status: status,
+        recording: recording,
+        engineAvailable: true,
+      ).reason,
+      onToggle: () {},
+    );
+
 void main() {
   group('PopOutChrome (B31)', () {
     testWidgets('shows the enter label and fires the toggle when available', (
@@ -170,26 +188,41 @@ void main() {
       expect(find.text(l10n.popOutUnavailableNoSession), findsNothing);
     });
 
-    // Fix round 6 (owner direction): the open-failure line moved to the
-    // in-surface toggle, which is the entry point in every layout.
-    testWidgets('carries no open-failure line', (tester) async {
+    // Review round 7, m2: the narrow `AppBar` control is reachable from screens
+    // with no caption surface, so it carries its own open-failure line.
+    testWidgets('shows the open-failure line while the open has failed', (
+      tester,
+    ) async {
+      await _pump(tester, _chrome(const Failed(reason: 'create_failed')));
+
+      expect(find.byKey(const Key('popOutToggleOpenFailed')), findsOneWidget);
+      expect(find.text(_l10n(tester).popOutOpenFailed), findsOneWidget);
+    });
+
+    testWidgets('clears the failure line when the status leaves Failed', (
+      tester,
+    ) async {
+      await _pump(tester, _chrome(const Failed(reason: 'create_failed')));
+      expect(find.byKey(const Key('popOutToggleOpenFailed')), findsOneWidget);
+
+      await _pump(tester, _chrome(const Off()));
+      expect(find.byKey(const Key('popOutToggleOpenFailed')), findsNothing);
+      expect(find.byKey(const Key('popOutToggleReason')), findsNothing);
+    });
+
+    // The toolbar cannot grow, so the chrome shows one status line at most: a
+    // disabled control's reason outranks a failure from an earlier attempt.
+    testWidgets('a disabled reason outranks the failure line', (tester) async {
       await _pump(
         tester,
-        PopOutChrome(
-          status: const Failed(reason: 'create_failed'),
-          recording: const RecordingState.recording(sessionId: 's'),
-          engineAvailable: true,
-          isPoppedOut: false,
-          reason: popOutAvailability(
-            status: const Failed(reason: 'create_failed'),
-            recording: const RecordingState.recording(sessionId: 's'),
-            engineAvailable: true,
-          ).reason,
-          onToggle: () {},
+        _chrome(
+          const Failed(reason: 'create_failed'),
+          recording: const RecordingState.idle(),
         ),
       );
 
-      expect(find.byKey(const Key('popOutOpenFailed')), findsNothing);
+      expect(find.byKey(const Key('popOutToggleReason')), findsOneWidget);
+      expect(find.byKey(const Key('popOutToggleOpenFailed')), findsNothing);
     });
   });
 

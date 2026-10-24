@@ -90,8 +90,9 @@ class PopOutControls extends StatelessWidget {
 /// The status lines belong with the control because both say the same thing
 /// about the same state, and both are cleared by the same transition: a
 /// failure is shown next to the toggle while the controller reports it, and it
-/// disappears when the status next leaves `Failed`. Layout-neutral, so the
-/// wide rail and the narrow `AppBar` render the identical widget.
+/// disappears when the status next leaves `Failed`. Rendered in the narrow
+/// `AppBar` only; the wide layout's rail carries no pop-out control (fix
+/// round 6).
 class PopOutChrome extends StatelessWidget {
   /// Creates a [PopOutChrome].
   const PopOutChrome({
@@ -128,53 +129,89 @@ class PopOutChrome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = ZcStringsScope.of(context);
+    final theme = Theme.of(context);
     final reasonText = switch (reason) {
       PopOutUnavailableReason.noSession => l10n.popOutUnavailableNoSession,
       PopOutUnavailableReason.noEngine => l10n.popOutUnavailableNoEngine,
       null => null,
     };
+    // The control works from screens with no caption surface, where the
+    // in-surface toggle's failure line is not on screen, so it carries its own
+    // (review round 7, m2). One status line at most, because the toolbar
+    // cannot grow: a disabled control's reason outranks a failure from an
+    // earlier attempt, since the reason is what the user can act on now.
+    final failedText =
+        reasonText == null && status is Failed ? l10n.popOutOpenFailed : null;
 
     // The chrome control has to fit an `AppBar` action on the narrow layout,
     // where the toolbar's height is fixed and its horizontal space is what is
     // left after the title and the menu button. That rules out a stacked
-    // icon-over-label button and a plainly sized reason line beneath it: the
-    // toolbar cannot grow, so the line is `Flexible` and capped at two lines
-    // (measured: a fixed-height line overflowed by 8 px). The button itself is
-    // one line, the same `TextButton.icon` in both layouts: on the rail the
-    // label has room, and in the `AppBar` it may ellipsize, but neither clips
-    // and neither overflows. FD frontend-components §3 requires the reason as
-    // visible text with `Key('popOutToggleReason')`, so it is here.
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        PopOutControls(
-          hint: reasonText,
-          status: status,
-          recording: recording,
-          engineAvailable: engineAvailable,
-          isPoppedOut: isPoppedOut,
-          onToggle: onToggle,
-        ),
-        if (reasonText != null)
-          // Flexible so the line wraps instead of overflow the narrow
-          // `AppBar`'s fixed height; two lines fit inside the toolbar.
-          Flexible(
-            child: Text(
-              key: const Key('popOutToggleReason'),
-              reasonText,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              ),
-            ),
+    // icon-over-label button and a plainly sized status line beneath it: the
+    // toolbar cannot grow, so the line is `Flexible` and capped at two lines,
+    // and the whole control is bounded in width (measured: a fixed-height line
+    // overflowed by 8 px, an unbounded one by 319 px across). The button
+    // itself is one line, a `TextButton.icon` whose label may ellipsize, but
+    // it neither clips nor overflows. FD frontend-components §3 requires the
+    // reason as visible text with `Key('popOutToggleReason')`, so it is here.
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: _maxWidth),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PopOutControls(
+            hint: reasonText,
+            status: status,
+            recording: recording,
+            engineAvailable: engineAvailable,
+            isPoppedOut: isPoppedOut,
+            onToggle: onToggle,
           ),
-        // The open-failure line is the in-surface toggle's, not this one's:
-        // the wide layout has no chrome control (fix round 6).
-      ],
+          if (reasonText != null)
+            _statusLine(
+              theme,
+              const Key('popOutToggleReason'),
+              reasonText,
+              theme.colorScheme.outline,
+            ),
+          if (failedText != null)
+            _statusLine(
+              theme,
+              const Key('popOutToggleOpenFailed'),
+              failedText,
+              theme.colorScheme.error,
+            ),
+        ],
+      ),
     );
   }
+
+  /// The widest the control and its status lines may be. A sentence of
+  /// shipped copy is wider than the 375 px `AppBar` leaves its actions
+  /// (unbounded, the reason line overflowed it by 319 px), and so is the exit
+  /// label at large text sizes; inside this width the lines wrap and the label
+  /// ellipsizes instead (review round 7, m2).
+  static const double _maxWidth = 220;
+
+  /// One status line beneath the control.
+  ///
+  /// Flexible so the line wraps instead of overflow the narrow `AppBar`'s
+  /// fixed height; two lines fit inside the toolbar.
+  static Widget _statusLine(
+    ThemeData theme,
+    Key key,
+    String text,
+    Color color,
+  ) =>
+      Flexible(
+        child: Text(
+          key: key,
+          text,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(color: color),
+        ),
+      );
 }
 
 /// The in-surface toggle (UX-PIP-02).
@@ -324,30 +361,34 @@ class PopOutBanner extends StatelessWidget {
       width: double.infinity,
       alignment: Alignment.center,
       color: scheme.secondaryContainer,
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.picture_in_picture_alt,
-            size: 40,
-            color: scheme.onSecondaryContainer,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            l10n.popOutHint,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+      // Scrolls rather than clips when the caption area is short and the text
+      // large (FD frontend-components §5; review round 7, m4).
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.picture_in_picture_alt,
+              size: 40,
               color: scheme.onSecondaryContainer,
             ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            key: const Key('popOutReturn'),
-            onPressed: onReturn,
-            child: Text(l10n.popOutReturn),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              l10n.popOutHint,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: scheme.onSecondaryContainer,
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              key: const Key('popOutReturn'),
+              onPressed: onReturn,
+              child: Text(l10n.popOutReturn),
+            ),
+          ],
+        ),
       ),
     );
   }

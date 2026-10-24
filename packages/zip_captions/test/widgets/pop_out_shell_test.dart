@@ -500,8 +500,9 @@ void main() {
   });
 
   // Fix round 6, R6-3: an open that fails reverted the chrome with no reason.
-  // FD frontend-components §5 (R-M8): `popOutOpenFailed` renders next to the
-  // chrome toggle while the status is `Failed`, and clears when it leaves.
+  // FD frontend-components §5 (R-M8, as amended): `popOutOpenFailed` renders
+  // under the in-surface toggle, and the narrow chrome control carries its own
+  // line, while the status is `Failed`; both clear when it leaves.
   group('pop-out open failure (R6-3)', () {
     testWidgets('a failed open shows the reason and the next open clears it',
         (tester) async {
@@ -534,9 +535,55 @@ void main() {
 
       await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
       await tester.pumpAndSettle();
-
       expect(controller.status, isA<Opening>());
+
+      // The return panel has replaced the caption surface, so the line's
+      // absence proves nothing yet (review round 7, m1). Return to the window
+      // and read the in-surface toggle again.
+      await tester.tap(find.byKey(const Key('popOutReturn')));
+      await tester.pumpAndSettle();
+
+      expect(controller.status, isA<Off>());
+      expect(find.byType(PopOutInSurfaceToggle), findsOneWidget);
       expect(find.byKey(const Key('popOutOpenFailed')), findsNothing);
+    });
+
+    // Review round 7, m2: on the narrow layout the `AppBar` control works from
+    // any screen, including one with no caption surface, so its own failure
+    // line is the only place the reason can be seen there.
+    testWidgets('a failed open from a screen with no caption surface shows '
+        'the reason by the chrome control', (tester) async {
+      final controller = OverlayWindowController(
+        windowService: _FlakyWindow(),
+        enumerator: FakeDisplayEnumerator(initial: const [_display]),
+        handlerInstaller: (_) {},
+        log: Logger('test.popOutShell.flakyHome'),
+        mode: const PopOutMode(),
+      );
+      addTearDown(controller.dispose);
+      final router = _router();
+      await _pump(tester, controller: controller, router: router);
+      router.go('/');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('home')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('popOutToggle')));
+      await tester.pumpAndSettle();
+
+      expect(controller.status, isA<Failed>());
+      expect(find.byKey(const Key('popOutToggleOpenFailed')), findsOneWidget);
+      expect(find.text('open-failed'), findsOneWidget);
+
+      // The chrome stays on screen through the next open, so this read is a
+      // real one: the line clears as soon as the status leaves `Failed`.
+      await tester.tap(find.byKey(const Key('popOutToggle')));
+      await tester.pumpAndSettle();
+      expect(controller.status, isA<Opening>());
+      expect(find.byKey(const Key('popOutToggleOpenFailed')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('popOutToggle')));
+      await tester.pumpAndSettle();
+      expect(controller.status, isA<Off>());
     });
   });
 

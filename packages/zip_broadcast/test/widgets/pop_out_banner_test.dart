@@ -39,6 +39,29 @@ void main() {
       expect(returned, 1);
     });
 
+    // FD frontend-components §5: the panel must not clip at large text sizes,
+    // and it fills whatever caption area the window leaves (review round 7,
+    // m4: a 160 px area at twice the text size overflowed).
+    testWidgets('fits a short caption area at large text sizes',
+        (tester) async {
+      var returned = 0;
+      await _pump(
+        tester,
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+          child: SizedBox(
+            height: 160,
+            child: PopOutBanner(onReturn: () => returned++),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      await tester.ensureVisible(find.byKey(const Key('popOutReturn')));
+      await tester.tap(find.byKey(const Key('popOutReturn')));
+      expect(returned, 1);
+    });
+
     testWidgets('carries no caption text', (tester) async {
       await _pump(tester, PopOutBanner(onReturn: () {}));
 
