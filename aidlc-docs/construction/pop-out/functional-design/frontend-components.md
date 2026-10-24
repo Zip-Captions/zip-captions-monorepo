@@ -162,6 +162,34 @@ changes in the table above:
    so it is not rendered while popped out; the return button and the chrome toggle are the main
    window's ways back.
 
+**Amendment — fix round 6, second direction (2026-10-23), owner direction (James Petersen).** "When
+a session stops, the pop-out should close, and the user experience should mirror that which occurs
+when a session stops when captions are not popped out. the control should reset, so a fresh session
+would not start popped-out. there is an icon in the left menu that should not be there, it's at the
+top of the left sidebar, and it should not be included there at all." The owner then chose, for the
+wide layout, the in-surface toggle only, and for the open-failure copy, beneath the in-surface
+toggle. Both apps.
+
+1. **Session end closes the pop-out (new rule).** When the session leaves the active states
+   (`RecordingActiveState`, `PausedState`, `ReconnectingState`; `zip_broadcast`'s mapped
+   equivalents), a popped-out shell runs its close path: the flag clears, the target leaves the
+   fan-out, and the controller closes with `toggleOff`. The stop then proceeds exactly as it does
+   with nothing popped out, and the next session starts with the captions in the main window. This
+   replaces the runtime review's A9 expectation ("stays open on standby") and closes R6-6.
+2. **§3 Placement**: the chrome toggle is in `AppBar.actions` on the narrow layout only. Neither
+   `ZcNavRail` nor `ZbNavRail` carries any pop-out control; both rails are back to their pre-unit
+   shape (no `headerAction`). On the wide layout the in-surface toggle (§4) is the entry point and
+   the return panel (§5) the exit. **This amends UX-PIP-01** ("a toggle in the main window's app
+   chrome"), which now holds for the narrow layout only; `pip-ux-parity.md` is to be updated at
+   Documentation Refinement with the owner's name and this date, as Q9 was.
+3. **§4 status lines**: `PopOutInSurfaceToggle` renders, beneath its pill, the disabled reason as
+   visible text (`Key('popOutInSurfaceReason')`, BR-PIP-13) and `popOutOpenFailed`
+   (`Key('popOutOpenFailed')`) while the controller reports `Failed`. `PopOutScope` carries both from
+   the shell. The narrow `AppBar` control keeps its own reason line (`Key('popOutToggleReason')`),
+   because it also appears on screens with no caption surface.
+4. **§5 R-M8**: `popOutOpenFailed` renders beneath the **in-surface toggle**, in every layout, not
+   next to the chrome toggle. Clearing is unchanged (when the status leaves `Failed`).
+
 ## 6. Availability matrix rendering (UX-PIP-03/04, BR-PIP-12/13)
 
 Rendered once, in `PopOutControls`; `PopOutInSurfaceToggle` in the main window reuses the same

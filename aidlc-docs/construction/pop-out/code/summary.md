@@ -481,3 +481,28 @@ applies while "a session is active **or already popped out**"; FD §6's formula 
 | `flutter test` — `zip_broadcast` | 185 passed |
 | `flutter test` — `zip_captions` | 188 passed |
 | `flutter build macos --debug` — both apps | built |
+
+### Owner direction after the round: session end, the rail, the status lines
+
+Recorded as the second FD frontend-components §5 amendment of 2026-10-23. Both apps.
+
+| Change | Code | Tests |
+|---|---|---|
+| A session that ends closes the pop-out and resets the control (resolves R6-6) | Each shell listens to its session state and runs `_closePopOut()` when a popped-out session leaves the active states | "stopping the session closes the pop-out and resets it" in both shell suites; the `zip_captions` one also starts a fresh session and asserts the captions are in the main window |
+| No pop-out control in the left rail | `ZcNavRail` and `ZbNavRail` restored from `develop` (the `headerAction` slot existed only for this control); the shells no longer pass it | "the desktop rail carries no pop-out control" in both shell suites |
+| Disabled reason and open-failure line under the in-surface toggle | `PopOutInSurfaceToggle` gains `reason` and `openFailed`; `PopOutScope` carries them; `PopOutChrome` drops its failure line | Three `PopOutInSurfaceToggle status lines` tests and "carries no open-failure line" (broadcast controls); "no engine shows the reason under the in-surface toggle", the R6-3 test now on the wide layout (captions); "a failed open shows the reason under the in-surface toggle", "no engine disables the in-surface toggle with its reason" (broadcast shell) |
+
+Tests moved rather than added: two chrome tests (round 5's first-frame check, R6-2's stable reads)
+now run on the narrow layout, the only one with a chrome control; broadcast's double-activation
+test now uses the return action.
+
+Runtime (macOS debug, `zip_captions`): open reaches `Open` (layer 3, 1134x140); stopping the session
+closes the window within the second and the status is `Off`; a fresh session shows the captions and
+the in-surface toggle in the main window; no rail control at any point.
+
+| Gate | Result |
+|---|---|
+| `dart analyze --fatal-infos` — both apps | clean (`zip_core` unchanged) |
+| `flutter test` — `zip_broadcast` | 190 passed |
+| `flutter test` — `zip_captions` | 190 passed |
+| `flutter build macos --debug` — both apps | built |

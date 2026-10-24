@@ -2855,3 +2855,11 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 **Runtime**: macOS A2, A3, A5, A6, A8, A9 (zip_captions) and B2, B3 (zip_broadcast) run and recorded; C3 run on the iOS 26.0 simulator and the Android 16 emulator. A7 and B4 remain BLOCKED (Accessibility not granted). Physical Pixel 6 not touched.
 **Not done**: no `docs/` edit, no boundary contract touched, no dependency change, no push.
 **Context**: Branch `feature/popout-live-captions` from `2243ea8`. Next: owner review of the diff and R6-6, then push and CI.
+
+---
+## CONSTRUCTION - Unit 8.1 (Pop-out Live Captions): owner direction after fix round 6
+**Timestamp**: 2026-10-23T23:35:00Z
+**User Input**: "push the commits" (pushed `2243ea8..295284f`). Then: "when a session stops, the pop-out should close, and the user experience should mirror that which occurs when a session stops when captions are not popped out. the control should reset, so a fresh session would not start popped-out. there is an icon in the left menu that should not be there, it's at the top of the left sidebar, and it should not be included there at all." Answers: wide layout = in-surface toggle only (UX-PIP-01 amended to the narrow layout); open-failure copy beneath the in-surface toggle.
+**AI Response**: Both apps, test-first. Each shell closes the pop-out when the session leaves the active states (resolves R6-6). Both nav rails restored from `develop` (the header slot existed only for the pop-out control). `PopOutInSurfaceToggle` now carries the disabled reason and the open-failure line; `PopOutChrome` (narrow `AppBar` only) keeps its reason line and drops the failure line. FD `frontend-components.md` §5 second amendment records the new rule and the §3/§4/§5 changes; `pip-ux-parity.md` UX-PIP-01 is to be amended at Documentation Refinement.
+**Gates**: analyze clean in both apps (`zip_core` unchanged); `flutter test` `zip_broadcast` 190, `zip_captions` 190; `flutter build macos --debug` built both apps. Runtime on macOS (`zip_captions`): stop while `Open` closes the window and resets the control; a fresh session starts in the main window; no rail control.
+**Context**: Branch `feature/popout-live-captions` at `295284f` plus this change. Not pushed.
