@@ -6,13 +6,17 @@ part of 'overlay_window_host_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$overlayWindowHostHash() => r'6a1f958ee1893829b87a9eb16b7f3097e0f95751';
+String _$overlayWindowHostHash() => r'8e40b5802dc141a640de8a4289f52f6d9c191c5f';
 
 /// The engine's one [OverlayWindowHost] (NFR Design §2).
 ///
 /// Keep-alive so both window controllers share one router, one display
 /// observer and one close channel for the container's lifetime; the host is
 /// disposed with the container.
+///
+/// The host is built on a named logger so its router, enumerator and
+/// controllers log beneath it, and a debug build prints that subtree to the
+/// console (R6-5). A release build adds no route.
 ///
 /// Copied from [overlayWindowHost].
 @ProviderFor(overlayWindowHost)

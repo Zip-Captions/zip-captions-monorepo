@@ -37,6 +37,7 @@ class OverlayWindowHost {
   })  : _windowService = windowService ?? _defaultWindowService,
         _router = router ??
             OverlayMethodRouter(log: _child(log, 'OverlayMethodRouter')),
+        _parentLog = log,
         _log = log ?? Logger('zip_core.OverlayWindowHost'),
         _enumeratorHost = DisplayEnumeratorHost(
           enumerator ??
@@ -51,8 +52,11 @@ class OverlayWindowHost {
   }
 
   /// Derives a child logger from an optional parent.
+  ///
+  /// `fullName`, not `name`: `Logger.name` is only the last segment, so a
+  /// child built from it would sit outside the parent's subtree (R6-5).
   static Logger? _child(Logger? parent, String name) =>
-      parent == null ? null : Logger('${parent.name}.$name');
+      parent == null ? null : Logger('${parent.fullName}.$name');
 
   /// The production window service: the plugin behind the conditional export,
   /// built over the controller's display lease.
@@ -63,6 +67,10 @@ class OverlayWindowHost {
 
   final DesktopWindowService Function(DisplayEnumerator lease) _windowService;
   final Logger _log;
+
+  /// The logger the caller supplied, which every built controller's logger
+  /// descends from; `null` keeps the controllers' standalone names.
+  final Logger? _parentLog;
   final OverlayMethodRouter _router;
   final DisplayEnumeratorHost _enumeratorHost;
   late final SubWindowClosedChannel _closeChannel;
@@ -84,9 +92,11 @@ class OverlayWindowHost {
 
   /// Builds a controller of [mode] wired to this host's shared resources.
   ///
-  /// [prefix] names the controller's logger (`zip_core.<prefix>`), so a log
-  /// line still says which window produced it without either app importing
-  /// the other's name. The returned controller is owned by the caller, which
+  /// [prefix] names the controller's logger (`zip_core.<prefix>`, or a child
+  /// of the host's logger when one was given), so a log line still says which
+  /// window produced it without either app importing the other's name, and a
+  /// console route on the host's logger covers it (R6-5). The returned
+  /// controller is owned by the caller, which
   /// must dispose it; this host only tracks it for logs.
   ///
   /// The controller registers with the router **before** it is built, so the
@@ -110,7 +120,7 @@ class OverlayWindowHost {
       windowService: _windowService(lease),
       enumerator: lease,
       handlerInstaller: _router.installerFor(token),
-      log: Logger('zip_core.$prefix'),
+      log: _child(_parentLog, prefix) ?? Logger('zip_core.$prefix'),
       mode: mode,
       closeChannel: _closeChannel,
     );
