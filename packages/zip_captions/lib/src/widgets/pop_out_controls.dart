@@ -170,6 +170,22 @@ class PopOutChrome extends StatelessWidget {
               ),
             ),
           ),
+        // FD frontend-components §5 (R-M8): the open-failure line sits next to
+        // the chrome toggle while the controller reports `Failed`, and goes
+        // when the status next leaves it (fix round 6, R6-3). Flexible for the
+        // same fixed-height `AppBar` reason as the line above.
+        if (status is Failed)
+          Flexible(
+            child: Text(
+              key: const Key('popOutOpenFailed'),
+              l10n.popOutOpenFailed,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ),
       ],
     );
   }

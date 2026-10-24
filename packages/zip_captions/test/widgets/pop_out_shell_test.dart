@@ -16,7 +16,7 @@ import 'package:zip_captions/src/shell/zc_nav_drawer.dart';
 import 'package:zip_captions/src/widgets/pop_out_controls.dart';
 import 'package:zip_captions/src/widgets/pop_out_scope.dart';
 import 'package:zip_core/overlay.dart';
-import 'package:zip_core/zip_core.dart';
+import 'package:zip_core/zip_core.dart' hide Failed;
 
 import '../helpers/fake_display_enumerator.dart';
 import '../helpers/fake_pop_out_controller.dart';
@@ -305,6 +305,199 @@ void main() {
     });
   });
 
+  // Fix round 6, R6-2: two reads of Home after a stopped session disagreed in
+  // the runtime review. The rule is pure, so this pins that the shell feeds it
+  // the same inputs on every read, including after the status provider is
+  // rebuilt, and that "no session" is disabled with its reason.
+  group('pop-out availability after a session (R6-2)', () {
+    GoRouter sessionRouter() => GoRouter(
+          initialLocation: '/recording',
+          routes: [
+            ShellRoute(
+              builder: (context, state, child) => ZcAppShell(child: child),
+              routes: [
+                GoRoute(
+                  path: '/',
+                  builder: (_, _) => const SizedBox(key: Key('home')),
+                ),
+                GoRoute(
+                  path: '/recording',
+                  builder: (_, _) => const RecordingScreen(),
+                ),
+                GoRoute(
+                  path: '/history',
+                  builder: (_, _) => const SizedBox(key: Key('history')),
+                ),
+              ],
+            ),
+          ],
+        );
+
+    ({bool enabled, bool reason}) readChrome(WidgetTester tester) {
+      final button = tester.widget<TextButton>(
+        find.byKey(const Key('popOutToggle')),
+      );
+      return (
+        enabled: button.onPressed != null,
+        reason: find
+            .byKey(const Key('popOutToggleReason'))
+            .evaluate()
+            .isNotEmpty,
+      );
+    }
+
+    testWidgets('start, stop, Home reads disabled with its reason, twice',
+        (tester) async {
+      tester.view.physicalSize = const Size(1024, 812);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final notifier = FakeRecordingStateNotifier(const RecordingState.idle());
+      final router = sessionRouter();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            transcriptWriterTargetProvider.overrideWith((_) {}),
+            recordingStateNotifierProvider.overrideWith(() => notifier),
+            onScreenCaptionTargetProvider.overrideWith(
+              (ref) => const Stream.empty(),
+            ),
+            zcStringsProvider.overrideWith((ref) async => _strings),
+            sttEngineProvider.overrideWithValue(FakeSttEngine()),
+            popOutWindowControllerProvider.overrideWithValue(
+              fakePopOutController(),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: ThemeData(splashFactory: NoSplash.splashFactory),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The recording screen started the session (`initState` from idle).
+      expect(notifier.calls, contains('start'));
+      expect(readChrome(tester), (enabled: true, reason: false));
+
+      await notifier.stop();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('history')), findsOneWidget);
+
+      router.go('/');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('home')), findsOneWidget);
+      final first = readChrome(tester);
+
+      // Rebuild the status provider the shell watches, as Riverpod does when
+      // it disposes and recreates an auto-dispose provider.
+      ProviderScope.containerOf(tester.element(find.byType(PopOutScope)))
+          .invalidate(popOutStatusProvider);
+      await tester.pumpAndSettle();
+      final second = readChrome(tester);
+
+      expect(first, (enabled: false, reason: true));
+      expect(second, first);
+      expect(find.text('no-session'), findsOneWidget);
+    });
+  });
+
+  // Fix round 6, R6-3: an open that fails reverted the chrome with no reason.
+  // FD frontend-components §5 (R-M8): `popOutOpenFailed` renders next to the
+  // chrome toggle while the status is `Failed`, and clears when it leaves.
+  group('pop-out open failure (R6-3)', () {
+    testWidgets('a failed open shows the reason and the next open clears it',
+        (tester) async {
+      final window = _FlakyWindow();
+      final controller = OverlayWindowController(
+        windowService: window,
+        enumerator: FakeDisplayEnumerator(initial: const [_display]),
+        handlerInstaller: (_) {},
+        log: Logger('test.popOutShell.flaky'),
+        mode: const PopOutMode(),
+      );
+      addTearDown(controller.dispose);
+      await _pump(tester, controller: controller);
+
+      await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
+      await tester.pumpAndSettle();
+
+      expect(controller.status, isA<Failed>());
+      expect(find.byKey(const Key('popOutBanner')), findsNothing);
+      expect(find.byKey(const Key('popOutOpenFailed')), findsOneWidget);
+      expect(find.text('open-failed'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
+      await tester.pumpAndSettle();
+
+      expect(controller.status, isA<Opening>());
+      expect(find.byKey(const Key('popOutOpenFailed')), findsNothing);
+    });
+  });
+
+  // Fix round 6, R6-4: the runtime review saw a control flash on iOS at session
+  // start. Per-frame scans on the iOS simulator and the Android emulator found
+  // no pop-out widget on any frame; this pins the transition the review named,
+  // frame by frame, on an unsupported controller whose status stream never
+  // emits.
+  group('pop-out on an unsupported platform at session start (R6-4)', () {
+    testWidgets('no pop-out widget is built on any frame of the start',
+        (tester) async {
+      tester.view.physicalSize = const Size(375, 812);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final notifier = FakeRecordingStateNotifier(const RecordingState.idle());
+      final router = _router()..go('/');
+
+      final popOutWidgets = find.byWidgetPredicate(
+        (w) =>
+            w is PopOutInSurfaceToggle ||
+            w is PopOutBanner ||
+            w.key == const Key('popOutToggle') ||
+            w.key == const Key('popOutToggleReason') ||
+            w.key == const Key('popOutOpenFailed'),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            transcriptWriterTargetProvider.overrideWith((_) {}),
+            recordingStateNotifierProvider.overrideWith(() => notifier),
+            onScreenCaptionTargetProvider.overrideWith(
+              (ref) => const Stream.empty(),
+            ),
+            zcStringsProvider.overrideWith((ref) => _strings),
+            sttEngineProvider.overrideWithValue(FakeSttEngine()),
+            popOutWindowControllerProvider.overrideWithValue(
+              fakeUnsupportedPopOutController(),
+            ),
+            popOutStatusProvider.overrideWith(
+              (ref) => const Stream<ExternalDisplayStatus>.empty(),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: ThemeData(splashFactory: NoSplash.splashFactory),
+            routerConfig: router,
+          ),
+        ),
+      );
+      expect(popOutWidgets, findsNothing);
+
+      router.go('/recording');
+      for (var frame = 0; frame < 40; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(popOutWidgets, findsNothing, reason: 'frame $frame');
+      }
+      expect(notifier.calls, contains('start'));
+    });
+  });
+
   group('pop-out shell geometry (review round 3)', () {
     // Finding 2: the frame must come from the controller's live display list,
     // not from the auto-dispose `displayListProvider` the shell never watches.
@@ -428,6 +621,37 @@ class _Ready {
   // precedent, not a setter.
   // ignore: use_setters_to_change_properties
   void install(OverlayMethodHandler? next) => handler = next;
+}
+
+/// A window service whose first `createWindow` fails and later ones succeed.
+class _FlakyWindow implements DesktopWindowService {
+  int _creates = 0;
+
+  @override
+  bool get isSupported => true;
+
+  @override
+  Future<int> createWindow(String arguments) async {
+    _creates++;
+    if (_creates == 1) throw StateError('no window');
+    return 9;
+  }
+
+  @override
+  Future<void> closeWindow(int windowId) async {}
+
+  @override
+  Future<void> invokeMethod(
+    int windowId,
+    String method,
+    dynamic arguments,
+  ) async {}
+
+  @override
+  Future<void> setFrame(int windowId, Rect frame) async {}
+
+  @override
+  Future<void> show(int windowId) async {}
 }
 
 /// A window service that records the frame it was given.
