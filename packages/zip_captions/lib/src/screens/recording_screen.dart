@@ -68,26 +68,30 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
             onTap: () => setState(() => _showAppearancePanel = false),
             child: Column(
               children: [
-                // UX-PIP-05: the hint lives above the caption surface, in the
-                // main window only, and disappears with the flag (R-M6: every
-                // close path except the lazy `'-1'` fallback).
+                // UX-PIP-05 as v1 ships it: while popped out the captions are
+                // in the pop-out, so the hint and the return action take the
+                // caption surface's place in the main window. They go with
+                // the flag (R-M6: every close path except the lazy `'-1'`
+                // fallback). The caption target stays watched above, so the
+                // pop-out keeps its source.
                 if (popOut?.enabled ?? false)
-                  PopOutBanner(onReturn: popOut!.onToggle),
-                Expanded(
-                  child: CaptionDisplayWidget(
-                    entries: entries,
-                    settings: settings,
-                    // UX-PIP-04 / BR-U8.1-11: on a platform that cannot host
-                    // a sub-window nothing renders, not even a disabled pill.
-                    controls: popOut == null || !popOut.visible
-                        ? null
-                        : PopOutInSurfaceToggle(
-                            isPoppedOut: popOut.enabled,
-                            enabled: popOut.available,
-                            onToggle: popOut.onToggle,
-                          ),
+                  Expanded(child: PopOutBanner(onReturn: popOut!.onToggle))
+                else
+                  Expanded(
+                    child: CaptionDisplayWidget(
+                      entries: entries,
+                      settings: settings,
+                      // UX-PIP-04 / BR-U8.1-11: on a platform that cannot host
+                      // a sub-window nothing renders, not even a disabled pill.
+                      controls: popOut == null || !popOut.visible
+                          ? null
+                          : PopOutInSurfaceToggle(
+                              isPoppedOut: popOut.enabled,
+                              enabled: popOut.available,
+                              onToggle: popOut.onToggle,
+                            ),
+                    ),
                   ),
-                ),
                 RecordingControlsBar(
                   state: state,
                   onPause: recordingNotifier.pause,

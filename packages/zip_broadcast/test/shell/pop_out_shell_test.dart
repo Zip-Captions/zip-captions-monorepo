@@ -12,7 +12,8 @@ import 'package:zip_broadcast/src/providers/pop_out_providers.dart';
 import 'package:zip_broadcast/src/widgets/pop_out_controls.dart';
 import 'package:zip_broadcast/src/widgets/pop_out_scope.dart';
 import 'package:zip_core/overlay.dart';
-import 'package:zip_core/zip_core.dart' show DisplaySettings;
+import 'package:zip_core/zip_core.dart'
+    show CaptionDisplayWidget, DisplaySettings;
 
 import '../helpers/fake_display_enumerator.dart';
 import '../helpers/fake_notifiers.dart';
@@ -273,7 +274,9 @@ void main() {
 
       await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
       await tester.pump();
-      await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
+      // The in-surface toggle left with the captions (UX-PIP-05 as v1 ships
+      // it); the chrome toggle is the second activation the window offers.
+      await tester.tap(find.byKey(const Key('popOutToggle')));
       await tester.pumpAndSettle();
 
       expect(graph.window.calls.where((c) => c == 'createWindow'), hasLength(1));
@@ -292,6 +295,28 @@ void main() {
 
       expect(graph.window.calls, contains('closeWindow'));
       expect(find.byKey(const Key('popOutBanner')), findsNothing);
+    });
+
+    // UX-PIP-05 as v1 ships it (owner direction, fix round 6): the captions
+    // move to the pop-out, so the main window shows the hint and the return
+    // action in place of the caption surface, not above it.
+    testWidgets('popped out, the main window shows the hint, not captions',
+        (tester) async {
+      await _pumpRecording(tester);
+      expect(find.byType(CaptionDisplayWidget), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CaptionDisplayWidget), findsNothing);
+      expect(find.byKey(const Key('popOutBanner')), findsOneWidget);
+      expect(find.byKey(const Key('popOutReturn')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('popOutReturn')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('popOutBanner')), findsNothing);
+      expect(find.byType(CaptionDisplayWidget), findsOneWidget);
     });
 
     testWidgets('a window that goes away on its own clears the banner',

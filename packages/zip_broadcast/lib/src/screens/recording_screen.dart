@@ -123,33 +123,38 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                 outputSettings: outputSettings,
               ),
               AudioLevelRow(visible: !isPaused),
-              // UX-PIP-05: the hint lives above the caption surface, in the
-              // main window only, and disappears with the flag (R-M6: the same
-              // frame for every close path except the lazy `'-1'` fallback).
-              if (popOut?.enabled ?? false) PopOutBanner(onReturn: popOut!.onToggle),
-              Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: _showAppearancePanel
-                      ? () => setState(
+              // UX-PIP-05 as v1 ships it: while popped out the captions are in
+              // the pop-out, so the hint and the return action take the
+              // caption surface's place in the main window. They go with the
+              // flag (R-M6: the same frame for every close path except the
+              // lazy `'-1'` fallback). The caption target stays watched above,
+              // so the pop-out keeps its source.
+              if (popOut?.enabled ?? false)
+                Expanded(child: PopOutBanner(onReturn: popOut!.onToggle))
+              else
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: _showAppearancePanel
+                        ? () => setState(
                             () => _showAppearancePanel = false,
                           )
-                      : null,
-                  child: CaptionDisplayWidget(
-                    entries: entries,
-                    settings: settings,
-                    // UX-PIP-04 / BR-U8.1-11: on a platform that cannot host
-                    // a sub-window nothing renders, not even a disabled pill.
-                    controls: popOut == null || !popOut.visible
-                        ? null
-                        : PopOutInSurfaceToggle(
-                            isPoppedOut: popOut.enabled,
-                            enabled: popOut.available,
-                            onToggle: popOut.onToggle,
-                          ),
+                        : null,
+                    child: CaptionDisplayWidget(
+                      entries: entries,
+                      settings: settings,
+                      // UX-PIP-04 / BR-U8.1-11: on a platform that cannot host
+                      // a sub-window nothing renders, not even a disabled pill.
+                      controls: popOut == null || !popOut.visible
+                          ? null
+                          : PopOutInSurfaceToggle(
+                              isPoppedOut: popOut.enabled,
+                              enabled: popOut.available,
+                              onToggle: popOut.onToggle,
+                            ),
+                    ),
                   ),
                 ),
-              ),
               ZbRecordingControlsBar(
                 state: sessionState,
                 onStart: hasAudioInputs
@@ -191,15 +196,17 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                         const Icon(Icons.pause_circle_outline),
                         const SizedBox(width: 8),
                         Text(
-                          ZipBroadcastLocalizations.of(context)!
-                              .recordingPaused,
+                          ZipBroadcastLocalizations.of(
+                            context,
+                          )!.recordingPaused,
                         ),
                         const SizedBox(width: 16),
                         TextButton(
                           onPressed: recordingNotifier.resume,
                           child: Text(
-                            ZipBroadcastLocalizations.of(context)!
-                                .recordingResume,
+                            ZipBroadcastLocalizations.of(
+                              context,
+                            )!.recordingResume,
                           ),
                         ),
                       ],
@@ -211,8 +218,7 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
         ],
       ),
       // Appearance toggle in AppBar area (E4).
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.miniEndTop,
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndTop,
       floatingActionButton: FloatingActionButton.small(
         tooltip: ZipBroadcastLocalizations.of(context)!.recordingAppearance,
         onPressed: () =>
@@ -246,8 +252,9 @@ class _StatusBar extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             StatusPill(
-              label: ZipBroadcastLocalizations.of(context)!
-                  .statusPillBrowserSource,
+              label: ZipBroadcastLocalizations.of(
+                context,
+              )!.statusPillBrowserSource,
               color: outputSettings.browserSourceEnabled
                   ? Colors.green
                   : Colors.grey,
@@ -255,9 +262,7 @@ class _StatusBar extends StatelessWidget {
             const SizedBox(width: 12),
             StatusPill(
               label: ZipBroadcastLocalizations.of(context)!.statusPillOverlay,
-              color: outputSettings.overlayEnabled
-                  ? Colors.green
-                  : Colors.grey,
+              color: outputSettings.overlayEnabled ? Colors.green : Colors.grey,
             ),
           ],
         ),
@@ -269,8 +274,7 @@ class _StatusBar extends StatelessWidget {
     return switch (status) {
       ObsConnectionStatus.connected => Colors.green,
       ObsConnectionStatus.connecting ||
-      ObsConnectionStatus.reconnecting =>
-        Colors.orange,
+      ObsConnectionStatus.reconnecting => Colors.orange,
       ObsConnectionStatus.error => Colors.red,
       ObsConnectionStatus.disconnected => Colors.grey,
     };

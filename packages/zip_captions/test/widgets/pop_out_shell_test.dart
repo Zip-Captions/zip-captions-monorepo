@@ -103,7 +103,9 @@ Future<FakeRecordingStateNotifier> _pump(
 
 void main() {
   group('pop-out shell wiring (Z24)', () {
-    testWidgets('the in-surface toggle turns the pop-out on and off',
+    // While popped out the in-surface toggle goes with the caption surface
+    // (UX-PIP-05 as v1 ships it), so the chrome toggle is the way back here.
+    testWidgets('the in-surface toggle turns the pop-out on, the chrome off',
         (tester) async {
       final notifier = await _pump(tester);
 
@@ -111,7 +113,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('popOutBanner')), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
+      await tester.tap(find.byKey(const Key('popOutToggle')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('popOutBanner')), findsNothing);
 
@@ -125,10 +127,34 @@ void main() {
 
       await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
       await tester.pump();
-      await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
+      // The in-surface toggle left with the captions; the chrome toggle is
+      // the second activation the main window still offers.
+      await tester.tap(find.byKey(const Key('popOutToggle')));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('popOutBanner')), findsNothing);
+    });
+
+    // UX-PIP-05 as v1 ships it (owner direction, fix round 6): the captions
+    // move to the pop-out, so the main window shows the hint and the return
+    // action in place of the caption surface, not above it.
+    testWidgets('popped out, the main window shows the hint, not captions',
+        (tester) async {
+      await _pump(tester);
+      expect(find.byType(CaptionDisplayWidget), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('popOutInSurfaceToggle')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CaptionDisplayWidget), findsNothing);
+      expect(find.text('hint'), findsOneWidget);
+      expect(find.byKey(const Key('popOutReturn')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('popOutReturn')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('popOutBanner')), findsNothing);
+      expect(find.byType(CaptionDisplayWidget), findsOneWidget);
     });
 
     testWidgets('the banner return closes the pop-out', (tester) async {

@@ -276,8 +276,10 @@ class PopOutInSurfaceToggle extends StatelessWidget {
   }
 }
 
-/// The hint above the caption surface while the pop-out is open (UX-PIP-05).
+/// The hint and return action that replace the caption surface while the
+/// pop-out is open (UX-PIP-05, as v1 ships it).
 ///
+/// The captions are in the pop-out, so the main window does not repeat them.
 /// Main window only: the pop-out has no room for it and its own toggle is the
 /// way back (the same toggle that opened it).
 class PopOutBanner extends StatelessWidget {
@@ -295,20 +297,27 @@ class PopOutBanner extends StatelessWidget {
     return Container(
       key: const Key('popOutBanner'),
       width: double.infinity,
+      alignment: Alignment.center,
       color: scheme.secondaryContainer,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Flexible(
-            child: Text(
-              l10n.popOutHint,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: scheme.onSecondaryContainer,
-              ),
+          Icon(
+            Icons.picture_in_picture_alt,
+            size: 40,
+            color: scheme.onSecondaryContainer,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            l10n.popOutHint,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: scheme.onSecondaryContainer,
             ),
           ),
-          const SizedBox(width: 8),
-          TextButton(
+          const SizedBox(height: 16),
+          FilledButton(
             key: const Key('popOutReturn'),
             onPressed: onReturn,
             child: Text(l10n.popOutReturn),
