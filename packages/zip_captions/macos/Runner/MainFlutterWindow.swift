@@ -39,6 +39,11 @@ class MainFlutterWindow: NSWindow {
       guard let self else { return }
       self.installConfigureChannel(for: controller)
       self.installCloseHook(for: controller)
+      // The embedder launches a view controller's engine only from
+      // `viewWillAppear`, and the plugin keeps the window hidden until Dart
+      // shows it after `overlayReady`. Started here, last, so the sub-engine
+      // runs while hidden and its channels already exist (fix round 6, R6-1).
+      _ = controller.engine.run(withEntrypoint: nil)
     }
 
     super.awakeFromNib()
