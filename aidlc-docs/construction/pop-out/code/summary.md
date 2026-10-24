@@ -436,3 +436,48 @@ bypassed the router entirely.
 | `flutter test` — `zip_captions` | 184 passed |
 | `flutter build macos --debug` — `zip_broadcast` | built |
 | `flutter build macos --debug` — `zip_captions` | built |
+
+## Fix round 6 (runtime review)
+
+The findings are in `../../plans/pop-out-review-round-6.md`, worked per
+`../../plans/pop-out-review-round-6-fix-plan.md`. Runtime evidence came from temporary diagnostic
+entrypoints (`-t`, deleted afterwards, never committed) that drive the real app through its own
+widgets and the real runner, because Accessibility is not granted to the agent. Window facts come
+from `CGWindowListCopyWindowInfo` at 500 ms intervals.
+
+| # | What it turned out to be | Change | Pinning test | Before / after at runtime |
+|---|---|---|---|---|
+| R6-5 | Every `zip_core` record already reached `Logger.root`, and both apps forward it to `dart:developer`'s `log`, which DevTools shows and `flutter run` does not. The host's `_child` also built child names from `Logger.name` (last segment only), so its children sat outside its subtree. | `routeOverlayLogToConsole` (`overlay_console_log.dart`): in a debug build, the host logger's subtree is printed through `debugPrint` as level, name and message only, never the error object. The provider builds the host on `Logger('zip_core.OverlayWindowHost')`; controllers log beneath it; `_child` uses `fullName`. Release wires nothing. | `overlay_console_log_test.dart` (4): debug prints, release wires nothing, host-built controllers log in the subtree, the provider routes to `debugPrint`. | Before: no controller line on stdout. After: `flutter: WARNING: zip_core.OverlayWindowHost.zip_captions.PopOutWindowController: overlay ready timeout` on a forced failure. |
+| R6-1 | **Neither candidate.** The macOS embedder starts a `FlutterViewController`'s engine only from `viewWillAppear` (`FlutterViewController.mm:407-410`); `desktop_multi_window` keeps a new window hidden until `show`; the controller shows only after `overlayReady`. The sub-engine's `main` never ran. The "1x1 offscreen helper" in the review was the pop-out's own window, created at the press and released at the timeout. Windows (`FlutterViewController` constructor) and Linux (window shown, realised, then hidden) start their engines at creation and are not affected. The same deadlock blocked `zip_broadcast`'s external display. | Both `MainFlutterWindow.swift`: the window-created callback ends with `_ = controller.engine.run(withEntrypoint: nil)`, after the `configure` channel and the close hook exist. The handshake (hidden until configured and framed, shown on ready) is unchanged. | `macos_runner_fence_test.dart` (2, static, both apps): the callback starts the engine after installing both hooks. Neither app has a Swift test target. | Before: no `sub:` output, window 1x1 offscreen, `ready_timeout` at 10 s. After: sub-engine `main` at +0.2 s, `Open` at +0.65 s, a layer-3 1134x140 window bottom-centre on the primary, `captionUpdate` flowing. |
+| R6-2 | **Not a rule defect.** The rule's `enabled` depends only on the session and the engine; the status only hides. Instrumented reads: after a stop, Home reads disabled with the reason twice, across a forced `popOutStatusProvider` rebuild. Passing through `/recording` after a stop starts a new session (`RecordingScreen.initState`, a prior-unit behaviour), and Home then correctly reads enabled — the reviewer's second read. | None. | `pop_out_shell_test.dart` "start, stop, Home reads disabled with its reason, twice". | Same before and after; recorded in the PR thread. |
+| R6-3 | `zip_captions`' `PopOutChrome` never rendered `popOutOpenFailed`, although FD §5 (R-M8) prescribes it and `zip_broadcast` already did. | `Key('popOutOpenFailed')` beside the chrome toggle while `Failed`, `Flexible`/two lines for the narrow `AppBar`. One string, per design (owner's choice; no per-code keys). | `pop_out_shell_test.dart` "a failed open shows the reason and the next open clears it". | After: `openFailed=true`, banner gone, captions back, on a forced `ready_timeout`. |
+| R6-4 | **Not reproducible.** The controller is `Unsupported` from its constructor on iOS and Android (no probe runs there). Per-frame scans across session start found no pop-out widget on any frame (iOS 26.0 simulator: 39 frames; Android 16 emulator: 24 frames). A 10 fps recording shows only the recording screen's own Appearance button sliding in with the route. | None. | `pop_out_shell_test.dart` "no pop-out widget is built on any frame of the start" (40 frames, never-emitting status stream). | Same before and after. |
+
+**Owner-directed UX change (both apps)** — recorded as the FD frontend-components §5 amendment
+dated 2026-10-23: while popped out, the main window shows the hint and the return action **in place
+of** the captions, as v1 does. Tests: "popped out, the main window shows the hint, not captions" in
+both shell suites. Three existing tests tapped the main window's in-surface toggle a second time
+while popped out; that toggle leaves with the caption surface, so their second activation is now
+the chrome toggle.
+
+**Runtime checks run (macOS, debug)**: A2, A3, A5, A6, A8, A9 in `zip_captions`; B2 (external
+display on the secondary display, 3440x1415, layer 0) and B3 (both windows together) in
+`zip_broadcast`; C3 on iOS and Android. **Still BLOCKED**: A7 and B4 (OS close), because
+Accessibility is not granted to the agent. A4's floating layer, placement and size were observed;
+decoration and the minimum size were not (no screenshot: `screencapture -l` refused the windows).
+
+**New finding R6-6 (not fixed; design question)**: after the session stops while popped out, the
+window stays open (as specified), but the main window's chrome control reads "Exit Picture in
+Picture" and is **disabled** with the no-session reason, and the return panel has left with the
+recording screen. Only the window's own toggle or an OS close can end it. UX-PIP-03 says the control
+applies while "a session is active **or already popped out**"; FD §6's formula omits the second half.
+
+### Gates after the change
+
+| Gate | Result |
+|---|---|
+| `dart analyze --fatal-infos` — all three packages | clean |
+| `flutter test` — `zip_core` | 926 passed, 4 skipped |
+| `flutter test` — `zip_broadcast` | 185 passed |
+| `flutter test` — `zip_captions` | 188 passed |
+| `flutter build macos --debug` — both apps | built |

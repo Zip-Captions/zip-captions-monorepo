@@ -141,6 +141,27 @@ as-built widgets, and this note records the decision that now holds in both apps
 | Open-failure copy | **R-M8 resolved**: the banner is a success-and-progress affordance and is never visible while `Failed` (the shell has already cleared `popOutEnabled`). `popOutOpenFailed` renders next to the **chrome toggle**, while the controller's status is `Failed`, and clears when the status next leaves `Failed` — Unit 8's existing pattern for `ExternalDisplayControls`. |
 | Test hooks | `Key('popOutBanner')`, `Key('popOutReturn')`. |
 
+**Amendment — fix round 6 (2026-10-23), owner direction (James Petersen).** "During picture in
+picture mode, the main caption window should not show the captions, it should show a message that
+the captions are currently displayed in an external window, and give the user a button to return
+the captions to the main window. This is the UX that currently exists in v1." Applied to **both
+apps** (owner's choice, keeping the per-app parity rule). UX-PIP-05 requires the hint and the return
+action but is silent on whether the captions stay; this resolves that silence in v1's favour. What
+changes in the table above:
+
+1. **Where**: the hint and the return action **replace** the caption surface in `RecordingScreen`'s
+   column while `shell.popOutEnabled` is true; they are no longer "immediately above" it. The
+   `CaptionDisplayWidget` is not built in the main window while popped out.
+2. **Styling**: a centred panel filling the caption surface's space — the exit glyph, `popOutHint`
+   as a centred title-sized line, and `popOutReturn` as a filled button. Same
+   `secondaryContainer`/`onSecondaryContainer` colours; same keys.
+3. **Unchanged**: visibility (`shell.popOutEnabled`), the copy, the return action, the R-M6 caveat,
+   R-M8 (failure copy next to the chrome toggle), and the keys. The screen still watches the
+   on-screen caption target, because the pop-out's snapshot reads its captions from that target.
+4. **Consequence for §4**: the main window's `PopOutInSurfaceToggle` lives in the caption surface,
+   so it is not rendered while popped out; the return button and the chrome toggle are the main
+   window's ways back.
+
 ## 6. Availability matrix rendering (UX-PIP-03/04, BR-PIP-12/13)
 
 Rendered once, in `PopOutControls`; `PopOutInSurfaceToggle` in the main window reuses the same
