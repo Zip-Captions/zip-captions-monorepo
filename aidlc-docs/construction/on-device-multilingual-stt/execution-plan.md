@@ -133,3 +133,24 @@ run completes and its PR merges to `develop`.
    open questions) and Part 2 (TDD-first, in the worktree).
 8. Open the PR targeting `develop` after Documentation Refinement; clean up the
    worktree after merge.
+
+## Revision proposal (2026-10-25) — NOT adopted; for the human at the FD approval gate
+
+**Status: proposal only.** Nothing above is changed. The FD approval gate is still not passed, the 14 recorded answers stand, and the four FD artifacts are untouched. This section records new research (`../spikes/stt-model-survey-2026-10-25.md`) so the gate decision can take it into account.
+
+**What changed.** NVIDIA Nemotron 3.5 ASR Streaming 0.6B (40 locales, OpenMDW-1.1) is now supported officially by sherpa-onnx as a **true streaming transducer** (int8 builds dated 2026-06-11; chunk sizes 80/160/560/1120 ms; ~650 MB). The premise that "no true-streaming pretrained sherpa model exists for de/es/it/nl/pl" (README, Expensive-to-rediscover facts) no longer holds: de, es, it, nl, fr, pt, uk and ar are transcription-ready, pl is broad-coverage. Vendor FLEURS WER at 1.12 s chunks: es 4.1, it 4.3, de 8.3, fr 9.0, nl 11.5, pl 15.2, en 7.9. Parakeet v3's published offline WER is lower for nl/pl/de (7.5 / 7.3 / 5.0), but the two figure sets use different protocols and neither is measured on our targets.
+
+**Why it matters for this unit's shape.**
+- Nemotron runs through the existing `SherpaOnnxSttEngine` and `OnlineRecognizerAdapter`. It needs no `OfflineSttAdapter`, no Silero VAD, no cadence re-decoding and no max-segment force-cut. Most of the FD (business-logic-model's simulated-streaming state machine, Rules 2, 3 and 6, the `OfflineSttAdapter` seam) would not apply to it.
+- Language is a per-stream option (`OnlineStream.setOption`), so "auto-detect only in v1" (Q5) need not hold for Nemotron.
+
+**Proposed split (for the human to accept, modify or reject):**
+- **Unit A — sherpa streaming engine activation (Nemotron lead).** Finish the Phase 1 scaffold: a real `OnlineRecognizerAdapter` implementation, PCM capture feeding `feedAudio`, a catalog row (with the `localeIds`/`kind`/`engineId` catalog extension from Q6/Q10 reused), a language option on the adapter, locale-to-tag mapping, and the `sherpa_onnx` bump (lockfile resolves 1.12.36; Nemotron needs ≥ 1.13.5; the Dart per-stream `setOption` appears in 1.13.8). Covers live captions in most target languages with a true streaming engine.
+- **Unit B — this unit as written (Parakeet v3 simulated streaming), as an optional accuracy tier** for nl/pl/de, retained only if Spike 1.4 Q7 and Q8 together show it is still worth a second ~640 MB model. Its FD stays valid for that purpose.
+- Which of A or B takes the next free unit number is a human decision (OQ-1 precedent).
+
+**Discrepancy to reconcile before the FD gate.** The FD and README say "audio pipeline: unchanged" and layer VAD over it. A read of `packages/zip_core` on 2026-10-25 found **no raw PCM capture path**: `record: ^5.1.2` is declared but not imported, `SherpaOnnxSttEngine.feedAudio` has no caller, and its `initialize()` is a placeholder (`services/audio/` holds only `AudioDeviceService` and `MobileAudioDeviceService`). Phase 1's Unit 7 notes list connecting `feedAudio` to a capture pipeline as unfinished. Whichever unit goes first needs a shared PCM capture service; the FD should say whether it is a prerequisite unit or part of this one. (This read was of the working tree of a session in progress; re-verify against `develop` at pickup.)
+
+**Spike 1.4.** Q8 (Nemotron streaming on the Pi 5 / reference machine plus one Android phone and one iPhone) was added to `../spikes/spike-1.4-plan.md` in the same change. Its report is what should settle A vs B.
+
+**Not decided here:** the OpenMDW-1.1 license terms (unread), phone RAM/thermal viability, iOS build status of the sherpa Flutter package. All three are Q8 exit items.

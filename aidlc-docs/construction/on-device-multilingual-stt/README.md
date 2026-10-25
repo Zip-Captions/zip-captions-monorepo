@@ -13,6 +13,16 @@ gap with interim caption updates while the user speaks and a final on
 end-of-speech. No new dependency (`sherpa_onnx: ^1.10.31` already declared),
 no ADR-005 contract change, no network in the engine.
 
+> **Added 2026-10-25 — read before the FD approval gate.** New research
+> (`../spikes/stt-model-survey-2026-10-25.md`) found that Nemotron 3.5 ASR
+> Streaming 0.6B is a sherpa-onnx-supported **true streaming** multilingual
+> model, which weakens the premise below that no true-streaming sherpa model
+> covers de/es/it/nl/pl. A split is proposed in `execution-plan.md`, section
+> "Revision proposal (2026-10-25)". It is a proposal only: nothing in this unit's
+> approved or recorded decisions has changed. It also flags that the FD assumes
+> an existing audio pipeline while no PCM capture path was found in `zip_core`.
+> Spike 1.4 gained Q8 (Nemotron, including phone targets).
+
 ## Read order at pickup
 
 1. This file.
