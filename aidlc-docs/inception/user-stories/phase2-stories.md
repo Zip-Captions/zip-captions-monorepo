@@ -617,6 +617,118 @@ Then no caption text appears in the logs
 
 ---
 
+### S-22: Mobile Captioning Alpha
+**Feature Area:** Mobile platform readiness | **FR:** none new. It verifies Phase 1 FR-6.1 and FR-6.3 on mobile | **NFR:** Phase 1 NFR-1.1 | **Packages:** zip_captions (`ios/`, `android/`, release configuration), CI
+**Personas:** Alex
+
+> As a Zip Captions user on iPhone or Android, I can start captioning, speak, and see live captions, with the screen kept on, then save and share the transcript.
+
+**Brownfield note:** Added 2026-10-24 from the mobile alpha plan, which James Petersen approved on 2026-10-22. Units 10 and 11 deliver it (`phase2-unit-of-work.md`, "Mobile Alpha Units"). **Story ID S-22 is new; it adds no FR.** The behaviour was specified in Phase 1, but Phase 1's mobile exit criterion was never verified on a device (gap G1). The configuration also suggests that microphone permission fails on both platforms (G2, G3). The Phase 1 records are not reopened, and the evidence is recorded in Units 10 and 11.
+
+**Acceptance Criteria:**
+
+```gherkin
+Given Zip Captions freshly installed on a physical iPhone or Android phone, with no permission granted
+When the user starts captioning
+Then the operating system asks for microphone access (and, on iOS, speech recognition)
+And once access is granted, captioning starts
+
+Given microphone access was denied
+When the user starts captioning
+Then the app shows its permission-denied state with a way to open the system settings, and does not crash
+
+Given captioning is running on a physical device
+When the user speaks
+Then live captions appear with less than 1 second of perceived latency (Phase 1 NFR-1.1)
+
+Given captioning is running
+When the device's screen timeout elapses with no interaction
+Then the screen stays on until captioning stops, after which the normal timeout applies again
+
+Given a finished session on a device with a PIN or biometrics
+When the user saves and shares the transcript
+Then the transcript is saved and the platform share sheet opens
+
+Given a device with no PIN and no biometrics
+When the user tries to save a transcript
+Then saving is refused, as on every other platform
+
+Given a signed release build installed from TestFlight internal testing or Play Internal Testing
+When an internal tester completes a captioning session
+Then every criterion above holds on that build (the Alpha 1 gate)
+
+Given the installed app
+When the user looks at the home screen and the system settings
+Then it shows the app identity decided at Unit 10's NFR Requirements, not the scaffold label `zip_captions`
+
+Given any captioning path on mobile
+When the application logs
+Then no transcript content appears in the logs
+```
+
+**Verification:** each criterion needs both a recorded emulator QA pass and a physical-device pass (`phase2-unit-of-work.md`, "Virtual-device development and QA"). Latency, wake lock, recognizer availability and the signed install can only be proved on a physical device.
+
+**Open question:** OQ-MA-1 (whether iOS Simulator speech-recognition consent can be pre-granted) must be answered before Unit 10's NFR Requirements is approved.
+
+**Dependencies:** Phase 1 captioning; Unit 8.1 merged (one branch at a time). Independent of the broadcast chain.
+
+---
+
+### S-23: Mobile Broadcast Viewer Alpha
+**Feature Area:** Viewer (mobile) | **FR:** FR-7 (verified on mobile) | **NFR:** NFR-1.3, NFR-8.2 | **Packages:** zip_captions (Android manifest, `integration_test` harness), zip_supabase (staging, via Unit 12), CI
+**Personas:** Sam
+
+> As a viewer on iPhone or Android, I can join a live broadcast and keep receiving captions across a network change.
+
+**Brownfield note:** Added 2026-10-24 from the mobile alpha plan, which James Petersen approved on 2026-10-22. Unit 13 delivers it, after Unit 9 and Unit 12 (`phase2-unit-of-work.md`, "Mobile Alpha Units"). **Story ID S-23 is new; it adds no FR.** NFR-8.2 names iOS and Android as viewer platforms, but no unit verifies a phone viewer (G6). The Android release build cannot reach the network (G4). No automated mobile E2E exists (G7). S-19 is not reopened.
+
+**Acceptance Criteria:**
+
+```gherkin
+Given a test-track build on iPhone or Android and a live Zip Broadcast desktop session on the staging backend
+When the viewer enters the broadcast ID on the join screen
+Then live captions appear
+
+Given an Android release build (not debug or profile)
+When it joins a broadcast
+Then it reaches the staging backend and connects
+
+Given the phone and the broadcaster are on the same network
+When the viewer joins
+Then the connection is peer-to-peer
+
+Given peer-to-peer connection fails
+When the viewer joins
+Then captions arrive over the TURN relay
+
+Given a phone viewing a live broadcast on Wi-Fi
+When the phone switches from Wi-Fi to cellular
+Then it reconnects automatically and captions resume
+
+Given a broadcast at its viewer cap
+When a phone tries to join
+Then it shows the "broadcast is full" message
+
+Given the mobile smoke harness
+When it runs on the iOS Simulator and the Android emulator
+Then the join, receive and reconnect flows pass, in a form CI can run
+
+Given an internal tester on each platform with the test-track build
+When they view a live session
+Then the criteria above hold (the Alpha 2 gate)
+
+Given any viewer path on mobile
+When the application logs
+Then no caption text appears in the logs
+```
+
+**Verification:** the emulator flows run first, against the local stack and then against staging. The real Wi-Fi to cellular switch is a physical-device check only.
+
+**Blocked by:** SR-05 (through Unit 12)
+**Dependencies:** S-19 (viewer); S-22 (the test-track build from Unit 11); the staging backend (Unit 12); Unit 9 (the desktop broadcast path is verified first)
+
+---
+
 ## Security Review Stories
 
 Each review produces an approach document in the relevant unit's design folder and needs explicit human approval. The listed implementation stories cannot start Code Generation until their review is approved.
@@ -649,6 +761,21 @@ And a human reviewer has recorded approval before implementation begins
 Given the proposed log configuration for Coturn and the Supabase Realtime service
 When it is reviewed
 Then it demonstrates that no payload data is logged, lists which connection metadata is retained and for how long, and states how usage metrics are collected without caption content
+And a human reviewer has recorded approval before implementation begins
+```
+
+### SR-05: Staging Backend Exposure Review
+**Area:** Publicly exposed server configuration (AGENTS.md: server-side log configuration, RLS policy definitions) | **NFR:** NFR-3.1, NFR-6.1 | **Blocks:** Unit 12 Code Generation, and so S-23
+
+Added 2026-10-24 with the mobile alpha. It follows the SR-03 pattern and is produced at Unit 12's Infrastructure Design.
+
+```gherkin
+Given the proposed staging deployment of Supabase and coturn
+When it is reviewed
+Then it lists which services and ports are exposed to the public, and why
+And it states how each secret is stored and kept out of git and out of app builds
+And it shows that the payload-free logging approved in SR-03, and the RLS and channel authorization approved in SR-02 and SR-04, hold unchanged on staging
+And it states how staging stays separate from Phase 6 production infrastructure, who may reach it, and how it is torn down
 And a human reviewer has recorded approval before implementation begins
 ```
 
@@ -830,9 +957,12 @@ And the browser source still serves the caption overlay page
 | S-19 | FR-7 | NFR-4.1, 5.1, 5.2 | Sam | M-S2.2, M-S2.3, M-S3.6 | 1, 4 |
 | S-20 | FR-9 | NFR-5.1 | Jordan | M-S2.2, M-S2.3, M-REG-01 | 6, 9 |
 | S-21 | (none new — Phase 6 DoD PiP parity) | NFR-5.1 | Jordan, Alex | M-S2.2, M-S2.3 | — (v2.0 RC gate) |
+| S-22 | (none new — verifies Phase 1 FR-6.1, 6.3 on mobile) | Phase 1 NFR-1.1 | Alex | — (Alpha 1 gate) | Phase 1 criterion 1; 9 on mobile |
+| S-23 | FR-7 (on mobile) | NFR-1.3, 8.2 | Sam | — (Alpha 2 gate) | 1, 2, 3, 4, 5 on a phone |
 | SR-01 | FR-1.7 | NFR-3.8 | — | Blocks S-15 | — |
 | SR-02 | FR-2, FR-3.3 | NFR-3.4, 3.5 | — | Blocks S-11, S-13 | — |
 | SR-03 | — | NFR-3.1, 6.1 | — | Blocks S-12 | — |
+| SR-05 | — | NFR-3.1, 6.1 | — | Blocks S-23 (via Unit 12) | — |
 | Proto-10..13 | FR-1, 6, 9 | — | Jordan | Block S-15, S-17, S-20 | — |
 | Proto-14..15 | FR-7 | NFR-5.2 | Sam | Block S-19 | — |
 | (Spike 2.2) | FR-10 | — | Jordan | — | 7 |
@@ -865,6 +995,9 @@ S-17 + S-19 + S-20 ──► M-S2.2, M-S2.3
 S-21 ──► M-S2.2, M-S2.3 (PiP parity)
 S-19 ──► M-S3.6
 S-15 + S-20 ──► M-REG-01
+
+S-22 (Units 10, 11; independent of the broadcast chain) ══► ALPHA 1
+S-19 + S-22 + SR-05 ──► S-23 (Unit 13, after Units 9 and 12) ══► ALPHA 2
 ```
 
 S-20 and its prototype do not depend on the broadcast chain, so they can run in parallel with it from the start of Construction. S-21 is sequenced after S-20 because it reuses S-20's window machinery.

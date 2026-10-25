@@ -1,7 +1,7 @@
 # Zip Captions v2 — Roadmap
 
-> **Document Status:** Draft v0.4
-> **Last Updated:** 2026-10-19
+> **Document Status:** Draft v0.5
+> **Last Updated:** 2026-10-24
 > **Purpose:** Defines the phased development milestones for Zip Captions v2, including dependencies, deliverables, and sequencing. Each phase builds on the previous one. Both apps (Zip Captions and Zip Broadcast) are developed in parallel, with shared work concentrated in `zip_core`.
 > **Repository:** `zip-captions-monorepo`
 
@@ -256,6 +256,17 @@ Phase 1 complete (caption bus must exist for broadcast output targets to subscri
 - OBS receives closed captions from Zip Broadcast
 - Browser source serves a caption overlay page
 - Viewer reconnects automatically after temporary disconnection
+
+### Mobile Alpha (internal) — added 2026-10-24
+
+An internal alpha of Zip Captions on iPhone and Android, run in two stages inside the Phase 2 cycle. It does not change Phase 2's exit criteria or the Phase 6 store submission. It gives the mobile app a tested, installable build well before Phase 6.
+
+- **Alpha 1 — local captioning.** Units 10 (Mobile Platform Readiness) and 11 (Internal Alpha Distribution). Gate: an internal tester installs from TestFlight internal testing and Play Internal Testing, then completes a captioning session.
+- **Alpha 2 — broadcast viewer.** Units 12 (Staging Backend, gated by security review SR-05) and 13 (Mobile Viewer Verification), after Unit 9. Gate: an internal tester on each platform views a live session from the test-track build.
+- **Testers:** a small internal group only; there is no public beta.
+- **Backend:** Alpha 2 uses a staging backend, separate from Phase 6 production infrastructure.
+
+Unit definitions: `aidlc-docs/inception/application-design/phase2-unit-of-work.md`, "Mobile Alpha Units".
 
 ---
 
@@ -697,3 +708,4 @@ These items are captured in the specification documents but intentionally not sc
 | 2026-03-26 | 0.2 | Major revision: Added Phase 6 (Release & v1 Deprecation) with overlap period and migration guide. Renumbered Translation to Phase 8 (v2.1). Expanded Phase 7 (Observability) with public Grafana dashboard and maintainer-only dashboard. Added ai-dlc git submodule and GitHub Projects to Phase 0. Added VPS provider research (Spike 0.2) and on-device STT survey (Spike 0.3) to Phase 0. Fixed Phase 1 exit criteria to reflect Zip Captions on mobile AND desktop. Fixed Phase 3: provider-agnostic OAuth, cross-platform account merging by email, P2P key transfer, YubiKey spike. Self-hosted STUN via Coturn (no Google dependency). Added release targeting (Android/iOS first, Windows fast follow). Added caption overlay and YubiKey to parked items. |
 | 2026-03-26 | 0.3 | Fixed Phase 2 deliverable: STUN configuration now references self-hosted Coturn (was incorrectly referencing Google's free STUN servers, contradicting ADR-011). |
 | 2026-10-19 | 0.4 | Moved Phase 8 (Translation) into the v2.0 release: v1 shipped translation in v0.5.0-rc.5, so it is feature parity, not new functionality. Phase 6 now depends on Phase 8 and has an explicit Definition of Done covering captioning, Picture-in-Picture UX parity, live translation, the accuracy disclaimer, and cross-platform translation. Spike 6.1 now blocks v2.0 release scope. Removed the v2.1 release. |
+| 2026-10-24 | 0.5 | Added a Mobile Alpha (internal) milestone note under Phase 2 (Units 10-13, in two stages). No phase scope, prerequisite or exit criterion changed. |

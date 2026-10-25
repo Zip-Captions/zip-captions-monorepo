@@ -2872,3 +2872,33 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 **Gates**: `dart analyze --fatal-infos lib test` clean in both apps; `flutter test` `zip_broadcast` 195, `zip_captions` 195; `flutter build macos --debug` built both apps; mutation checks in a scratch copy: hard-wired `openFailed`, the removed width bound and the removed panel scroll each fail their tests.
 **Not done**: no runtime run of these changes; the five round-7 nits are left as recorded on the PR (n3's stale rail comments in `PopOutChrome` were rewritten with the m2 edit); no `docs/` edit; no push.
 **Context**: Branch `feature/popout-live-captions` at `5d4bce5` plus this change.
+
+---
+## INCEPTION (Units Generation amendment) - Phase 2: Mobile Alpha Units 10-13 recorded
+**Timestamp**: 2026-10-25T00:06:11Z
+**User Input**: "Using AI-DLC, record the approved mobile alpha plan (memory mobile-alpha-plan, plan file ~/.claude/plans/starry-meandering-galaxy.md) additively into aidlc-docs and the roadmap. First check that PR #41 has merged and pull develop; until then, read and reconcile only, with no writes. Ask me for the unit numbers before writing." Answers to the questions that followed:
+- Unit numbers: "10, 11, 12, 13 (Recommended)".
+- Units C and D vs Unit 9: "Post-close Phase 2 units (Recommended)".
+- Unit 8.1 status: "Yes, append merged status (Recommended)".
+- Roadmap text, approved under the AGENTS.md rule for changes to `docs/`: "Approve note + changelog + header".
+
+**AI Response**:
+- **Gate check.** PR #41 was MERGED at 2026-10-24T23:57:37Z (`cd0451f`). `git pull --ff-only origin develop` reported "Already up to date". Nothing was written before the unit numbers were given.
+- **Reconciliation against `develop` at `cd0451f`.** Gaps G2, G3, G4, G5 and G8 still hold. Unit 8.1 changed no `ios/` or `android/` file. The Android manifest's only `<queries>` intent is `PROCESS_TEXT`. `wakelock_plus` is declared in `zip_core`, not in `zip_captions`. The bundle IDs used by the plan's emulator commands match the projects. S-22, S-23 and SR-05 were unused.
+- **Conflicts found and settled.**
+  - (1) The parked multilingual STT unit's OQ-1 places it after Unit 9, while the plan's diagram places it before Unit 9. It stays unnumbered and is not placed in the recorded sequence.
+  - (2) Unit 9 closes Phase 2, but Units 12 and 13 follow it. Recorded as post-close Phase 2 units, and Unit 9's text is unchanged.
+  - (3) Unit 8.1's state entry still read "awaiting morning review". It is now recorded as merged.
+  - (4) The plan lists Unit D's stages as "Code Generation ... then Build and Test" but says its harness choice is "decided at NFR". NFR Requirements is therefore recorded as Unit 13's first stage.
+- **Written, additive only:**
+  - `phase2-unit-of-work.md`: a new "Mobile Alpha Units" section (decisions, the G1-G9 table with the closing unit for each gap, the virtual-device QA procedure, Units 10-13, and the OQ-MA-1 table carried over from the plan) and four Construction Stage Summary rows.
+  - `phase2-unit-of-work-dependency.md`: U10-U13 testing checkpoints and an appended section (matrix, graph, build order, shared resources).
+  - `phase2-unit-of-work-story-map.md`: S-22, S-23 and SR-05 rows, U10-U13 requirement rows, and coverage and persona addenda.
+  - `phase2-stories.md`: S-22 and S-23 with Given/When/Then criteria, SR-05, traceability rows and sequencing lines.
+  - `docs/03-roadmap.md`: a "Mobile Alpha (internal)" note under Phase 2, changelog row v0.5, and the header bumped to v0.5 / 2026-10-24.
+  - `aidlc-state.md`: Unit 8.1 ticked and recorded as merged; Units 10-13 registered as not started, with OQ-MA-1 as an open blocker on Unit 10; both Current Stage locations point at Unit 10.
+- **Not changed:** no existing unit section, phase scope or exit criterion was rewritten. The existing story-map coverage line ("11 of 11 stories") was left as written, and the addendum states the new count. SR-04 is still absent from `phase2-stories.md`, as before.
+
+**Gap finding (from the plan approved 2026-10-22):** the roadmap had no alpha milestone, and Phase 1's mobile captioning exit criterion was never verified on a device. iOS microphone permission and Android `RECORD_AUDIO`/`INTERNET` are likely broken in release builds. No unit verifies a phone viewer, no mobile E2E exists, and no non-production hosted backend exists.
+
+**Context**: Branch `develop` at `cd0451f`. All changes are uncommitted in the working tree. A branch and PR targeting `develop` are needed before commit. Model: Opus for this Inception-style amendment; Units 10-13 run Construction on Sonnet, and SR-05 is reviewed on Opus.
