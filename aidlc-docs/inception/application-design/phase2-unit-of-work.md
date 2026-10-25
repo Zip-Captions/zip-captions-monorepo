@@ -271,6 +271,160 @@ The evidence trail is the PR #41 thread (runtime comments of 2026-10-23 and 2026
 
 ---
 
+## Mobile Alpha Units (appended 2026-10-24)
+
+**Appended to the Phase 2 cycle 2026-10-24**, after Unit 8.1 merged (PR #41, `cd0451f`). James Petersen approved the plan on 2026-10-22. It is recorded only now so that it never shared a checkout with the Unit 8.1 branch. It follows the Unit 3.1 and Unit 8.1 precedent: new units are appended, and no completed phase or unit is reopened. James Petersen assigned the unit numbers on 2026-10-24. The approved plan called these units A to D: **A = Unit 10, B = Unit 11, C = Unit 12, D = Unit 13**. The parked on-device multilingual STT unit stays unnumbered. Under its own OQ-1 (`aidlc-docs/construction/on-device-multilingual-stt/execution-plan.md`), it takes the next free number when it is approved.
+
+**Why these units exist.** The roadmap had no alpha milestone, and phones first appear at the Phase 6 store submission. The AI-DLC records and the platform configuration show that some mobile requirements in completed work were never verified on a device, and others were never assigned to a unit. The gap table below records where each one came from. The original units stay as written.
+
+**Decisions (2026-10-22):**
+- **Two-stage internal alpha.** Alpha 1 is local captioning on iPhone and Android (Units 10 and 11). Alpha 2 adds the broadcast viewer once Unit 9 and a staging backend exist (Units 12 and 13).
+- **Placement:** appended to the Phase 2 cycle.
+- **Order:** Unit 10 runs first after Unit 8.1 merges.
+- **Testers:** a small internal group, through TestFlight internal testing and Play Internal Testing.
+
+**Relation to Unit 9 (decided 2026-10-24).** Unit 9 is unchanged and still closes the original Phase 2 scope: Units 1 to 8.1 and the spikes. Units 10 and 11 do not depend on Unit 9 and may run before it. Units 12 and 13 run **after** Unit 9, as post-close Phase 2 units. Each carries its own verification, and Unit 13's Build and Test is the Alpha 2 exit gate. Unit 9's Build and Test does not wait for them.
+
+### Gaps found (origin recorded; the original units are not reopened)
+
+| # | Gap | Where it was missed | Evidence | Closed by |
+|---|---|---|---|---|
+| G1 | The mobile captioning exit criterion was never verified on a device | Phase 1 exit criterion 1 | `construction/build-and-test/build-and-test-summary.md`: integration and E2E "pending manual", macOS artifacts only. `audit.md` has no iPhone, simulator or Android-device run | Unit 10 |
+| G2 | iOS microphone permission is likely always denied | Phase 1 Unit 2 (FR-6.3) | `packages/zip_captions/ios/Podfile` `post_install` sets no `PERMISSION_MICROPHONE=1` macro, and `zip_core`'s `stt_session_manager.dart` (`_checkPermission`) gates on `permission_handler` | Unit 10 |
+| G3 | Android declares no `RECORD_AUDIO` and no `RecognitionService` `<queries>` entry | Phase 1 Unit 2 (FR-6.1, FR-6.3) | `android/app/src/main/AndroidManifest.xml` declares no permission; its only `<queries>` intent is `PROCESS_TEXT` | Unit 10 |
+| G4 | The Android release build has no `INTERNET` permission | Phase 2 Unit 7 (NFR-8.2) | Only the `debug` and `profile` manifests declare it | Unit 13 |
+| G5 | Release identity and signing are unset | No unit before Phase 6 | The release build signs with the debug keystore; `android:label` is `zip_captions`; there is no iOS `DEVELOPMENT_TEAM`; the bundle IDs (`com.zipcaptions.zip_captions`, `com.zipcaptions.zipCaptions`) are not reconciled with the v1 store listings | Unit 10 (identity), Unit 11 (signing) |
+| G6 | No unit verifies the mobile viewer | NFR-8.2 vs Unit 9's scope | Unit 9's device checks do not name a phone | Unit 13 |
+| G7 | No automated mobile E2E | The Phase 1 Build and Test summary deferred it "to Phase 2" | No Phase 2 unit carries it | Unit 13 |
+| G8 | No hosted non-production backend | The roadmap has only Phase 6 production infrastructure | `zip_core`'s `supabase_config.dart` and `turn_config.dart` default to `localhost` | Unit 12 |
+| G9 | Screen-on during mobile captioning is unverified | Project constraint (the screen stays on while captioning) | `wakelock_plus` is declared in `zip_core` but has never been observed working on a phone | Unit 10 |
+
+G2, G3, G4, G5 and G8 were re-checked against `develop` at `cd0451f` on 2026-10-24. Unit 8.1 changed no `ios/` or `android/` file. G2 and G3 come from reading the configuration, so reproducing them on a device is Unit 10's first task.
+
+### Virtual-device development and QA (applies to Units 10-13)
+
+Day-to-day development and QA run on virtual devices, driven through the `flutter-agent-lens` MCP server. Physical devices are kept for the gates that emulators cannot prove.
+
+- **iOS Simulator** (Xcode 26, iOS 26.0): the default is **iPhone 17**, and **iPhone 16e** is the small-screen check.
+- **Android emulator:** `Pixel_9_API_35` and `Pixel_9_Pro_API_36`. Both are `google_apis_playstore` images with `hw.audioInput=yes`, because `speech_to_text` needs Google's on-device recognizer. The `google_apis`-only AVDs are not used for STT testing.
+- **Build mode:** run in **debug or profile** mode only. Release builds disable the VM Service, so the MCP cannot attach to them.
+- **Evidence per check:**
+  - `screenshot`, using `capture_baseline` and `compare` for the Recording, Settings and Viewer screens.
+  - `console_logs`, for permission and STT errors.
+  - `get_navigation_stack`, for route assertions such as `/recording` and `/b/:broadcastId`.
+  - `widget` → `get_tree`.
+  - `network`, for Supabase and signaling calls in Units 12 and 13.
+  - Emulator `profiling` results are indicative only.
+- **Limit:** the MCP has no tap or text-entry tool. The UI is driven by `integration_test` flows (Unit 13's harness), by `adb shell input` on Android, or by hand on the Simulator. `evaluate_expression` is for diagnostics, not for driving the UI.
+- **Permissions:** pre-grant them for repeatable runs:
+  - Android: `adb shell pm grant com.zipcaptions.zip_captions android.permission.RECORD_AUDIO`
+  - iOS: `xcrun simctl privacy <udid> grant microphone com.zipcaptions.zipCaptions`
+
+  Also test the un-granted path (`pm revoke`, `simctl privacy … reset`), because that path reproduces G2 and G3. iOS speech-recognition consent is OQ-MA-1 (Unit 10).
+- **Audio:** route the Mac's input to the emulator. For repeatable STT checks, play a fixed speech clip through the Mac's output rather than speaking live.
+- **Local backend:** the Android emulator reaches the host's Supabase and coturn through `10.0.2.2` or `adb reverse`, passed with `--dart-define`. The Simulator can use `localhost`.
+
+**What emulators cannot prove, so the physical-device gate stays:**
+- real-microphone latency for Phase 1 NFR-1.1 (< 1 s)
+- screen-on and wake lock under real power management (G9)
+- recognizer availability on real hardware
+- a signed install from TestFlight or Play
+- a real Wi-Fi to cellular network change
+
+Every exit gate in Units 10-13 therefore needs **both** a recorded emulator QA pass (screenshots and logs captured through the MCP) and a physical-device pass.
+
+### Unit 10: Mobile Platform Readiness (Alpha 1)
+
+**Package**: zip_captions (`ios/` and `android/` runner configuration). zip_broadcast is checked for the same defects, and the result is only recorded, because zip_broadcast ships on desktop. No `lib/` change is expected beyond fixes the device pass turns up.
+**Stories**: S-22
+**Stages**: NFR Requirements, then Code Generation, then a device verification pass. Functional Design is skipped because there is no new business logic. NFR Requirements covers:
+- the permission matrix per platform
+- how signing secrets are handled under the Security Baseline (the keystore and `key.properties` are never in git)
+- the app identity and bundle-ID decision against the v1 store listings
+
+**Gate**: OQ-MA-1 (below) must be answered and recorded before NFR Requirements is approved.
+
+**Closes**: G1, G2, G3, G5 (identity only), G9.
+
+**Verification**:
+1. Reproduce G2 and G3 on the iPhone 17 Simulator and the `Pixel_9_Pro_API_36` emulator, with permissions **not** pre-granted. Capture evidence through `flutter-agent-lens` (`console_logs`, `screenshot`).
+2. Repeat the same run after the fix.
+3. Run on a physical iPhone and a physical Android device against Phase 1 exit criterion 1 and Phase 1 NFR-1.1 (< 1 s latency).
+
+Evidence is recorded in this unit's artifacts. Phase 1's records stay unchanged.
+
+**Dependencies**: Unit 8.1 merged, because work runs on one branch at a time (merged 2026-10-24). Unit 10 shares no files with Unit 8.1.
+
+#### Open questions: blocking gates (no Code Generation until answered and recorded)
+
+| ID | Question | Blocks | How to answer | Answer |
+|---|---|---|---|---|
+| OQ-MA-1 | Can the iOS Simulator's **speech-recognition** consent be pre-granted, as the microphone is with `xcrun simctl privacy <udid> grant microphone <bundle>`? Or does the `NSSpeechRecognitionUsageDescription` prompt need accepting by hand every time the app is installed fresh? | Unit 10 Code Generation (it decides whether repeatable emulator QA is scriptable on iOS, or needs a manual step in the QA procedure) | On the iPhone 17 Simulator, run `xcrun simctl privacy help` and check whether a speech-recognition service is listed. If it is, grant it, run the app with `flutter-agent-lens` attached, and confirm through `console_logs` and `screenshot` that no prompt appears and captioning starts. If it isn't, record the manual step and check whether `simctl privacy … reset all` returns the prompt between runs. | **OPEN** |
+
+Rules for this table:
+- Each row is answered with evidence (command output plus the MCP screenshot or logs) and recorded in Unit 10's NFR Requirements artifact and in `audit.md`.
+- **Unit 10 must not leave NFR Requirements while any row it blocks is still OPEN.**
+- New open questions found during planning go into this table with the stage they block.
+
+---
+
+### Unit 11: Internal Alpha Distribution (Alpha 1)
+
+**Packages**: zip_captions (release configuration), CI (`.github/workflows/`)
+**Stories**: S-22 (continued: the app installs from the test tracks)
+**Stages**: NFR Requirements, then Infrastructure Design (CI release lanes for a signed `ipa` and `aab`, plus GitHub Actions secrets), then Code Generation.
+
+**Closes**: the rest of G5 (signing and distribution).
+
+**Human prerequisites**: an Apple Developer team with an App Store Connect record, a Play Console app, and an upload key.
+
+**Testers**: internal only, so there is no Beta App Review. Builds go to TestFlight internal testing (up to 100 testers) and Play Internal Testing. NFR Requirements checks whether Play needs a privacy policy or a Data safety form for internal testing of an app that requests `RECORD_AUDIO`.
+
+**Exit (Alpha 1 gate)**: an internal tester installs from both test tracks and completes a captioning session.
+
+**Dependencies**: Unit 10. Unit 11 needs the human prerequisites above, so other units may proceed while it waits on them.
+
+---
+
+### Unit 12: Staging Backend (Alpha 2)
+
+**Packages**: zip_supabase (staging deployment configuration), zip_core (build-time configuration only)
+**Stories**: none new (enabler for S-23), gated by SR-05
+**Stages**: NFR Requirements, then Infrastructure Design, then Code Generation. Infrastructure Design produces the SR-05 document and is an **approval gate**: the services are exposed to the public, so the review follows the SR-03 pattern.
+
+**Closes**: G8.
+
+**Scope**: hosted Supabase and coturn as **staging**, kept explicitly separate from the Phase 6 production infrastructure. The apps take build-time `--dart-define` values for `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ICE_SERVER_URLS` and `BROADCAST_BASE_URL`. Internal testers join through `JoinBroadcastScreen`, so universal links and app links stay deferred.
+
+**Dependencies**: Unit 9, so that the desktop broadcast path is verified first. Unit 12 runs after Unit 9 as a post-close Phase 2 unit.
+
+---
+
+### Unit 13: Mobile Viewer Verification (Alpha 2)
+
+**Packages**: zip_captions (Android manifest, `integration_test` smoke harness), CI
+**Stories**: S-23
+**Stages**: NFR Requirements, then Code Generation, then Build and Test.
+- NFR Requirements decides the smoke-harness choice: `integration_test`, Patrol or Maestro. A new dependency needs the usual approval.
+- Code Generation adds the `INTERNET` permission and the mobile smoke E2E harness.
+
+**Closes**: G4, G6, G7.
+
+**Scope**: a phone joins a desktop Zip Broadcast session over staging. The run covers P2P, TURN, reconnection after a Wi-Fi to cellular switch, and the capacity-refusal copy.
+
+**Emulator first**:
+- Run the join, receive and reconnect flows on the Simulator and the Android emulator, first against the local stack and then against staging.
+- Simulate network loss with the emulator's network controls or with airplane mode.
+- Assert with `get_navigation_stack`, `network` and `screenshot` `compare`.
+- The `integration_test` smoke harness runs on both virtual devices in a form CI can run.
+- The real Wi-Fi to cellular switch stays a physical-device check.
+
+**Exit (Alpha 2 gate)**: an internal tester on each platform views a live session from the test-track build.
+
+**Dependencies**: Units 11 and 12. Unit 13 runs after Unit 9 as a post-close Phase 2 unit.
+
+---
+
 ## Construction Stage Summary
 
 | Unit | FD | NFR-R | NFR-D | ID | CG | Gate |
@@ -286,3 +440,7 @@ The evidence trail is the PR #41 thread (runtime comments of 2026-10-23 and 2026
 | 8 External Display | yes | yes | yes | yes | yes | Dependency record (SECURITY-10) |
 | 8.1 Pop-out (PiP) | yes | yes | yes | yes | yes | `window_manager` dependency record (SECURITY-10) before CG; spans both apps |
 | 9 Integration | Build and Test + Documentation Refinement | | | | | Exit criteria |
+| 10 Mobile Platform Readiness | — | yes | — | — | yes | OQ-MA-1 answered before NFR-R approval; emulator and physical-device pass |
+| 11 Internal Alpha Distribution | — | yes | — | yes | yes | Alpha 1: install from both test tracks and complete a session |
+| 12 Staging Backend | — | yes | — | yes (SR-05) | yes | SR-05 before CG; runs after Unit 9 |
+| 13 Mobile Viewer Verification | — | yes | — | — | yes, then Build and Test | Alpha 2: a tester on each platform views a live session; runs after Unit 9 |

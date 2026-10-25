@@ -119,3 +119,54 @@ The order is a recommendation. Only the dependency matrix is binding.
 - **U5**: both protocol sides tested together with fakes; cap and ordering invariants
 - **U6 / U7**: widget tests for every broadcaster and viewer state, including the captions-inactive banner and the paused-captions viewer message
 - **U9**: two-device, NAT simulation, capacity, reconnection and regression milestones
+- **U10**: G2 and G3 reproduced on the iOS Simulator and the Android emulator with permissions not pre-granted, then re-run after the fix. Then captioning on a physical iPhone and a physical Android phone (Phase 1 exit criterion 1, Phase 1 NFR-1.1, screen kept on)
+- **U11**: a signed `ipa` and `aab` from CI; an internal tester installs from both test tracks and completes a captioning session (Alpha 1 gate)
+- **U12**: SR-05 approved before Code Generation; the staging endpoints are reachable from a test-track build
+- **U13**: the `integration_test` smoke harness passes on both virtual devices; a phone joins, receives and reconnects across a real Wi-Fi to cellular switch (Alpha 2 gate)
+
+## Mobile Alpha Units (Units 10-13), appended 2026-10-24
+
+The existing matrix, graph and build order above are unchanged. Unit 9 still closes the original Phase 2 scope. Units 10-13 are defined in `phase2-unit-of-work.md`, section "Mobile Alpha Units". The approved plan labelled them A to D.
+
+### Dependency Matrix (appended units)
+
+| Unit | U8.1 Pop-out | U9 Integration | U10 Mobile Readiness | U11 Alpha Distribution | U12 Staging Backend |
+|---|---|---|---|---|---|
+| U10 Mobile Platform Readiness | X (merged 2026-10-24) | | | | |
+| U11 Internal Alpha Distribution | | | X | | |
+| U12 Staging Backend | | X | | | |
+| U13 Mobile Viewer Verification | | (via U12) | | X | X |
+
+The dependency on Unit 8.1 is a branch-scheduling rule (one branch at a time), not a code dependency: Unit 10 shares no files with Unit 8.1. Unit 11 also waits on human prerequisites: an Apple Developer team with an App Store Connect record, a Play Console app, and an upload key.
+
+### Dependency Graph (appended units)
+
+```
+U8.1 Pop-out (merged) ──► U10 Mobile Platform Readiness ──► U11 Internal Alpha Distribution ══► ALPHA 1
+                                                                       │
+U9 Integration Milestones ──► U12 Staging Backend ─────────────────────┴──► U13 Mobile Viewer Verification ══► ALPHA 2
+```
+
+**Text alternative:** Unit 10 needs Unit 8.1 merged. Unit 11 needs Unit 10, and its completion is the Alpha 1 gate. Unit 12 needs Unit 9. Unit 13 needs Units 11 and 12, and its Build and Test is the Alpha 2 gate. Units 10 and 11 do not depend on Unit 9 and may run before it. Units 12 and 13 run after Unit 9 as post-close Phase 2 units.
+
+The parked on-device multilingual STT unit is unnumbered and is not placed in this graph. Its position relative to Unit 9 and to these units is decided when it is approved (its OQ-1).
+
+### Suggested Build Order (appended units)
+
+| # | Work item | Why now |
+|---|---|---|
+| A1 | Unit 10 Mobile Platform Readiness | First after Unit 8.1 merges (decided 2026-10-22). OQ-MA-1 is answered at its NFR Requirements stage |
+| A2 | Unit 11 Internal Alpha Distribution | After Unit 10. Can wait on the store accounts while other units proceed |
+| A3 | Unit 12 Staging Backend | After Unit 9. SR-05 review time can overlap with finishing Unit 11 |
+| A4 | Unit 13 Mobile Viewer Verification | Last; its Build and Test is the Alpha 2 gate |
+
+Where Unit 9 (and the multilingual STT unit) fall relative to Units 10 and 11 is flexible. Only the dependency matrix is binding.
+
+### Shared Resources and Coordination Points (appended units)
+
+| Resource | Owner unit | Consumers | Coordination |
+|---|---|---|---|
+| App identity (bundle IDs, display name) | U10 | U11, U13 | Decided once at Unit 10's NFR Requirements, against the v1 store listings |
+| Signing keys, `key.properties`, CI signing secrets | U10 (handling policy), U11 (CI lanes) | U13 | Never in git; GitHub Actions secrets only (Security Baseline) |
+| Staging `--dart-define` values (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ICE_SERVER_URLS`, `BROADCAST_BASE_URL`) | U12 | U13, U11's release lanes | Staging only; kept separate from Phase 6 production infrastructure |
+| Virtual-device QA procedure (`flutter-agent-lens`) | U10 | U11, U12, U13 | Defined in `phase2-unit-of-work.md`, "Virtual-device development and QA"; extended, not forked
