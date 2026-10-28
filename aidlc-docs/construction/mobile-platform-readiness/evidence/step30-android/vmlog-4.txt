@@ -1,0 +1,33 @@
+[zip_core.CaptionOutputTargetRegistry] Target added: on_screen
+[zip_core.SegmentedSpeechEngine] Segmented engine initialized
+[zip_core.SttSessionManager] Engine platform initialized for locale en-US
+[zip_core.SegmentedSpeechEngine] On-device support check: true
+[zip_core.SegmentedSpeechEngine] Segmented session started for en-US, lengthMs=300000
+[zip_core.SttSessionManager] Engine platform listening
+[zip_core.RecordingStateNotifier] Session started: 51932fd6-4c50-49af-8084-8ca87693b851
+[zip_core.TranscriptWriterTarget] session started: sessionId=51932fd6-4c50-49af-8084-8ca87693b851
+[zip_core.OnScreenCaptionTarget] session started: targetId=on_screen sessionId=51932fd6-4c50-49af-8084-8ca87693b851
+[supabase.auth] Stopping auto refresh
+[supabase.auth] Starting auto refresh
+[zip_core.SegmentedSpeechEngine] Silence code 7, renewing
+[zip_core.SegmentedSpeechEngine] Segment session ended, renewing
+[zip_core.SegmentedSpeechEngine] On-device support check: true
+[zip_core.SegmentedSpeechEngine] Segmented session started for en-US, lengthMs=300000
+[zip_core.SegmentedSpeechEngine] Segmented session stopped
+[zip_core.SttSessionManager] Engine platform stopped
+[zip_core.RecordingStateNotifier] Session stopped
+[zip_core.TranscriptWriterTarget] finalizeCurrentSession: sessionId=51932fd6-4c50-49af-8084-8ca87693b851 skipped, no row
+[zip_core.OnScreenCaptionTarget] session stopped: targetId=on_screen
+[zip_core.RecordingStateNotifier] Session cleared
+[zip_core.SegmentedSpeechEngine] Segmented engine initialized
+[zip_core.SttSessionManager] Engine platform initialized for locale en-US
+[zip_core.SegmentedSpeechEngine] On-device support check: true
+[zip_core.SegmentedSpeechEngine] Segmented session started for en-US, lengthMs=300000
+[zip_core.SttSessionManager] Engine platform listening
+[zip_core.RecordingStateNotifier] Session started: 01edfe9c-cb06-4609-99ab-1dd814b2388c
+[zip_core.TranscriptWriterTarget] session started: sessionId=01edfe9c-cb06-4609-99ab-1dd814b2388c
+[zip_core.OnScreenCaptionTarget] session started: targetId=on_screen sessionId=01edfe9c-cb06-4609-99ab-1dd814b2388c
+[zip_core.SegmentedSpeechEngine] Silence code 7, renewing
+[zip_core.SegmentedSpeechEngine] Segment session ended, renewing
+[zip_core.SegmentedSpeechEngine] On-device support check: true
+[zip_core.SegmentedSpeechEngine] Segmented session started for en-US, lengthMs=300000

@@ -8,6 +8,11 @@ import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zip_captions/src/app.dart';
+import 'package:zip_captions/src/providers/language_pack_providers.dart';
+import 'package:zip_captions/src/services/method_channel_language_pack_service.dart';
+import 'package:zip_captions/src/services/method_channel_on_device_support_checker.dart';
+import 'package:zip_captions/src/services/method_channel_segmented_recognizer_bridge.dart';
+import 'package:zip_captions/src/services/stt_engine_registration.dart';
 import 'package:zip_core/overlay.dart';
 import 'package:zip_core/zip_core.dart';
 
@@ -73,16 +78,27 @@ Future<void> runZipCaptions(
           ),
   );
 
+  // BR-U10-03: the audio service is platform code with no plugin-free
+  // default, so it is built here, before the container, and overridden on
+  // every platform. It needs only SharedPreferences.
+  final audioDeviceService = MobileAudioDeviceService(prefs);
+
   final container = ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
       supabaseClientProvider.overrideWithValue(Supabase.instance.client),
+      audioDeviceServiceProvider.overrideWithValue(audioDeviceService),
+      // Amendment 04: the panel's language-pack status and download.
+      languagePackServiceProvider.overrideWithValue(
+        MethodChannelLanguagePackService(),
+      ),
     ],
   );
 
-  if (kDebugMode) {
-    container.read(sttEngineRegistryProvider).register(FakeSttEngine());
-  }
+  registerAppSttEngines(
+    container.read(sttEngineRegistryProvider),
+    audioDeviceService: audioDeviceService,
+  );
   // Pre-warm the repository so transcriptWriterTargetProvider sees
   // AsyncValue.data on its first build and registers the target
   // synchronously — no provider rebuild required.
@@ -93,6 +109,42 @@ Future<void> runZipCaptions(
     UncontrolledProviderScope(
       container: container,
       child: const ZipCaptionsApp(),
+    ),
+  );
+}
+
+/// Registers this build's STT engines from the build's own platform values.
+///
+/// Split out of [runZipCaptions] (Q-7) so a test can run the exact call the
+/// app makes, with `debugDefaultTargetPlatformOverride`, without the Supabase
+/// and database start-up around it.
+///
+/// BR-U10-05: [kDebugMode] and the `ZIP_FAKE_STT` define are compile-time
+/// constants, so a release build strips the fake and the branch that registers
+/// it (TP-3, TP-4, TP-10). The mobile engines are built through factories,
+/// which keep `speech_to_text` declared only in zip_core. Amendment 03: Android
+/// registers the silent segmented engine over the runner's channels, iOS keeps
+/// PlatformSttEngine; a closure each, so neither platform ever builds the
+/// other's engine.
+@visibleForTesting
+void registerAppSttEngines(
+  SttEngineRegistry registry, {
+  required AudioDeviceService audioDeviceService,
+}) {
+  const onDeviceChecker = MethodChannelOnDeviceSupportChecker();
+  registerSttEngines(
+    registry,
+    platform: defaultTargetPlatform,
+    isWeb: kIsWeb,
+    allowDevEngines: kDebugMode,
+    forceFake: kDebugMode && const bool.fromEnvironment('ZIP_FAKE_STT'),
+    createPlatformEngine: () => createPlatformSttEngine(
+      onDeviceSupportChecker: onDeviceChecker.call,
+      deviceService: audioDeviceService,
+    ),
+    createSegmentedEngine: () => createSegmentedSpeechEngine(
+      bridge: MethodChannelSegmentedRecognizerBridge(),
+      onDeviceSupportChecker: onDeviceChecker.call,
     ),
   );
 }

@@ -1,6 +1,7 @@
 import 'package:zip_core/src/models/speech_locale.dart';
 import 'package:zip_core/src/models/stt_result.dart';
 import 'package:zip_core/src/stt/stt_engine.dart';
+import 'package:zip_core/src/stt/stt_error_source.dart';
 
 /// Mock STT engine for testing.
 ///
@@ -108,5 +109,26 @@ class MockSttEngine implements SttEngine {
   /// Synchronously emit an STT result through the onResult callback.
   void emitResult(SttResult result) {
     _onResult?.call(result);
+  }
+}
+
+/// A [MockSttEngine] that also reports lasting errors (an [SttErrorSource]),
+/// for the session manager's error-channel tests (Unit 10).
+class MockErrorSourceSttEngine extends MockSttEngine implements SttErrorSource {
+  MockErrorSourceSttEngine({super.engineId = 'mock-error-source'});
+
+  void Function(SttEngineError error)? _errorListener;
+
+  /// Whether a listener is currently registered.
+  bool get hasErrorListener => _errorListener != null;
+
+  @override
+  void setErrorListener(void Function(SttEngineError error)? listener) {
+    _errorListener = listener;
+  }
+
+  /// Reports [kind] to the registered listener, if any.
+  void emitError(SttEngineErrorKind kind) {
+    _errorListener?.call(SttEngineError(kind));
   }
 }

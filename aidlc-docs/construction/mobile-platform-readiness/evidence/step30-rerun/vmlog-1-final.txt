@@ -1,0 +1,51 @@
+[zip_core.CaptionOutputTargetRegistry] Target added: on_screen
+[zip_core.SegmentedSpeechEngine] Segmented engine initialized
+[zip_core.SttSessionManager] Engine platform initialized for locale en-US
+[supabase.auth] Stopping auto refresh
+[supabase.auth] Starting auto refresh
+[zip_core.SegmentedSpeechEngine] On-device support check: true
+[zip_core.SegmentedSpeechEngine] Segmented session started for en-US, lengthMs=300000
+[zip_core.SttSessionManager] Engine platform listening
+[zip_core.RecordingStateNotifier] Session started: 142b8e5a-e49c-4013-86a0-6c714aa4a621
+[zip_core.TranscriptWriterTarget] session started: sessionId=142b8e5a-e49c-4013-86a0-6c714aa4a621
+[zip_core.OnScreenCaptionTarget] session started: targetId=on_screen sessionId=142b8e5a-e49c-4013-86a0-6c714aa4a621
+[zip_core.SegmentedSpeechEngine] Segmented session stopped
+[zip_core.SttSessionManager] Engine platform stopped
+[zip_core.RecordingStateNotifier] Session stopped
+[zip_core.TranscriptWriterTarget] finalizeCurrentSession: sessionId=142b8e5a-e49c-4013-86a0-6c714aa4a621 skipped, no row
+[zip_core.OnScreenCaptionTarget] session stopped: targetId=on_screen
+[supabase.auth] Stopping auto refresh
+[supabase.auth] Stopping auto refresh
+[supabase.supabase_flutter] Initialize Supabase v2.17.2
+[supabase.auth] Initialize GoTrueClient v2.27.2 with url: http://localhost:54321/auth/v1, autoRefreshToken: true, flowType: pkce, tickDuration: …
+[supabase.auth] Initialize with headers: {X-Client-Info: supabase-flutter/2.17.2; platform=Android; platform-version=BE2A.250530.026.D1; runtime…
+[supabase.auth] Stopping auto refresh
+[supabase.auth] Starting auto refresh
+[supabase.postgrest] Initialize PostgrestClient with url: http://localhost:54321/rest/v1, schema: public
+[supabase.postgrest] Initialize with headers: {X-Client-Info: supabase-flutter/2.17.2; platform=Android; platform-version=BE2A.250530.026.D1; runtime…
+[supabase.functions] Initialize FunctionsClient v2.7.1 with url 'http://localhost:54321/functions/v1' and region 'null'
+[supabase.functions] Initialize with headers: {X-Client-Info: supabase-flutter/2.17.2; platform=Android; platform-version=BE2A.250530.026.D1; runtime…
+[supabase.storage] Initialize SupabaseStorageClient v2.8.0 with url: http://localhost:54321/storage/v1, retryAttempts: 0
+[supabase.storage] Initialize with headers: {X-Client-Info: supabase-flutter/2.17.2; platform=Android; platform-version=BE2A.250530.026.D1; runtime…
+[supabase.realtime] Initialize RealtimeClient with endpoint: ws://localhost:54321/realtime/v1, timeout: 0:00:10.000000, heartbeatIntervalMs: 25000, …
+[supabase.realtime] Initialize with headers: {apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc…
+[supabase.supabase] Initialize SupabaseClient v2.16.1 with no custom access token
+[supabase.auth] onAuthStateChange: AuthState(event: initialSession, session: null, fromBroadcast: false, signOutReason: null)
+[supabase.supabase_flutter] Starting deeplink observer
+[supabase.supabase_flutter] ***** Supabase init completed *****
+[zip_core.SttEngineRegistry] Engine registered: platform
+[zip_core.CaptionOutputTargetRegistry] Target added: transcript_writer
+[zip_core.CaptionOutputTargetRegistry] Target added: on_screen
+[zip_core.SegmentedSpeechEngine] Segmented engine initialized
+[zip_core.SttSessionManager] Engine platform initialized for locale en-US
+[zip_core.SegmentedSpeechEngine] On-device support check: true
+[zip_core.SegmentedSpeechEngine] Segmented session started for en-US, lengthMs=300000
+[zip_core.SttSessionManager] Engine platform listening
+[zip_core.RecordingStateNotifier] Session started: 990b134d-7222-41df-a918-4ad15a3cb369
+[zip_core.TranscriptWriterTarget] session started: sessionId=990b134d-7222-41df-a918-4ad15a3cb369
+[zip_core.OnScreenCaptionTarget] session started: targetId=on_screen sessionId=990b134d-7222-41df-a918-4ad15a3cb369
+[zip_core.SegmentedSpeechEngine] Segmented session stopped
+[zip_core.SttSessionManager] Engine platform stopped
+[zip_core.RecordingStateNotifier] Session stopped
+[zip_core.TranscriptWriterTarget] finalizeCurrentSession: sessionId=990b134d-7222-41df-a918-4ad15a3cb369 skipped, no row
+[zip_core.OnScreenCaptionTarget] session stopped: targetId=on_screen

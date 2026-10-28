@@ -1,0 +1,151 @@
+INFO         | Android emulator version 37.1.11.0 (build_id 15917651) (CL:N/A)
+INFO         | Graphics backend: gfxstream
+INFO         | Found systemPath /Users/oblivious/Library/Android/sdk/system-images/android-36/google_apis_playstore/arm64-v8a/
+INFO         | Guest usage of host flag 'VulkanVirtualQueue' will be ignored.
+INFO         | Increasing RAM size to 4096MB
+INFO         | Guest GLES Driver: Auto (ext controls)
+INFO         | emuglConfig_init: vulkan_mode_selected:lavapipe gles_mode_selected:host
+INFO         | Checking system compatibility:
+INFO         |   Checking: hasSufficientDiskSpace
+INFO         |      Ok: Disk space requirements to run avd: `ZipCaptions_QA_API_36` are met
+INFO         |   Checking: hasSufficientHwGpu
+INFO         |      Ok: Hardware GPU compatibility checks are not required
+INFO         |   Checking: hasSufficientSystem
+INFO         |      Ok: System requirements to run avd: `ZipCaptions_QA_API_36` are met
+INFO         | Storing crashdata in: /tmp/android-oblivious/emu-crash-37.1.11.db, detection is enabled for process: 96317
+INFO         | Showing crashdialog to get consent.
+  module_list[0].crashpad_annotations["6616406"] (type = 1) = PJr9dhHT/+BqAAAAAA== KJr9dhHT/+BqAAAAAA== IZr9dhHT/+BqAAAAAA== I5r9dhHT/+BqAAAAAA== LZr9dhHT/+BqAAAAAA== fJr9dhHT/+BqAAAAAA== 
+  module_list[0].crashpad_annotations["6615071"] (type = 1) = PIR2fTTT/+BqAAAAAA== KIR2fTTT/+BqAAAAAA== IYR2fTTT/+BqAAAAAA== I4R2fTTT/+BqAAAAAA== LYR2fTTT/+BqAAAAAA== fIR2fTTT/+BqAAAAAA== PIR2fTTT/+BqAAAAAA== KIR2fTTT/+BqAAAAAA== IYR2fTTT/+BqAAAAAA== I4R2fTTT/+BqAAAAAA== LYR2fTTT/+BqAAAAAA== fIR2fTTT/+BqAAAAAA== POaoQUhEAOFqAAAAAA== KOaoQUhEAOFqAAAAAA== IeaoQUhEAOFqAAAAAA== KeaoQUhEAOFqAAAAAA== 
+  module_list[0].crashpad_annotations["ERRLOG"] (type = 1) = adb protocol fault (couldn't read status length)
+
+  module_list[0].crashpad_annotations["disk.dataPartition.size"] (type = 1) = 10G
+  module_list[0].crashpad_annotations["hw.lcd.height"] (type = 1) = 2856
+  module_list[0].crashpad_annotations["hw.gpu.mode"] (type = 1) = auto
+  module_list[0].crashpad_annotations["hw.cpu.ncore"] (type = 1) = 4
+  module_list[0].crashpad_annotations["hw.sensor.hinge"] (type = 1) = no
+  module_list[0].crashpad_annotations["hw.lcd.width"] (type = 1) = 1280
+  module_list[0].crashpad_annotations["hw.ramSize"] (type = 1) = 2G
+  module_list[0].crashpad_annotations["PlayStore.enabled"] (type = 1) = true
+  module_list[0].crashpad_annotations["cpu_cores"] (type = 1) = 10
+  module_list[0].crashpad_annotations["hw.gpu.enabled"] (type = 1) = no
+  module_list[0].crashpad_annotations["free_ram"] (type = 1) = 11189
+  module_list[0].crashpad_annotations["avd_space"] (type = 1) = 64973856768
+  module_list[0].crashpad_annotations["ro.build.fingerprint"] (type = 1) = google/sdk_gphone64_arm64/emu64a:16/BE2A.250530.026.D1/13818094:user/dev-keys
+  module_list[0].crashpad_annotations["grpc"] (type = 1) = cn:T,adv,PIR2fTTT/+BqAAAAAA== fIR2fTTT/+BqAAAAAA== PJr9dhHT/+BqAAAAAA== fJr9dhHT/+BqAAAAAA== PIR2fTTT/+BqAAAAAA== fIR2fTTT/+BqAAAAAA== POaoQUhEAOFqAAAAAA== 
+  module_list[0].crashpad_annotations["AVD_FLAVOR"] (type = 1) = AVD_PHONE
+  module_list[0].crashpad_annotations["gfxstream_features"] (type = 1) = GlPipeChecksum, Vulkan, HasSharedSlotsHostMemoryAllocator, VulkanShaderFloat16Int8, GlAsyncSwap, GlDma, GlDirectMem, GlesDynamicVersion, RefCountPipe, HostComposition, VulkanNullOptionalStrings, YuvCache, VulkanIgnoredHandles, VulkanQueueSubmitWithCommands, HwcMultiConfigs, VulkanVirtualQueue, 
+  module_list[0].crashpad_annotations["internal-msg"] (type = 1) = emuglConfig_init: gpu_mode_requested: auto, no_window: 0
+emuglConfig_init: GPU emulation enabled using Vulkan:'lavapipe' GLES:'host' modes
+Deciding if GLDirectMem/Vulkan should be enabled. Selected GLES renderer: Host Selected Vulkan renderer: Lavapipe API level: 36 
+Enabling Vulkan
+Enabling GLDirectMem
+Selecting Vulkan device: llvmpipe (LLVM 21.1.4, 128 bits), Version: 1.4.330
+VkEmulation deviceInfo: 
+hasGraphicsQueueFamily = 1
+hasComputeQueueFamily = 1
+externalMemoryMode = OpaqueFd
+supportsExternalMemoryImport = 1
+supportsExternalMemoryExport = 1
+supportsDriverProperties = 1
+supportsExternalMemoryHostProps = 1
+hasSamplerYcbcrConversionExtension = 1
+supportsSamplerYcbcrConversion = 1
+glInteropSupported = 0
+hasNvidiaDeviceDiagnosticCheckpointsExtension = 0
+supportsNvidiaDeviceDiagnosticCheckpoints = 0
+supportsPrivateData = 1
+
+Vulkan emulation initialized
+
+  module_list[0].crashpad_annotations["command_line"] (type = 1) = -avd ZipCaptions_QA_API_36 -port 5560 -grpc 8560 -allow-host-audio -no-snapshot 
+INFO         | No consent for crashreport 58089574-610a-4af9-ba67-e1bd7f49aed0, deleting.
+INFO         | Initializing gfxstream backend
+INFO         | startOpenglesRendererImpl: gpu info
+INFO         | 
+INFO         | initIcdPaths: ICD set to 'lavapipe', using Lavapipe ICD
+INFO         | Setting ICD filenames for the loader = /Users/oblivious/Library/Android/sdk/emulator/lib64/vulkan/lvp_icd.json
+INFO         | SharedLibrary::open for [/Users/oblivious/Library/Android/sdk/emulator/qemu/darwin-aarch64/lib64/vulkan/libvulkan.dylib]
+INFO         | Added library: /Users/oblivious/Library/Android/sdk/emulator/qemu/darwin-aarch64/lib64/vulkan/libvulkan.dylib
+INFO         | Enabling Vulkan portability.
+INFO         | Selecting Vulkan device: llvmpipe (LLVM 21.1.4, 128 bits), Version: 1.4.330
+INFO         | Using Vulkan externalMemoryMode: OpaqueFd for VkEmulation
+INFO         | Initializing VkEmulation features:
+INFO         |     glInteropSupported: false
+INFO         |     useDeferredCommands: true
+INFO         |     createResourceWithRequirements: true
+INFO         |     useVulkanComposition: false
+INFO         |     useVulkanNativeSwapchain: false
+INFO         |     enable guestRenderDoc: false
+INFO         |     ASTC LDR emulation mode: Gpu
+INFO         |     enable ETC2 emulation: true
+INFO         |     enable Ycbcr emulation: false
+INFO         |     guestVulkanOnly: false
+INFO         |     useDedicatedAllocations: false
+INFO         |     guestVulkanMaxApiVersion: 1.3.0
+INFO         |     enableProtectedMemoryEmulation: false
+INFO         | Graphics Adapter Vendor Google (Apple)
+INFO         | Graphics Adapter Android Emulator OpenGL ES Translator (Apple M2 Pro)
+INFO         | Graphics API Version OpenGL ES 3.0 (4.1 Metal - 89.4)
+INFO         | Graphics API Extensions GL_OES_EGL_sync GL_OES_EGL_image GL_OES_EGL_image_external GL_OES_depth24 GL_OES_depth32 GL_OES_element_index_uint GL_OES_texture_float GL_OES_texture_float_linear GL_OES_compressed_paletted_texture GL_OES_compressed_ETC1_RGB8_texture GL_OES_depth_texture GL_OES_texture_npot GL_OES_rgb8_rgba8 GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_texture_format_BGRA8888 GL_APPLE_texture_format_BGRA8888 
+INFO         | Graphics Device Extensions N/A
+INFO         | Disabling sparse binding feature support
+INFO         | Sending adb public key [QAAAAE0b5QJ7ahb+juxE0cWtIaoaO+OhgEtX+MG4AtTSFQ34v+ibpL473V6YZMvgXpYb7g6z0Jg5Cd5DIUn+YcRgiQumhbtDrQG27BWxO7tq0eLbkeguzYzTqeBLOFCR1MWlsQ7P0HJ85mE39fRKccfC7fipVZt6A497Tr+3NEChVmPyPo/pM98tvhXB/i6oSGSbRG10hBb5lLohruE+VprbersMxiQkZKmDOXYf9FhZHxeeeZ6KRZ7O6QmWHmExwfgMlBUXDZno/Ftrvie3R8NIJx6ADKGfmxD5W/Yr06GyE93T3pbQCoZzd4MJHx/XOmDIG7CxpoZzHKvSvN7mFLXRhLTbjhPI6Sw0dqSmPqjeRNNFMbcmhhGZ05mMukysK+v43Ki8WM9bek3dO1RPD1veCwcXieXddTQcdRjgGWrwPOCr2hpUplJjBXnOdI8KJAogaaxnnMbLkSyIWR4ZZDkxqrTJsu4Gv6xZjNhY9e6GNFReTj3BL1wmsHG0C5ecVqSsgthhpqBFk3BzbRIfISadrw8Xc2+RSzwaGgteSIN3xGQQ5IaaNuO3TRAL5danA8GfUxYoTTK+heCOvG8pUkcxUvTHHC58BLoMJKJ73H1dnpQPNaJo9oCtMy2ZqaTtUvRACOEgn2Pxrd/QIi2PJyjp0EE7P+DX43hKXFdkLOBLaLpG3tuajAEAAQA= oblivious@unknown]
+INFO         | Userspace boot properties:
+INFO         |   androidboot.boot_devices=a003600.virtio_mmio
+INFO         |   androidboot.dalvik.vm.heapsize=576m
+INFO         |   androidboot.debug.hwui.renderer=skiagl
+INFO         |   androidboot.hardware=ranchu
+INFO         |   androidboot.hardware.gltransport=pipe
+INFO         |   androidboot.hardware.vulkan=ranchu
+INFO         |   androidboot.logcat=*:V
+INFO         |   androidboot.opengles.version=196608
+INFO         |   androidboot.qemu=1
+INFO         |   androidboot.qemu.adb.pubkey=QAAAAE0b5QJ7ahb+juxE0cWtIaoaO+OhgEtX+MG4AtTSFQ34v+ibpL473V6YZMvgXpYb7g6z0Jg5Cd5DIUn+YcRgiQumhbtDrQG27BWxO7tq0eLbkeguzYzTqeBLOFCR1MWlsQ7P0HJ85mE39fRKccfC7fipVZt6A497Tr+3NEChVmPyPo/pM98tvhXB/i6oSGSbRG10hBb5lLohruE+VprbersMxiQkZKmDOXYf9FhZHxeeeZ6KRZ7O6QmWHmExwfgMlBUXDZno/Ftrvie3R8NIJx6ADKGfmxD5W/Yr06GyE93T3pbQCoZzd4MJHx/XOmDIG7CxpoZzHKvSvN7mFLXRhLTbjhPI6Sw0dqSmPqjeRNNFMbcmhhGZ05mMukysK+v43Ki8WM9bek3dO1RPD1veCwcXieXddTQcdRjgGWrwPOCr2hpUplJjBXnOdI8KJAogaaxnnMbLkSyIWR4ZZDkxqrTJsu4Gv6xZjNhY9e6GNFReTj3BL1wmsHG0C5ecVqSsgthhpqBFk3BzbRIfISadrw8Xc2+RSzwaGgteSIN3xGQQ5IaaNuO3TRAL5danA8GfUxYoTTK+heCOvG8pUkcxUvTHHC58BLoMJKJ73H1dnpQPNaJo9oCtMy2ZqaTtUvRACOEgn2Pxrd/QIi2PJyjp0EE7P+DX43hKXFdkLOBLaLpG3tuajAEAAQA= oblivious@unknown
+INFO         |   androidboot.qemu.avd_name=ZipCaptions_QA_API_36
+INFO         |   androidboot.qemu.camera_hq_edge_processing=0
+INFO         |   androidboot.qemu.camera_protocol_ver=1
+INFO         |   androidboot.qemu.cpuvulkan.version=4206592
+INFO         |   androidboot.qemu.gltransport.drawFlushInterval=800
+INFO         |   androidboot.qemu.gltransport.name=pipe
+INFO         |   androidboot.qemu.hwcodec.avcdec=2
+INFO         |   androidboot.qemu.hwcodec.hevcdec=2
+INFO         |   androidboot.qemu.hwcodec.vpxdec=2
+INFO         |   androidboot.qemu.settings.system.screen_off_timeout=2147483647
+INFO         |   androidboot.qemu.skin=1280x2856
+INFO         |   androidboot.qemu.virtiowifi=1
+INFO         |   androidboot.qemu.vsync=60
+INFO         |   androidboot.serialno=EMULATOR37X1X11X0
+INFO         |   androidboot.vbmeta.digest=6b98218b46c523e17f8b4a810c5a51b4af28f327c436ce0d286bf937f545cfd7
+INFO         |   androidboot.vbmeta.hash_alg=sha256
+INFO         |   androidboot.vbmeta.size=6720
+INFO         |   androidboot.veritymode=enforcing
+INFO         | Monitoring duration of emulator setup.
+INFO         | Using security allow list from: /Users/oblivious/Library/Android/sdk/emulator/lib/emulator_access.json
+WARNING      | *** No gRPC protection active, consider launching with the -grpc-use-jwt flag.***
+INFO         | Started GRPC server at [::]:8560, security: Insecure, auth: none
+INFO         | Advertising in: /Users/oblivious/Library/Caches/TemporaryItems/avd/running/pid_96317.ini
+INFO         | Successfully initialized netsim WiFi
+INFO         | Activated packet streamer for uwb emulation
+INFO         | Activated packet streamer for bluetooth emulation
+INFO         | Setting display: 0 configuration to: 1280x2856, dpi: 480x480 
+INFO         | setDisplayActiveConfig: id:0, 1280x2856
+INFO         | Checking system compatibility:
+INFO         |   Checking: hasSufficientDiskSpace
+INFO         |      Ok: Disk space requirements to run avd: `ZipCaptions_QA_API_36` are met
+INFO         |   Checking: hasSufficientHwGpu
+INFO         |      Ok: Hardware GPU compatibility checks are not required
+INFO         |   Checking: hasSufficientSystem
+INFO         |      Ok: System requirements to run avd: `ZipCaptions_QA_API_36` are met
+INFO         | emulatorSetupEnvironment: Environment scene is not required
+INFO         | Warning: QMetaObject::connectSlotsByName: No matching signal for on_rgbcSensorValueWidget_valueChanged() (:0, )
+INFO         | Warning: QMetaObject::connectSlotsByName: No matching signal for on_posture_valueChanged(int) (:0, )
+INFO         | TouchpadHolder: registering via hw_xr_led agent for instance=0x16afb04a0
+INFO         | Warning: QObject::connect: Cannot queue arguments of type 'std::vector<android::emulation::control::SnapshotInfo>'
+(Make sure 'std::vector<android::emulation::control::SnapshotInfo>' is registered using qRegisterMetaType().) (:0, )
+INFO         | AVD supportsNativeGLES=1, supportsGuestAngle=1
+INFO         | Guest Angle is still unstable for API > 35.
+INFO         | Created extended window in 91.542ms
+USER_INFO    | Emulator is performing a full startup. This may take upto two minutes, or more.
+WARNING      | adb command '/Users/oblivious/Library/Android/sdk/platform-tools/adb -s emulator-5560 shell getprop sys.boot_completed ' failed: 'adb: device offline'
+INFO         | Boot completed in 23099 ms
+INFO         | Increasing screen off timeout, logcat buffer size to 2M.

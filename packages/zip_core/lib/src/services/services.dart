@@ -3,6 +3,7 @@ export 'auth/auth.dart';
 export 'broadcast/broadcast.dart';
 export 'caption/caption.dart';
 export 'catalog/catalog.dart';
+export 'language_pack/language_pack.dart';
 export 'signaling/signaling.dart';
 export 'stt/stt.dart';
 export 'wake_lock/wake_lock.dart';

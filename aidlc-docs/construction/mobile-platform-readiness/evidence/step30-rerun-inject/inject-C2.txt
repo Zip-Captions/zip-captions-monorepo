@@ -1,0 +1,12 @@
+waiting for open file 15:58:40.542
+stream open 15:59:06.847
+trigger seen 15:59:06.848
+phrase p1.wav start 15:59:06.848
+phrase p1.wav end 15:59:11.671
+phrase p2.wav start 15:59:19.672
+phrase p2.wav end 15:59:23.692
+phrase p3.wav start 15:59:31.691
+phrase p3.wav end 15:59:35.271
+script done, streaming silence 15:59:40.268
+stop file seen 16:04:09.910
+injectAudio ended with StatusCode.UNAVAILABLE Cancelling all calls 16:07:50.986

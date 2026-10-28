@@ -2,33 +2,73 @@ import 'dart:async';
 
 import 'package:logging/logging.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:zip_core/src/constants/stt_listening_limits.dart';
 import 'package:zip_core/src/models/speech_locale.dart';
 import 'package:zip_core/src/models/stt_result.dart';
 import 'package:zip_core/src/services/audio/audio_device_service.dart';
+import 'package:zip_core/src/stt/on_device_support_checker.dart';
 import 'package:zip_core/src/stt/stt_engine.dart';
+import 'package:zip_core/src/stt/stt_error_source.dart';
 
 /// Wraps [SpeechToText] for Tier 1 platforms (iOS, macOS, Android, Windows).
 ///
-/// Implements [SttEngine]. Accepts [SpeechToText] and [AudioDeviceService]
-/// via constructor injection for testability (TEST-U2.1).
+/// Implements [SttEngine] and the sibling capability [SttErrorSource].
+/// Accepts [SpeechToText], [AudioDeviceService] and an
+/// [OnDeviceSupportChecker] via constructor injection for testability
+/// (TEST-U2.1).
+///
+/// **Fail closed on-device (Unit 10, Amendment 02):** before **every**
+/// `listen()` the engine asks the checker whether on-device recognition is
+/// supported for the session's locale, and refuses to listen when the answer
+/// is `false`, an exception, or a timeout. The check is never cached. The
+/// stock plugin does not do this itself (on iOS it replies with an error but
+/// carries on; on Android it silently falls back to the default recogniser).
+///
+/// **Continuous listening (Unit 10, Amendment 01):** the plugin is built for
+/// short phrases, so a session ends at the first pause (Android) or after
+/// about a minute (iOS). The engine restarts listening itself when a session
+/// ends normally, on the plugin's `done` status only and once per session
+/// end, and reports lasting errors through [SttErrorSource].
 ///
 /// **Security (SECURITY-03)**: Never logs transcript text from results.
-class PlatformSttEngine implements SttEngine {
+class PlatformSttEngine implements SttEngine, SttErrorSource {
   /// Creates a [PlatformSttEngine].
+  ///
+  /// [onDeviceSupportChecker] is required so that a build cannot forget it.
+  /// [limits] and [now] default to the production values and exist so tests
+  /// can control time and numbers.
   PlatformSttEngine({
     required SpeechToText stt,
     required AudioDeviceService deviceService,
+    required OnDeviceSupportChecker onDeviceSupportChecker,
+    SttListeningLimits limits = defaultSttListeningLimits,
+    DateTime Function() now = DateTime.now,
   })  : _stt = stt,
-        _deviceService = deviceService;
+        _deviceService = deviceService,
+        _checker = onDeviceSupportChecker,
+        _limits = limits {
+    _loop = _SessionLoop(
+      limits: limits,
+      now: now,
+      listen: _listen,
+      deliver: (result) => _onResult?.call(result),
+      report: _report,
+      cancelPlugin: _cancelQuietly,
+    );
+  }
 
   static final _log = Logger('zip_core.PlatformSttEngine');
 
+
   final SpeechToText _stt;
   final AudioDeviceService _deviceService;
+  final OnDeviceSupportChecker _checker;
+  final SttListeningLimits _limits;
+  late final _SessionLoop _loop;
 
+  void Function(SttEngineError error)? _errorListener;
   String? _activeLocaleId;
   void Function(SttResult)? _onResult;
-  bool _paused = false;
 
   @override
   String get engineId => 'platform';
@@ -46,9 +86,22 @@ class PlatformSttEngine implements SttEngine {
   bool get requiresMicrophone => true;
 
   @override
+  void setErrorListener(void Function(SttEngineError error)? listener) {
+    _errorListener = listener;
+  }
+
+  @override
   Future<bool> initialize() async {
     try {
       final available = await _stt.initialize();
+      if (available) {
+        // BR-U10-24: assign the plugin's listener fields ourselves. A second
+        // call to the plugin's own initialize() returns before assigning
+        // anything, and the first call assigns null when none is passed.
+        _stt
+          ..statusListener = _loop.onStatus
+          ..errorListener = (error) => _loop.onError(error.errorMsg);
+      }
       _log.info('Platform STT initialized: $available');
       return available;
     } on Exception catch (e) {
@@ -84,6 +137,17 @@ class PlatformSttEngine implements SttEngine {
     }
   }
 
+  /// Starts a listening session, guarded by the on-device check.
+  ///
+  /// **Ordering assumption (speech_to_text 7.3.0):** the plugin's `listen()`
+  /// only completes once the platform has accepted the request, so its normal
+  /// return is the authority for "started". A stop or pause that lands while
+  /// `listen()` is still awaiting its reply therefore cannot prevent the
+  /// plugin session from beginning; this method detects that with the epoch
+  /// and cancels the plugin itself. Re-verify on any plugin upgrade: if
+  /// `listen()` ever returns before the platform starts, or gains a way to be
+  /// cancelled while pending, this method's cancel here becomes unnecessary
+  /// and the early epoch checks may be able to move later.
   @override
   Future<bool> startListening({
     required String localeId,
@@ -91,39 +155,128 @@ class PlatformSttEngine implements SttEngine {
   }) async {
     _activeLocaleId = localeId;
     _onResult = onResult;
-    _paused = false;
+
+    // BR-U10-19: a stop or a pause that arrives while this call is awaiting
+    // must win, so the microphone is never left live. The epoch moves on each
+    // of those requests (and on dispose); comparing it after every await tells
+    // this call it has been superseded.
+    final epoch = _loop.epoch;
 
     // Set preferred device before listening (BR-U2-16).
     final preferredDevice = _deviceService.currentPreferredDeviceId;
     if (preferredDevice != null) {
       await _deviceService.setPreferredInputDevice(preferredDevice);
+      if (_loop.epoch != epoch) return false;
     }
 
+    // BR-U10-19 again between the guard and the plugin: an interrupt during
+    // the on-device check means no listen() is made at all.
+    final allowed = await _onDeviceAllowed(localeId);
+    if (_loop.epoch != epoch) return false;
+    if (!allowed) {
+      // BR-U10-27: refuse. No listen() call; one lasting error.
+      _report(SttEngineErrorKind.onDeviceModelMissing);
+      return false;
+    }
+
+    final outcome = await _listenPlugin(localeId);
+    if (_loop.epoch != epoch) {
+      // The interrupt won while listen() was in flight. Per the ordering
+      // assumption above, the plugin session may already have begun; the
+      // outcome is only knowable now, so an already started session is
+      // cancelled here.
+      if (outcome == _ListenOutcome.started) await _cancelQuietly();
+      return false;
+    }
+    if (outcome == _ListenOutcome.started) {
+      _loop.sessionStarted(localeId);
+      return true;
+    }
+    return false;
+  }
+
+  /// The single place that calls the plugin's `listen()`. The on-device guard
+  /// runs first, every time (BR-U10-26), before a start and before a restart.
+  Future<_ListenOutcome> _listen(String localeId) async {
+    if (!await _onDeviceAllowed(localeId)) {
+      // BR-U10-27: refuse. No listen() call; one lasting error.
+      _report(SttEngineErrorKind.onDeviceModelMissing);
+      return _ListenOutcome.refused;
+    }
+    return _listenPlugin(localeId);
+  }
+
+  /// The plugin call alone, with the guard already passed.
+  Future<_ListenOutcome> _listenPlugin(String localeId) async {
     try {
       await _stt.listen(
         localeId: localeId,
         onResult: (result) {
-          _onResult?.call(
-            SttResult(
-              text: result.recognizedWords,
-              isFinal: result.finalResult,
-              confidence: result.confidence,
-              timestamp: DateTime.now(),
-              sourceId: engineId,
-            ),
+          final sttResult = SttResult(
+            text: result.recognizedWords,
+            isFinal: result.finalResult,
+            confidence: result.confidence,
+            timestamp: DateTime.now(),
+            sourceId: engineId,
           );
+          _loop.onResult(sttResult);
+          _onResult?.call(sttResult);
         },
+        listenOptions: SpeechListenOptions(
+          onDevice: true,
+          // BR-U10-20 states these explicitly so a change to the plugin's
+          // defaults cannot silently change the engine's behaviour.
+          // ignore: avoid_redundant_argument_values
+          partialResults: true,
+          // Explicit for the same reason (BR-U10-20).
+          // ignore: avoid_redundant_argument_values
+          cancelOnError: false,
+        ),
       );
       _log.info('Listening started for locale $localeId');
-      return true;
+      return _ListenOutcome.started;
     } on Exception catch (e) {
+      // BR-U10-30/31: any failure of listen() is transient, and the plugin may
+      // have carried on regardless (iOS), so cancel at once. The exception's
+      // message is never inspected or logged.
       _log.severe('startListening error: ${e.runtimeType}');
+      await _cancelQuietly();
+      return _ListenOutcome.threw;
+    }
+  }
+
+  /// Asks the checker, failing closed (BR-U10-29): an exception, a missing
+  /// plugin or a timeout is "unsupported". Logs the boolean only.
+  Future<bool> _onDeviceAllowed(String localeId) async {
+    try {
+      final allowed =
+          await _checker(localeId).timeout(_limits.onDeviceCheckTimeout);
+      _log.info('On-device support check: $allowed');
+      return allowed;
+    } on Object catch (e) {
+      _log.warning('On-device support check failed: ${e.runtimeType}');
       return false;
     }
   }
 
+  Future<void> _cancelQuietly() async {
+    try {
+      await _stt.cancel();
+    } on Exception catch (e) {
+      _log.warning('cancel error: ${e.runtimeType}');
+    }
+  }
+
+  void _report(SttEngineErrorKind kind) {
+    _log.warning('Reporting engine error: ${kind.name}');
+    _errorListener?.call(SttEngineError(kind));
+  }
+
   @override
   Future<void> stopListening() async {
+    // Intent first, then the plugin (BR-U10-19), so a trailing `done` never
+    // restarts.
+    _loop.stopRequested();
     try {
       await _stt.stop();
       await _stt.cancel();
@@ -136,9 +289,9 @@ class PlatformSttEngine implements SttEngine {
   @override
   Future<bool> pause() async {
     // speech_to_text has no native pause — stop and record paused state.
+    _loop.pauseRequested();
     try {
       await _stt.stop();
-      _paused = true;
       _log.info('Paused (via stop)');
       return true;
     } on Exception catch (e) {
@@ -149,13 +302,11 @@ class PlatformSttEngine implements SttEngine {
 
   @override
   Future<bool> resume() async {
-    if (!_paused ||
-        _activeLocaleId == null ||
-        _onResult == null) {
+    if (!_loop.isPaused || _activeLocaleId == null || _onResult == null) {
       return false;
     }
-    _paused = false;
-    // Transparent restart with same locale and callback.
+    // Transparent restart with same locale and callback. It goes through
+    // startListening, so the on-device guard runs again.
     return startListening(
       localeId: _activeLocaleId!,
       onResult: _onResult!,
@@ -164,7 +315,255 @@ class PlatformSttEngine implements SttEngine {
 
   @override
   void dispose() {
+    _loop.dispose();
+    _stt
+      ..statusListener = null
+      ..errorListener = null;
     unawaited(_stt.cancel());
     _onResult = null;
+    _errorListener = null;
+  }
+}
+
+/// What a call to the engine's `listen()` path came to.
+enum _ListenOutcome {
+  /// The plugin's `listen()` returned normally.
+  started,
+
+  /// The on-device guard refused (a lasting error was already reported).
+  refused,
+
+  /// The plugin's `listen()` threw (already cancelled).
+  threw,
+}
+
+/// How a non-lasting error code from the plugin is handled (Amendment 01,
+/// section 4.1). Ordered by severity so the worst class seen in a session can
+/// be kept. Lasting codes are handled at once and never recorded here.
+enum _ErrorClass { none, silence, transient }
+
+/// Silence: a normal end. Restarts, reports nothing, never counts.
+const _silenceCodes = {'error_no_match', 'error_speech_timeout'};
+
+/// Lasting: reports once and stops. Android codes are those of
+/// `speech_to_text` 7.3.0 (`SpeechToTextPlugin.kt`); the iOS codes are read
+/// from the same version's `SpeechToTextPlugin.swift` (R5). Everything not
+/// listed here, including `error_unknown (n)`, is transient.
+const _lastingCodes = <String, SttEngineErrorKind>{
+  'error_permission': SttEngineErrorKind.permissionRevoked,
+  'error_language_unavailable': SttEngineErrorKind.onDeviceModelMissing,
+  'error_language_not_supported': SttEngineErrorKind.localeUnsupported,
+  'error_speech_recognizer_request_not_authorized':
+      SttEngineErrorKind.permissionRevoked,
+  'error_assets_not_installed': SttEngineErrorKind.onDeviceModelMissing,
+  'error_speech_recognizer_disabled': SttEngineErrorKind.recognizerUnavailable,
+};
+
+enum _Intent { idle, listening, paused, stopped, failed }
+
+/// The continuous-listening loop (Unit 10, Amendment 01; P2).
+///
+/// Restarts on the plugin's `done` status only, once per session end.
+/// Errors and `notListening` only update the per-session record. The
+/// failure budget is increment-then-compare (`++count >= restartCap`).
+/// Never logs or stores anything but result text held in memory for the
+/// final-first flush (SECURITY-03).
+class _SessionLoop {
+  _SessionLoop({
+    required this.limits,
+    required this.now,
+    required this.listen,
+    required this.deliver,
+    required this.report,
+    required this.cancelPlugin,
+  });
+
+  static final _log = Logger('zip_core.PlatformSttEngine.loop');
+
+  final SttListeningLimits limits;
+  final DateTime Function() now;
+  final Future<_ListenOutcome> Function(String localeId) listen;
+  final void Function(SttResult result) deliver;
+  final void Function(SttEngineErrorKind kind) report;
+  final Future<void> Function() cancelPlugin;
+
+  _Intent _intent = _Intent.idle;
+
+  /// Moves on every stop, pause or dispose (BR-U10-19). A guarded listen
+  /// captures it before its awaits and abandons the attempt if it has moved,
+  /// so an interrupt that arrives mid-start always wins.
+  int _epoch = 0;
+  int get epoch => _epoch;
+
+  String? _localeId;
+  Timer? _timer;
+  int _failureCount = 0;
+
+  // The per-session record (reset by `_beginSession`).
+  DateTime _startedAt = DateTime.fromMillisecondsSinceEpoch(0);
+  bool _deliveredResult = false;
+  _ErrorClass _worst = _ErrorClass.none;
+  bool _restartScheduled = false;
+  SttResult? _pendingInterim;
+
+  bool get isPaused => _intent == _Intent.paused;
+
+  /// A session started successfully (first start or a resume).
+  void sessionStarted(String localeId) {
+    _localeId = localeId;
+    _intent = _Intent.listening;
+    _failureCount = 0;
+    _restartScheduled = false;
+    _beginSession();
+  }
+
+  void _beginSession() {
+    _startedAt = now();
+    _deliveredResult = false;
+    _worst = _ErrorClass.none;
+    _pendingInterim = null;
+  }
+
+  /// A recognition result arrived (before it reaches the app's callback).
+  void onResult(SttResult result) {
+    if (_intent != _Intent.listening) return;
+    _deliveredResult = true;
+    _failureCount = 0;
+    _pendingInterim = result.isFinal ? null : result;
+  }
+
+  /// A plugin status arrived. Only `done` drives a restart (BR-U10-15).
+  void onStatus(String status) {
+    if (status == SpeechToText.doneStatus) _onDone();
+  }
+
+  /// A plugin error arrived, classified by code and never by the plugin's
+  /// `permanent` flag, which is always true (BR-U10-18).
+  void onError(String code) {
+    if (_intent != _Intent.listening) return;
+
+    final lasting = _lastingCodes[code];
+    if (lasting != null) {
+      _log.warning('Lasting engine error: ${lasting.name}');
+      _intent = _Intent.failed;
+      _timer?.cancel();
+      _timer = null;
+      _restartScheduled = false;
+      report(lasting);
+      unawaited(cancelPlugin());
+      return;
+    }
+
+    final errorClass = _silenceCodes.contains(code)
+        ? _ErrorClass.silence
+        : _ErrorClass.transient;
+    if (errorClass.index > _worst.index) _worst = errorClass;
+  }
+
+  void _onDone() {
+    // Stop, pause, a lasting error or the cap already won; or this session
+    // end already scheduled its restart (error then done, duplicate done).
+    if (_intent != _Intent.listening || _restartScheduled) return;
+
+    _flushPendingInterim();
+
+    final elapsed = now().difference(_startedAt);
+    final fastAndEmpty = _worst == _ErrorClass.none &&
+        !_deliveredResult &&
+        elapsed < limits.immediateFailureWindow;
+    final countsAsFailure = _worst == _ErrorClass.transient || fastAndEmpty;
+    if (countsAsFailure && _countFailureReachedCap()) return;
+
+    _scheduleRestart();
+  }
+
+  /// BR-U10-16: a pending interim is delivered once as final, on `done` only,
+  /// before the restart is scheduled.
+  void _flushPendingInterim() {
+    final pending = _pendingInterim;
+    if (pending == null) return;
+    _pendingInterim = null;
+    deliver(
+      SttResult(
+        text: pending.text,
+        isFinal: true,
+        confidence: pending.confidence,
+        timestamp: now(),
+        sourceId: pending.sourceId,
+      ),
+    );
+  }
+
+  /// Increment-then-compare. At the cap: report once and stop restarting.
+  bool _countFailureReachedCap() {
+    _failureCount++;
+    if (_failureCount < limits.restartCap) return false;
+    _log.warning('Restart cap reached');
+    _intent = _Intent.failed;
+    _restartScheduled = false;
+    report(SttEngineErrorKind.restartCapReached);
+    return true;
+  }
+
+  void _scheduleRestart() {
+    _restartScheduled = true;
+    _timer?.cancel();
+    _timer = Timer(limits.restartDelay, () => unawaited(_restart()));
+  }
+
+  Future<void> _restart() async {
+    _timer = null;
+    if (_intent != _Intent.listening) return;
+    final localeId = _localeId;
+    if (localeId == null) return;
+
+    final outcome = await listen(localeId);
+
+    if (_intent != _Intent.listening) {
+      // Stop or pause won while the restart was in flight; the plugin may
+      // already be listening again, so stop it.
+      if (outcome == _ListenOutcome.started) await cancelPlugin();
+      return;
+    }
+    switch (outcome) {
+      case _ListenOutcome.started:
+        _restartScheduled = false;
+        _beginSession();
+      case _ListenOutcome.refused:
+        // The guard already reported the lasting error.
+        _intent = _Intent.failed;
+        _restartScheduled = false;
+      case _ListenOutcome.threw:
+        // No session exists, so no `done` will follow: the throw is the
+        // session end (BR-U10-30). The retry runs the guard again.
+        if (_countFailureReachedCap()) return;
+        _scheduleRestart();
+    }
+  }
+
+  void pauseRequested() {
+    _epoch++;
+    _intent = _Intent.paused;
+    _cancelTimer();
+  }
+
+  void stopRequested() {
+    _epoch++;
+    _intent = _Intent.stopped;
+    _cancelTimer();
+    _pendingInterim = null;
+  }
+
+  void dispose() {
+    _epoch++;
+    _intent = _Intent.stopped;
+    _cancelTimer();
+    _pendingInterim = null;
+  }
+
+  void _cancelTimer() {
+    _timer?.cancel();
+    _timer = null;
+    _restartScheduled = false;
   }
 }

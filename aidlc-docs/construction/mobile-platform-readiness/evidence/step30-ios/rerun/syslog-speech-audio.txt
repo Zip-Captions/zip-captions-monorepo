@@ -1,0 +1,19 @@
+getpwuid_r did not find a match for uid 501
+Timestamp               Ty Process[PID:TID]
+2026-10-27 16:53:59.430 Df Runner[7833:197feda] [com.apple.avfaudio:avae]          AVAudioEngine.mm:1236  Engine@0x60000006b540: stop, was running 1
+2026-10-27 16:53:59.430 Df Runner[7833:197feda] [com.apple.avfaudio:avae]          AVAudioEngine.mm:1219  Engine@0x60000006b540: pause, was running 1
+2026-10-27 16:53:59.430 Df Runner[7833:197feda] [com.apple.coreaudio:aurioc]            AURemoteIO.cpp:1737  Stopping AURemoteIO(0x10d2a5440)
+2026-10-27 16:53:59.435 Df Runner[7833:198099b] [com.apple.coreaudio:aqme]            AQMEIO_HAL.cpp:2639  aqmeio@0x10d529418: set input stream usage to 0 on device 156, err = 0
+2026-10-27 16:53:59.435 Df Runner[7833:198099b] [com.apple.coreaudio:aqme]  MEDeviceStreamClient.cpp:468   AQME Default-InputOutput: client stopping: <RemoteIOClient@0x10d02a000(@0x10d02a038); input; [7833]>; running count now 0
+2026-10-27 16:53:59.437 Df Runner[7833:197feda] [com.apple.coreaudio:aurioc]            AURemoteIO.cpp:1737  Stopping AURemoteIO(0x10d2a5440)
+2026-10-27 16:53:59.439 Df Runner[7833:197feda] [com.apple.coreaudio:as_client] AVAudioSessionImpl_Simulator.mm:111   Set volume on device 103 to 0.60
+2026-10-27 16:53:59.439 Df Runner[7833:197feda] [com.apple.coreaudio:ddagg]        AggregateDevice.mm:1001  PrimarySessionActiveWithInputEnabled 1 -> 0
+2026-10-27 16:53:59.465 Df Runner[7833:197feda] [com.apple.coreaudio:ddagg]        AggregateDevice.mm:681   Built valid aggregate 164
+2026-10-27 16:53:59.504 Df Runner[7833:1980e38] [com.apple.coreaudio:AMCP]          HALC_ProxyIOContext.cpp:1594  HALC_ProxyIOContext::IOWorkLoop: ending the transport, stopping the io thread
+2026-10-27 16:54:02.044 E  Runner[7833:197feda] [com.apple.coreaudio:aqme]            AQMEIO_HAL.cpp:2914  timeout
+2026-10-27 16:54:02.047 Df Runner[7833:197feda] [com.apple.coreaudio:AudioConverter]        AudioConverter.cpp:1042  Created a new in process converter -> 0x600000c25b60, from  2 ch,  48000 Hz, Float32, deinterleaved to  2 ch,  48000 Hz, Fl
+2026-10-27 16:54:02.048 Df Runner[7833:197feda] [com.apple.coreaudio:aqme]        MEMixerChannel.cpp:3253  2-channel audiovisual content is NOT eligible for spatialization
+2026-10-27 16:54:02.048 Df Runner[7833:197feda] [com.apple.coreaudio:aqme]        MEMixerChannel.cpp:3253  2-channel audiovisual content is NOT eligible for spatialization
+2026-10-27 16:54:02.048 Df Runner[7833:197feda] [com.apple.coreaudio:aqme]            AQMEIO_HAL.cpp:2833  FetchAndLogFrameSize starting IO deviceID=164, frame size is 512
+2026-10-27 16:54:02.073 Df Runner[7833:197feda] [com.apple.coreaudio:aqme]            AQMEIO_HAL.cpp:2802  aqmeio@0x10d529418, device 164 (iOSSimulatorAudioDevice-7833-2), AudioDeviceStart (err 0)
+2026-10-27 16:54:02.084 Df Runner[7833:197feda] [com.apple.coreaudio:aqme]            AQMEIO_HAL.cpp:558   iOSSimulatorAudioDevice-7833-2 (164): IO started 1 (err 0), was running 1, running count 1

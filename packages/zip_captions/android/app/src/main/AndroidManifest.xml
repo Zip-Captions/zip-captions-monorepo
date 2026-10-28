@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Unit 10: captioning records the microphone. Nothing else is added:
+         no INTERNET and no Bluetooth permission (BR-U10-32). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
-        android:label="zip_captions"
+        android:label="Zip Captions"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -40,6 +43,11 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Unit 10: package visibility for the on-device recogniser the
+             support check asks about. -->
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
         </intent>
     </queries>
 </manifest>

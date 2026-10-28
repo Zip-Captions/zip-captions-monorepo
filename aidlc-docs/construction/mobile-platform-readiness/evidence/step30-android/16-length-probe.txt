@@ -1,0 +1,73 @@
+Segmented session length probe, 2026-10-26, emulator-5560 (ZipCaptions_QA_API_36), spike app dev.spike.segspike (throwaway).
+Each block: `grep -E "SEGSPIKE|MINIMUM_LENGTH|SEGMENTED"` four seconds after the start, with logcat cleared before it.
+
+=== N=300 (300000 ms), run 1: ACCEPTED ===
+10-26 22:01:56.846 11013 11013 I SEGSPIKE: start sdk=36 onDeviceAvailable=true segmented=true seconds=300
+10-26 22:01:56.846 11013 11013 I SEGSPIKE: startListening called
+10-26 22:01:57.697 11013 11013 I SEGSPIKE: onReadyForSpeech
+10-26 22:01:58.025 11013 11013 I SEGSPIKE: onBeginningOfSpeech
+10-26 22:01:58.672 11013 11013 I SEGSPIKE: onEndOfSpeech
+10-26 22:01:58.674 11013 11013 I SEGSPIKE: onSegmentResults
+10-26 22:01:59.307 11013 11013 I SEGSPIKE: onBeginningOfSpeech
+10-26 22:01:59.311 11013 11013 I SEGSPIKE: onEndOfSpeech
+10-26 22:01:59.312 11013 11013 I SEGSPIKE: onSegmentResults
+10-26 22:02:03.145 11013 11013 I SEGSPIKE: onBeginningOfSpeech
+
+=== N=3600 (3600000 ms): REJECTED ===
+10-26 22:02:09.727 11157 11157 I SEGSPIKE: start sdk=36 onDeviceAvailable=true segmented=true seconds=3600
+10-26 22:02:09.728 11157 11157 I SEGSPIKE: startListening called
+10-26 22:02:10.495  1654  1654 E RecognitionServiceInten: EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS is too high, ignored
+10-26 22:02:10.495  1654  1654 E RecognitionServiceInten: EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS is not set with positive value; ignoring EXTRA_SEGMENTED_SESSION
+10-26 22:02:10.665 11157 11157 I SEGSPIKE: onReadyForSpeech
+10-26 22:02:12.593 11157 11157 I SEGSPIKE: onBeginningOfSpeech
+
+=== N=600 (600000 ms): REJECTED ===
+10-26 22:02:24.781 11258 11258 I SEGSPIKE: start sdk=36 onDeviceAvailable=true segmented=true seconds=600
+10-26 22:02:24.782 11258 11258 I SEGSPIKE: startListening called
+10-26 22:02:25.518  1654  1654 E RecognitionServiceInten: EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS is too high, ignored
+10-26 22:02:25.518  1654  1654 E RecognitionServiceInten: EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS is not set with positive value; ignoring EXTRA_SEGMENTED_SESSION
+10-26 22:02:25.673 11258 11258 I SEGSPIKE: onReadyForSpeech
+10-26 22:02:30.153 11258 11258 I SEGSPIKE: onBeginningOfSpeech
+
+=== N=420 (420000 ms): REJECTED ===
+10-26 22:02:40.037 11340 11340 I SEGSPIKE: start sdk=36 onDeviceAvailable=true segmented=true seconds=420
+10-26 22:02:40.038 11340 11340 I SEGSPIKE: startListening called
+10-26 22:02:40.811  1654  1654 E RecognitionServiceInten: EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS is too high, ignored
+10-26 22:02:40.811  1654  1654 E RecognitionServiceInten: EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS is not set with positive value; ignoring EXTRA_SEGMENTED_SESSION
+10-26 22:02:40.964 11340 11340 I SEGSPIKE: onReadyForSpeech
+10-26 22:02:42.890 11340 11340 I SEGSPIKE: onBeginningOfSpeech
+
+=== N=360 (360000 ms), run 1: REJECTED ===
+10-26 22:02:50.992 11424 11424 I SEGSPIKE: start sdk=36 onDeviceAvailable=true segmented=true seconds=360
+10-26 22:02:50.993 11424 11424 I SEGSPIKE: startListening called
+10-26 22:02:51.809  1654  1654 E RecognitionServiceInten: EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS is too high, ignored
+10-26 22:02:51.809  1654  1654 E RecognitionServiceInten: EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS is not set with positive value; ignoring EXTRA_SEGMENTED_SESSION
+10-26 22:02:51.965 11424 11424 I SEGSPIKE: onReadyForSpeech
+10-26 22:02:53.888 11424 11424 I SEGSPIKE: onBeginningOfSpeech
+
+=== N=301 (301000 ms): REJECTED ===
+10-26 22:03:09.158 11504 11504 I SEGSPIKE: start sdk=36 onDeviceAvailable=true segmented=true seconds=301
+10-26 22:03:09.160 11504 11504 I SEGSPIKE: startListening called
+10-26 22:03:10.634  1654  1654 E RecognitionServiceInten: EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS is too high, ignored
+10-26 22:03:10.634  1654  1654 E RecognitionServiceInten: EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS is not set with positive value; ignoring EXTRA_SEGMENTED_SESSION
+10-26 22:03:11.159 11504 11504 I SEGSPIKE: onReadyForSpeech
+10-26 22:03:13.361 11504 11504 I SEGSPIKE: onBeginningOfSpeech
+
+=== N=300 (300000 ms), run 2 (confirmation): ACCEPTED ===
+10-26 22:03:21.770 11588 11588 I SEGSPIKE: start sdk=36 onDeviceAvailable=true segmented=true seconds=300
+10-26 22:03:21.772 11588 11588 I SEGSPIKE: startListening called
+10-26 22:03:22.696 11588 11588 I SEGSPIKE: onReadyForSpeech
+10-26 22:03:23.356 11588 11588 I SEGSPIKE: onBeginningOfSpeech
+10-26 22:03:24.639 11588 11588 I SEGSPIKE: onEndOfSpeech
+10-26 22:03:24.641 11588 11588 I SEGSPIKE: onSegmentResults
+10-26 22:03:24.650 11588 11588 I SEGSPIKE: onBeginningOfSpeech
+10-26 22:03:25.280 11588 11588 I SEGSPIKE: onEndOfSpeech
+10-26 22:03:25.281 11588 11588 I SEGSPIKE: onSegmentResults
+
+=== N=360 (360000 ms), run 2 (confirmation): REJECTED ===
+10-26 22:03:54.927 11718 11718 I SEGSPIKE: start sdk=36 onDeviceAvailable=true segmented=true seconds=360
+10-26 22:03:54.929 11718 11718 I SEGSPIKE: startListening called
+10-26 22:03:56.614  1654  1654 E RecognitionServiceInten: EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS is too high, ignored
+10-26 22:03:56.614  1654  1654 E RecognitionServiceInten: EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS is not set with positive value; ignoring EXTRA_SEGMENTED_SESSION
+10-26 22:03:57.169 11718 11718 I SEGSPIKE: onReadyForSpeech
+10-26 22:03:58.713 11718 11718 I SEGSPIKE: onBeginningOfSpeech

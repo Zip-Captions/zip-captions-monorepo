@@ -1,0 +1,16 @@
+[zip_core.CaptionOutputTargetRegistry] Target added: on_screen
+[zip_core.PlatformSttEngine] Platform STT initialized: true
+[zip_core.SttSessionManager] Engine platform initialized for locale en-CA
+[zip_core.PlatformSttEngine] On-device support check: true
+[supabase.auth] Stopping auto refresh
+[supabase.auth] Starting auto refresh
+[zip_core.PlatformSttEngine] Listening started for locale en-CA
+[zip_core.SttSessionManager] Engine platform listening
+[zip_core.RecordingStateNotifier] Session started: 59ff4f24-e84d-425b-a02c-1a10a09913da
+[zip_core.TranscriptWriterTarget] session started: sessionId=59ff4f24-e84d-425b-a02c-1a10a09913da
+[zip_core.OnScreenCaptionTarget] session started: targetId=on_screen sessionId=59ff4f24-e84d-425b-a02c-1a10a09913da
+[zip_core.PlatformSttEngine] Listening stopped
+[zip_core.SttSessionManager] Engine platform stopped
+[zip_core.RecordingStateNotifier] Session stopped
+[zip_core.TranscriptWriterTarget] finalizeCurrentSession: sessionId=59ff4f24-e84d-425b-a02c-1a10a09913da skipped, no row
+[zip_core.OnScreenCaptionTarget] session stopped: targetId=on_screen

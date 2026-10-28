@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,16 +18,15 @@ import '../helpers/pbt.dart' hide any;
 SttResultEvent _finalEvent({
   String text = 'hello',
   String sourceId = 'default',
-}) =>
-    SttResultEvent(
-      SttResult(
-        text: text,
-        isFinal: true,
-        confidence: 1,
-        timestamp: DateTime.utc(2026),
-        sourceId: sourceId,
-      ),
-    );
+}) => SttResultEvent(
+  SttResult(
+    text: text,
+    isFinal: true,
+    confidence: 1,
+    timestamp: DateTime.utc(2026),
+    sourceId: sourceId,
+  ),
+);
 
 SessionStateEvent _recordingEvent(String sessionId) =>
     SessionStateEvent(RecordingState.recording(sessionId: sessionId));
@@ -34,19 +35,22 @@ SessionStateEvent _stoppedEvent(String sessionId) =>
     SessionStateEvent(RecordingState.stopped(sessionId: sessionId));
 
 void _stubRepo(MockTranscriptRepository repo) {
-  when(
-    () => repo.createSession(any(), any()),
-  ).thenAnswer((_) async {});
-  when(
-    () => repo.saveSegment(any(), any()),
-  ).thenAnswer((_) async {});
+  // A microtask-backed success, not `.thenAnswer((_) async {})`: under
+  // `fakeAsync` an async closure's future completes through a timer, which
+  // `elapse(Duration.zero)` and `flushMicrotasks()` do not run. The writer's
+  // ordered write chain is microtask-only, so the stubs complete in a
+  // microtask too, and one `Future.delayed(Duration.zero)` drains the chain
+  // in both a real event loop and `fakeAsync`.
+  Future<void> ok() => Future<void>.microtask(() {});
+  when(() => repo.createSession(any(), any())).thenAnswer((_) => ok());
+  when(() => repo.saveSegment(any(), any())).thenAnswer((_) => ok());
   when(
     () => repo.finalizeSession(
       any(),
       durationMs: any(named: 'durationMs'),
       segmentCount: any(named: 'segmentCount'),
     ),
-  ).thenAnswer((_) async {});
+  ).thenAnswer((_) => ok());
 }
 
 void main() {
@@ -158,13 +162,24 @@ void main() {
   });
 
   group('session lifecycle', () {
-    test('recording event calls createSession', () async {
-      target.onCaptionEvent(_recordingEvent('s1'));
+    test(
+      'recording event alone creates nothing (Q-2: the row is lazy)',
+      () async {
+        target.onCaptionEvent(_recordingEvent('s1'));
 
-      await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
-      verify(() => mockRepo.createSession('s1', any())).called(1);
-    });
+        verifyNever(() => mockRepo.createSession(any(), any()));
+        verifyNever(() => mockRepo.saveSegment(any(), any()));
+        verifyNever(
+          () => mockRepo.finalizeSession(
+            any(),
+            durationMs: any(named: 'durationMs'),
+            segmentCount: any(named: 'segmentCount'),
+          ),
+        );
+      },
+    );
 
     test(
       'stopped event calls finalizeSession with correct segment count',
@@ -194,9 +209,9 @@ void main() {
 
     test('capture disabled → saveSegment never called', () async {
       TranscriptWriterTarget(
-        repository: mockRepo,
-        settings: const TranscriptSettings(captureEnabled: false),
-      )
+          repository: mockRepo,
+          settings: const TranscriptSettings(captureEnabled: false),
+        )
         ..onCaptionEvent(_recordingEvent('s1'))
         ..onCaptionEvent(_finalEvent())
         ..dispose();
@@ -204,6 +219,411 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       verifyNever(() => mockRepo.saveSegment(any(), any()));
+      verifyNever(() => mockRepo.createSession(any(), any()));
+    });
+  });
+
+  // Q-2 (Amendment 03 section 7): the row exists only once a segment is
+  // saved, so a session with no captioned text leaves nothing behind.
+  group('no empty transcripts (Q-2)', () {
+    test('zero segments → no createSession and no finalizeSession', () async {
+      target
+        ..onCaptionEvent(_recordingEvent('s1'))
+        ..onCaptionEvent(_stoppedEvent('s1'));
+
+      await Future<void>.delayed(Duration.zero);
+
+      verifyNever(() => mockRepo.createSession(any(), any()));
+      verifyNever(
+        () => mockRepo.finalizeSession(
+          any(),
+          durationMs: any(named: 'durationMs'),
+          segmentCount: any(named: 'segmentCount'),
+        ),
+      );
+    });
+
+    test(
+      'finalizeCurrentSession with zero segments returns false and calls '
+      'nothing',
+      () async {
+        target.onCaptionEvent(_recordingEvent('s1'));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(await target.finalizeCurrentSession(), isFalse);
+
+        verifyNever(() => mockRepo.createSession(any(), any()));
+        verifyNever(() => mockRepo.saveSegment(any(), any()));
+        verifyNever(
+          () => mockRepo.finalizeSession(
+            any(),
+            durationMs: any(named: 'durationMs'),
+            segmentCount: any(named: 'segmentCount'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'finalizeCurrentSession after a segment returns true and finalises',
+      () async {
+        target
+          ..onCaptionEvent(_recordingEvent('s1'))
+          ..onCaptionEvent(_finalEvent());
+
+        expect(await target.finalizeCurrentSession(), isTrue);
+
+        verify(
+          () => mockRepo.finalizeSession(
+            's1',
+            durationMs: any(named: 'durationMs'),
+            segmentCount: 1,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'first segment: createSession then saveSegment, in that order — '
+      'the segment never precedes its row',
+      () async {
+        target
+          ..onCaptionEvent(_recordingEvent('s1'))
+          ..onCaptionEvent(_finalEvent());
+
+        await Future<void>.delayed(Duration.zero);
+
+        verifyInOrder([
+          () => mockRepo.createSession('s1', any()),
+          () => mockRepo.saveSegment('s1', any()),
+        ]);
+      },
+    );
+
+    test('the row is created with the session start date', () {
+      fakeAsync((fake) {
+        final start = clock.now();
+        target.onCaptionEvent(_recordingEvent('s1'));
+        fake.elapse(const Duration(seconds: 5));
+        target.onCaptionEvent(_finalEvent());
+        fake.elapse(Duration.zero);
+
+        final captured = verify(
+          () => mockRepo.createSession('s1', captureAny()),
+        ).captured;
+        expect(captured.single as DateTime, equals(start));
+      });
+    });
+
+    test(
+      'a session abandoned mid-way (killed before any segment) creates '
+      'nothing',
+      () async {
+        target
+          ..onCaptionEvent(_recordingEvent('s1'))
+          ..dispose();
+
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(() => mockRepo.createSession(any(), any()));
+        verifyNever(() => mockRepo.saveSegment(any(), any()));
+        verifyNever(
+          () => mockRepo.finalizeSession(
+            any(),
+            durationMs: any(named: 'durationMs'),
+            segmentCount: any(named: 'segmentCount'),
+          ),
+        );
+      },
+    );
+
+    test('merges after the first segment do not create the row again', () {
+      fakeAsync((fake) {
+        target
+          ..onCaptionEvent(_recordingEvent('s1'))
+          ..onCaptionEvent(_finalEvent(text: 'a'));
+        fake.elapse(const Duration(milliseconds: 500));
+        target.onCaptionEvent(_finalEvent(text: 'b'));
+        fake.elapse(Duration.zero);
+
+        verify(() => mockRepo.createSession('s1', any())).called(1);
+        verify(() => mockRepo.saveSegment(any(), any())).called(2);
+      });
+    });
+  });
+
+  // Q-4 (Amendment 03 section 8): a re-published RecordingActiveState with
+  // the SAME sessionId (resume, REL-U2.1 recovery) is a continuation; a
+  // different sessionId is a new session.
+  group('continuity of a re-published session (Q-4)', () {
+    test(
+      'pause then resume keeps the count and the duration from the '
+      'original start',
+      () {
+        fakeAsync((fake) {
+          target
+            ..onCaptionEvent(_recordingEvent('s1'))
+            ..onCaptionEvent(_finalEvent(text: 'a'))
+            ..onCaptionEvent(_finalEvent(text: 'b', sourceId: 'mic-1'));
+          fake.elapse(const Duration(seconds: 1));
+          target.onCaptionEvent(
+            const SessionStateEvent(RecordingState.paused(sessionId: 's1')),
+          );
+          fake.elapse(const Duration(seconds: 1));
+          // The notifier republishes RecordingActiveState on resume.
+          target.onCaptionEvent(_recordingEvent('s1'));
+          fake.elapse(const Duration(seconds: 1));
+          target.onCaptionEvent(_stoppedEvent('s1'));
+          fake.elapse(Duration.zero);
+
+          final captured = verify(
+            () => mockRepo.finalizeSession(
+              's1',
+              durationMs: captureAny(named: 'durationMs'),
+              segmentCount: captureAny(named: 'segmentCount'),
+            ),
+          ).captured;
+          expect(
+            captured[1] as int,
+            equals(2),
+            reason: 'the resume must not reset the segment count',
+          );
+          expect(
+            captured[0] as int,
+            equals(3000),
+            reason: 'the duration must run from the original start',
+          );
+          verify(() => mockRepo.createSession('s1', any())).called(1);
+        });
+      },
+    );
+
+    test(
+      'the REL-U2.1 recovery republish keeps the count and the duration',
+      () {
+        fakeAsync((fake) {
+          target
+            ..onCaptionEvent(_recordingEvent('s1'))
+            ..onCaptionEvent(_finalEvent(text: 'a'));
+          fake.elapse(const Duration(seconds: 1));
+          // Recovery restarts the engine and republishes the same session.
+          target.onCaptionEvent(_recordingEvent('s1'));
+          fake.elapse(const Duration(seconds: 1));
+          target.onCaptionEvent(_stoppedEvent('s1'));
+          fake.elapse(Duration.zero);
+
+          final captured = verify(
+            () => mockRepo.finalizeSession(
+              's1',
+              durationMs: captureAny(named: 'durationMs'),
+              segmentCount: captureAny(named: 'segmentCount'),
+            ),
+          ).captured;
+          expect(captured[1] as int, equals(1));
+          expect(captured[0] as int, equals(2000));
+          verify(() => mockRepo.createSession('s1', any())).called(1);
+        });
+      },
+    );
+
+    test(
+      'the resume keeps the merge state: a final just after it merges with '
+      'the final just before it',
+      () {
+        fakeAsync((fake) {
+          target
+            ..onCaptionEvent(_recordingEvent('s1'))
+            ..onCaptionEvent(_finalEvent(text: 'a'));
+          fake.elapse(const Duration(milliseconds: 500));
+          target.onCaptionEvent(
+            const SessionStateEvent(RecordingState.paused(sessionId: 's1')),
+          );
+          fake.elapse(const Duration(milliseconds: 500));
+          target.onCaptionEvent(_recordingEvent('s1'));
+          // 1.5 s after the earlier final: inside the 2 s merge window.
+          fake.elapse(const Duration(milliseconds: 1000));
+          target.onCaptionEvent(_finalEvent(text: 'a2'));
+          fake.elapse(Duration.zero);
+
+          final captured = verify(
+            () => mockRepo.saveSegment(any(), captureAny()),
+          ).captured;
+          final last = captured.last as TranscriptSegment;
+          expect(
+            last.text,
+            equals('a a2'),
+            reason: 'the resume must not clear the merge state',
+          );
+        });
+      },
+    );
+
+    test(
+      'a different sessionId is a new session',
+      () {
+        fakeAsync((fake) {
+          target
+            ..onCaptionEvent(_recordingEvent('s1'))
+            ..onCaptionEvent(_finalEvent(text: 'a'));
+          fake.elapse(Duration.zero);
+          target
+            ..onCaptionEvent(_recordingEvent('s2'))
+            ..onCaptionEvent(_finalEvent(text: 'b'));
+          fake.elapse(Duration.zero);
+          target.onCaptionEvent(_stoppedEvent('s2'));
+          fake.elapse(Duration.zero);
+
+          verify(() => mockRepo.createSession('s1', any())).called(1);
+          verify(() => mockRepo.createSession('s2', any())).called(1);
+          final captured = verify(
+            () => mockRepo.finalizeSession(
+              's2',
+              durationMs: any(named: 'durationMs'),
+              segmentCount: captureAny(named: 'segmentCount'),
+            ),
+          ).captured;
+          expect(
+            captured.single as int,
+            equals(1),
+            reason: 'the count restarts for a new sessionId',
+          );
+        });
+      },
+    );
+  });
+
+  // Step 29b follow-up: every repository write for a session goes through
+  // one ordered chain, so a write that arrives while an earlier one is still
+  // in flight cannot reach the repository first.
+  group('write ordering (one chain per session)', () {
+    /// Holds `createSession` open, recording the calls that get through
+    /// while it is held.
+    Completer<void> holdCreateSession() {
+      final gate = Completer<void>();
+      when(() => mockRepo.createSession(any(), any())).thenAnswer(
+        (_) => gate.future,
+      );
+      return gate;
+    }
+
+    test(
+      'a merge that arrives while the first save is pending reaches the '
+      'repository last, with the merged text',
+      () async {
+        final gate = holdCreateSession();
+        target
+          ..onCaptionEvent(_recordingEvent('s1'))
+          ..onCaptionEvent(_finalEvent());
+        await Future<void>.delayed(const Duration(microseconds: 1));
+        // Nothing reached the repository: the create is still held.
+        verifyNever(() => mockRepo.saveSegment(any(), any()));
+
+        target.onCaptionEvent(_finalEvent(text: 'world'));
+        gate.complete();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // The order the repository saw, captured while the calls are still
+        // unverified (the verifications below mark them).
+        final order = verify(
+          () => mockRepo.createSession('s1', any()),
+        ).callCount;
+        expect(order, 1);
+        final saved = verify(
+          () => mockRepo.saveSegment('s1', captureAny()),
+        ).captured.cast<TranscriptSegment>();
+        expect(saved.map((s) => s.text), ['hello', 'hello world']);
+        expect(saved.first.segmentId, equals(saved.last.segmentId));
+      },
+    );
+
+    test(
+      'a second segment that arrives while the first save is pending is '
+      'saved after it',
+      () async {
+        final gate = holdCreateSession();
+        target
+          ..onCaptionEvent(_recordingEvent('s1'))
+          ..onCaptionEvent(_finalEvent(text: 'first'));
+        await Future<void>.delayed(Duration.zero);
+
+        // More than the 2 s merge window later, so this is a new segment.
+        fakeAsync((fake) {
+          fake.elapse(const Duration(seconds: 3));
+          target.onCaptionEvent(_finalEvent(text: 'second'));
+        });
+        gate.complete();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final saved = verify(
+          () => mockRepo.saveSegment('s1', captureAny()),
+        ).captured.cast<TranscriptSegment>();
+        expect(saved.map((s) => s.text), ['first', 'second']);
+      },
+    );
+
+    test(
+      'finalizeCurrentSession waits for the pending saves and finalises '
+      'after the last one',
+      () async {
+        final gate = holdCreateSession();
+        target
+          ..onCaptionEvent(_recordingEvent('s1'))
+          ..onCaptionEvent(_finalEvent(text: 'one'));
+        await Future<void>.delayed(Duration.zero);
+
+        var finalized = false;
+        final done = target.finalizeCurrentSession().then((v) {
+          finalized = true;
+          return v;
+        });
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        expect(finalized, isFalse, reason: 'the chain is still held');
+        verifyNever(
+          () => mockRepo.finalizeSession(
+            any(),
+            durationMs: any(named: 'durationMs'),
+            segmentCount: any(named: 'segmentCount'),
+          ),
+        );
+
+        gate.complete();
+        expect(await done, isTrue);
+        // Both the save and the finalise happened, the save first: the
+        // test above pins the save, and this pins the finalise.
+        verify(() => mockRepo.saveSegment('s1', any())).called(1);
+        verify(
+          () => mockRepo.finalizeSession(
+            's1',
+            durationMs: any(named: 'durationMs'),
+            segmentCount: 1,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('a failing write does not block the writes after it', () async {
+      when(
+        () => mockRepo.createSession(any(), any()),
+      ).thenAnswer((_) => Future<void>.error(Exception('create failed')));
+      target
+        ..onCaptionEvent(_recordingEvent('s1'))
+        ..onCaptionEvent(_finalEvent(text: 'a'));
+      await Future<void>.delayed(Duration.zero);
+      // More than the merge window later, so the next final is a new segment
+      // rather than a merge of the first.
+      fakeAsync((fake) {
+        fake.elapse(const Duration(seconds: 3));
+        target.onCaptionEvent(_finalEvent(text: 'b'));
+      });
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      verify(() => mockRepo.saveSegment('s1', any())).called(2);
     });
   });
 

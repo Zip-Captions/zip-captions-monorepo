@@ -15,6 +15,19 @@ import 'package:zip_core/src/services/caption/caption_output_target.dart';
 /// `CaptionOutputTargetRegistry`. Each finalized [SttResultEvent] is
 /// persisted via `repository.saveSegment()` within a 2-second merge
 /// window per `sourceId` (NFR REL-U3.3).
+///
+/// **The session row is lazy** (Amendment 03 section 7, Q-2): no row is
+/// created at session start. The start time is remembered, and the row is
+/// created — with that start date — immediately before the first segment is
+/// saved, chained so a segment can never precede its row. A session that
+/// ends without a single saved segment therefore leaves no transcript
+/// behind, even if the app is killed mid-session.
+///
+/// **A re-published [RecordingActiveState] with the same sessionId is a
+/// continuation** (Amendment 03 section 8, Q-4): the notifier republishes it
+/// on resume and after the REL-U2.1 recovery, and continuing keeps the start
+/// time, the segment count and the merge state and creates nothing. A
+/// different sessionId is a new session.
 class TranscriptWriterTarget implements CaptionOutputTarget {
   /// Creates a [TranscriptWriterTarget].
   ///
@@ -24,21 +37,45 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
     required TranscriptRepository repository,
     required TranscriptSettings settings,
     DateTime Function()? now,
-  })  : _repository = repository,
-        _settings = settings,
-        _now = now ?? DateTime.now;
+    // The callback carries the same tri-state as the provider it feeds, so
+    // a named wordy signature would add nothing.
+    // ignore: avoid_positional_boolean_parameters
+    void Function(bool? saved)? onSaveOutcome,
+  }) : _repository = repository,
+       _settings = settings,
+       _now = now ?? DateTime.now,
+       _onSaveOutcome = onSaveOutcome;
 
   final TranscriptRepository _repository;
   final TranscriptSettings _settings;
   final DateTime Function() _now;
+  // The same tri-state as [TranscriptSaveOutcome.record]; see the constructor.
+  // ignore: avoid_positional_boolean_parameters
+  final void Function(bool? saved)? _onSaveOutcome;
 
   final _lastFinalBySource = <String, TranscriptSegment>{};
   // Session-relative ms when the first interim result for an utterance arrived.
   // Consumed and cleared when the corresponding final result is processed.
   final _pendingStartBySource = <String, int>{};
   String? _sessionId;
+  DateTime? _sessionStartAt;
   int? _sessionStartMs;
   int _totalSegmentCount = 0;
+  // Whether the repository row for the current session exists. It is created
+  // lazily before the first segment (Q-2), and finalising is skipped while it
+  // is false.
+  bool _rowCreated = false;
+
+  // The one chain of writes for a session: the lazy create, every save,
+  // every merge and the finalise. Each step is stamped with the chain length
+  // when it is appended and starts synchronously as soon as every earlier
+  // step has completed. Segments are upserted by id, so a write that overtook
+  // an earlier one could overwrite merged text with the shorter original.
+  // Each step catches its own failure, so one failed write does not block the
+  // writes after it. Awaiting the chain waits for every step appended so far.
+  Future<void> _writes = Future<void>.value();
+  bool _drainRunning = false;
+  final _chain = <Future<void> Function()>[];
 
   static const _targetIdValue = 'transcript_writer';
   static const _mergeWindowMs = 2000;
@@ -67,31 +104,49 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
   /// Must be called before [StoppedState] is published so that callers can
   /// await completion. Clears session state immediately so any subsequent
   /// [StoppedState] delivery via the caption bus is a safe no-op.
-  Future<void> finalizeCurrentSession() async {
-    if (_sessionId == null) return;
+  ///
+  /// Returns whether a transcript was actually saved (Q-2): `false` when the
+  /// session never reached its first segment, in which case there is no row
+  /// to finalize and nothing is called on the repository. The caller (the
+  /// provider's stop callback) publishes the outcome for `RecordingScreen`.
+  Future<bool> finalizeCurrentSession() async {
+    if (_sessionId == null) return false;
     final sessionId = _sessionId!;
+    final hadRow = _rowCreated;
     final durationMs = _sessionStartMs == null
         ? 0
         : _now().millisecondsSinceEpoch - _sessionStartMs!;
     final segmentCount = _totalSegmentCount;
+    _lastFinalBySource.clear();
+    _pendingStartBySource.clear();
+    _sessionId = null;
+    _sessionStartAt = null;
+    _sessionStartMs = null;
+    _totalSegmentCount = 0;
+    _rowCreated = false;
+    if (!hadRow) {
+      // Q-2: nothing was ever saved, so there is no row to finalize.
+      _log.fine(
+        'finalizeCurrentSession: sessionId=$sessionId skipped, no row',
+      );
+      return false;
+    }
     _log.fine(
       'finalizeCurrentSession: sessionId=$sessionId'
       ' durationMs=$durationMs segmentCount=$segmentCount',
     );
-    _lastFinalBySource.clear();
-    _pendingStartBySource.clear();
-    _sessionId = null;
-    _sessionStartMs = null;
-    _totalSegmentCount = 0;
-    try {
+    // Appended to the chain (Q-2, Step 29b): the finalise runs after every
+    // save still in flight, and awaiting the chain means the caller's await
+    // covers those writes too.
+    _appendWrite(() async {
       await _repository.finalizeSession(
         sessionId,
         durationMs: durationMs,
         segmentCount: segmentCount,
       );
-    } on Object catch (e) {
-      _log.severe('finalizeCurrentSession failed: ${e.runtimeType}');
-    }
+    });
+    await _writes;
+    return true;
   }
 
   @override
@@ -99,8 +154,10 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
     _lastFinalBySource.clear();
     _pendingStartBySource.clear();
     _sessionId = null;
+    _sessionStartAt = null;
     _sessionStartMs = null;
     _totalSegmentCount = 0;
+    _rowCreated = false;
   }
 
   void _handleInterimResult(SttResultEvent event) {
@@ -141,11 +198,8 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
         'saveSegment (merge): sessionId=$_sessionId'
         ' segmentId=${merged.segmentId}',
       );
-      unawaited(
-        _repository.saveSegment(_sessionId!, merged).catchError((Object e) {
-          _log.severe('saveSegment (merge) failed: ${e.runtimeType}');
-        }),
-      );
+      // A merge always follows a segment that already created the row.
+      _appendWrite(() => _repository.saveSegment(_sessionId!, merged));
     } else {
       // New segment: gap > 2s or no prior segment for this source.
       final segment = TranscriptSegment(
@@ -162,40 +216,119 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
         'saveSegment (new): sessionId=$_sessionId'
         ' segmentId=${segment.segmentId}',
       );
-      unawaited(
-        _repository.saveSegment(_sessionId!, segment).catchError((Object e) {
-          _log.severe('saveSegment (new) failed: ${e.runtimeType}');
-        }),
-      );
+      _saveNewSegment(segment);
+    }
+  }
+
+  /// Saves a brand-new segment, creating the session row first when this is
+  /// the first one (Q-2). Both go through the session's write chain, so the
+  /// segment never reaches the repository before its row and never overtakes
+  /// an earlier write.
+  void _saveNewSegment(TranscriptSegment segment) {
+    final sessionId = _sessionId!;
+    if (_rowCreated) {
+      _appendWrite(() => _repository.saveSegment(sessionId, segment));
+      return;
+    }
+    _rowCreated = true;
+    final startedAt = _sessionStartAt ?? _now();
+    // The create and its save are two steps, so the save starts only once
+    // the create has completed, in that order, and nothing else can slip
+    // between them.
+    _appendWrite(() => _repository.createSession(sessionId, startedAt));
+    // A merge cannot precede the first save of the same segment, and the
+    // save is appended after the create in the same turn, so this save runs
+    // after the create completes.
+    _appendWrite(() => _repository.saveSegment(sessionId, segment));
+  }
+
+  /// Appends [step] to the session's ordered write chain.
+  ///
+  /// **The order is fixed when the write is appended, and a write handed to
+  /// the repository in the same turn still starts in that turn** (Step 29b).
+  /// Two measured constraints shape this:
+  /// - a plain `.then(step)` chain starts a step in a later microtask, so a
+  ///   merge appended in the same turn would overtake the first save, and
+  ///   the store (which upserts by id) would keep the shorter original;
+  /// - anything the step's *start* — building a mapper, or the repository's
+  ///   own dispatch — reads from the clock must read it in the caller's
+  ///   turn, or `fakeAsync` hands the step a time that has not elapsed yet
+  ///   and every fake-clock test sees a write out of order.
+  /// So a step for which no predecessor is still running starts now, and a
+  /// step appended behind a running one is started by that predecessor's
+  /// completion, in order. [_writes] always holds the tail, so awaiting the
+  /// chain waits for every step appended so far.
+  void _appendWrite(Future<void> Function() step) {
+    if (_drainRunning) {
+      _chain.add(step);
+      return;
+    }
+    _drainRunning = true;
+    _writes = _drain(step);
+  }
+
+  /// Starts [first] now, then every step appended while it ran, in order.
+  Future<void> _drain(Future<void> Function() first) async {
+    var next = first;
+    while (true) {
+      await _runStep(next);
+      if (_chain.isEmpty) break;
+      next = _chain.removeAt(0);
+    }
+    _drainRunning = false;
+  }
+
+  /// Runs one step; a failure is logged by type only and does not stop the
+  /// steps after it.
+  Future<void> _runStep(Future<void> Function() step) async {
+    try {
+      await step();
+    } on Object catch (e) {
+      _log.severe('repository write failed: ${e.runtimeType}');
     }
   }
 
   void _handleSessionState(RecordingState state) {
     switch (state) {
       case RecordingActiveState():
+        if (state.sessionId == _sessionId) {
+          // Q-4: the same session was republished (resume, REL-U2.1
+          // recovery). A continuation keeps the start, the count and the
+          // merge state, and creates nothing.
+          _log.fine(
+            'session continued: sessionId=${state.sessionId}',
+          );
+          return;
+        }
+        // A different sessionId is a new session. No row is created here
+        // (Q-2): laziness also means a session that never captions anything
+        // leaves nothing behind, even if the app is killed mid-session.
+        // Q-2 (Step 29b follow-up): a new session starts with no outcome, so
+        // the previous session's is forgotten here. The target owns the
+        // outcome's lifetime; the screen only reads it (a provider write from
+        // the screen's Stopped listener re-created the provider's notifier and
+        // threw `LateInitializationError`).
+        _onSaveOutcome?.call(null);
         _sessionId = state.sessionId;
-        _sessionStartMs = _now().millisecondsSinceEpoch;
+        _sessionStartAt = _now();
+        _sessionStartMs = _sessionStartAt!.millisecondsSinceEpoch;
         _lastFinalBySource.clear();
         _pendingStartBySource.clear();
         _totalSegmentCount = 0;
+        _rowCreated = false;
         _log.fine(
           'session started: sessionId=${state.sessionId}',
-        );
-        unawaited(
-          _repository.createSession(state.sessionId, DateTime.now()).catchError(
-            (Object e) {
-              _log.severe('createSession failed: ${e.runtimeType}');
-            },
-          ),
         );
       case StoppedState():
         _handleSessionStopped();
       case IdleState():
         _sessionId = null;
+        _sessionStartAt = null;
         _sessionStartMs = null;
         _lastFinalBySource.clear();
         _pendingStartBySource.clear();
         _totalSegmentCount = 0;
+        _rowCreated = false;
       case PausedState() || ReconnectingState():
         break;
     }
@@ -203,6 +336,20 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
 
   void _handleSessionStopped() {
     if (_sessionId == null) return;
+    if (!_rowCreated) {
+      // Q-2: zero segments means no row — nothing is created, finalized or
+      // deleted. Just drop the session state.
+      _log.fine(
+        'finalizeSession skipped (no row): sessionId=$_sessionId',
+      );
+      _lastFinalBySource.clear();
+      _pendingStartBySource.clear();
+      _sessionId = null;
+      _sessionStartAt = null;
+      _sessionStartMs = null;
+      _totalSegmentCount = 0;
+      return;
+    }
     final durationMs = _sessionStartMs == null
         ? 0
         : _now().millisecondsSinceEpoch - _sessionStartMs!;
@@ -210,21 +357,21 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
       'finalizeSession: sessionId=$_sessionId'
       ' durationMs=$durationMs segmentCount=$_totalSegmentCount',
     );
-    unawaited(
-      _repository
-          .finalizeSession(
-            _sessionId!,
-            durationMs: durationMs,
-            segmentCount: _totalSegmentCount,
-          )
-          .catchError((Object e) {
-        _log.severe('finalizeSession failed: ${e.runtimeType}');
-      }),
-    );
+    final sessionId = _sessionId!;
+    final segmentCount = _totalSegmentCount;
+    _appendWrite(() async {
+      await _repository.finalizeSession(
+        sessionId,
+        durationMs: durationMs,
+        segmentCount: segmentCount,
+      );
+    });
     _lastFinalBySource.clear();
     _pendingStartBySource.clear();
     _sessionId = null;
+    _sessionStartAt = null;
     _sessionStartMs = null;
     _totalSegmentCount = 0;
+    _rowCreated = false;
   }
 }

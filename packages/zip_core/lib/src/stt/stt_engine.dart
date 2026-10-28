@@ -7,6 +7,10 @@ import 'package:zip_core/src/models/stt_result.dart';
 /// unified [SttResult] callback. Concrete implementations are in Unit 2
 /// (`PlatformSttEngine`, `SherpaOnnxSttEngine`).
 ///
+/// An engine that can also report lasting errors after [startListening]
+/// succeeded implements the sibling capability `SttErrorSource` (Unit 10,
+/// Amendment 01); this interface itself is unchanged.
+///
 /// **Security constraint (SECURITY-03)**: The `onResult` callback in
 /// `startListening` delivers transcript text. Implementations and all code
 /// handling this callback must never log, emit, or surface transcript text

@@ -1,0 +1,27 @@
+16:09:00.065 channel ready (no RPC open yet)
+I1027 16:09:00.066323 26645016 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+16:09:00.177 logcat cleared
+16:09:00.177 TAP START
+I1027 16:09:00.178005 26645016 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I1027 16:09:00.262678 26645016 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+16:09:00.755 onMicrophoneOpened seen (+0.58s after tap)
+16:09:00.756 opening injectAudio stream
+I1027 16:09:00.757662 26645652 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+16:09:00.760 phrase p1.wav start
+16:09:00.760 stream: first packet sent
+I1027 16:09:04.504470 26645652 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+16:09:05.584 phrase p1.wav end
+I1027 16:09:08.210113 26645652 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I1027 16:09:11.908751 26645652 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+16:09:13.581 phrase p2.wav start
+I1027 16:09:15.630940 26645652 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+16:09:17.602 phrase p2.wav end
+I1027 16:09:19.344087 26645652 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I1027 16:09:23.058541 26645652 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+16:09:25.604 phrase p3.wav start
+16:09:29.181 phrase p3.wav end
+I1027 16:09:32.027491 26645652 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+16:09:34.182 script done, closing stream
+16:09:35.167 injectAudio finished OK (stream closed)
+16:09:40.422 TAP STOP
+16:09:49.010 done

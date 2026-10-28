@@ -42,6 +42,20 @@ extension RecordingErrorFactories on RecordingError {
         timestamp: DateTime.now(),
       );
 
+  /// On-device speech recognition is not available, so captioning did not
+  /// start (Unit 10, Amendment 02).
+  ///
+  /// A separate message is needed because [engineRequiresModelDownload] says a
+  /// model "must be downloaded", which is wrong for a device or locale with
+  /// no on-device support at all (nothing to download), and
+  /// [engineInitFailed] and [engineStartFailed] say nothing about why. The
+  /// text makes no claim about where audio went.
+  static RecordingError onDeviceRecognitionUnavailable() => RecordingError(
+        message: 'On-device speech recognition is not available.',
+        severity: RecordingErrorSeverity.fatal,
+        timestamp: DateTime.now(),
+      );
+
   /// The requested locale is not supported by the active engine.
   static RecordingError localeNotSupported(String localeId) =>
       RecordingError(
