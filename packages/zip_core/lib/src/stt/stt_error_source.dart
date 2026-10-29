@@ -52,10 +52,10 @@ final class SttEngineError {
 ///
 /// It is a method rather than a setter because `very_good_analysis` enables
 /// `avoid_setters_without_getters`.
-// A one-member capability interface is the point: engines opt in by
-// implementing it, and `is SttErrorSource` is the check.
-// ignore: one_member_abstracts
-abstract interface class SttErrorSource {
+///
+/// A mixin with one abstract member, used only through `implements`: engines
+/// opt in by implementing it, and `is SttErrorSource` is the check.
+mixin SttErrorSource {
   /// Sets (or clears, with `null`) the listener.
   ///
   /// The engine calls it at most once per lasting error.

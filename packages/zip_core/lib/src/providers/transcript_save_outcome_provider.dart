@@ -26,18 +26,10 @@ class TranscriptSaveOutcome extends _$TranscriptSaveOutcome {
   /// The most recently recorded outcome, or `null` when unknown.
   bool? get saved => state;
 
-  /// Records that the session just ended saved a transcript row.
-  set saved(bool value) => state = value;
-
-  /// Records `value`, the way [saved] does, including `null` for "unknown".
-  ///
-  /// The writer target uses this to forget the previous session's outcome
-  /// when a new session starts (Step 29b), which `saved` cannot express.
-  /// `bool?` rather than a setter, and positional like `saved`, because the
-  /// value it stores is the same tri-state (saved, not saved, unknown).
-  // ignore: avoid_positional_boolean_parameters, use_setters_to_change_properties
-  void record(bool? value) => state = value;
+  /// Records the outcome of the session just ended: `true` when it saved a
+  /// transcript row, `false` when it saved nothing, `null` for "unknown".
+  set saved(bool? value) => state = value;
 
   /// Forgets the recorded outcome (back to "unknown").
-  void clear() => record(null);
+  void clear() => state = null;
 }

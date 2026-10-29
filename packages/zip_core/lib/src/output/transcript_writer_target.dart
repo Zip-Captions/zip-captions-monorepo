@@ -37,21 +37,18 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
     required TranscriptRepository repository,
     required TranscriptSettings settings,
     DateTime Function()? now,
-    // The callback carries the same tri-state as the provider it feeds, so
-    // a named wordy signature would add nothing.
-    // ignore: avoid_positional_boolean_parameters
-    void Function(bool? saved)? onSaveOutcome,
+    void Function()? onSessionStarted,
   }) : _repository = repository,
        _settings = settings,
        _now = now ?? DateTime.now,
-       _onSaveOutcome = onSaveOutcome;
+       _onSessionStarted = onSessionStarted;
 
   final TranscriptRepository _repository;
   final TranscriptSettings _settings;
   final DateTime Function() _now;
-  // The same tri-state as [TranscriptSaveOutcome.record]; see the constructor.
-  // ignore: avoid_positional_boolean_parameters
-  final void Function(bool? saved)? _onSaveOutcome;
+  // Called when a new session starts, so the previous session's save outcome
+  // is forgotten (the callback carries nothing: the outcome is "unknown").
+  final void Function()? _onSessionStarted;
 
   final _lastFinalBySource = <String, TranscriptSegment>{};
   // Session-relative ms when the first interim result for an utterance arrived.
@@ -308,7 +305,7 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
         // outcome's lifetime; the screen only reads it (a provider write from
         // the screen's Stopped listener re-created the provider's notifier and
         // threw `LateInitializationError`).
-        _onSaveOutcome?.call(null);
+        _onSessionStarted?.call();
         _sessionId = state.sessionId;
         _sessionStartAt = _now();
         _sessionStartMs = _sessionStartAt!.millisecondsSinceEpoch;

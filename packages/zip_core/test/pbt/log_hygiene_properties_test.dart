@@ -873,7 +873,7 @@ void _s9(_Harness h, FakeAsync async, _Phrase phrase) {
   h.stt.emitResult(phrase.text, isFinal: true);
   async
     ..flushMicrotasks()
-    ..elapse(speechInactivityTimeout)
+    ..elapse(defaultSpeechInactivityTimeout)
     ..flushMicrotasks();
   expect(h.state, isA<StoppedState>(), reason: 'S9 inactivity stop');
 }

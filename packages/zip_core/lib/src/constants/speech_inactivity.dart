@@ -3,4 +3,4 @@
 ///
 /// The rule reads the value through `speechInactivityTimeoutProvider`, so a
 /// future settings screen can override it without changing the rule.
-const speechInactivityTimeout = Duration(minutes: 5);
+const defaultSpeechInactivityTimeout = Duration(minutes: 5);

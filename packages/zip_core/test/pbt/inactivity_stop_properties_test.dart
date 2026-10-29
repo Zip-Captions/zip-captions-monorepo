@@ -51,11 +51,11 @@ class _Model {
   bool attemptedRestart = false;
   String? ended; // 'inactivity' | 'user' | 'error'
 
-  int get remainingMs => speechInactivityTimeout.inMilliseconds - idleMs;
+  int get remainingMs => defaultSpeechInactivityTimeout.inMilliseconds - idleMs;
 
   void elapse(int ms) {
     if (ended != null || paused) return;
-    if (idleMs + ms >= speechInactivityTimeout.inMilliseconds) {
+    if (idleMs + ms >= defaultSpeechInactivityTimeout.inMilliseconds) {
       ended = 'inactivity';
     } else {
       idleMs += ms;
@@ -95,9 +95,9 @@ class _Model {
 
 class _Step {
   _Step(Random r)
-      : op = _Op.values[r.nextInt(_Op.values.length)],
-        gapKind = r.nextInt(5),
-        gapSeed = r.nextInt(1 << 30);
+    : op = _Op.values[r.nextInt(_Op.values.length)],
+      gapKind = r.nextInt(5),
+      gapSeed = r.nextInt(1 << 30);
 
   final _Op op;
   final int gapKind;
@@ -107,7 +107,7 @@ class _Step {
   /// so the stop is checked for exactness, not only roughly.
   int gapMs(_Model m) {
     final r = Random(gapSeed);
-    final span = speechInactivityTimeout.inMilliseconds;
+    final span = defaultSpeechInactivityTimeout.inMilliseconds;
     switch (gapKind) {
       case 0:
         return r.nextInt(20000);
@@ -127,12 +127,12 @@ List<_Step> _scenario(Random r) =>
     List.generate(5 + r.nextInt(26), (_) => _Step(r));
 
 SttResult _result({required bool isFinal}) => SttResult(
-      text: 'spoken words',
-      isFinal: isFinal,
-      confidence: 1,
-      timestamp: DateTime.utc(2026, 10, 27),
-      sourceId: 'default',
-    );
+  text: 'spoken words',
+  isFinal: isFinal,
+  confidence: 1,
+  timestamp: DateTime.utc(2026, 10, 27),
+  sourceId: 'default',
+);
 
 void main() {
   group('TP-32: the inactivity stop', () {
@@ -169,8 +169,9 @@ void main() {
           when(manager.pause).thenAnswer((_) async => true);
           when(manager.resume).thenAnswer((_) async => true);
           when(manager.stop).thenAnswer((_) async {});
-          when(() => manager.handleEngineError(any()))
-              .thenAnswer((_) async => recovers);
+          when(
+            () => manager.handleEngineError(any()),
+          ).thenAnswer((_) async => recovers);
           when(wakeLock.acquire).thenAnswer((_) async {});
           when(wakeLock.release).thenAnswer((_) async {});
           when(wakeLock.onPause).thenAnswer((_) async {});
@@ -188,8 +189,9 @@ void main() {
           container.read(sessionStopCallbackProvider).callback = () async {
             finalizeCalls++;
           };
-          final notifier =
-              container.read(recordingStateNotifierProvider.notifier);
+          final notifier = container.read(
+            recordingStateNotifierProvider.notifier,
+          );
           RecordingState current() =>
               container.read(recordingStateNotifierProvider);
           final why = StringBuffer('ops:');
@@ -248,7 +250,7 @@ void main() {
 
           // Drain: a running session must now stop at its deadline, a stopped
           // one must stay stopped.
-          settle(speechInactivityTimeout.inMilliseconds * 2);
+          settle(defaultSpeechInactivityTimeout.inMilliseconds * 2);
           if (model.ended == null && !model.paused) model.ended = 'inactivity';
           final stopped = model.ended != null;
           expect(current() is StoppedState, stopped, reason: '$why (drain)');
@@ -261,7 +263,7 @@ void main() {
           expect(stoppedEvents, stopped ? 1 : 0, reason: '$why');
           verify(wakeLock.release).called(stopped ? 1 : 0);
           expect(
-            container.read(sessionStopReasonProvider),
+            container.read(sessionStopReasonNotifierProvider),
             model.ended == 'inactivity' ? SessionStopReason.inactivity : null,
             reason: '$why',
           );

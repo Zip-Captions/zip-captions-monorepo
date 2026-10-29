@@ -1,4 +1,6 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'session_stop_reason_provider.g.dart';
 
 /// Why a session was stopped by the app itself rather than by the user or an
 /// engine error (Unit 10 Amendment 05, BR-U10-53).
@@ -16,28 +18,26 @@ enum SessionStopReason {
 /// transcript save outcome, it lets the screen show a one-time notice without
 /// any `RecordingState` or `RecordingStateNotifier` API change.
 ///
-/// Carries an enum only, never any recognised text.
-class SessionStopReasonNotifier extends Notifier<SessionStopReason?> {
+/// Kept alive for the app lifetime. Carries an enum only, never any
+/// recognised text.
+@Riverpod(keepAlive: true)
+class SessionStopReasonNotifier extends _$SessionStopReasonNotifier {
   @override
   SessionStopReason? build() => null;
 
-  /// Records [reason] as the cause of the stop that is under way.
-  // ignore: use_setters_to_change_properties
-  void record(SessionStopReason? reason) => state = reason;
+  /// The recorded reason, or `null` when there is none.
+  SessionStopReason? get reason => state;
+
+  /// Records the cause of the stop that is under way.
+  set reason(SessionStopReason? value) => state = value;
 
   /// Returns the recorded reason and resets it, so it is shown once.
   SessionStopReason? take() {
-    final reason = state;
+    final taken = state;
     state = null;
-    return reason;
+    return taken;
   }
 
   /// Forgets the recorded reason.
   void clear() => state = null;
 }
-
-/// Provider for [SessionStopReasonNotifier], kept alive for the app lifetime.
-final sessionStopReasonProvider =
-    NotifierProvider<SessionStopReasonNotifier, SessionStopReason?>(
-  SessionStopReasonNotifier.new,
-);

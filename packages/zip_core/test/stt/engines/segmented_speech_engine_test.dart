@@ -1146,6 +1146,101 @@ void main() {
     });
   });
 
+  group('review fix F1: codes 5 and 11 are counted', () {
+    test('a service that dies with the code after every successful start '
+        'reaches the cap once and stops', () {
+      for (final code in [5, 11]) {
+        fakeAsync((async) {
+          final rig = _rig();
+          addTearDown(rig.engine.dispose);
+          final errors = <SttEngineErrorKind>[];
+          rig.engine.setErrorListener((e) => errors.add(e.kind));
+          unawaited(rig.engine.initialize());
+          async.flushMicrotasks();
+          unawaited(
+            rig.engine.startListening(
+              localeId: 'en-CA',
+              onResult: _Results().add,
+            ),
+          );
+          async.flushMicrotasks();
+
+          // Every renewal starts successfully and the service dies again.
+          for (var i = 0; i < 10; i++) {
+            rig.bridge.sendError(code);
+            async.elapse(const Duration(seconds: 1));
+          }
+
+          expect(
+            errors,
+            [SttEngineErrorKind.restartCapReached],
+            reason: 'code $code reports exactly once',
+          );
+          expect(
+            rig.bridge.startedLocales,
+            hasLength(3),
+            reason: 'code $code: no start after the cap',
+          );
+          expect(
+            rig.log.where('segment-recreate'),
+            hasLength(2),
+            reason: 'code $code: the failure that reaches the cap does not '
+                'recreate',
+          );
+        });
+      }
+    });
+  });
+
+  group('review fix F2: late events from a superseded session', () {
+    test('an end and errors arriving while a resume is held open start '
+        'nothing and count nothing', () {
+      fakeAsync((async) {
+        final rig = _rig(restartCap: 2);
+        addTearDown(rig.engine.dispose);
+        final errors = <SttEngineErrorKind>[];
+        rig.engine.setErrorListener((e) => errors.add(e.kind));
+        unawaited(rig.engine.initialize());
+        async.flushMicrotasks();
+        unawaited(
+          rig.engine.startListening(
+            localeId: 'en-CA',
+            onResult: _Results().add,
+          ),
+        );
+        async.flushMicrotasks();
+        unawaited(rig.engine.pause());
+        async.flushMicrotasks();
+
+        final held = Completer<void>();
+        rig.checker.hangNext = held.future;
+        var resumed = false;
+        unawaited(rig.engine.resume().then((ok) => resumed = ok));
+        async.flushMicrotasks();
+
+        // The previous session's trailing events, mid-resume.
+        rig.bridge
+          ..sendEndOfSession()
+          ..sendError(7)
+          ..sendError(1);
+        async.elapse(const Duration(seconds: 1));
+        expect(
+          rig.bridge.startedLocales,
+          hasLength(1),
+          reason: 'no renewal runs beside the held resume',
+        );
+
+        held.complete();
+        async.flushMicrotasks();
+        expect(resumed, isTrue);
+        expect(rig.bridge.startedLocales, hasLength(2));
+        async.elapse(const Duration(seconds: 5));
+        expect(rig.bridge.startedLocales, hasLength(2));
+        expect(errors, isEmpty, reason: 'nothing was counted');
+      });
+    });
+  });
+
   group('dispose', () {
     test('cancels the session and releases the bridge', () async {
       final rig = _rig();

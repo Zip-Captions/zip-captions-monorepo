@@ -43,14 +43,14 @@ final transcriptWriterTargetProvider = Provider<void>((ref) {
   final target = TranscriptWriterTarget(
     repository: repo,
     settings: settings,
-    onSaveOutcome: (saved) {
+    onSessionStarted: () {
       // The provider may be replayed from its own build (a capture toggle
       // mid-session), and a provider must not write another during its own
       // initialisation. The write is the same either way, so let the current
       // stack unwind first.
       unawaited(
         Future<void>.microtask(() {
-          ref.read(transcriptSaveOutcomeProvider.notifier).record(saved);
+          ref.read(transcriptSaveOutcomeProvider.notifier).clear();
         }),
       );
     },
@@ -63,7 +63,7 @@ final transcriptWriterTargetProvider = Provider<void>((ref) {
   // saved session from one that captioned nothing.
   stopCallback.callback = () async {
     final saved = await target.finalizeCurrentSession();
-    ref.read(transcriptSaveOutcomeProvider.notifier).record(saved);
+    ref.read(transcriptSaveOutcomeProvider.notifier).saved = saved;
   };
 
   // If saving is re-enabled while a session is already active, replay the

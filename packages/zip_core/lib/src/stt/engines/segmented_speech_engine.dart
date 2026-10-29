@@ -111,6 +111,11 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
   /// a repeat of the same code retries without recreating again.
   bool _recreatedForSession = false;
 
+  /// Whether a session has begun since the last start, stop, pause or dispose.
+  /// While it is `false` the bridge's events belong to a superseded session
+  /// and are dropped.
+  bool _sessionLive = false;
+
   @override
   String get engineId => _engineIdValue;
 
@@ -176,6 +181,7 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
     _onResult = onResult;
     final epoch = ++_epoch;
     _intent = _Intent.listening;
+    _sessionLive = false;
     // A user start (and `resume`, which calls this) owns the session now:
     // drop any pending renewal and start both budgets fresh (BR-U10-44).
     _cancelRenewal();
@@ -245,6 +251,7 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
   }
 
   void _beginSession() {
+    _sessionLive = true;
     _worst = _ErrorClass.none;
     _recreatedForSession = false;
     _renewing = false;
@@ -255,7 +262,10 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
   void _onEvent(SegmentedRecognizerEvent event) {
     // Events for a session nobody asked for (after stop, pause or dispose)
     // are dropped, so a trailing segment cannot reach a stopped session.
-    if (_intent != _Intent.listening) return;
+    // Likewise for a session that has not begun since the last start, stop or
+    // pause: a late end or error from the previous session must not renew or
+    // count while a start or resume is still in flight.
+    if (_intent != _Intent.listening || !_sessionLive) return;
     switch (event) {
       case SegmentedReady():
         break;
@@ -390,6 +400,10 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
       _worst = errorClass;
     }
     _log.info('Transient engine error (code ${errorCode ?? 'none'})');
+    // Count first (BR-U10-40, BR-U10-45): a service that keeps dying after
+    // each successful start must reach the cap, so the failure that reaches it
+    // reports and stops without a further recreate.
+    if (_countFailure()) return;
     final recreate = errorCode != null && _recreateCodes.contains(errorCode);
     if (recreate && !_recreatedForSession) {
       _recreatedForSession = true;
@@ -400,7 +414,6 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
       );
       return;
     }
-    if (_countFailure()) return;
     _scheduleRenewal(_epoch);
   }
 
@@ -449,6 +462,7 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
     // Intent first, then the platform, so a trailing event never renews.
     _epoch++;
     _intent = _Intent.stopped;
+    _sessionLive = false;
     _cancelRenewal();
     try {
       await _bridge.stop();
@@ -462,6 +476,7 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
   Future<bool> pause() async {
     _epoch++;
     _intent = _Intent.paused;
+    _sessionLive = false;
     _cancelRenewal();
     try {
       await _bridge.stop();
@@ -487,6 +502,7 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
   void dispose() {
     _epoch++;
     _intent = _Intent.stopped;
+    _sessionLive = false;
     _cancelRenewal();
     unawaited(_subscription.cancel());
     unawaited(_cancelQuietly());

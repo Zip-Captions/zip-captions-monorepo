@@ -179,6 +179,10 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
       return false;
     }
 
+    // The plugin may deliver a status or an error before `listen()` returns;
+    // the loop holds those for this epoch and applies them once the session
+    // is marked started.
+    _loop.startingSession();
     final outcome = await _listenPlugin(localeId);
     if (_loop.epoch != epoch) {
       // The interrupt won while listen() was in flight. Per the ordering
@@ -192,6 +196,7 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
       _loop.sessionStarted(localeId);
       return true;
     }
+    _loop.abandonStarting();
     return false;
   }
 
@@ -222,16 +227,10 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
           _loop.onResult(sttResult);
           _onResult?.call(sttResult);
         },
-        listenOptions: SpeechListenOptions(
-          onDevice: true,
-          // BR-U10-20 states these explicitly so a change to the plugin's
-          // defaults cannot silently change the engine's behaviour.
-          // ignore: avoid_redundant_argument_values
-          partialResults: true,
-          // Explicit for the same reason (BR-U10-20).
-          // ignore: avoid_redundant_argument_values
-          cancelOnError: false,
-        ),
+        // BR-U10-20: partial results on and cancel-on-error off are the
+        // plugin's defaults; the 'listen options' test pins both so a change
+        // to the defaults cannot silently change the engine's behaviour.
+        listenOptions: SpeechListenOptions(onDevice: true),
       );
       _log.info('Listening started for locale $localeId');
       return _ListenOutcome.started;
@@ -408,6 +407,26 @@ class _SessionLoop {
 
   bool get isPaused => _intent == _Intent.paused;
 
+  /// Whether a first start or a resume `listen()` is in flight. Plugin events
+  /// that arrive meanwhile are held in [_held] and replayed, in order, once
+  /// [sessionStarted] has marked the session as listening. A stop, pause or
+  /// dispose clears them (BR-U10-19: the interrupt wins).
+  bool _starting = false;
+  final List<void Function()> _held = [];
+
+  /// Marks a first start or a resume `listen()` as about to be in flight.
+  void startingSession() {
+    _starting = true;
+    _held.clear();
+  }
+
+  /// The start did not produce a session (refused or threw): drop what was
+  /// held, as no session exists to apply it to.
+  void abandonStarting() {
+    _starting = false;
+    _held.clear();
+  }
+
   /// A session started successfully (first start or a resume).
   void sessionStarted(String localeId) {
     _localeId = localeId;
@@ -415,6 +434,12 @@ class _SessionLoop {
     _failureCount = 0;
     _restartScheduled = false;
     _beginSession();
+    _starting = false;
+    final held = List<void Function()>.of(_held);
+    _held.clear();
+    for (final apply in held) {
+      apply();
+    }
   }
 
   void _beginSession() {
@@ -426,6 +451,10 @@ class _SessionLoop {
 
   /// A recognition result arrived (before it reaches the app's callback).
   void onResult(SttResult result) {
+    if (_starting) {
+      _held.add(() => onResult(result));
+      return;
+    }
     if (_intent != _Intent.listening) return;
     _deliveredResult = true;
     _failureCount = 0;
@@ -434,12 +463,20 @@ class _SessionLoop {
 
   /// A plugin status arrived. Only `done` drives a restart (BR-U10-15).
   void onStatus(String status) {
+    if (_starting) {
+      _held.add(() => onStatus(status));
+      return;
+    }
     if (status == SpeechToText.doneStatus) _onDone();
   }
 
   /// A plugin error arrived, classified by code and never by the plugin's
   /// `permanent` flag, which is always true (BR-U10-18).
   void onError(String code) {
+    if (_starting) {
+      _held.add(() => onError(code));
+      return;
+    }
     if (_intent != _Intent.listening) return;
 
     final lasting = _lastingCodes[code];
@@ -544,12 +581,14 @@ class _SessionLoop {
   void pauseRequested() {
     _epoch++;
     _intent = _Intent.paused;
+    abandonStarting();
     _cancelTimer();
   }
 
   void stopRequested() {
     _epoch++;
     _intent = _Intent.stopped;
+    abandonStarting();
     _cancelTimer();
     _pendingInterim = null;
   }
@@ -557,6 +596,7 @@ class _SessionLoop {
   void dispose() {
     _epoch++;
     _intent = _Intent.stopped;
+    abandonStarting();
     _cancelTimer();
     _pendingInterim = null;
   }

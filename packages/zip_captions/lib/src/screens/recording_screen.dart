@@ -130,7 +130,7 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
         // below (ScaffoldMessenger queues), and never for a user, error or
         // refused-resume stop, which record no reason.
         final stopReason = ref
-            .read(sessionStopReasonProvider.notifier)
+            .read(sessionStopReasonNotifierProvider.notifier)
             .take();
         if (stopReason == SessionStopReason.inactivity && strings != null) {
           final timeout = ref.read(speechInactivityTimeoutProvider);

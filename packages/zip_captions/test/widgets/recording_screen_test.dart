@@ -112,14 +112,14 @@ class _WritableOutcome extends TranscriptSaveOutcome {
   }
 
   @override
-  set saved(bool v) => record(v);
-
-  @override
-  void record(bool? v) {
+  set saved(bool? v) {
     mutations.add('record=$v');
     value = v;
     state = v;
   }
+
+  @override
+  void clear() => saved = null;
 }
 
 /// A [TranscriptSettingsNotifier] pinned to one capture setting.
@@ -633,11 +633,12 @@ void main() {
         // Session one stops after the writer recorded `false` (it ran and
         // saved nothing).
         final writer = _WritableOutcome();
-        final first = FakeRecordingStateNotifier(
-          const RecordingState.recording(sessionId: 'first'),
-        )
-          ..setSessionIdOnStop('first-stop')
-          ..beforeStopGate = Completer<void>();
+        final first =
+            FakeRecordingStateNotifier(
+                const RecordingState.recording(sessionId: 'first'),
+              )
+              ..setSessionIdOnStop('first-stop')
+              ..beforeStopGate = Completer<void>();
         await _pump(
           tester,
           first,
@@ -650,7 +651,7 @@ void main() {
         ProviderScope.containerOf(
           tester.element(find.byType(RecordingScreen)),
           listen: false,
-        ).read(transcriptSaveOutcomeProvider.notifier).record(false);
+        ).read(transcriptSaveOutcomeProvider.notifier).saved = false;
         final firstStop = first.stop();
         first.beforeStopGate!.complete();
         await firstStop;
@@ -665,7 +666,7 @@ void main() {
         // second provider container (which is not what a second visit does).
         await first.start();
         await tester.pump();
-        writer.record(null);
+        writer.clear();
         first
           ..setSessionIdOnStop('second-stop')
           ..beforeStopGate = Completer<void>();
@@ -737,11 +738,10 @@ void main() {
     /// stopped state is published.
     void recordInactivity(WidgetTester tester) {
       ProviderScope.containerOf(
-        tester.element(find.byType(RecordingScreen)),
-        listen: false,
-      ).read(sessionStopReasonProvider.notifier).record(
-            SessionStopReason.inactivity,
-          );
+            tester.element(find.byType(RecordingScreen)),
+            listen: false,
+          ).read(sessionStopReasonNotifierProvider.notifier).reason =
+          SessionStopReason.inactivity;
     }
 
     Future<void> pumpAfterStop(WidgetTester tester) async {
@@ -776,8 +776,9 @@ void main() {
         tester,
         notifier,
         extraOverrides: [
-          speechInactivityTimeoutProvider
-              .overrideWithValue(const Duration(minutes: 1)),
+          speechInactivityTimeoutProvider.overrideWithValue(
+            const Duration(minutes: 1),
+          ),
         ],
       );
       recordInactivity(tester);
@@ -799,7 +800,7 @@ void main() {
       );
       recordInactivity(tester);
       expect(
-        container.read(sessionStopReasonProvider),
+        container.read(sessionStopReasonNotifierProvider),
         SessionStopReason.inactivity,
       );
 
@@ -812,7 +813,7 @@ void main() {
         hasLength(1),
       );
       expect(
-        container.read(sessionStopReasonProvider),
+        container.read(sessionStopReasonNotifierProvider),
         isNull,
         reason: 'read then reset',
       );

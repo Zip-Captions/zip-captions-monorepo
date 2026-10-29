@@ -7,7 +7,7 @@ part of 'transcript_save_outcome_provider.dart';
 // **************************************************************************
 
 String _$transcriptSaveOutcomeHash() =>
-    r'd0886865a95b50bba814c1fb2215cbe0913f223a';
+    r'e8bb31ee24e58b7999ad2dc6db8d97f3b50f0a85';
 
 /// Whether the session that most recently stopped saved a transcript
 /// (Amendment 03 section 7, Q-2).
@@ -19,8 +19,9 @@ String _$transcriptSaveOutcomeHash() =>
 ///
 /// The transcript writer target provider's stop callback writes this just
 /// before the stopped state is published, which lets `RecordingScreen` show
-/// the one-time "no transcript was saved" notice on [StoppedState] without
-/// any [RecordingState] or `RecordingStateNotifier` API change.
+/// the one-time "no transcript was saved" notice when the state becomes
+/// stopped, without any `RecordingState` or `RecordingStateNotifier` API
+/// change.
 ///
 /// Kept alive for the app lifetime; it carries a single bool, no transcript
 /// content.

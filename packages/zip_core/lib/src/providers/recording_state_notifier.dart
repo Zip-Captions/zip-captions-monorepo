@@ -115,9 +115,8 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
     );
     // Not an error (BR-U10-51): a reconnecting session's engine error is spent.
     _lastError = null;
-    ref
-        .read(sessionStopReasonProvider.notifier)
-        .record(SessionStopReason.inactivity);
+    ref.read(sessionStopReasonNotifierProvider.notifier).reason =
+        SessionStopReason.inactivity;
     unawaited(_finishSession(sessionId));
   }
 
@@ -164,7 +163,7 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
     _hasAttemptedRestart = false;
     _finishing = null;
     _cancelInactivityTimer();
-    ref.read(sessionStopReasonProvider.notifier).clear();
+    ref.read(sessionStopReasonNotifierProvider.notifier).clear();
 
     final engine = ref.read(sttEngineProvider);
     if (engine == null) {
@@ -226,7 +225,8 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
       // SECURITY-15: fail closed. Never log the exception itself.
       _log.severe('Start failed: ${e.runtimeType}');
       if (state is IdleState) {
-        _lastError = _captured ??
+        _lastError =
+            _captured ??
             (initialized
                 ? RecordingErrorFactories.engineStartFailed()
                 : RecordingErrorFactories.engineInitFailed());
@@ -498,8 +498,7 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
 
     unawaited(() async {
       try {
-        final recovered =
-            await _sessionManager.handleEngineError(error);
+        final recovered = await _sessionManager.handleEngineError(error);
         // Stop wins (BR-U10-35, TP-2c): if the session is already being
         // finished, the restart above may have started the engine after the
         // user's stop, so stop it again and change nothing else.

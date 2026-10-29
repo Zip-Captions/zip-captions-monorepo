@@ -40,8 +40,7 @@ class _Harness {
         onError: any(named: 'onError'),
       ),
     ).thenAnswer((inv) async {
-      emitResult =
-          inv.namedArguments[#onResult] as void Function(SttResult);
+      emitResult = inv.namedArguments[#onResult] as void Function(SttResult);
       emitError = inv.namedArguments[#onError] as void Function(RecordingError);
       return true;
     });
@@ -83,7 +82,8 @@ class _Harness {
   RecordingStateNotifier get notifier =>
       container.read(recordingStateNotifierProvider.notifier);
   RecordingState get state => container.read(recordingStateNotifierProvider);
-  SessionStopReason? get reason => container.read(sessionStopReasonProvider);
+  SessionStopReason? get reason =>
+      container.read(sessionStopReasonNotifierProvider);
 
   int get stoppedEvents => events
       .whereType<SessionStateEvent>()
@@ -104,12 +104,12 @@ void _settle(FakeAsync async, [Duration d = Duration.zero]) {
 }
 
 SttResult _result({required bool isFinal}) => SttResult(
-      text: 'hello world',
-      isFinal: isFinal,
-      confidence: 1,
-      timestamp: DateTime.utc(2026, 10, 27),
-      sourceId: 'default',
-    );
+  text: 'hello world',
+  isFinal: isFinal,
+  confidence: 1,
+  timestamp: DateTime.utc(2026, 10, 27),
+  sourceId: 'default',
+);
 
 final SttResult _interim = _result(isFinal: false);
 final SttResult _final = _result(isFinal: true);
@@ -209,8 +209,9 @@ void main() {
   test('a stop for an engine error records no reason', () {
     fakeAsync((async) {
       final h = _Harness();
-      when(() => h.manager.handleEngineError(any()))
-          .thenAnswer((_) async => false);
+      when(
+        () => h.manager.handleEngineError(any()),
+      ).thenAnswer((_) async => false);
       unawaited(h.notifier.start());
       _settle(async, const Duration(minutes: 1));
       h.emitError(RecordingErrorFactories.engineStartFailed());

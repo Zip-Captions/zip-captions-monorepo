@@ -9,7 +9,7 @@ import 'package:zip_core/src/providers/speech_inactivity_timeout_provider.dart';
 void main() {
   group('BR-U10-52: speechInactivityTimeout', () {
     test('the default is 5 minutes', () {
-      expect(speechInactivityTimeout, const Duration(minutes: 5));
+      expect(defaultSpeechInactivityTimeout, const Duration(minutes: 5));
     });
 
     test('the provider returns the constant', () {
@@ -18,15 +18,16 @@ void main() {
 
       expect(
         container.read(speechInactivityTimeoutProvider),
-        speechInactivityTimeout,
+        defaultSpeechInactivityTimeout,
       );
     });
 
     test('a future setting can override the provider', () {
       final container = ProviderContainer(
         overrides: [
-          speechInactivityTimeoutProvider
-              .overrideWithValue(const Duration(minutes: 1)),
+          speechInactivityTimeoutProvider.overrideWithValue(
+            const Duration(minutes: 1),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -43,30 +44,33 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      expect(container.read(sessionStopReasonProvider), isNull);
+      expect(container.read(sessionStopReasonNotifierProvider), isNull);
     });
 
     test('take() returns the recorded reason once, then null', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
-      final notifier = container.read(sessionStopReasonProvider.notifier)
-        ..record(SessionStopReason.inactivity);
+      final notifier = container.read(
+        sessionStopReasonNotifierProvider.notifier,
+      )..reason = SessionStopReason.inactivity;
 
-      expect(container.read(sessionStopReasonProvider),
-          SessionStopReason.inactivity);
+      expect(
+        container.read(sessionStopReasonNotifierProvider),
+        SessionStopReason.inactivity,
+      );
       expect(notifier.take(), SessionStopReason.inactivity);
-      expect(container.read(sessionStopReasonProvider), isNull);
+      expect(container.read(sessionStopReasonNotifierProvider), isNull);
       expect(notifier.take(), isNull);
     });
 
     test('clear() forgets the reason', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
-      container.read(sessionStopReasonProvider.notifier)
-        ..record(SessionStopReason.inactivity)
+      container.read(sessionStopReasonNotifierProvider.notifier)
+        ..reason = SessionStopReason.inactivity
         ..clear();
 
-      expect(container.read(sessionStopReasonProvider), isNull);
+      expect(container.read(sessionStopReasonNotifierProvider), isNull);
     });
   });
 }

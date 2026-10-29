@@ -3589,3 +3589,38 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 - **Open.** Whether the Mac microphone reaches the Simulator or the recogniser returns nothing is not established; it needs James to check the Simulator's input device (I/O menu) or the physical-device pass. A-1 remains untested.
 
 **Context**: Branch `feature/mobile-platform-readiness`. All changes are uncommitted.
+
+---
+## CONSTRUCTION - Phase 2 Unit 10: Q-7 verified; local checkpoint; plan to finish Unit 10 and start Unit 9
+**Timestamp**: 2026-10-28
+**User Input** (James Petersen): "I'd like to complete as much work as possible without being at the keyboard, then we can run through some testing/QA together so I can see the behaviour as well. Can you help me come up with a plan that will allow us to move forward from the current point, [...] if there's remaining build to happen, let's come up with a plan where you can delegate each of the build phases to sonnet and orchestrate the process until we reach a stopping point." Answers: an Android 13+ phone is available for the joint QA; stop with the work QA-ready; "Let's include unit 9 work, we haven't done any of that yet"; commit Unit 10 locally now so Unit 9 can have its own branch; a local-stack test user may be tried for the broadcaster sign-in, with no app code change.
+
+**AI Response** (Opus):
+- **Q-7 verified.** Read the `registerSttEngines` and `bootstrap.dart` diff; checked Unit 10's added string comparisons (locale matching normalises case through `_canonical` and `SpeechLocale.languageCode`); re-ran the gates: `dart analyze --fatal-infos` clean ×3, `zip_core` 1141 passed and 4 skipped, `zip_captions` 402, `zip_broadcast` 195. Recorded as plan Step 29c.
+- **Local checkpoint.** Unit 10 committed on `feature/mobile-platform-readiness` as a local work-in-progress commit, not pushed; `opencode.json` (local tool settings) left out. Whether all 43 MB of QA evidence goes into the PR is decided before the PR.
+- **Plan.** Finish Unit 10 without James: a whole-unit review with fixes test-first, the Step 31 summary and the Step 32 hand-off drafted, and one joint QA runbook (the iOS Simulator recognition check, Android Steps 6, 6b, 7 and 8 and the chime checks on James's phone). Then Unit 9 Build and Test on its own branch off `develop`: the checks that can run on this Mac without a person first, the rest in the joint session. Sonnet builds; Opus reviews and verifies.
+
+**Context**: Branch `feature/mobile-platform-readiness`, checkpoint commit local only.
+
+---
+## CONSTRUCTION - Phase 2 Unit 10: Whole-unit review and fixes (Step 29d)
+**Timestamp**: 2026-10-28
+**User Input** (James Petersen): none at this step (unattended run, as planned in the previous entry).
+
+**AI Response** (Opus orchestrating; review by the code-review skill at high effort; fixes by a Sonnet builder; gates re-run by Opus):
+- **Review: 10 items.** Six confirmed against the code, the approved design and AGENTS.md, and fixed test-first, each shown red first: F1 `SegmentedSpeechEngine` counts codes 5 and 11 before recreating (before the fix a recogniser service that kept dying after each successful start never reached the cap); F2 bridge events are dropped until a session has begun since the last start, stop or pause (before, a late end from a paused session could start a second concurrent session during a resume); F3 `PlatformSttEngine` holds plugin status, error and result events that arrive while the first start or a resume `listen()` is in flight and replays them once the session is started (before, a `done` or a lasting error in that window was lost and captions stalled with no error; this may bear on the silent iOS Simulator run); F4 `deviceLocalesProvider` rebuilds on a system locale change; F5 four hand-written providers became `riverpod_generator` providers (AGENTS.md line 95); F6 every `// ignore` Unit 10 added in `lib` was removed (AGENTS.md line 245; the remaining ones in `lib` pre-date Unit 10).
+- **For James Petersen to decide** (in the joint QA agenda): a final phrase that arrives after Stop or Pause is dropped (BR-U10-42); the one-recovery rule is not re-armed after a successful recovery (Amendment 01 section 3.4); finalising a transcript at Stop has no timeout.
+- **Rejected:** silence codes 6 and 7 counted as early ends is decision D-4 (BR-U10-44); BR-U10-40's "never counted" wording contradicts it and needs aligning.
+- **Gates** (after `build_runner` in `zip_core` and `zip_captions`; the builder could not run it): `dart analyze --fatal-infos` clean ×3; `zip_core` 1150 passed, 4 skipped; `zip_captions` 402; `zip_broadcast` 195, no `zip_broadcast` file changed. The generated stop-reason provider is named `sessionStopReasonNotifierProvider` (the enum already owns `SessionStopReason`).
+- **Unit 9 feasibility** (read-only scout, scratchpad report): 5 checks can run unattended, 1 needs CI, 21 need James Petersen. Blockers to decide before Unit 9 can pass: neither macOS app has the `com.apple.security.network.client` entitlement; a no-account viewer cannot obtain TURN credentials (`get_turn_credentials()` needs a signed-in user, anonymous sign-in is off), which contradicts exit criterion 1 and the Unit 7 design wording; a broadcaster test user on the local stack is not possible without an app change (Google OAuth is not configured locally). AGENTS.md line 232 requires the Unit 10 PR to be open before Unit 9 starts, so Unit 9 stays preparation until then.
+
+**Context**: Branch `feature/mobile-platform-readiness`. The fixes are uncommitted on top of the local checkpoint.
+
+---
+## CONSTRUCTION - Phase 2 Unit 10: Unit 10 PR opened; code review delegated
+**Timestamp**: 2026-10-28
+**User Input** (James Petersen): "open the unit 10 pr, then delegate a code review of it to a sub-agent."
+
+**AI Response** (Opus): Committed the Step 29d fixes and the Step 31/32 draft on top of the checkpoint (`opencode.json` left out), pushed `feature/mobile-platform-readiness` and opened the Unit 10 PR against `develop`. The PR states that the joint QA (Android Steps 6, 6b, 7 and 8, the chime checks, the iOS Simulator input check), the three open decisions, the BR-U10-40 wording and the keep-or-prune decision on the 43 MB of QA evidence are still open. A code review of the PR was delegated to an Opus subagent; its findings are not posted to the PR.
+
+**Context**: Branch `feature/mobile-platform-readiness`, pushed. Unit 9 may start once the PR is open (AGENTS.md line 232).
