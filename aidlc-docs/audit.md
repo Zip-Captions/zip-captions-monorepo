@@ -3259,3 +3259,17 @@ Start by reading the files above. Then tell me in a few lines what Unit 9 must p
   the null/empty/whitespace/lowercase coverage.
   All six applied. Gates after: melos analyze clean in four packages; tests
   963 + 5 skipped / 195 / 195; live-stack suite 9/9 (was 5).
+
+- 2026-10-30T08:20Z - Verification reviewer checked all eight fixes against
+  commit 16d2531 and confirmed seven resolved by mutation testing (narrowing
+  the broadcaster catch and reverting to local-only classification both make
+  the new tests fail). It found one remaining defect: the StatsReport
+  typed-field-fallback test was itself vacuous, because `report()` always put
+  `id`/`type` into the values map, so the fallback branch never ran. Fixed:
+  the fallback test now builds reports whose values map genuinely omits
+  `id`/`type`, and breaking the fallback now fails four tests where it
+  previously failed none. The `classifyStatsReports` doc comment, stale after
+  the two-leg change, was extended. A second behavioural note from the review
+  is accepted as intended: a pair with no `remoteCandidateId` now degrades to
+  `unknown` rather than `direct`, per the owner's "one direct leg is not
+  proof" ruling. Gates: analyze clean, 964 + 5 skipped / 195 / 195.

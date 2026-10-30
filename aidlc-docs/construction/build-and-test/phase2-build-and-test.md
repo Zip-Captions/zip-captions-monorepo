@@ -31,7 +31,7 @@ matters).
 | Analysis, shared library | `flutter analyze --fatal-infos` in `packages/zip_core` | no issues |
 | Analysis, viewer app | same, `packages/zip_captions` | no issues |
 | Analysis, broadcaster app | same, `packages/zip_broadcast` | no issues |
-| Tests, shared library | `flutter test` | 963 passed, 5 skipped |
+| Tests, shared library | `flutter test` | 964 passed, 5 skipped |
 | Tests, viewer app | `flutter test` | 195 passed |
 | Tests, broadcaster app | `flutter test` | 195 passed |
 | Coverage suite | `melos run test:coverage --no-select` | `zip_core`, `zip_captions`, `zip_broadcast` green; `lcov.info` produced for each. `zip_supabase` has no Dart tests and is skipped by the `dirExists: test` filter |

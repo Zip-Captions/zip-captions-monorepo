@@ -81,10 +81,11 @@ bool _isDirectCandidateType(String? type) =>
 ///
 /// `StatsReport.values` is what `RTCPeerConnection.getStats()` actually
 /// returns, and it is a raw `Map<dynamic, dynamic>` whose `'type'` /
-/// `'id'` / `'candidateType'` entries are plain strings on every native
-/// backend. Anything unexpected yields [CandidatePairRoute.unknown] rather
-/// than throwing — a malformed stats map must not be able to fail a live
-/// session.
+/// `'id'` / `'candidateType'` / `'localCandidateId'` / `'remoteCandidateId'`
+/// entries are plain strings on every native backend. Both candidate ids
+/// reach the classifier, since either leg being a relay means relayed.
+/// Anything unexpected yields [CandidatePairRoute.unknown] rather than
+/// throwing — a malformed stats map must not be able to fail a live session.
 CandidatePairRoute classifyStatsReports(Iterable<StatsReport> reports) {
   final maps = <Map<String, Object?>>[];
   for (final report in reports) {

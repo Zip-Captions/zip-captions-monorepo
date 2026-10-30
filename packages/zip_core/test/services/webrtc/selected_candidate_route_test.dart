@@ -290,18 +290,50 @@ void main() {
       'id and type',
       () {
         // `StatsReport.fromMap` keeps the raw map, so `id`/`type` are
-        // normally present. The adapter must not depend on that.
+        // normally present and the fallback never runs. These reports
+        // deliberately omit them from `values`, which is the only way to
+        // exercise `values['id'] ?? report.id`. The values maps below carry
+        // no 'id' or 'type' keys at all.
+        StatsReport bare(String id, String type, Map<dynamic, dynamic> v) =>
+            StatsReport(id, type, 0, v);
+
         expect(
           classifyStatsReports([
-            report('T01', 'transport', {'selectedCandidatePairId': 'CP01'}),
-            report('CP01', 'candidate-pair', {
+            bare('T01', 'transport', {'selectedCandidatePairId': 'CP01'}),
+            bare('CP01', 'candidate-pair', {
               'localCandidateId': 'C01',
               'remoteCandidateId': 'C02',
             }),
-            report('C01', 'local-candidate', {'candidateType': 'relay'}),
-            report('C02', 'remote-candidate', {'candidateType': 'relay'}),
+            bare('C01', 'local-candidate', {'candidateType': 'relay'}),
+            bare('C02', 'remote-candidate', {'candidateType': 'relay'}),
           ]),
           CandidatePairRoute.relayed,
+        );
+      },
+    );
+
+    test(
+      'is unknown when the values map omits id and type and the typed fields '
+      'do not describe a usable report',
+      () {
+        // Proves the fallback is load-bearing: strip the typed fields too and
+        // nothing can identify the transport report, so the honest answer is
+        // unknown rather than a guess.
+        expect(
+          classifyStatsReports([
+            StatsReport('', '', 0, {'selectedCandidatePairId': 'CP01'}),
+            StatsReport('CP01', 'candidate-pair', 0, {
+              'localCandidateId': 'C01',
+              'remoteCandidateId': 'C02',
+            }),
+            StatsReport('C01', 'local-candidate', 0, {
+              'candidateType': 'relay',
+            }),
+            StatsReport('C02', 'remote-candidate', 0, {
+              'candidateType': 'host',
+            }),
+          ]),
+          CandidatePairRoute.unknown,
         );
       },
     );
