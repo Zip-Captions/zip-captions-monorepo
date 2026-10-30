@@ -148,6 +148,10 @@ class FakeViewerIceServerProvider implements IceServerProvider {
 
   @override
   Future<List<IceServer>> iceServersFor(String sessionId) async => servers;
+
+  @override
+  Future<List<IceServer>> iceServersForBroadcast(String broadcastId) async =>
+      servers;
 }
 
 /// A [ViewerTransport] factory returning a fresh [FakeViewerTransport].

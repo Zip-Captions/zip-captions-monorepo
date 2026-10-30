@@ -12,6 +12,7 @@ import 'package:zip_core/src/models/viewer_transport_context.dart';
 import 'package:zip_core/src/services/signaling/session_signaling_channel.dart';
 import 'package:zip_core/src/services/webrtc/peer_connection_factory.dart';
 import 'package:zip_core/src/services/webrtc/peer_connection_handle.dart';
+import 'package:zip_core/src/services/webrtc/selected_candidate_route.dart';
 import 'package:zip_core/src/services/webrtc/viewer_transport.dart';
 import 'package:zip_core/src/services/webrtc/web_rtc_broadcast_transport.dart'
     show joinAckSentinel;
@@ -188,7 +189,11 @@ class WebRtcViewerTransport implements ViewerTransport {
       case RTCIceConnectionState.RTCIceConnectionStateCompleted:
         _retryTimer?.cancel();
         _retryIndex = 0;
-        _statusController.add(const Connected(ConnectionType.p2pDirect));
+        // Unit 9 (B4): report the route the connection actually selected,
+        // not an assumed one. Emitted as `p2pDirect` only once the stats say
+        // so; until then this is `connecting`, which is what the viewer
+        // screen already renders while it waits.
+        _emitConnectedWithResolvedRoute();
       // `disconnected` and `failed` are treated identically (CodeRabbit PR
       // #31 review): `business-rules.md` Rule 2 says `Failed` is reachable
       // *only* via `disconnect()` or the broadcast ending — "never via
@@ -209,6 +214,40 @@ class WebRtcViewerTransport implements ViewerTransport {
       case RTCIceConnectionState.RTCIceConnectionStateCount:
         break;
     }
+  }
+
+  /// Resolves this connection's real routing and emits [Connected]
+  /// (Unit 9, B4). Two emissions on purpose: the first with
+  /// [ConnectionType.connecting] so the UI updates the moment ICE
+  /// completes, the second with the confirmed route. A failed stats query
+  /// leaves the viewer at `connecting` rather than claiming a route —
+  /// `ConnectionType.disconnected` would be wrong here, since the
+  /// connection is demonstrably up.
+  void _emitConnectedWithResolvedRoute() {
+    _statusController.add(const Connected(ConnectionType.connecting));
+    final connection = _connection;
+    if (connection == null) return;
+    unawaited(() async {
+      CandidatePairRoute route;
+      try {
+        route = await connection.selectedCandidateRoute();
+      } on Object {
+        route = CandidatePairRoute.unknown;
+      }
+      // A newer attempt may have replaced this connection while the query
+      // was in flight; only report for the connection it was asked about.
+      if (!identical(_connection, connection)) return;
+      // Unconfirmed stays `connecting` on the *viewer* side, unlike the
+      // broadcaster's list: the viewer knows its connection is up, so
+      // `disconnected` would be false. It simply cannot confirm the route.
+      _statusController.add(
+        Connected(
+          route == CandidatePairRoute.unknown
+              ? ConnectionType.connecting
+              : connectionTypeOfCandidateRoute(route),
+        ),
+      );
+    }());
   }
 
   void _scheduleRetry() {

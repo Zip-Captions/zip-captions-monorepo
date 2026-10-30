@@ -67,9 +67,21 @@ class FakeIceServerProvider implements IceServerProvider {
 
   final sessionIdsRequested = <String>[];
 
+  /// The broadcast ids [iceServersForBroadcast] was called with (Unit 9, B2:
+  /// the viewer's path).
+  final broadcastIdsRequested = <String>[];
+
   @override
   Future<List<IceServer>> iceServersFor(String sessionId) async {
     sessionIdsRequested.add(sessionId);
+    final e = error;
+    if (e != null) throw e;
+    return iceServers;
+  }
+
+  @override
+  Future<List<IceServer>> iceServersForBroadcast(String broadcastId) async {
+    broadcastIdsRequested.add(broadcastId);
     final e = error;
     if (e != null) throw e;
     return iceServers;

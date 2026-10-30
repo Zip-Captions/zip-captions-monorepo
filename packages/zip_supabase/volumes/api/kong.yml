@@ -109,6 +109,43 @@ services:
           fault_tolerant: true
           hide_client_headers: false
 
+  ## PostgREST — get_broadcast_turn_credentials (rate-limited; Unit 9, B2).
+  ## Same shape and the same numbers as resolve_broadcast_id above, on
+  ## purpose: an anonymous caller walking the viewer flow reaches this RPC at
+  ## the step immediately after resolve_broadcast_id, so a single abusive host
+  ## is capped identically at both steps with no gap between learning an id
+  ## exists and using it. A real viewer fetches once per join and then holds
+  ## the credential for its 1-hour TTL, so 30/minute is far above legitimate
+  ## use. Deliberately NOT keyed by broadcast id: that would need shared state
+  ## across Kong nodes, and would let one abuser lock real viewers of that
+  ## broadcast out of TURN.
+  - name: rest-v1-get-broadcast-turn-credentials
+    url: http://rest:3000/rpc/get_broadcast_turn_credentials
+    routes:
+      - name: rest-v1-get-broadcast-turn-credentials-route
+        strip_path: true
+        paths:
+          - /rest/v1/rpc/get_broadcast_turn_credentials
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: false
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow:
+            - anon
+            - admin
+      - name: rate-limiting
+        config:
+          limit_by: ip
+          minute: 30
+          second: 2
+          policy: local
+          fault_tolerant: true
+          hide_client_headers: false
+
   ## PostgREST — GraphQL
   - name: graphql-v1
     url: http://rest:3000/rpc/graphql

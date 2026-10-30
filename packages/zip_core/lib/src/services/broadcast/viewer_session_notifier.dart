@@ -244,12 +244,16 @@ class ViewerSessionNotifier extends _$ViewerSessionNotifier {
 
     List<IceServer> iceServers;
     try {
+      // Broadcast-scoped, not session-scoped (Unit 9, B2): the viewer is
+      // anonymous, so the authenticated credential path cannot serve it, and
+      // `sessionId` is the ephemeral signaling id with no server-side
+      // broadcast mapping.
       iceServers = await ref
           .read(iceServerProviderProvider)
-          .iceServersFor(sessionId);
+          .iceServersForBroadcast(id.value);
     } on Object catch (e) {
       if (epoch != _sessionEpoch) return;
-      _log.warning('iceServersFor() failed: ${e.runtimeType}');
+      _log.warning('iceServersForBroadcast() failed: ${e.runtimeType}');
       await _terminate(
         const ViewerSessionState.cannotConnect(IceFailed()),
       );

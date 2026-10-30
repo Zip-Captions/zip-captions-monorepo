@@ -4,6 +4,12 @@
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
+	<!-- Outbound network access: Supabase signaling, Coturn TURN/STUN,  -->
+	<!-- and the WebRTC peer connection (Unit 9, B1). Without it the    -->
+	<!-- sandbox blocks every outbound socket, so no broadcast can      -->
+	<!-- connect at all. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
 	<key>com.apple.security.files.user-selected.read-write</key>
 	<true/>
 </dict>
