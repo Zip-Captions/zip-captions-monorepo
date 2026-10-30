@@ -14,6 +14,12 @@ scripts:
     packageFilters:
       dirExists: test
 
+  test:coverage:
+    run: melos exec --fail-fast -- flutter test --coverage
+    description: Run all tests with coverage collection (used by CI)
+    packageFilters:
+      dirExists: test
+
   analyze:
     run: melos exec --fail-fast -- dart analyze --fatal-infos
     description: Run static analysis on all packages

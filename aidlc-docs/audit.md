@@ -2902,3 +2902,342 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 **Gap finding (from the plan approved 2026-10-22):** the roadmap had no alpha milestone, and Phase 1's mobile captioning exit criterion was never verified on a device. iOS microphone permission and Android `RECORD_AUDIO`/`INTERNET` are likely broken in release builds. No unit verifies a phone viewer, no mobile E2E exists, and no non-production hosted backend exists.
 
 **Context**: Branch `develop` at `cd0451f`. All changes are uncommitted in the working tree. A branch and PR targeting `develop` are needed before commit. Model: Opus for this Inception-style amendment; Units 10-13 run Construction on Sonnet, and SR-05 is reviewed on Opus.
+
+
+## Unit 9 (Integration Milestones) — Session Start
+**Timestamp**: 2026-10-30T00:00:00Z
+**User Input**: "You are starting Unit 9 (Integration Milestones) of Phase 2 in the Zip Captions monorepo at /Users/oblivious/Documents/zip-captions-monorepo. It's a Flutter/Dart monorepo with four packages: zip_core, zip_captions, zip_broadcast and zip_supabase. Work with me, James Petersen, the project owner. I approve every stage.
+
+## Read first, in this order
+1. CLAUDE.md, then AGENTS.md (project rules; follow them).
+2. ai-dlc/aidlc-rules/aws-aidlc-rules/core-workflow.md (the AI-DLC workflow). Rule detail files are in .aidlc-rule-details/. Follow its approval gates: at the end of each stage, stop and wait for my approval.
+3. aidlc-docs/aidlc-state.md (the "Current Stage" section and the Backlog).
+4. The Unit 9 definition in aidlc-docs/inception/application-design/phase2-unit-of-work.md, plus phase2-unit-of-work-dependency.md and phase2-unit-of-work-story-map.md.
+5. /Users/oblivious/Documents/qwen-orchestrator/runs/zip-captions/unit9-feasibility.md. This is a read-only scout from 2026-10-28. It has a 27-row check matrix, methods for the checks that can run without me, the Documentation Refinement items still needed, and blockers B1 to B9 and contradictions C1 to C6. Treat its file and line references as leads and verify them before relying on them.
+6. For precedent, read Phase 1's Integration Milestones records: aidlc-docs/construction/build-and-test/. Unit 9 appends a Phase 2 set beside them.
+
+## Where things stand
+- Units 1 to 8.1 of Phase 2 are merged to `develop`; Unit 8.1 is squash merge `cd0451f`.
+- Unit 10 (Mobile Platform Readiness) is PR #44 into `develop` and is NOT merged. It is on `feature/mobile-platform-readiness`, which is checked out now. Unit 9 does not depend on it.
+- Create the Unit 9 branch from an up-to-date `develop`: `git checkout develop`, `git pull`, then `git checkout -b feature/phase2-integration-milestones`. If the switch is refused because of local changes, stop and tell me. Don't stash or discard anything; `opencode.json` has local changes that I keep uncommitted.
+- Because Unit 10 isn't merged, `develop`'s audit.md and aidlc-state.md don't have the Unit 10 entries. Append Unit 9 entries at the end of audit.md, and keep aidlc-state.md edits to Unit 9 lines, so the later merge conflict stays small.
+
+## First task: blockers, before any test work
+Present these to me as decisions, with your recommendation for each, and wait for my answers:
+- **B1:** neither macOS app's entitlements include `com.apple.security.network.client`. Every macOS network check fails until it's added.
+- **B2:** `get_turn_credentials()` is granted only to `authenticated` users, and anonymous sign-in is off. A viewer with no account can't get ICE servers, which contradicts exit criterion 1 and the Unit 7 design wording. The options include granting it to anon, anonymous sign-in, or a STUN-only fallback. This is security-sensitive and needs my pre-approval.
+- **B5:** there's no broadcaster sign-in on the local stack. Google OAuth isn't configured in the compose `auth:` block, and the custom-scheme redirect isn't in `ADDITIONAL_REDIRECT_URLS`.
+- **B3/B4:** Coturn's local config refuses private-range relay, and there's no relay-only switch in the apps. This affects how EC3b can be proven.
+- **B6/M3:** there's no real-protocol 50-viewer swarm. Propose what to defer and how to record the deferral.
+
+Then propose the Unit 9 plan:
+- Which checks you run alone (EC3a, EC7, M4, the server-side half of EC5, and EC8/EC9 if the GUI can be driven).
+- Which checks need me at the keyboard or with a device.
+- Which checks are CI-only (Windows/Linux build-verify runs on the PR).
+- The Documentation Refinement edits from section 3 of the scout report.
+
+## Rules I hold you to
+- Never use git worktrees. Work on one branch at a time in this checkout.
+- Commit only right before a PR or a branch switch, so I can see live uncommitted diffs. Never push or open a PR without asking me. feature/* PRs target `develop`.
+- Use `python3` and `pip3`; `python` isn't on PATH.
+- Use your file tools to read, search and edit files. Use the shell only for single, plain git, flutter, dart and docker commands: no pipes, no && chains, no cat/sed/grep through the shell. To move or copy a file verbatim, use cp or mv; never retype its contents.
+- Local Supabase stack (packages/zip_supabase):
+  - The Docker volumes hold existing data.
+  - Never run `docker compose down -v`, `docker volume rm`/`prune` or `supabase db reset`.
+  - Use `docker compose up -d` to reuse what's there.
+  - Check the migration state through `docker exec supabase-db psql ...` before applying anything.
+- QA happens through the real app flows only. Never bypass the app (no adb input injection, no injecting sessions into storage) unless I explicitly approve it.
+- Identifier string comparisons must be case-insensitive or use enums.
+- UI strings: edit `l10n/arb/app_en.arb`. zip_broadcast runs `flutter gen-l10n`; zip_captions adds a `ZcStrings` getter.
+- Riverpod: use `riverpod_generator` (no hand-written providers) and no `// ignore` comments. Notifiers make explicit calls for side effects; don't use reactive watchers for them.
+- Log every one of my inputs in aidlc-docs/audit.md with a timestamp, verbatim, by appending. Never overwrite the file.
+- Gates before you call anything done:
+  - `dart analyze --fatal-infos` is clean in every changed package.
+  - `flutter test` passes in every changed package; report the counts.
+  - The real-stack tests ran: `flutter test --tags integration-supabase --run-skipped <file>` from packages/zip_core, with the stack up.
+- Report results as they are. If something fails or is skipped, say so with the output.
+
+Start by reading the files above. Then tell me in a few lines what Unit 9 must prove, and give me the blocker decisions."
+**AI Response**: Read CLAUDE.md, AGENTS.md, the AI-DLC core workflow, aidlc-state.md, the Unit 9 definition and its dependency/story-map companions, Phase 1's build-and-test set, and the scout report. The scout file sits outside the repo, so it was copied verbatim with cp into `aidlc-docs/construction/plans/unit9-feasibility-scout.md` (path unchanged by the copy). Verified the scout's load-bearing claims against source instead of trusting its line references: B1 (four entitlement files), B2 (`20261003000000_coturn_turn_credentials.sql:65-68,88`; `.env:66`; `viewer_session_notifier.dart:247-255`), B3/B4 (`turnserver.conf:35,68-80`; no `iceTransportPolicy` anywhere), B5 (`docker-compose.yml:88-110`; `.env:50`), C1 (Unit 8 summary lists six checks, Unit 9's text says five), C6 (scout says `cd0451f`; branched off `develop`, which is `cd0451f` today). All `supabase-*` containers exist and are stopped; volumes intact; nothing started. Created branch `feature/phase2-integration-milestones` off an up-to-date `develop`; `opencode.json` left uncommitted and nothing stashed. Presented the Unit 9 purpose and the blocker recommendations (B1-A, B2-A, B5-A, B3/B4-A, B6/M3-A) plus the C2 phone-scope note.
+**Context**: CONSTRUCTION Phase 2, Unit 9, session start. Model: Opus for design/clarification; the construction stages run on Sonnet.
+
+---
+
+## Unit 9 — Question Format and Overnight-Pipeline Adoption Request
+**Timestamp**: 2026-10-30T00:01:00Z
+**User Input**: "For each decision you need from me, present the question with some detail and context, and then the answer options, we will work through them one at a time. I would like you to look at the overnight pipeline skill to see if we can adopt that approach for unit 9."
+**AI Response**: Read the `overnight-pipeline` skill in full (`SKILL.md`, `process.md`, `run-config.md`) and checked the repo against it. Concluded it fits as a shape, not as a pipeline: its build loop assumes product code and automatable gates, while 21 of Unit 9's 27 checks need a human at the keyboard. Recommended a hybrid: the skill's Phase A config derivation, Phase B one-question-at-a-time clarification, Phase C approval table and an append-only ledger, then verification tracks (A unattended, B human, C CI) instead of the build loop. Note: the ledger path `aidlc-docs/overnight-ledger.md` is already gitignored in this repo. Started the one-at-a-time decision list with Question 1 (B1).
+**Context**: Unit 9 bloc: clarification starts before any construction work.
+
+---
+
+## Unit 9 — Decision 1 (B1, macOS network entitlement)
+**Timestamp**: 2026-10-30T00:02:00Z
+**User Input**: "A"
+**AI Response**: Recorded Decision 1 = **A**: add `com.apple.security.network.client` to all four entitlement files (zip_broadcast and zip_captions, Debug and Release). Noted the related `keychain-access-groups` / `-34018` risk for `flutter_secure_storage` in the sandbox: escalate with evidence rather than patching silently. Not yet applied; the edit follows the remaining decisions so the change set is one coherent unit.
+**Context**: Unit 9, Decision 1 of 8.
+
+---
+
+
+## Unit 9 — Decision 2 intent (docs-mcp research request)
+**Timestamp**: 2026-10-30T00:05:00Z
+**User Input**: "A but I would like to ensure that we're using the best approach to webrtc and stun/turn so let's make use of the docs-mcp server, I think we have webrtc but we can add any missing libraries to ensure the approach is correct."
+**AI Response**: Researched the approach before accepting the answer. Indexed `flutter_webrtc` 1.6.2+hotfix.4 and draft-uberti-behave-turn-rest-00 into docs-mcp. Verified the config path end to end: `peer_connection_factory.dart:26-35` builds a plain map, `RTCFactoryNative.createPeerConnection` forwards it verbatim, and both native layers parse it (macOS `common/darwin/Classes/FlutterWebRTCPlugin.m:2223-2233`; Windows/Linux `common/cpp/src/flutter_webrtc_base.cc:323-335`), mapping `all`/`none`/`nohost`/`relay`. Reading the upstream `examples/etc/turnserver.conf` confirmed the credential mechanism matches Coturn's `use-auth-secret` and draft-uberti 2.2. Two findings reported: (1) `iceTransportPolicy` is untyped in Dart - `webrtc_interface` 1.5.1's `RTCConfiguration` is fully commented out, so the policy travels as a raw map key; (2) a short anonymous TTL would break long sessions - draft-uberti 2.2/4.2 and RFC 8656 5 check the username timestamp at ALLOCATE only and require 441 on any mismatch, so rotating to fresh credentials invalidates refresh of an existing allocation, and 5.1 says TURN REST credentials cannot be revoked at all. Recommended keeping the 1-hour TTL, binding credentials to the broadcast id, and a single fetch per join. Also noted `getStats()` exposes `StatsReport.values` as a raw map with a `type` string, making a relay `candidateType` observation possible for EC3b.
+**Context**: Unit 9, Decision 2, research pass before the answer was given.
+
+---
+
+## Unit 9 — Decision 2 (B2, anonymous viewer ICE credentials)
+**Timestamp**: 2026-10-30T00:15:00Z
+**User Input**: "A"
+**AI Response**: Recorded Decision 2 = **A (revised)**. A new forward-only migration adds a broadcast-id-bound, `SECURITY DEFINER` credential RPC reachable by `anon`, behind a Kong rate limit mirroring `resolve_broadcast_id`'s (30/min, 2/s, per IP); 1-hour TTL matching the broadcaster path; the username carries the broadcast id as an opaque user id per draft-uberti 6; the viewer fetches once per join and never mid-allocation; no anonymous sign-in and no `auth:` config change. The `auth.uid()` guard on the existing `get_turn_credentials()` stays untouched. This is security-sensitive: a written approach note (RLS/privilege and rate-limit rationale) will be produced and approved before any code is written, per AGENTS.md.
+**Context**: Unit 9, Decision 2 of 8.
+
+---
+
+## Unit 9 — Coturn docs-mcp index repair (delegated)
+**Timestamp**: 2026-10-30T00:16:00Z
+**User Input**: "fix the bad index on the coturn library, let's make sure it's useful, but delegate that to a sub-agent so we can continue here"
+**AI Response**: Delegated to a fresh `general` sub-agent, scoped to docs-mcp tooling only with an explicit instruction not to touch the repo or run git. Outcome: the `coturn` entry went from 1 page (the Docker image README) to 20 pages, rooted at `https://github.com/coturn/coturn/wiki` via `scrape_docs(replace: true)`, job `5be40668-0cb2-4a0d-bb37-b6138f78b17e`. Probes: `use-auth-secret`, `static-auth-secret`, `denied-peer-ip`, `listening-ip` and `allow-loopback-peers` now return real option semantics; `max-allocate-lifetime` and `prometheus` do not, because the wiki predates those options and the annotated `examples/etc/turnserver.conf` plus `README.turnserver` sit at raw URLs no crawl can reach and the toolset has no per-URL seeding. That gap is covered by reading the upstream `turnserver.conf` directly this session. No repo change.
+**Context**: Unit 9, tooling maintenance alongside the decision list.
+
+---
+
+
+## Unit 9 — Decision 3 (B5, local broadcaster sign-in)
+**Timestamp**: 2026-10-30T01:17:00Z
+**User Input**: "A"
+**AI Response**: Recorded Decision 3 = **A**: configure Google OAuth for the local stack. Requires a Google Cloud OAuth client with authorised redirect URI `http://localhost:54321/auth/v1/callback`; `GOTRUE_EXTERNAL_GOOGLE_ENABLED/CLIENT_ID/CLIENT_SECRET/REDIRECT_URI` added to the compose `auth:` block reading from `.env` (gitignored, values never committed); and `io.zipcaptions.broadcast://login-callback` added to `ADDITIONAL_REDIRECT_URLS`. One real sign-in through the app on macOS, session then persists in the keychain. The macOS-only limitation for signed-in checks (Backlog: Windows/Linux OAuth redirect registration incomplete) was stated in the question and is not contested; it will be recorded as a limitation rather than expanded into native Windows/Linux OAuth work inside Unit 9. Still pending from James: the Google client ID and secret (he creates the OAuth client; I edit the compose and `.env`).
+**Context**: Unit 9, Decision 3 of 8.
+
+---
+
+
+## Unit 9 — Decision 4 (B3/B4, proving EC3b relay)
+**Timestamp**: 2026-10-30T01:19:00Z
+**User Input**: "A"
+**AI Response**: Recorded Decision 4 = **A**: add an `iceTransportPolicy` field to the peer-connection configuration, settable only under `kDebugMode` via a dart-define (no UI, never in release), and implement `getStats()`-based candidate-type detection so `ViewerConnectionInfo.connectionType` reports the observed path instead of Unit 5's hardcoded `p2pDirect`. EC3b then runs deterministically in relay-only mode. Both native layers accept `'iceTransportPolicy': 'relay'` from the config map (macOS `FlutterWebRTCPlugin.m:2232-2233`; Windows/Linux `flutter_webrtc_base.cc:329-330`). This touches Unit 5's shipped `PeerConnectionHandle` seam (additive method) and removes a hardcoded incorrect value from the product: it is a code change inside a verification unit and will be scoped explicitly in the plan and called out in the PR. Coturn's tracked `turnserver.conf` is NOT weakened; the local refusal to relay to private peers stays as designed.
+**Context**: Unit 9, Decision 4 of 8.
+
+---
+
+
+## Unit 9 — Decision 5 (B6/M3, capacity swarm and two-hour run)
+**Timestamp**: 2026-10-30T01:19:00Z
+**User Input**: "A"
+**AI Response**: Recorded Decision 5 = **A**: no real-protocol swarm is built in this unit. EC5 gets what is provable - the existing 51-concurrent-private-channel structural proof, plus a live refusal check through the real join flow once B2 and B5 unblock a session. EC5's "existing viewers unaffected" clause and M3 (two-hour run at capacity within Phase 1 latency/resource targets) are recorded as **deferred, not verified**, in three places: the new Phase 2 build-and-test summary, an `aidlc-state.md` Backlog item ("real-protocol capacity harness + sustained-run measurement"), and the PR body. Supporting evidence cited is Spike 2.1 only (best observed 84% join success at N=50, root cause narrowed but unconfirmed), and the fact that M3's own latency/resource targets were never baselined in Phase 1 (Phase 1 build-and-test summary: performance "N/A - no throughput or latency SLAs defined"). `maxViewers = 50` is left unchanged.
+**Context**: Unit 9, Decision 5 of 8.
+
+---
+
+
+## Unit 9 — Decision 6 (C2, phone-scope wording)
+**Timestamp**: 2026-10-30T01:20:00Z
+**User Input**: "A"
+**AI Response**: Recorded Decision 6 = **A**: the phone form of M-S3.6 clause 1 belongs to Unit 13 (gap G6: "no unit verifies the mobile viewer", evidenced by "Unit 9's scope does not name a phone"). Unit 9 proves the substantive claim - a viewer with no account watches a live broadcast - on macOS and in Chrome. The split is recorded in three places: the Phase 2 build-and-test summary, a note added to Unit 9's definition during Documentation Refinement, and an `aidlc-state.md` line. The consequence was stated in the question and accepted: read literally, M-S3.6 clause 1 is not closed by Unit 9.
+**Context**: Unit 9, Decision 6 of 8.
+
+---
+
+
+## Unit 9 — Decision 7 (overnight-pipeline adoption)
+**Timestamp**: 2026-10-30T01:21:00Z
+**User Input**: "A"
+**AI Response**: Recorded Decision 7 = **A**: adopt the `overnight-pipeline` skill's shape, not its build loop. Taken: Phase A run-config derivation, Phase B one-question-at-a-time clarification, Phase C single approval table, the append-only ledger (`aidlc-docs/overnight-ledger.md`, already gitignored), the "orchestrator re-runs every gate itself" principle, fresh-context subagents for bounded research, and the hard-blocker policy. Dropped with reasons: the `test-author`/`builder`/`test-adversary` loop (21 of 27 checks are human-observed, so no test can adjudicate them; the skill's own Phase A step 4 excludes such a unit from an unattended run) and the unattended contract (Unit 9 must ask questions and must touch Docker, the OS and a second display). Replaced by three tracks: A unattended verification, B scripted human checks, C CI-only. No change to `opencode.json`; the project defines none of the pipeline subagents, so Task spawns fall back to `general` with prompt-level fences only.
+**Context**: Unit 9, Decision 7 of 8.
+
+---
+
+
+## Unit 9 — Decision 8 (Documentation Refinement scope and approval mode)
+**Timestamp**: 2026-10-30T01:22:00Z
+**User Input**: "A"
+**AI Response**: Recorded Decision 8 = **A**: grouped approval, one group per turn, presented as a concrete before/after diff per file with line references, applied only after a yes for that group. Groups, in order: (1) wrong and load-bearing - `docs/03-roadmap.md` Phase 2 (remove the Realtime-relay deliverables, relay toggle, vanity URLs and relay exit criterion; move local Wi-Fi WebSocket to Phase 5; record the minimal-auth slice; re-scope Spike 2.1; restate the nine exit criteria), `docs/04-technical-specification.md` §9 (`broadcast_identities` + `broadcast_join_requests` with RLS summary; Phase 2 Realtime carries no caption payloads), `docs/02-architecture-decisions.md` ADR-011 (WebRTC first, relay after Phase 3 encryption, local WebSocket with BLE). (2) stale but harmless - `AGENTS.md` Current Scope to Phase 2 and the worktree guidance replaced with the no-worktrees one-branch practice; the `window_manager` prose in `phase2-unit-of-work.md` Unit 8.1 and the `aidlc-state.md` Backlog corrected to the shipped first-party `configure` channel. (3) contract and history - S3.6 into `docs/01-user-personas.md`; the Q9 pop-out amendment into `pip-ux-parity.md` §8.8 item 13 and UX-PIP-10 with the owner's name and date; `domain-entities.md:215` corrected to the actual B2 mechanism; the new Phase 2 build-and-test set.
+**Context**: Unit 9, Decision 8 of 8. Clarification round complete.
+
+---
+
+
+## Unit 9 — Run configuration approved
+**Timestamp**: 2026-10-30T01:23:00Z
+**User Input**: "that's correct, proceed and ensure that client id, secret, and redirect for google oauth are consumed as environment or build variables, I don't want them in version control when I provide them to you."
+**AI Response**: Recorded the Phase C approval of the run configuration table. Added a hard constraint to D3: the Google OAuth client id, client secret and redirect URI are consumed only as environment variables in the local stack (`.env`, gitignored) and, if the app ever needs them, as `--dart-define` build variables - never as literals in any tracked file. The compose `auth:` block will reference `${GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID}` and friends; `.env.example` will carry empty placeholders only. Proceeding with Track A: write the run config to `.agent/overnight-run-config.md` (gitignored), start the local stack non-destructively, check migration state read-only.
+**Context**: Unit 9, Phase C approval. Clarification round closed.
+
+---
+
+
+## Unit 9 — D2 approach approved; B5 credentials deferred to placeholders
+**Timestamp**: 2026-10-30T01:30:00Z
+**User Input**: "confirmed, I'm not going to give you the client id and secret, use placeholders for now and I'll update them later on when they're ready."
+**AI Response**: Recorded approval of the D2 security approach as written in `aidlc-docs/construction/plans/unit9-d2-turn-credential-approach.md`: guard is broadcast-id existence only (no ownership check, `42501` on unknown id), username is `'<expiry>:<broadcast_id>'`, Kong limit clones `resolve_broadcast_id` (30/min, 2/s, per IP, fault_tolerant), and no per-broadcast quota. Also recorded a change to D3: the Google OAuth client id and secret will NOT be supplied. The compose `auth:` block and `.env.example` will carry empty placeholders, `.env` will get empty values, Google stays disabled in the local stack until the owner fills them in, and the B5 verification leg is recorded as BLOCKED-ON-CREDENTIALS rather than silently skipped. The mechanism (env vars only, never tracked literals) is unaffected and will still be implemented so the swap is a two-line change in a gitignored file.
+**Context**: Unit 9, security gate for B2 cleared. B5 blocked by decision of the owner.
+
+---
+
+- 2026-10-30T02:40Z — (no new owner input; run continues under the standing
+  D1-D4 approvals) D4 complete, gates green, scope restored after an
+  accidental whole-package `dart format`.
+
+- 2026-10-30T02:44Z — Owner: "I'll close it myself when the app is up. Finish
+  the ci only track and everything that can be done without me overnight, and
+  I'll pick it back up in the morning"
+  -> A7/B4 RESOLVED: owner closes the overlay window manually; no
+  Accessibility grant, no programmatic close. Track B overlay leg waits on
+  the owner being present.
+  -> DO NOT open or push a PR. Do not commit. Stay on the local branch.
+  -> Track C (CI-only) and Documentation Refinement may proceed unattended.
+
+- 2026-10-30T03:20Z — (no new owner input) Track C read-only work: both
+  workflows audited; `test:coverage` verified to run via melos' raw-command
+  fallback rather than a defined script; version skew 3.41.7 local vs 3.38.7
+  CI recorded; neither app has a `web/` directory despite the docs claiming a
+  web target; D1 upgraded from plist-parse to signed-bundle inspection; D2
+  verified through Coturn (HMAC match, allocate success, tampered credential
+  rejected); Coturn log-volume permission defect found and recorded, not
+  fixed. No push, no PR, no commit, as instructed.
+
+- 2026-10-30T03:40Z — (no new owner input) Documentation Refinement group 1
+  authored as a review packet only; nothing applied to `docs/` or `AGENTS.md`,
+  because each doc change needs explicit per-change approval and the owner is
+  asleep. Packet: `aidlc-docs/construction/plans/unit9-doc-refinement-packet.md`.
+  Seven findings, six draft diffs, one needs a decision from the owner.
+
+- 2026-10-30T04:12Z — Owner: "web is a future target, ADRs will eventually be
+  fulfilled once full build has been delivered, but that's beyond the scope of
+  unit 9"
+  -> G1-2 DOWNGRADED. The web target is intended and deferred, not a defect.
+  No doc change proposed for Unit 9: ADR-001's Fallback column stays as the
+  plan, and the missing `web/` directory is expected at this stage. Recording
+  the present state is moved to group 2 (stale but harmless) at most, and is
+  not to be written as a gap, a fix, or a backlog item.
+  -> Consequence for Unit 9 verification: the Chrome leg of D6 is
+  browser-to-desktop, which needs no build. That stands, and no longer reads as
+  a workaround for a missing target.
+
+- 2026-10-30T04:35Z - Doc refinement item 1 of 8 (G1-1, AGENTS.md worktree
+  mandate) presented with 4 options. Owner answer: "1" -> option 1, replace
+  the section with a branch mandate, keep the isolation rationale, note that a
+  worktree is one way but not a requirement here, and update the two workflow
+  steps plus the "one worktree per PR" rule to say branch. APPROVED, not yet
+  applied.
+
+- 2026-10-30T04:40Z - Doc refinement item 2 of 8 (G1-3, zip_broadcast stray
+  mobile directories) presented with 4 options. Owner answer: "1" -> option 1,
+  delete packages/zip_broadcast/android and packages/zip_broadcast/ios.
+  APPROVED, not yet applied. 59 tracked files affected (verified by
+  `git ls-files`). Also to be done during the doc pass as its own separable
+  step.
+
+- 2026-10-30T04:44Z - Doc refinement item 3 of 8 (G1-4, ADR-011 connection
+  status vocabulary) presented with 4 options. Owner answer: "1" -> option 1,
+  update ADR-011:701-703 to the shipped enum `{p2pDirect, turnRelayed,
+  connecting, disconnected}`, plus an explicit note that `serverRelayed`
+  (Supabase Realtime relay) and `BLE` (ADR-007) are later-phase and must be
+  added to the enum when they exist, not before. APPROVED, not yet applied.
+
+- 2026-10-30T04:48Z - Doc refinement item 4 of 8 (G1-5, no record of what
+  Phase 2 verified) presented with 4 options. Owner answer: "1" -> option 1,
+  write the full `aidlc-docs/construction/build-and-test/
+  phase2-build-and-test.md` as drafted: verified (command + observed result),
+  inspection-only, blocked (with owner), deferred (with reason), and defects
+  found but not fixed. Explicitly included: the "not verified" rows (anonymous
+  viewer runtime claim, TURN fallback in a real app, CI on this branch).
+  APPROVED, not yet applied.
+
+- 2026-10-30T04:52Z - Doc refinement item 5 of 8 (G1-6, Q9 pop-out geometry
+  amendment never applied to pip-ux-parity.md) presented with 3 primary
+  options plus a subsidiary question (a note the parity break in this diff,
+  b defer to group 3). Owner answer: "1" -> option 1, apply the amendment as
+  recorded (UX-PIP-10 row + item 13, owner name + 2026-10-21 date, no detail
+  beyond aidlc-state.md and audit.md:2652-2653). APPROVED, not yet applied.
+  SUBSIDIARY QUESTION UNANSWERED (not assumed): whether the deliberate parity
+  break is noted inside this diff or deferred to group 3. Carried forward as
+  an open question; the diff will not add a parity-break note until answered.
+
+- 2026-10-30T05:05Z - Owner revisited G1-6: "I want to make sure that the
+  amendment is authoritative and overrides the previous design." Re-verified
+  from primary sources, not from state-file summaries, and reported the chain:
+  (1) `plans/pop-out-functional-design-clarification-questions.md` framed the
+  geometry as a conflict that "cannot be settled inside the unit" and offered
+  Amendment A = change UX-PIP-10 + item 13, which the owner chose;
+  (2) `audit.md:2653` records that choice verbatim;
+  (3) `audit.md:2661` records the amendment ordering as one of three review
+  points ACCEPTED at the Functional Design approval gate;
+  (4) `pop-out/functional-design/domain-entities.md:91` and `:218-223` define
+  widthFraction 0.75 / visibleLines 2 / minWidth 320 / minHeight 96 and that
+  shape is in shipped code. CONFIRMED AUTHORITATIVE: the owner approved
+  amending the contract, so applying it completes the decision rather than
+  overriding it; and the shipped implementation already matches the amended
+  numbers, so 640x320 now describes a window the app does not open.
+  Owner answer: "1" -> option 1, apply with a short provenance line recording
+  that this supersedes 640x320 by owner decision 2026-10-21 per the FD
+  clarification. APPROVED, not yet applied.
+  SUBSIDIARY QUESTION STILL OPEN: whether the deliberate v1 parity break is
+  noted in this diff or deferred to group 3. Not assumed.
+  Naming convention to use: "the project owner", dated (repo house style);
+  no individual name is recorded in any source, so none is invented.
+
+- 2026-10-30T05:12Z - Doc refinement item 6 of 8 (G1-6b, viewer design docs
+  naming the session-scoped credential call) was presented; the owner paused it
+  and asked to revisit G1-6 first. G1-6 was re-verified and settled (option 1,
+  with provenance + parity-break note). G1-6b remains UNANSWERED, to be
+  re-presented. It is not treated as approved.
+- 2026-10-30T05:14Z - Doc refinement item 7 of 8 (G1-7(a), tech spec Section 9
+  silent on function grants not being a control) presented with 4 options.
+  Owner answer: "1" -> option 1, add a "Function Grants" subsection to
+  docs/04-technical-specification.md Section 9: the image's public-schema
+  default ACL grants EXECUTE to anon/authenticated/service_role and re-applies
+  on CREATE OR REPLACE, so a REVOKE does not survive a redeploy; authorization
+  for any SECURITY DEFINER function must be enforced in the body (existence
+  checks, auth.uid(), RAISE ... ERRCODE 42501); the grant is defence in depth
+  only; both shipped credential functions named as examples.
+  APPROVED, not yet applied.
+
+- 2026-10-30T05:18Z - Doc refinement item 8 of 8 (G1-7(b), CI design doc
+  describes a `test:coverage` melos script that does not exist) presented with
+  4 options. Owner answer: "2" -> option 2, add the `test:coverage` script to
+  `melos.yaml` (matching `test` plus `--coverage`, WITH the `dirExists: test`
+  filter) AND rewrite the CI design doc section to describe the commands CI
+  runs rather than reproducing the melos YAML, so the doc cannot drift from the
+  config again. APPROVED, not yet applied.
+
+- 2026-10-30T05:30Z - Owner: "let's proceed, I can answer those two, I thought
+  we'd resolved them already"
+  -> G1-6 SUBSIDIARY (parity-break note): resolved by the standing answer. The
+  owner twice answered the G1-6 question with "1", and option 1 as presented
+  included "plus one sentence recording that this supersedes the 640x320
+  default by owner decision on 2026-10-21" - i.e. the note belongs in this
+  diff, not deferred to group 3. Applied as drafted. Not re-asked.
+  -> G1-6b: "let's proceed" + "I can answer those two" taken as approval of
+  the recommended option for G1-6b, which was option 1 (correct both call
+  sites and delete the false anonymous-accessible claim). Recorded as an
+  inference from the combined signal, NOT as an explicit per-option answer;
+  if that is wrong, say so and it is reverted - it is docs-only and isolated.
+
+- 2026-10-30T06:05Z - Documentation Refinement group 1 APPLIED (all eight
+  decided items; G1-2 withdrawn). Files changed:
+  `AGENTS.md` (G1-1), `docs/02-architecture-decisions.md` ADR-011 (G1-4),
+  `docs/04-technical-specification.md` section 9 (G1-7a),
+  `aidlc-docs/.../pip-ux-parity.md` UX-PIP-10 + item 13 (G1-6),
+  `aidlc-docs/construction/zip-captions-viewer/functional-design/
+  {domain-entities,business-logic-model,business-rules}.md` (G1-6b, plus two
+  side-references found during application),
+  `aidlc-docs/construction/ci-pipeline/infrastructure-design/
+  infrastructure-design.md` (G1-7b doc half), `melos.yaml` (G1-7b code half),
+  new `aidlc-docs/construction/build-and-test/phase2-build-and-test.md`
+  (G1-5), and 59 deleted files under `packages/zip_broadcast/{android,ios}/`
+  (G1-3).
+  Gates re-run after applying: `melos run analyze` -> no issues in all four
+  packages; `melos run test:coverage --no-select` -> now resolves the defined
+  script rather than the fallback, 952+5 / 195 / 195 passing, lcov.info
+  produced per package.
+  Nothing committed, nothing pushed, no PR opened.
+
+- 2026-10-30T06:25Z - Owner, verbatim: "let's proceed with the six remaining
+  doc-refinement items, and defer the track b interactive legs until later".
+  Recorded as: (a) the doc-refinement items were already applied pre-compaction
+  and required no action; (b) Track B is deferred and Unit 9 will merge with
+  the four interactive legs recorded as "not verified" in
+  phase2-build-and-test.md section 4.

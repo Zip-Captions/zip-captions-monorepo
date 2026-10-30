@@ -211,8 +211,11 @@ class ViewerTransportFactory extends _$ViewerTransportFactory {
 Overridden in tests with a fake `ViewerTransport` (NFR-7.3). The
 `ViewerTransportContext` it receives is built by the notifier from the
 resolved `sessionId`/`broadcastId`, `signalingServiceProvider`, and
-`iceServerProviderProvider.iceServersFor(sessionId)` — the same
-anonymous-accessible TURN-credential path the broadcaster uses (Unit 4).
+`iceServerProviderProvider.iceServersForBroadcast(broadcastId)`. The
+broadcaster's `iceServersFor(sessionId)` path is **not** available to a viewer:
+`get_turn_credentials()` guards on `auth.uid()` and is reachable only by an
+authenticated caller. Unit 9 (B2) added the broadcast-scoped variant precisely
+so an anonymous viewer could obtain relay credentials at all.
 
 ## BroadcastLink.baseUrl (existing shipped utility — now build-time-configured, Q9 guardrail 3)
 

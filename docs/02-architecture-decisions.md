@@ -700,7 +700,15 @@ This eliminates the v1's separate signaling server entirely. Supabase Realtime h
 - TURN server adds a small infrastructure cost (self-hosted) or usage-based cost (managed); must be monitored (ADR-012)
 - Transport negotiation logic lives in `zip_core` and must be well-tested across network conditions
 - E2E encryption of caption payloads is required for Supabase Realtime relay (server must not see plaintext)
-- The transport layer must expose connection status to the UI (P2P connected, TURN relayed, server relayed, BLE, disconnected)
+- The transport layer must expose connection status to the UI. As shipped in
+  Phase 2 this is `ConnectionType { p2pDirect, turnRelayed, connecting,
+  disconnected }` (`packages/zip_core/lib/src/models/connection_status.dart`),
+  with the route determined from the selected ICE candidate pair rather than
+  assumed. Two states named in earlier drafts of this ADR — `serverRelayed` and
+  `BLE` — are not implemented: the Supabase Realtime caption relay and the BLE
+  transport are later-phase work (ADR-007, and this ADR's Realtime fallback).
+  Add them to the enum when they exist, not before. A status the UI can render
+  but the transport cannot produce is a lie to the viewer.
 - Broadcast configuration screen needs the "Allow server relay" toggle with appropriate warning text
 - Stable broadcast URL resolution requires a Supabase table and Edge Function for lookup
 - Vanity URL uniqueness checking and reservation logic needed for the premium feature
