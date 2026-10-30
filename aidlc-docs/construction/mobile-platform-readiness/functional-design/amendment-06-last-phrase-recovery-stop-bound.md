@@ -1,6 +1,6 @@
 # Functional Design Amendment 06: the last phrase at Stop and Pause, recovery re-arming, and a bounded Stop
 
-**Unit**: 10, Mobile Platform Readiness (S-22). **Date**: 2026-10-29. **Revision**: 2. **Status**: APPROVED by James Petersen, 2026-10-29 (revision 1, then revision 2: section 8, from the CodeRabbit review of PR #44).
+**Unit**: 10, Mobile Platform Readiness (S-22). **Date**: 2026-10-29. **Revision**: 3. **Status**: APPROVED by James Petersen: revision 1 and revision 2 (section 8, the first CodeRabbit review of PR #44) on 2026-10-29; revision 3 (section 9, the full CodeRabbit review) on 2026-10-30.
 **Decisions recorded** (James Petersen, 2026-10-29, answering the three open items from the Step 29d review):
 - **(1)** Keep the last phrase, bounded: after Stop, wait up to about 1 s for the final result before the transcript is finalised; after Pause, accept it into the transcript; if nothing arrives in time, carry on as now.
 - **(2)** Re-arm the REL-U2.1 recovery once the recovered session delivers recognised text.
@@ -107,3 +107,17 @@ The items in this section come from the CodeRabbit review of PR #44 (findings #1
 - The split of the two Unit 10 test helpers (one public class per file).
 - The test-coverage nitpicks.
 - An "additional comment" (2026-10-30): the Android activity's two teardown paths now also clear the language-pack event sink, so a model download that outlives the engine cannot reach the old engine's sink.
+
+## 9. Revision 3: the full CodeRabbit review of PR #44 (approved by James Petersen, 2026-10-30)
+
+| ID | Rule |
+|---|---|
+| BR-U10-58 (clarified) | **Work abandoned at the 5 s bound does not reach a new session.**<br>• When the deadline passes while the engine stop is still pending, the finalise **never starts**. A new session may already own the transcript writer by the time the stop returns, and the finalise would close it. The session is reported as `saveFailed`, as before.<br>• A finalise that was already running when the deadline passed may still complete and write the old transcript, as before.<br>• In both engines, a stop whose platform call returns after a new `startListening()` does **not** send its closing cancel. The cancel runs only while the engine's intent is still "stopped". |
+
+| ID | Property |
+|---|---|
+| TP-37 (extended) | An engine stop that completes after the bound and after `clearSession()` plus a new `start()` does not call the finaliser, and the new session stays Recording. For each engine, a stop held open in the platform, then a new start, then the stop releasing: no cancel after the new start. |
+
+**From the same review, fixed with no design change:** after a failed session-row create, no segment write (new or merged) is attempted. SQLite foreign keys are on (`transcript_database.dart`), so each would fail. The outcome stays `saveFailed`.
+
+**Declined from the same review:** dropping "It doesn't send your audio anywhere." from `NSSpeechRecognitionUsageDescription`. Section 6.2 of Amendment 02 approved that sentence for the Info.plist text and the explainer. Only the after-the-fact failure sentence was removed (Amendment 02 section 6.3). The wording stays provisional until the iOS airplane-mode check passes.

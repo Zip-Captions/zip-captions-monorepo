@@ -450,12 +450,17 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
 
   Future<void> _runFinish(String sessionId) async {
     var step = _FinishStep.engineStop;
+    var abandoned = false;
     // The engine stop and the finalise are bounded together (BR-U10-58),
     // measured from here. The work catches everything itself (BR-U10-61), so
     // when the deadline passes and it is abandoned it cannot raise an
     // unhandled error later.
     final work = () async {
       await _stopManagerQuietly();
+      // Amendment 06 revision 3: an engine stop that returns after the
+      // deadline does not finalise. By then a new session may own the
+      // transcript writer, and the finalise would close that one.
+      if (abandoned) return;
       step = _FinishStep.finalise;
       _log.info('Session stopped');
       try {
@@ -472,8 +477,9 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
       await work.timeout(ref.read(stopFinaliseTimeoutProvider));
     } on TimeoutException {
       // Not cancelled: a late completion of either step is harmless to the
-      // state below, and a late finalise may still write the transcript
-      // (BR-U10-58).
+      // state below. A finalise already running may still write the
+      // transcript (BR-U10-58); one not yet started never starts.
+      abandoned = true;
       _log.severe('Stop timed out while ${step.name} was pending');
       // With no transcript writer registered there is no transcript to lose.
       if (ref.read(sessionStopCallbackProvider).callback != null) {

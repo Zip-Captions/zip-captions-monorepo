@@ -291,7 +291,9 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
       // captured (Android and iOS alike); cancelling at once would discard
       // the iOS final result. Wait for it, bounded, then cancel.
       if (drain) await _loop.awaitDrain();
-      await _stt.cancel();
+      // Amendment 06 revision 3: a stop that returns after a new start must
+      // not cancel the plugin session that start began.
+      if (_loop.isStopped) await _stt.cancel();
       _log.info('Listening stopped');
     } on Exception catch (e) {
       _log.warning('stopListening error: ${e.runtimeType}');
@@ -431,6 +433,9 @@ class _SessionLoop {
   SttResult? _pendingInterim;
 
   bool get isPaused => _intent == _Intent.paused;
+
+  /// Still stopped: nothing has started since the last stop.
+  bool get isStopped => _intent == _Intent.stopped;
 
   /// Whether a first start, a resume or a restart `listen()` is in flight.
   /// Plugin events that arrive meanwhile are held in [_held] and replayed, in

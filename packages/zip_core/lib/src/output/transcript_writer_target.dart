@@ -209,9 +209,11 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
       final sessionId = _sessionId!;
       final row = _row;
       _appendWrite(() async {
+        // No row, no segment: the foreign key would reject it.
+        if (row == null || !row.created) return;
         await _repository.saveSegment(sessionId, merged);
         // A merge that succeeds counts as a save (BR-U10-60): the text is in.
-        row?.segmentSaved = true;
+        row.segmentSaved = true;
       });
     } else {
       // New segment: gap > 2s or no prior segment for this source.
@@ -249,9 +251,9 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
     // The create and its save are two steps, so the save starts only once
     // the create has completed, in that order, and nothing else can slip
     // between them. The row counts as created only if the create succeeds;
-    // it is not retried, and later saves are still attempted as before (a
-    // failed write never blocks the ones after it); the session is reported
-    // as not saved and is not finalised.
+    // it is not retried. Without it no segment is written (the foreign key
+    // would reject every one), the session is reported as not saved and it
+    // is not finalised. A failed write still never blocks the ones after it.
     _appendWrite(() async {
       await _repository.createSession(sessionId, startedAt);
       row.created = true;
@@ -264,12 +266,14 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
 
   /// Saves [segment] and, only when the repository accepts it, records that
   /// the session has at least one saved segment (BR-U10-60). A failure
-  /// propagates to the chain, which logs its type.
+  /// propagates to the chain, which logs its type. Skipped when the row was
+  /// never created, since the foreign key would reject the segment.
   Future<void> _saveAndMark(
     _RowMark row,
     String sessionId,
     TranscriptSegment segment,
   ) async {
+    if (!row.created) return;
     await _repository.saveSegment(sessionId, segment);
     row.segmentSaved = true;
   }

@@ -1373,6 +1373,38 @@ void main() {
       });
     });
 
+    test('a stop whose platform call returns after a new start does not '
+        'cancel the new session (Amendment 06 revision 3)', () {
+      fakeAsync((async) {
+        final rig = _rig(drainTimeout: production);
+        addTearDown(rig.engine.dispose);
+        final results = _Results();
+        startSession(async, rig, results);
+        final stalled = Completer<void>();
+        rig.bridge.stopGate = stalled.future;
+
+        unawaited(rig.engine.stopListening());
+        async.flushMicrotasks();
+        // The user starts again while the stop is stuck in the platform.
+        unawaited(
+          rig.engine.startListening(localeId: 'en-CA', onResult: results.add),
+        );
+        async.flushMicrotasks();
+        final startsBefore = rig.log.where('segment-start').length;
+        final afterNewStart = rig.log.entries.length;
+
+        stalled.complete();
+        async.elapse(const Duration(seconds: 2));
+
+        expect(rig.log.where('segment-start').length, startsBefore);
+        expect(
+          rig.log.entries.skip(afterNewStart),
+          isNot(contains('segment-cancel')),
+          reason: 'the late cancel would end the new session',
+        );
+      });
+    });
+
     test('a stop with no live session does not wait', () {
       fakeAsync((async) {
         final rig = _rig(drainTimeout: production);

@@ -50,6 +50,10 @@ class FakeSpeechToText extends Fake implements SpeechToText {
   /// throws), so a test can hold the call open.
   Future<void>? listenGate;
 
+  /// When set, the next `stop()` waits for this before returning (consumed
+  /// after one call), so a test can hold a stop open.
+  Future<void>? stopGate;
+
   bool _initWorked = false;
 
   @override
@@ -122,6 +126,9 @@ class FakeSpeechToText extends Fake implements SpeechToText {
   Future<void> stop() async {
     stopCalls++;
     log.add('stop');
+    final gate = stopGate;
+    stopGate = null;
+    if (gate != null) await gate;
   }
 
   @override

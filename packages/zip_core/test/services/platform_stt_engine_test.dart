@@ -302,6 +302,35 @@ void main() {
       });
     });
 
+    test('a stop whose plugin call returns after a new start does not '
+        'cancel the new session (Amendment 06 revision 3)', () {
+      fakeAsync((async) {
+        final rig = live(async);
+        addTearDown(rig.engine.dispose);
+        final stalled = Completer<void>();
+        rig.stt.stopGate = stalled.future;
+
+        unawaited(rig.engine.stopListening());
+        async.flushMicrotasks();
+        // The user starts again while the stop is stuck in the plugin.
+        unawaited(
+          rig.engine.startListening(localeId: 'en-US', onResult: (_) {}),
+        );
+        async.flushMicrotasks();
+        expect(rig.stt.listenCalls, hasLength(2));
+        final cancelsBefore = rig.stt.cancelCalls;
+
+        stalled.complete();
+        async.elapse(const Duration(seconds: 2));
+
+        expect(
+          rig.stt.cancelCalls,
+          cancelsBefore,
+          reason: 'the late cancel would end the new session',
+        );
+      });
+    });
+
     test('a stop with no live session does not wait', () {
       fakeAsync((async) {
         final stt = FakeSpeechToText();

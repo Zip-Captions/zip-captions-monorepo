@@ -3789,6 +3789,24 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 
 ---
 
+## CONSTRUCTION - Phase 2 Unit 10: full CodeRabbit review; Amendment 06 revision 3 (Step 29i)
+**Timestamp**: 2026-10-30
+**User Input** (James Petersen):
+- "looks like code rabbit returned with additional findings on the PR, let's check and address those in this session"
+- Answers: "Keep, reply with rationale (Recommended)"; "Approve the fix (Recommended)"
+- Also: "I deleted the evidence folder."
+
+**AI Response** (Opus):
+- **The review:** CodeRabbit's full review of `2e9b66b` raised three findings, each checked against the code and the approved design.
+- **Info.plist wording:** declined. It is the approved Amendment 02 section 6.2 text. The removed sentence was the failure-state one.
+- **Segment writes after a failed create:** fixed, with no design change. SQLite foreign keys are on, so the writes could only fail.
+- **Stop past the 5 s bound:** fixed as Amendment 06 revision 3, approved. If the engine stop was still pending, the abandoned finish no longer finalises. Neither engine sends its late cancel after a new start.
+- **Tests:** test-first, plan Step 29i.
+
+**Context**: Worktree `.claude/worktrees/unit10-qa`. `~/Documents/zip-captions-evidence` removed by James Petersen.
+
+---
+
 ## Unit 9 (Integration Milestones) — Session Start
 **Timestamp**: 2026-10-30T00:00:00Z
 **User Input**: "You are starting Unit 9 (Integration Milestones) of Phase 2 in the Zip Captions monorepo at /Users/oblivious/Documents/zip-captions-monorepo. It's a Flutter/Dart monorepo with four packages: zip_core, zip_captions, zip_broadcast and zip_supabase. Work with me, James Petersen, the project owner. I approve every stage.

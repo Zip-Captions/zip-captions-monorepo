@@ -592,8 +592,10 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
       // A throwing stop skipped the wait: close the drain all the same.
       if (drain) _closeDrain();
     }
-    // BR-U10-55: a stop ends with the platform session cancelled.
-    await _cancelQuietly();
+    // BR-U10-55: a stop ends with the platform session cancelled, unless a
+    // new start has begun meanwhile (Amendment 06 revision 3): the cancel
+    // would end that session.
+    if (_intent == _Intent.stopped) await _cancelQuietly();
   }
 
   @override

@@ -324,6 +324,32 @@ void main() {
       );
     });
 
+    test('an engine stop that completes after the bound and after a new '
+        'start never finalises (the new session would be closed)', () async {
+      var finalised = 0;
+      container.read(sessionStopCallbackProvider).callback = () async {
+        finalised++;
+      };
+      await notifier().start();
+      final lateStop = Completer<void>();
+      when(() => manager.stop()).thenAnswer((_) => lateStop.future);
+
+      await notifier().stop();
+      expect(state(), isA<StoppedState>());
+      // The user starts again before the abandoned engine stop returns.
+      when(() => manager.stop()).thenAnswer((_) async {});
+      notifier().clearSession();
+      await notifier().start();
+      expect(state(), isA<RecordingActiveState>());
+
+      lateStop.complete();
+      await settle();
+      await settle();
+
+      expect(finalised, 0, reason: 'a late finalise would hit the new one');
+      expect(state(), isA<RecordingActiveState>());
+    });
+
     test(
       'the abandoned finalise completing later changes nothing here',
       () async {

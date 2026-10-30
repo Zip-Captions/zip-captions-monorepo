@@ -44,6 +44,10 @@ class FakeSegmentedRecognizerBridge implements SegmentedRecognizerBridge {
   /// after one call), so a test can hold a start open.
   Future<void>? startGate;
 
+  /// When set, the next `stop` waits for this before returning (consumed
+  /// after one call), so a test can hold a stop open.
+  Future<void>? stopGate;
+
   /// What `supportedLocales` answers when it does not throw.
   List<String> supportedLocaleTags = const [];
 
@@ -80,6 +84,9 @@ class FakeSegmentedRecognizerBridge implements SegmentedRecognizerBridge {
   @override
   Future<void> stop() async {
     log.add('segment-stop');
+    final gate = stopGate;
+    stopGate = null;
+    if (gate != null) await gate;
     final error = stopError;
     if (error != null) throw error;
   }

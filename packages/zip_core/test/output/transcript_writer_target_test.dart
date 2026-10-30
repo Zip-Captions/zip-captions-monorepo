@@ -111,6 +111,20 @@ void main() {
         ),
       );
     });
+
+    test('no segment write follows it, new or merged (foreign keys are on, '
+        'so each would fail)', () async {
+      target
+        ..onCaptionEvent(_recordingEvent('s1'))
+        // Within the merge window, so the second final is a merge.
+        ..onCaptionEvent(_finalEvent(text: 'a'))
+        ..onCaptionEvent(_finalEvent(text: 'b'));
+
+      final result = await target.finalizeCurrentSession();
+
+      expect(result, TranscriptSaveResult.saveFailed);
+      verifyNever(() => mockRepo.saveSegment(any(), any()));
+    });
   });
 
   // TP-38 (BR-U10-60): each way a session can end maps to one outcome.
@@ -738,9 +752,13 @@ void main() {
     );
 
     test('a failing write does not block the writes after it', () async {
-      when(
-        () => mockRepo.createSession(any(), any()),
-      ).thenAnswer((_) => Future<void>.error(Exception('create failed')));
+      var saves = 0;
+      when(() => mockRepo.saveSegment(any(), any())).thenAnswer((_) {
+        saves++;
+        return saves == 1
+            ? Future<void>.error(Exception('save failed'))
+            : Future<void>.value();
+      });
       target
         ..onCaptionEvent(_recordingEvent('s1'))
         ..onCaptionEvent(_finalEvent(text: 'a'));
