@@ -309,6 +309,10 @@ void main() {
         addTearDown(rig.engine.dispose);
         final stalled = Completer<void>();
         rig.stt.stopGate = stalled.future;
+        // The replacement start's listen() is still in flight when the stop
+        // returns, so the intent is still `stopped`.
+        final held = Completer<void>();
+        rig.stt.listenGate = held.future;
 
         unawaited(rig.engine.stopListening());
         async.flushMicrotasks();
@@ -328,6 +332,8 @@ void main() {
           cancelsBefore,
           reason: 'the late cancel would end the new session',
         );
+        held.complete();
+        async.flushMicrotasks();
       });
     });
 

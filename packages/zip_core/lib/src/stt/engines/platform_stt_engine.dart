@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' show min;
 
 import 'package:logging/logging.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -180,7 +181,9 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
 
     // The plugin may deliver a status or an error before `listen()` returns;
     // the loop holds those for this epoch and applies them once the session
-    // is marked started.
+    // is marked started. A result is passed to the app at once (the notifier
+    // holds it until the start succeeds: BR-U10-62); the loop holds and
+    // replays only its effect on the loop's own state.
     _loop.startingSession();
     final outcome = await _listenPlugin(localeId);
     if (_loop.epoch != epoch) {
@@ -299,9 +302,11 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
       // captured (Android and iOS alike); cancelling at once would discard
       // the iOS final result. Wait for it, bounded, then cancel.
       if (drain) await _loop.awaitDrain();
-      // Amendment 06 revision 3: a stop that returns after a new start must
-      // not cancel the plugin session that start began.
-      if (_loop.isStopped) await _stt.cancel();
+      // Amendment 06 revision 3: a stop that returns after a new start, or
+      // while one is in flight, must not cancel the plugin session that start
+      // began or is beginning (its intent is still `stopped` until `listen()`
+      // returns).
+      if (_loop.isStopped && !_loop.isStarting) await _stt.cancel();
       _log.info('Listening stopped');
     } on Exception catch (e) {
       _log.warning('stopListening error: ${e.runtimeType}');
@@ -446,19 +451,26 @@ class _SessionLoop {
   bool get isStopped => _intent == _Intent.stopped;
 
   /// Whether a first start, a resume or a restart `listen()` is in flight.
-  /// Plugin events that arrive meanwhile are held in [_held] and replayed, in
-  /// order, once [sessionStarted] or [_restartStarted] has marked the session
-  /// as listening. A stop, pause or dispose clears them (BR-U10-19: the
-  /// interrupt wins).
+  /// Plugin status and error events that arrive meanwhile are held in [_held]
+  /// and replayed, in order, once [sessionStarted] or [_restartStarted] has
+  /// marked the session as listening. Results are delivered at once (the app's
+  /// notifier holds them during a start or a resume and drops them if it
+  /// fails: Amendment 06, BR-U10-62); only their effect on the loop's state,
+  /// such as the pending interim and the pause timer, is held and replayed.
+  /// A stop, pause or dispose clears them (BR-U10-19: the interrupt wins).
   bool _starting = false;
   final List<void Function()> _held = [];
+
+  /// Whether a start's `listen()` is in flight (the intent stays `stopped`
+  /// until it returns).
+  bool get isStarting => _starting;
 
   /// Marks a start, a resume or a restart `listen()` as about to be in flight.
   void startingSession() {
     _starting = true;
     _held.clear();
     // BR-U10-69: a new plugin session counts its words from zero.
-    _committedWords = 0;
+    _committed.clear();
     _cancelPauseTimer();
   }
 
@@ -516,6 +528,10 @@ class _SessionLoop {
   SttResult? onResult(SttResult raw) {
     if (_starting) {
       // A new session's words count from zero, so there is nothing to trim.
+      // The result goes to the app at once (BR-U10-62: the notifier holds it
+      // during a start and drops it if the start fails); the replay re-applies
+      // only its effect on this loop (pending interim, pause timer) and its
+      // return value is discarded.
       _held.add(() => onResult(raw));
       return raw;
     }
@@ -541,7 +557,7 @@ class _SessionLoop {
         // cumulative text, so whatever follows counts from zero.
         _pendingInterim = null;
         _cancelPauseTimer();
-        _committedWords = 0;
+        _committed.clear();
       } else if (result != null) {
         // A result with no new words leaves what is pending as it is.
         _pendingInterim = result;
@@ -552,8 +568,9 @@ class _SessionLoop {
   }
 
   /// Words of the session's cumulative text already delivered as final at a
-  /// pause (BR-U10-69). Reset when a new plugin session starts.
-  int _committedWords = 0;
+  /// pause, in normalized form (BR-U10-69). Cleared when a new plugin session
+  /// starts, and when the plugin's text turns out to have been reset.
+  final List<String> _committed = [];
   Timer? _pauseTimer;
 
   /// Words by whitespace, as the plugin gave them (punctuation and capitals
@@ -561,14 +578,37 @@ class _SessionLoop {
   static List<String> _wordsOf(String text) =>
       text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
 
+  static final _notLetterOrDigit = RegExp(r'[^\p{L}\p{N}]', unicode: true);
+
+  /// A word compared without case, punctuation or symbols.
+  static String _normalize(String word) =>
+      word.toLowerCase().replaceAll(_notLetterOrDigit, '');
+
   /// [raw] without the words already committed, or null when none are new.
   /// With nothing committed the result is returned untouched.
+  ///
+  /// BR-U10-69 revision 2: the plugin may rewrite or restart its cumulative
+  /// text (iOS does, mid-session). The text continues the committed words when
+  /// more than half of them match, position by position, so a revised word or
+  /// two is tolerated. Otherwise it is a reset: the committed words are
+  /// forgotten and [raw] is returned whole. Accepted trade-off: a rewrite of
+  /// more than half of the committed words looks like a reset, so that phrase
+  /// repeats; repeated words are preferred to lost words.
   SttResult? _trimCommitted(SttResult raw) {
-    if (_committedWords == 0) return raw;
+    if (_committed.isEmpty) return raw;
     final words = _wordsOf(raw.text);
-    if (words.length <= _committedWords) return null;
+    final compared = min(_committed.length, words.length);
+    var matches = 0;
+    for (var i = 0; i < compared; i++) {
+      if (_normalize(words[i]) == _committed[i]) matches++;
+    }
+    if (matches * 2 <= _committed.length) {
+      _committed.clear();
+      return raw;
+    }
+    if (words.length <= _committed.length) return null;
     return SttResult(
-      text: words.skip(_committedWords).join(' '),
+      text: words.skip(_committed.length).join(' '),
       isFinal: raw.isFinal,
       confidence: raw.confidence,
       timestamp: raw.timestamp,
@@ -703,7 +743,7 @@ class _SessionLoop {
 
     _flushPendingInterim();
     // The plugin session has ended; any later result belongs to a new one.
-    _committedWords = 0;
+    _committed.clear();
 
     final elapsed = now().difference(_startedAt);
     final fastAndEmpty =
@@ -723,7 +763,7 @@ class _SessionLoop {
     if (pending == null) return;
     _pendingInterim = null;
     _cancelPauseTimer();
-    _committedWords += _wordsOf(pending.text).length;
+    _committed.addAll(_wordsOf(pending.text).map(_normalize));
     deliver(
       SttResult(
         text: pending.text,

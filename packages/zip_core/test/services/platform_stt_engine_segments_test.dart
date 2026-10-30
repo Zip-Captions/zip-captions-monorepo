@@ -357,6 +357,133 @@ void main() {
     );
   });
 
+  group('reset of the cumulative text (BR-U10-69 revision 2, TP-46)', () {
+    const first = 'one two three four five six';
+
+    test('a shorter result that does not continue the committed words is '
+        'delivered whole', () {
+      fakeAsync((async) {
+        final rig = live(async);
+        addTearDown(rig.engine.dispose);
+
+        rig.stt.emitResult(first, isFinal: false);
+        async.elapse(pause);
+        rig.stt.emitResult('alpha beta', isFinal: false);
+        async.elapse(pause);
+
+        expect(finals(rig.results), [first, 'alpha beta']);
+      });
+    });
+
+    test('a longer result that does not continue the committed words is '
+        'delivered whole', () {
+      fakeAsync((async) {
+        final rig = live(async);
+        addTearDown(rig.engine.dispose);
+
+        rig.stt.emitResult(first, isFinal: false);
+        async.elapse(pause);
+        rig.stt.emitResult(
+          'alpha beta gamma delta epsilon zeta eta theta',
+          isFinal: false,
+        );
+        async.elapse(pause);
+
+        expect(finals(rig.results), [
+          first,
+          'alpha beta gamma delta epsilon zeta eta theta',
+        ]);
+      });
+    });
+
+    test('after a reset the plugin continues the reset text, and only the '
+        'new words follow', () {
+      fakeAsync((async) {
+        final rig = live(async);
+        addTearDown(rig.engine.dispose);
+
+        rig.stt.emitResult(first, isFinal: false);
+        async.elapse(pause);
+        rig.stt.emitResult('alpha beta', isFinal: false);
+        async.elapse(pause);
+        rig.stt.emitResult('alpha beta gamma', isFinal: false);
+        async.elapse(pause);
+
+        expect(finals(rig.results), [first, 'alpha beta', 'gamma']);
+      });
+    });
+
+    test('a revised committed word (case, punctuation or a different word) '
+        'still counts as a continuation', () {
+      fakeAsync((async) {
+        final rig = live(async);
+        addTearDown(rig.engine.dispose);
+
+        rig.stt.emitResult(first, isFinal: false);
+        async.elapse(pause);
+        rig.stt.emitResult(
+          'One, two three four five six seven',
+          isFinal: false,
+        );
+        async.elapse(pause);
+
+        expect(finals(rig.results), [first, 'seven']);
+
+        rig.stt.emitResult(
+          'One, two three four five six seven eight',
+          isFinal: false,
+        );
+        async.elapse(pause);
+        rig.stt.emitResult(
+          'one two tree four five six seven eight nine',
+          isFinal: false,
+        );
+        async.elapse(pause);
+
+        expect(finals(rig.results), [first, 'seven', 'eight', 'nine']);
+      });
+    });
+
+    pbt.Glados(
+      pbt.any.listWithLengthInRange(
+        1,
+        10,
+        pbt.any.combine2<int, bool, (int, bool)>(
+          pbt.any.intInRange(1, 5),
+          pbt.any.boolGen,
+          (words, continues) => (words, continues),
+        ),
+      ),
+    ).test(
+      'delivered finals joined equal the phrases joined, whether each phrase '
+      'continues the cumulative text or resets it',
+      (steps) {
+        fakeAsync((async) {
+          final rig = live(async);
+          final cumulative = <String>[];
+          final spoken = <String>[];
+          var n = 0;
+          for (final (words, continues) in steps) {
+            // A reset starts the plugin's cumulative text afresh.
+            if (!continues) cumulative.clear();
+            for (var i = 0; i < words; i++) {
+              // Every word is distinct, so no phrase shares words with another.
+              final word = 'w${n++}';
+              cumulative.add(word);
+              spoken.add(word);
+              rig.stt.emitResult(cumulative.join(' '), isFinal: false);
+              async.elapse(const Duration(milliseconds: 200));
+            }
+            async.elapse(pause);
+          }
+
+          expect(finals(rig.results).join(' '), spoken.join(' '));
+          rig.engine.dispose();
+        });
+      },
+    );
+  });
+
   group('drain after a commit (BR-U10-70, TP-47)', () {
     for (final isPause in [false, true]) {
       final name = isPause ? 'pause' : 'stop';

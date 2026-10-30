@@ -1,6 +1,8 @@
 # Functional Design Amendment 08: iOS segments at pauses, and punctuation on both platforms
 
-**Unit**: 10, Mobile Platform Readiness (S-22). **Date**: 2026-10-30. **Revision**: 1. **Status**: APPROVED by James Petersen, 2026-10-30: approach B (split inside the session), `iosSegmentPause` = 1.5 s, and the rest as drafted.
+**Unit**: 10, Mobile Platform Readiness (S-22). **Date**: 2026-10-30. **Revision**: 2. **Status**: APPROVED by James Petersen, 2026-10-30.
+- **Revision 1:** approach B (split inside the session), `iosSegmentPause` = 1.5 s, and the rest as drafted.
+- **Revision 2:** reset detection in BR-U10-69 (section 7), from CodeRabbit's review of `9b171cc`.
 
 **Decisions recorded** (James Petersen, 2026-10-30, after the iOS Simulator pass):
 - **iOS segments:** a pause in speech should start a new segment. Fix in Unit 10, before merge.
@@ -27,7 +29,7 @@
 | ID | Rule |
 |---|---|
 | BR-U10-68 | **iOS: a pause ends a segment, without ending the session.** While listening, when no new interim result has arrived for `iosSegmentPause` (a named constant in `SttListeningLimits`, proposed **1.5 s**), `PlatformSttEngine` delivers the pending interim text once **as a final result**. The plugin session keeps running: no stop, no restart, no gap in the audio. |
-| BR-U10-69 | **iOS: later text starts after the committed words.** The plugin's results are cumulative for the whole session. After a pause commit, every later result (interim or final) is trimmed by the number of words already committed in this session, so only the new words are delivered. A result with no new words is not delivered. The count resets when a new plugin session starts (a restart, a resume or a new start). If Apple revises a committed word, the trim works by word count, so the boundary may repeat or drop a word. That is accepted, and recorded as a limitation. |
+| BR-U10-69 | **iOS: later text starts after the committed words.** The plugin's results are cumulative for the whole session. After a pause commit, every later result (interim or final) is trimmed by the number of words already committed in this session, so only the new words are delivered. A result with no new words is not delivered. The count resets when a new plugin session starts (a restart, a resume or a new start). If Apple revises a committed word, the trim works by word count, so the boundary may repeat or drop a word. That is accepted, and recorded as a limitation. **Revision 2:** the trim applies only when the result continues the committed words. Otherwise the result is a reset (section 7). |
 | BR-U10-70 | **iOS: the end of a session still flushes.** At Stop, Pause and the plugin's own session end, the drain rules (BR-U10-55, BR-U10-16) apply to the trimmed text only. Words already committed at a pause are never delivered twice. |
 | BR-U10-71 | **iOS punctuation and capitalisation:** listen with `autoPunctuation: true` and `listenMode: ListenMode.dictation` (Apple's `taskHint = .dictation`, for running speech). On iOS 13 to 15 the plugin ignores the punctuation flag, so those versions show no punctuation. |
 | BR-U10-72 | **Android punctuation and capitalisation:** the segmented-session intent adds `RecognizerIntent.EXTRA_ENABLE_FORMATTING = FORMATTING_OPTIMIZE_LATENCY` ("for real-time use cases") and `EXTRA_HIDE_PARTIAL_TRAILING_PUNCTUATION = true`, so interim text does not flicker a full stop. The formatted text is the first result in the list, which is the one the runner already reads. Android documents that the extra "may have no effect", so the device pass decides. |
@@ -65,3 +67,29 @@
 - **Security Baseline:** no new permission, and no text in logs.
 - **PBT:** TP-45 and TP-46 are stateful properties over generated interim sequences (PBT-06).
 - **No blocking finding.**
+
+## 7. Revision 2: an iOS reset of the cumulative text
+
+**Why:**
+- On some iOS versions, the recogniser can start its cumulative text again after a pause, inside one `listen()` session (speech_to_text issue #552, "onResult words being reset while still listening").
+- The iOS 26 Simulator did not do this in the device check.
+- On a device that does, revision 1's trim by word count loses words:
+  - a new phrase no longer than the committed count is dropped;
+  - a longer one loses its first words.
+
+**Rule (extends BR-U10-69):**
+- The loop keeps the committed words, not only their count.
+- A result **continues** the committed text when more than half of the committed positions match the result's words at the same positions. The comparison ignores case and punctuation.
+- **A continuing result** is trimmed as before.
+- **A result that does not continue is a reset:**
+  - the committed words are cleared;
+  - the whole result is delivered (an interim stays pending, as usual);
+  - later results count from it.
+- **Accepted trade-off:** if Apple rewrites more than half of the committed words in place, that looks like a reset, and the committed phrase appears again. Repeated words are preferred to lost words.
+- No log line carries the words (SECURITY-03).
+
+**Testable property TP-46 (extended):**
+- After a commit, a result whose words don't continue the committed words is delivered whole, including one shorter than the committed count.
+- Later results trim against the reset text.
+- A result that changes fewer than half of the committed words is still trimmed.
+- Across generated sequences with resets, no word of the plugin's text after a reset is lost.

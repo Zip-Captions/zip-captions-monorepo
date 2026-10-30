@@ -3859,6 +3859,32 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 
 ---
 
+## CONSTRUCTION - Phase 2 Unit 10: CodeRabbit review of 9b171cc; Amendment 08 revision 2 (Step 29k)
+**Timestamp**: 2026-10-30
+**User Input** (James Petersen):
+- "coderabbit skipped the review because it's 101 files, and we can't merge because code rabbit requested changes"
+- Answers:
+  - Reset fix: "Approve revision 2 (Recommended)"
+  - Other six: "Go ahead (Recommended)"
+
+**AI Response** (Opus):
+- **The review:**
+  - A full review exceeds CodeRabbit's 100-file limit (101 files against `develop`), so an incremental review was requested.
+  - It reviewed `2e9b66b..9b171cc` and requested changes, with seven findings. Each was checked against the code.
+- **Fixed** (plan Step 29k, test-first, by a Sonnet builder; Opus reviews):
+  - **G:** the iOS late `cancel()` during an in-flight start (Amendment 06 revision 3);
+  - **B:** reset detection, as Amendment 08 revision 2, approved;
+  - **F:** a test assertion;
+  - **A:** comment corrections.
+- **Declined, with replies:**
+  - **C:** already accepted in Amendment 08 section 3.
+  - **D:** needs a plugin change; Backlog entry added.
+  - **E:** a new behaviour, not a defect.
+
+**Context**: Worktree `.claude/worktrees/unit10-qa`. CodeRabbit's included reviews are 1 per hour; the next is available after about 22:12Z.
+
+---
+
 ## Unit 9 (Integration Milestones) — Session Start
 **Timestamp**: 2026-10-30T00:00:00Z
 **User Input**: "You are starting Unit 9 (Integration Milestones) of Phase 2 in the Zip Captions monorepo at /Users/oblivious/Documents/zip-captions-monorepo. It's a Flutter/Dart monorepo with four packages: zip_core, zip_captions, zip_broadcast and zip_supabase. Work with me, James Petersen, the project owner. I approve every stage.

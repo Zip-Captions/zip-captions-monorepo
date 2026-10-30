@@ -184,7 +184,7 @@ Every id is named in a test, except:
 | TP-42 | Language-pack deadlines and the Android scheduled state | `zip_captions/test/widgets/language_pack_section_test.dart` |
 | TP-43 | One notice per stop (Amendment 07) | `zip_captions/test/widgets/recording_screen_test.dart` |
 | TP-44 | The Amendment 07 strings | `zip_captions/test/l10n/zc_strings_test.dart` |
-| TP-45 to 47 | iOS pause commit, trim by word count, drain after a commit (Amendment 08) | `zip_core/test/services/platform_stt_engine_segments_test.dart` (TP-45 and TP-46 include a Glados property) |
+| TP-45 to 47 | iOS pause commit, trim by word count with reset detection (revision 2), drain after a commit (Amendment 08) | `zip_core/test/services/platform_stt_engine_segments_test.dart` (TP-45 and TP-46 include a Glados property) |
 | TP-48 | Listen options: `onDevice`, `autoPunctuation` and the dictation mode. The Android extras are checked on the device | `zip_core/test/services/platform_stt_engine_segments_test.dart`, `platform_stt_engine_test.dart` |
 
 **Existing tests changed** (named, per the plan's rule):
@@ -196,7 +196,7 @@ Every id is named in a test, except:
 - the writer's "a failing write does not block the writes after it", which now fails a save, not the create;
 - the listen-options test, extended for Amendment 08.
 
-**Test totals** (2026-10-30, after Amendment 08): `zip_core` 1303 passed, 5 skipped; `zip_captions` 443 passed; `zip_broadcast` 195 passed. `dart analyze --fatal-infos` clean in all three.
+**Test totals** (2026-10-30, after Step 29k): `zip_core` 1308 passed, 5 skipped; `zip_captions` 443 passed; `zip_broadcast` 195 passed. `dart analyze --fatal-infos` clean in all three.
 
 ## 4. Self-check tables (plan section 5, filled in)
 
@@ -281,6 +281,7 @@ Every id is named in a test, except:
 | 2026-10-30 | CodeRabbit, second pass | #17 and #18 accepted (freezed). `languagePackSink` cleared. PR description rewritten | 29g |
 | 2026-10-30 | CodeRabbit, full review | Info.plist wording declined, as the approved text. No writes after a failed create. Amendment 06 revision 3 | 29i |
 | 2026-10-30 | Device passes | Amendment 07 (Android pass) and Amendment 08 (iOS pass) | 29h, 29j |
+| 2026-10-30 | CodeRabbit, incremental review of `9b171cc` (the full review exceeds 100 files) | 7 findings. Fixed: the iOS late cancel during an in-flight start; reset detection (Amendment 08 revision 2); a test assertion; comments. Declined C, D and E with replies | 29k |
 
 ## 8. Known gaps
 
@@ -296,8 +297,10 @@ Every id is named in a test, except:
 - **No language selector in the app.** On iOS, the phone's language setting is the only route. This is in the Backlog (`aidlc-state.md`).
 - **Amendment 08 limitations, accepted:**
   - the iOS trim works by word count, so if Apple revises a committed word, the boundary can repeat or drop a word;
+  - revision 2 detects a reset of the cumulative text, so a rewrite of more than half of the committed words looks like a reset and repeats the phrase;
   - the screen splits at 1.5 s, but the writer merges finals less than 2 s apart;
   - iOS 13 to 15 show no punctuation.
+- **A late iOS final can reach the next session.** This happens when it arrives more than 1 s after Stop or Pause, once a new start or a resume has begun. The fix needs a plugin change, so it's in the Backlog (`aidlc-state.md`).
 - **iOS sounds not checked.** Android sounds pass BR-U10-43.
 - **UI observations, not defects in Unit 10's logic:**
   - the text-size button is very small on the permission-denied panel;

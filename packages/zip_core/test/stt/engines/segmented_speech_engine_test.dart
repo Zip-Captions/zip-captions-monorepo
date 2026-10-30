@@ -1386,8 +1386,11 @@ void main() {
         unawaited(rig.engine.stopListening());
         async.flushMicrotasks();
         // The user starts again while the stop is stuck in the platform.
+        var restarted = false;
         unawaited(
-          rig.engine.startListening(localeId: 'en-CA', onResult: results.add),
+          rig.engine
+              .startListening(localeId: 'en-CA', onResult: results.add)
+              .then((ok) => restarted = ok),
         );
         async.flushMicrotasks();
         final startsBefore = rig.log.where('segment-start').length;
@@ -1396,6 +1399,8 @@ void main() {
         stalled.complete();
         async.elapse(const Duration(seconds: 2));
 
+        expect(restarted, isTrue, reason: 'replacement start');
+        expect(rig.bridge.startedLocales, ['en-CA', 'en-CA']);
         expect(rig.log.where('segment-start').length, startsBefore);
         expect(
           rig.log.entries.skip(afterNewStart),
