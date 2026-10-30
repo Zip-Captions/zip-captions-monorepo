@@ -3807,6 +3807,58 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 
 ---
 
+## CONSTRUCTION - Phase 2 Unit 10: iOS Simulator pass reviewed; Amendment 08 approved
+**Timestamp**: 2026-10-30
+**User Input** (James Petersen):
+- "once the sonnet session is finished with QA on the ios simulator device, I want to get everything that's needed pushed up to the PR, get a final check from coderabbit, then while that's running, I want to reboot this host"
+- "sonnet concluded"
+- Answers:
+  - iOS segments: "Unit 10, before merge (Recommended)"
+  - The other two: "Punctuation in Unit 10"
+  - iOS split: "B: split inside the session (Recommended)"
+  - Pause length: "1.5 s (Recommended)"
+  - Approve: "Approve (Recommended)"
+
+**AI Response** (Opus):
+- **The iOS Simulator pass** (the Sonnet QA runner's section in `evidence/code-generation-qa.md`) was reviewed. Everything passed after a macOS microphone denial for the Simulator was cleared:
+  - permissions, captions, pauses, Pause and Resume;
+  - the stop notices (Amendment 07, one each);
+  - the last phrase at Stop ×3 and Pause ×3 (Amendment 06);
+  - A9 with A-1 confirmed.
+- **Three change requests from that pass:**
+  - **iOS segments at pauses:** Unit 10.
+  - **Punctuation and capitalisation:** Unit 10.
+  - **A language selector:** Backlog.
+- **Amendment 08** (`functional-design/amendment-08-ios-segments-and-punctuation.md`) was drafted and approved:
+  - iOS commits a segment after 1.5 s without new interim text, inside the running session, trimming later results by word count;
+  - iOS listens with `autoPunctuation` and the dictation task hint;
+  - Android adds `EXTRA_ENABLE_FORMATTING` (latency) and hides trailing punctuation on interim text.
+- **The build** was delegated to a Sonnet builder, test-first, in the QA worktree. Opus reviews it.
+
+**Context**: Worktree `.claude/worktrees/unit10-qa`.
+
+---
+
+## CONSTRUCTION - Phase 2 Unit 10: Amendment 08 built and device-checked; Steps 31 and 32 (Step 29j)
+**Timestamp**: 2026-10-30
+**User Input** (James Petersen):
+- "I want the checks before the coderabbit review so if we need to make changes we're not wasting time"
+- "If possible, you can run the tests on the ios and android devices in parallel"
+
+**AI Response** (Opus):
+- **The build:** a Sonnet builder built Amendment 08 test-first. Opus reviewed the diff against BR-U10-68 to 73 and ran the gates: `dart analyze --fatal-infos` clean ×3; `zip_core` 1303 passed, 5 skipped; `zip_captions` 443; `zip_broadcast` 195. Recorded as plan Step 29j.
+- **The device check:** the same `say` script (three sentences, 3 s pauses) on the Pixel 6 and the iOS Simulator.
+  - Both platforms show three segments on screen and in History ("3 segments"), with punctuation and capitals. So the Android formatting extra takes effect on Google's recogniser.
+  - Both apps were built in parallel. The runs were one after the other, because the Android run had finished before the iOS build was ready.
+  - Details are in `evidence/code-generation-qa.md`, "Amendment 08 device check". No screenshots were kept.
+- **Step 31:** `code/unit10-summary.md` was rewritten. It covers Amendments 01 to 08, TP-1 to TP-48, the review rounds, the device passes and the known gaps. Deviation 9 is resolved.
+- **Step 32:** Android is done on the Pixel 6. G1 stays open for a physical iPhone.
+- **New observation:** on Android, the History list keeps the title "Transcript" after Back. It's cosmetic.
+
+**Context**: Worktree `.claude/worktrees/unit10-qa`. Next: commit, push, update the PR description, and request CodeRabbit's final review.
+
+---
+
 ## Unit 9 (Integration Milestones) — Session Start
 **Timestamp**: 2026-10-30T00:00:00Z
 **User Input**: "You are starting Unit 9 (Integration Milestones) of Phase 2 in the Zip Captions monorepo at /Users/oblivious/Documents/zip-captions-monorepo. It's a Flutter/Dart monorepo with four packages: zip_core, zip_captions, zip_broadcast and zip_supabase. Work with me, James Petersen, the project owner. I approve every stage.
@@ -4225,3 +4277,76 @@ Start by reading the files above. Then tell me in a few lines what Unit 9 must p
   5 skipped" where the reporter's `+N` is passed-only. Both corrected; counts
   now stated as passed/skipped/run explicitly.
   Gates after: analyze clean, 968 + 5 skipped / 195 / 195.
+
+- 2026-10-30T19:30Z - Unit 10 iOS Simulator QA (Step 30, iOS part), run as QA
+  runner at commit 134acbb. Owner instructions, verbatim:
+  "Task: Unit 10 iOS Simulator QA (Step 30, iOS part) for Zip Captions, PR #44.
+  You are the QA runner. Follow CLAUDE.md and AGENTS.md. Record results as
+  text, ask James Petersen for anything only he can do, and do not change app
+  code."; "James does all Simulator taps and system dialogs. Tell him exactly
+  what to tap and when."; then, after the first reply: "You're supposed to be
+  handling the device input for me so that you can run through the tests
+  yourself"; on the tap-control question: "Grant Accessibility to the
+  terminal/VS Code"; "That doesn't sound correct, why would you need voice
+  memos? What does A3 require it for? The android tests were all using the
+  `say` command on the host mac, and relying on the simulator-to-host mic
+  bridge to test spoken audio"; "the simulator is on the other display on this
+  host, I can see it but it's not in the foreground."; "Is there any way you
+  can interact with the simulator while I retain control of the mouse on this
+  host?"; "I installed axe, I want to remove your accessibility controls from
+  the host"; "I think we ran into the same issue with the android simulated
+  device, where it's not recognizing the host audio from the microphone for
+  some reason. It worked with a physical android device, but I don't currently
+  have an iOS device on hand with which to test"; "use the docs-mcp server to
+  check how the simulated device audio input hardware has to be configured";
+  "index the x code simulator docs into a library if you can find them";
+  "enabling dictation is acceptable for the tests."
+  Outcome: A1, A4 (Mac side) and A6 passed; A2 not verified; A3 not possible
+  (no Voice Memos in the Simulator image); A7 (en-CA) and A8 (en-US) failed
+  with no recognised text and no error; iOS dictation in Settings also
+  returned no text; A9 and A10 and the Amendment 06 checks not reached. No app
+  code was changed and nothing was committed. Full results are in
+  `construction/mobile-platform-readiness/evidence/code-generation-qa.md`,
+  section "iOS Simulator pass, 2026-10-30". Decision for the owner: whether
+  the iOS captions checks wait for a physical iPhone.
+
+- 2026-10-30T19:45Z - Owner, verbatim: "I want to alter A3 so that it is
+  written to use the ios dictation test you used. Then, I want to work through
+  troubleshooting why the dictation test is failing to pick up the spoken
+  audio. Once we resolve that, then we can proceed with tests on the
+  simulator"; "Neither entry is listed in the microphone access settings";
+  "reset microphone for all apps on this hoest"; "ok, i clicked allow". A3
+  redefined as the iOS dictation test. Cause of the silent input: a stored
+  macOS microphone denial for `com.apple.CoreSimulator.SimulatorTrampoline`
+  (tccd log, `authValue=0`). Fixed by `tccutil reset Microphone` (all apps,
+  owner-authorised; every app re-prompts on next use) and an Allow click.
+  A3 retest passes. A7 onward not yet rerun. Details in the same QA section,
+  "A3 troubleshooting and resolution".
+
+- 2026-10-30T20:00Z - Owner, verbatim: "I want en-CA, rerun all the tests that
+  were attempting to use anything that required microphone access, since we
+  encountered a silent failure previously"; and, mid-run: "when there's a
+  pause between audio, I would expect to see the speech appear in separate
+  segments. I'm also hoping that we can include some punctuation and
+  capitalization". Region restored to Canada. Rerun on the Simulator at
+  134acbb: A6, A7, A10(a) to (d), Amendment 06 Stop x3 and Pause x3, and
+  Amendment 07 all pass; A8 not needed; A9 not reached (A-1 still untested);
+  sounds not checked. Two change requests recorded, not built: (1) a pause in
+  speech should start a new segment (the iOS run saved one block until Pause
+  or Stop); (2) punctuation and capitalisation (Apple documents
+  `SFSpeechRecognitionRequest.addsPunctuation`). No app code was changed and
+  nothing was committed. Details in the QA section "Rerun of every microphone
+  check after the fix, en-CA".
+
+- 2026-10-30T20:15Z - Owner, verbatim: "We have to make sure that we don't
+  leave any tests untested. A9 was not reached, that's incorrect, let's do it
+  properly". A9 was provoked through the phone's own language setting (primary
+  language English (Australia), which has no on-device model on the iOS 26.0
+  Simulator): the panel "On-device captions aren't available" with "Download
+  English (Australia)" appeared; the download ran in the app with progress to
+  99% and then "English (Australia) is ready"; Try again started captioning
+  and recognised the test phrases. Assumption A-1 is confirmed. Language
+  restored to English (Canada). Not provoked: download failure, scheduled
+  state, unsupported and unknown statuses, iOS 13 to 25 instructions. Finding
+  for the owner: the app has no language selector on iOS. Details in the QA
+  section "A9 run". No app code was changed and nothing was committed.

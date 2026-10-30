@@ -20,6 +20,7 @@ class SttListeningLimits {
     required this.onDeviceCheckTimeout,
     required this.segmentedSessionLength,
     this.finalResultDrainTimeout = const Duration(seconds: 1),
+    this.iosSegmentPause = const Duration(milliseconds: 1500),
   });
 
   /// How many counted failures in a row stop the engine's own restarts.
@@ -62,6 +63,16 @@ class SttListeningLimits {
   /// (BR-U10-58). Optional so existing call sites keep their value; tests pass
   /// a shorter or longer one.
   final Duration finalResultDrainTimeout;
+
+  /// How long the platform engine waits with no new interim result before it
+  /// delivers the pending text as a final result (BR-U10-68, Amendment 08).
+  ///
+  /// `speech_to_text` 7.3.0 reports a final result on iOS only when the
+  /// recognition task ends, and the engine keeps one task open across pauses,
+  /// so this is what turns a pause in speech into a segment. The plugin
+  /// session keeps running. Optional so existing call sites keep their value;
+  /// tests pass a shorter or longer one.
+  final Duration iosSegmentPause;
 }
 
 /// The Unit 10 starting values (see [SttListeningLimits]).

@@ -267,3 +267,121 @@ The screenshots were not retained (see the note at the top). The table below rec
 4. **The text-size button is drawn very small** on the permission-denied panel (full size on the recording screen). It's cosmetic and was recorded for a later UI pass.
 5. **A Stop tap twice did not register** on its first press, on the phone at 12:52 and once on the emulator (Step 9(a), 2026-10-27). The second tap worked both times. The cause is unknown and it has not been reproduced on purpose. Watch for it in later passes.
 6. **Tooling: the Flutter MCP's device screenshot hung** for about 40 minutes on the Settings screens. `adb exec-out screencap` with a timeout worked at once. Revoking the microphone in Settings killed the app's process, as Android does, which ended `flutter run`; the app was relaunched with `flutter run`.
+
+## iOS Simulator pass, 2026-10-30
+
+**Device**: iPhone 17 Simulator `3A0EDA8C-BAAF-47A6-A213-E29485B92547`, iOS 26.0. Language English, region first Canada (`en_CA`), later United States (`en_US`) for A8. Mac: MacBook Pro Microphone as the default input, MacBook Pro Speakers as the default output, input volume 50, output volume 100.
+
+**Build**: `feature/mobile-platform-readiness` at `134acbb`, debug, `flutter run -d 3A0EDA8C-…` from the Unit 10 QA worktree. `privacy reset all` and an uninstall were done before the first launch. Nothing was committed and no app code was changed.
+
+**Method**: a Sonnet session acting as QA runner. No screenshots, videos or logs were kept in the repository (see the note at the top).
+- **Taps and system dialogs:** AXe (`axe tap --label …` or `-x/-y`), installed by James Petersen, addressed to the Simulator by UDID. An earlier attempt with `osascript` and synthetic mouse clicks moved the real cursor and was dropped at James's request; he then removed the Accessibility grant.
+- **Screen:** `xcrun simctl io <UDID> screenshot`, and `recordVideo` with frames extracted by `ffmpeg` for the Stop notice.
+- **System log:** `xcrun simctl spawn <UDID> log stream --predicate 'process == "Runner"'`.
+- **Speech:** macOS `say` from the host speakers, picked up by the Mac microphone and passed to the Simulator through I/O > Audio Input.
+- **Dart log:** not available this run. The Flutter MCP connected to the VM service but its `console_logs` returned no lines in `fetch` or in a 30 s `watch`, and `flutter run` printed only `flutter:` lines. The listening locale was therefore taken from the Simulator's settings, not from an app log line.
+
+**First-run result (A2, A3 and the verdict below are superseded by "A3 troubleshooting and resolution": the failure was a macOS microphone denial, now fixed, and A3 passes): A1 passes, A2 not verified, A3 not possible as written (replaced by an iOS dictation test), A4 passes on the Mac side, A5 recorded, A6 passes. A7 and A8 fail with no recognised text. A9 and A10 were not reached. On-device recognition is not demonstrated on the Simulator.**
+
+| Step | Result | Evidence |
+|---|---|---|
+| A1 Simulator I/O > Audio Input | PASS | The menu lists System (MacBook Pro Microphone), BlackHole 2ch and MacBook Pro Microphone; "System (MacBook Pro Microphone)" carries the checkmark. Not BlackHole, not Zoom |
+| A2 Simulator allowed in macOS Privacy > Microphone | FAIL, then fixed | First run: the setting could not be read from the shell, and the Simulator was not listed in the pane. The `tccd` log later showed a stored denial for `com.apple.CoreSimulator.SimulatorTrampoline`. After `tccutil reset Microphone` and Allow it logs a grant. See "A3 troubleshooting and resolution" |
+| A3 Input path through the Simulator (as first written: record 5 s in Voice Memos and play it back) | REDEFINED (James Petersen, 2026-10-30) | The Simulator's iOS image has no Voice Memos app (home screen: Calendar, Photos, Reminders, News, Maps, Health, Wallet, Settings, Safari, Messages). A3 is now the iOS dictation test: Settings > General > Keyboard > Enable Dictation on; in Settings, tap the Search field and then the keyboard's dictate button; speak a repeatable phrase with macOS `say`; the phrase must appear in the field. It counts only if text appears. First run: FAIL (macOS microphone denial, see "A3 troubleshooting and resolution"). After the fix: PASS. A7 onward wait for A3 to pass |
+| A4 Mac input level moves when speaking | PASS (Mac side) | `ffmpeg -f avfoundation` from the MacBook Pro Microphone while `say` played: max volume -2.4 dB, mean -19.9 dB. The host hears `say` clearly. The System Settings level bar was not looked at |
+| A5 Dictation language offered | RECORDED | Settings > General > Keyboard shows Enable Dictation, Auto-Punctuation and Dictation Shortcut only. No per-language list, so neither en-CA nor en-US is offered or confirmed there. Language & Region: English, region Canada |
+| A6 Permissions from scratch | PASS | After `privacy reset all`, uninstall and `flutter run`: Start Captioning, then the explainer ("Before your device asks for permission", Continue and Not now), then the microphone prompt, then the speech-recognition prompt, in that order. Allow, Allow, then the recording screen with Pause and Stop. No toast |
+| A7 Captions, en-CA | FAIL | Listening from 15:20. `say` from 15:20:35: two sentences, a 10 s pause, then two more, about 58 s in all. The caption area stayed empty throughout. System log: `AVAudioSession … Got Permission value 1`, AURemoteIO and an aggregate device started, `SFSpeechAssetManager … fetching the path to the Assistant asset`, no error. No segment text on screen, no toast. Stop at 15:21:50 (video): History opened, one notice "No speech was recognised, so no transcript was saved.", History empty ("No transcripts yet") |
+| A8 Captions, en-US | FAIL | Region changed to United States through Settings (the Simulator restarted; `AppleLocale` read `en_US`). App relaunched, Start Captioning (no explainer, no prompts: both already granted). Listening from 15:24. `say` 15:24:38 to 15:25:36, same phrases and pauses. Caption area empty. Same system log pattern, no error. Stop was tapped but its notice was not captured |
+| iOS dictation (Settings > Search), extra | FAIL | James Petersen allowed enabling Dictation for the tests. After "Enable Dictation", the keyboard's dictate button showed the blue listening bubble at the cursor. `say` was spoken twice; the field stayed empty. This is iOS's own recogniser, not our app |
+| A9 Missing-language panel, Download, Try again | NOT REACHED (superseded: passed in "A9 run" below) | The panel never appeared in en-CA or en-US, which both had an on-device model |
+| A10 (a) 2 minutes, (b) Pause and Resume, (c) silent 10 s, (d) 5 minutes silent | NOT RUN | Captions never worked |
+| Amendment 06, Stop and Pause straight after a sentence | NOT RUN | Needs recognised text |
+| Amendment 07, one notice per stop | OBSERVED, not a pass | The A7 Stop produced exactly one notice (the no-speech one) and no second. This was not the silent-session case the check asks for, because speech had been played |
+
+**Findings**
+1. **Recognition returns nothing on the Simulator, and nothing fails.** In both locales the app is listening, the audio engine runs, the on-device check was true in the earlier run (`Engine platform initialized for locale en-CA`, `On-device support check: true`, 2026-10-27), and neither a result nor an error arrives. This repeats the 2026-10-27 run.
+2. **The host side is not the cause.** The Mac microphone hears `say` at -2.4 dB peak, and the Simulator's input is set to it.
+3. **iOS's own dictation also hears nothing in the Simulator.** That makes an app fault unlikely and points to the Simulator not delivering host audio, or not recognising it. It does not prove either: dictation on the Simulator may also depend on assets or services that are absent. This matches the Android emulator, where host audio was lost until a physical device was used (2026-10-27 and 2026-10-30).
+4. **Verdict: "on-device recognition not demonstrated on the Simulator".** No code change was made. The iOS captions path (A7, A10, Amendments 06 and 07, and the A-1 download) needs a physical iPhone. James Petersen has none on hand at this time.
+5. **Decision needed (James):** whether Unit 10 closes with the iOS captions behaviour verified on the Simulator only for permissions, the explainer, the empty-session notice and the reset paths, and the rest deferred to a physical-device pass; or whether an iPhone is found first.
+6. **Docs-mcp:** no indexed library covered the Simulator's audio hardware. Apple's "Configuring the environment of a simulated device" states that audio input is set from Device > Sound > Sound Input (or the Settings inspector), and that "System" uses the same input as the Mac; this matches A1. It describes Xcode 27's Device Hub; this Mac runs the Xcode 26 Simulator app, whose I/O > Audio Input menu showed the same three choices. A library `xcode-simulator` was indexed from those Apple pages at James's request.
+
+**A3 troubleshooting and resolution (2026-10-30, later the same session)**
+- **Cause found:** macOS had a stored microphone **denial** for the Simulator's responsible process, `com.apple.CoreSimulator.SimulatorTrampoline` (an XPC service inside CoreSimulator, not an app). The `tccd` log at 15:20:14, when the app's audio engine started, shows `AUTHREQ_RESULT … authValue=0, authReason=2` (denied by user consent) and `authValue=1` (preflight unknown), where a grant is `authValue=2`. The Simulator therefore received silent input. iOS raised no error, because the simulated phone's microphone looked normal. The Simulator did not appear in System Settings > Privacy & Security > Microphone (neither "Simulator" nor "SimulatorTrampoline"), so the setting could not be switched there.
+- **Why this explains the earlier symptoms:** the audio engine started and ran cleanly, the Mac microphone heard `say` at -2.4 dB, and recognition (the app and iOS dictation) returned nothing and no error. The Android emulator's "no host audio" may have a similar host-side cause; it was not checked for one.
+- **Fix:** `tccutil reset Microphone` (all apps; `tccutil reset Microphone com.apple.CoreSimulator.SimulatorTrampoline` fails with "No such bundle identifier"), authorised by James Petersen, then the simulated iPhone was shut down and booted. Starting dictation raised the macOS microphone prompt; James clicked Allow. `tccd` then logged `AUTHREQ_RESULT … authValue=2, authReason=2` at 15:40:28. Side effect: every other app on the Mac now asks for microphone access again on its next use.
+- **A3 retest: PASS.** The prompt interrupted the first dictation. On the second start, with `say` speaking the test phrase, the Search field received the phrase (one word differed from the spoken text) and the screen showed "No Results for …" with the phrase in it. This was in the English (United States) region.
+- **Consequence for the A2 row:** A2 is now verified through the `tccd` log rather than the System Settings pane, which does not list the Simulator.
+- **Rerun:** done next, in en-CA, see "Rerun of every microphone check after the fix" below.
+
+**Rerun of every microphone check after the fix, en-CA (2026-10-30, 15:40 to 15:58)**
+
+Region restored to Canada (`AppleLocale` read `en_CA`, the Simulator restarted). Same build `134acbb`. `privacy reset all`, uninstall, `flutter run`. This time the Dart log was read through a small VM-service reader (Logging and Stdout streams) that I wrote in the session scratchpad. The macOS microphone grant from the fix above was in place, so these runs are valid. Room speech was not captured in any run (every phrase on screen was a test phrase). Timestamps below are the Mac's clock.
+
+| Step | Result | Evidence |
+|---|---|---|
+| A6 Permissions from scratch | PASS | Start Captioning 15:44:11, explainer ("Before your device asks for permission"), Continue, microphone prompt, Allow, speech-recognition prompt, Allow. Log: `Platform STT initialized: true`, `Engine platform initialized for locale en-CA`, `On-device support check: true`, `Listening started for locale en-CA`. No panel, no toast |
+| A7 Captions | PASS | `say` 15:44:39 to 15:45:40: two sentences, a 10 s pause, one sentence, a 15 s pause, one sentence, a 15 s pause, and a last sentence. Recognised text was on screen: all four phrases, with small errors ("positive" for "pause of", "Captions on the simulator" for "Zip captions on the simulator"). Locale en-CA. No SnackBar in the video frames around Stop. Stop 15:45:54: History row "1m 24s · 1 segments"; log `finalizeCurrentSession … durationMs=84933 segmentCount=1` |
+| A8 en-US repeat | NOT NEEDED | A7 passed in en-CA. The earlier en-US failure was the macOS denial, not the locale |
+| A9 Missing-language panel, Download, Try again | PASS (run separately, see "A9 run" below) | First rerun: not reached, because en-CA already had an on-device model, so the panel did not appear. James Petersen rejected "not reached" ("let's do it properly"); A9 was then provoked through the app's own flow with a language that has no pack. A-1 confirmed |
+| A10(a) 2 minutes with pauses | PASS | Session 15:46:29. `say` 15:46:38 to 15:48:32: eight numbered sentences with pauses of 6, 20, 10, 25, 8 and 12 s. All eight were on screen, as one block. No segment was saved until the Pause at 15:48:44 (see finding 1) |
+| A10(b) Pause, then Resume | PASS | Pause 15:48:44: text stayed above a "paused" marker; log `Paused (via stop)`, `Session paused`. Resume 15:48:56: `Listening started`, `Session resumed`, `session continued` with the same session id. A sentence spoken after Resume was captioned below the marker. Stop 15:49:09: `durationMs=160440 segmentCount=2` (History "2m 40s · 2 segments") |
+| A10(c) Silent 10 s, then Stop | PASS | Session 15:49:30, Stop 15:49:44.7, video at 1.5 frames/s: exactly one SnackBar, "No speech was recognised, so no transcript was saved.", on History; no second notice; no new History row; log `finalizeCurrentSession … skipped, no row` |
+| A10(d) 5 minutes of silence | PASS | Session 15:52:10 (nobody spoke). Log `Session stopping: inactivity after 300s without speech` at 15:57:10.172, then `skipped, no row`. Video (15:56:53 to 15:57:40): the recording screen, then History, then exactly one SnackBar, "Captioning stopped after 5 minutes without speech, so no transcript was saved."; no second notice; no new row |
+| Amendment 06, Stop straight after a sentence, ×3 | PASS ×3 | Each trial: `say` ended, the Stop tap about 0.2 s later, then `saveSegment (new)` 0.04 to 0.1 s after the tap, then `Listening stopped` (2.6 s after the tap in trial 1, 0.06 s in trial 2, 2.6 s in trial 3), then `finalizeCurrentSession … segmentCount=1` (durationMs about 8 s). The trial-3 transcript, opened from History, held the whole test phrase. Both well inside the 5 s Stop bound |
+| Amendment 06, Pause straight after a sentence, ×3 | PASS ×3 | Each trial: the Pause tap about 0.2 s after the speech ended; `saveSegment (new)` 0.04 s after the tap, then `Paused (via stop)`, `Session paused`. The phrase stayed on screen above its "paused" marker in all three (screenshot after trial 3 shows all three phrases and three markers). Resume and the final Stop followed: `segmentCount=3` |
+| Amendment 07, one notice per stop | PASS | A10(c) and A10(d) each produced exactly one notice. The error and save-failed combinations cannot be provoked on a device (TP-43) |
+| Sounds on iOS | NOT CHECKED | James was not asked to listen in this rerun (the 2026-10-27 run recorded no chime) |
+| Amendment 06 recovery twice and the 5 s Stop bound | NOT PROVOKED | Unit tests only (TP-36, TP-37), as on Android |
+
+**Findings from the rerun**
+1. **Change request (James Petersen): a pause in speech should start a new segment.** Evidence: in A7 and A10(a) the whole run, 60 s and then 2 minutes with pauses of up to 25 s, was one block on screen, and the only `saveSegment` for the run came at Stop or Pause. The `SFSpeechRecognizer` task did not report a final result at the pauses. Segments split only where the session itself ended (Pause, Stop). A side effect: the transcript is written to storage only at Pause or Stop, so a crash mid-session loses the run. This is behaviour of the existing iOS runner, not a Unit 10 regression, and it was not changed. The design question is whether the app should split on silence itself (for example a silence timer over the partial results) or ask the recogniser to.
+2. **Change request (James Petersen): punctuation and capitalisation.** Evidence: the recognised text on screen has no punctuation and only some capitals (for example "Sentence one the first test phrase for the long run Sentence two comes after a short pause"). Apple documents `SFSpeechRecognitionRequest.addsPunctuation` ("Set this property to `true` for the speech framework to automatically include punctuation … a period or question mark at the end of a sentence, and a comma within a sentence"); the on-device iOS dictation in this Simulator, by comparison, produced "Keyboard language privacy the quick brown fox jumped over the lazy dog" with no punctuation in the search field. Whether the runner sets the property was not checked in this run (no code was read for it). Android's recogniser may behave differently. Decision for James: scope, and whether this belongs in Unit 10 or a later unit.
+3. **Recognition quality on the Simulator is test-grade, not a pass criterion.** Numbers read as digits ("123", "20"), "pause of" became "positive", and one word differed in every long run. None of this is a defect in Unit 10's code.
+4. **Stop can take about 2.6 s to complete** (trials 1 and 3; trial 2 took 0.06 s), consistent with the Amendment 06 drain. It is inside the 5 s bound.
+
+**A9 run: missing-language panel, Download, Try again (2026-10-30, 16:04 to 16:08)**
+
+Why it was not reached before: with en-CA or en-US the on-device check was true, so no panel. The app has no language option in its own Settings (Display, Transcripts and Accessibility only); its locale comes from the phone's preferred languages, in order (Amendment 03 section 6). So the panel was provoked through the phone's own language setting, which any user can do, with no `simctl` shortcut and no change to the app.
+
+| Step | Result | Evidence |
+|---|---|---|
+| Set a language with no on-device model | done | Simulator Settings > General > Language & Region > Add Language > English (Australia) > "Use English (Australia)". The Simulator restarted. `AppleLanguages` read `("en-AU")`, region still Canada. `flutter run` and the log reader were restarted |
+| Start Captioning | PASS (panel shown) | Log: `Engine platform initialized for locale en-AU`, `On-device support check: false`, `Reporting engine error: onDeviceModelMissing`, `Engine platform failed to start listening`. Panel: "On-device captions aren't available", "This device or language doesn't support on-device speech recognition, so Zip Captions didn't start.", buttons "Download English (Australia)", "Try again" and "Back". No "Open settings" (BR-U10-10 holds) |
+| Tap Download English (Australia) | PASS | Video (about 0.7 frames/s): the button replaced by "Downloading English (Australia)…" with an indeterminate bar, then 4%, 26%, 35%, 53%, 60%, 79%, 87%, 99%, then "English (Australia) is ready. Tap Try again to start captioning." with Try again and Back only. About 40 s. No download started before the tap (BR-U10-48) |
+| Tap Try again (assumption A-1) | PASS: A-1 CONFIRMED on the iOS 26.0 Simulator | Log: `On-device support check: true`, `Listening started for locale en-AU`, `Session started`. After an `AssetInventory` download, `SFSpeechRecognizer.supportsOnDeviceRecognition` is true for that locale and the session starts. The app did not start captioning by itself before the tap (BR-U10-47) |
+| Captions in the downloaded language | PASS | `say` spoke a sentence, a 6 s pause and a second sentence; both were on screen in en-AU. Stop: `saveSegment`, then `finalizeCurrentSession … segmentCount=1`. The phrase matched the spoken text, apart from missing punctuation |
+
+Not provoked: the failure text ("Couldn't download…"), the scheduled state (BR-U10-47a), `unsupported` and `unknown` statuses (no action shown), and the iOS 13 to 25 instructions path. These need a failing network, a locale the platform refuses, or an older device. Covered by unit tests (TP-28 to TP-30) only.
+
+**Findings from the A9 run**
+1. **A-1 is confirmed** (iOS 26.0 Simulator): the Amendment 04 iOS 26 button works end to end, so the fallback to instructions on iOS 26 is not needed.
+2. **The app has no way to choose the captioning language.** On iOS the only route to a different language is the phone's own language setting. Amendment 04 BR-U10-50 expects "Settings can list them" for the Android language list; no language list appears in the app's Settings on iOS. Decision for James: whether a language selector is in scope for Unit 10.
+3. The phrase captured with no punctuation, one block across the pause: change requests 1 and 2 above apply here as well.
+
+**State left behind**: the Simulator is booted, with the language and region restored to English (Canada) (`AppleLanguages` `("en-CA")`, `AppleLocale` `en_CA`), Dictation enabled, the app installed with both permissions granted, and seven transcripts in History. The English (Australia) on-device model stays installed (it cannot be removed through the app). The VM-service reader, the log stream and `flutter run` were stopped. Nothing is stored outside the session scratchpad.
+
+**Observations (no defect in Unit 10's code)**
+1. The Simulator's iOS image has no Voice Memos, so the brief's A3 cannot be run as written.
+2. Mouse-event automation from the shell (`osascript`, `CGEvent`) did not reach the Simulator's touch layer; AXe did, with labels or coordinates, and without moving the Mac's cursor.
+3. `screencapture` showed only the wallpaper (no Screen Recording grant); `simctl io … screenshot` worked.
+4. Changing the region restarts the simulated iPhone and ends `flutter run`.
+
+## Amendment 08 device check, 2026-10-30
+
+**Build**: the Amendment 08 working tree on `feature/mobile-platform-readiness` (based on `134acbb`, committed afterwards), debug, `flutter run` from the Unit 10 QA worktree. It ran on the Pixel 6 (`25071FDF600953`, Android 17) and on the iPhone 17 Simulator (`3A0EDA8C-…`, iOS 26.0, en-CA).
+
+**Method**: Opus drove both apps through their own screens: `adb input` on the phone, AXe on the Simulator. The same macOS `say` script was played on each: three short sentences (a greeting with a question, a statement, and a question) after 2 s of silence, with 3 s of silence after each sentence. Screens were read from `adb exec-out screencap` and `simctl io … screenshot`. No screenshots were kept.
+
+| Check (Amendment 08 section 5) | Android | iOS Simulator |
+|---|---|---|
+| Separate segments at pauses of about 3 s | PASS: three blocks on screen, one per sentence | PASS: three blocks on screen, one per sentence (before Amendment 08, a whole run stayed one block) |
+| History count = pauses + 1 | PASS: "0m 33s · 3 segments" | PASS: "0m 36s · 3 segments" |
+| Saved transcript | PASS: three rows, at 00:06, 00:11 and 00:17 | PASS: three rows, at 00:11, 00:16 and 00:20 |
+| Punctuation and capitals | PASS: sentence capitals, full stops and question marks, on screen and in the saved transcript. So `EXTRA_ENABLE_FORMATTING` takes effect on this recogniser | PASS: a comma and question marks, on screen and in the saved transcript. Apple ended the statement with no full stop |
+
+**Notes**
+- **The saves at each pause** are shown by the three stored rows. A row is written per final, and the three finals were 5 s apart, outside the 2 s merge window. The `saveSegment` log lines were not read: `flutter run` on iOS prints only `flutter:` lines, and the VM-service reader from the earlier pass was not used.
+- **Pause and Resume, and Stop straight after speech,** with a pause commit (TP-47) were not run on a device. Unit tests only.
+- **Observation (Android, cosmetic):** after Back from a transcript, the History list kept "Transcript" as its app-bar title. Not investigated. For the later UI pass with observation 4 of the Android pass.

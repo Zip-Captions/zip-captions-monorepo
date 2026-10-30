@@ -139,6 +139,7 @@ pbt.Generator<_Cmd> get _commandGenerator {
 class _Model {
   static const cap = 3; // defaultSttListeningLimits.restartCap
   static const windowMs = 2000; // immediateFailureWindow
+  static const pauseMs = 1500; // iosSegmentPause
 
   String intent = 'idle'; // idle, listening, paused, stopped, failed
   int count = 0;
@@ -151,6 +152,9 @@ class _Model {
 
   // Per-session record.
   bool pending = false;
+
+  /// Milliseconds since the latest interim, while it is pending (BR-U10-68).
+  int pendingMs = 0;
   bool delivered = false;
   int age = 0;
   int worst = 0; // 0 none, 1 silence, 2 transient
@@ -221,10 +225,21 @@ class _Model {
     delivered = true;
     count = 0;
     pending = !isFinal;
+    pendingMs = 0;
   }
 
   void tick(int ms) {
-    if (intent == 'listening') age += ms;
+    if (intent != 'listening') return;
+    age += ms;
+    // BR-U10-68 (Amendment 08): a pending interim with no new result for
+    // `iosSegmentPause` is delivered once as final, and nothing restarts.
+    if (pending) {
+      pendingMs += ms;
+      if (pendingMs >= pauseMs) {
+        finals++;
+        pending = false;
+      }
+    }
   }
 
   void errorOnly(String code) {

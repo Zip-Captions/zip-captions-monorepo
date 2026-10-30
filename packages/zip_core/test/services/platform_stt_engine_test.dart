@@ -418,6 +418,9 @@ void main() {
           expect(call.localeId, 'en-US');
           expect(call.listenOptions, isNotNull);
           expect(call.listenOptions!.onDevice, isTrue);
+          // BR-U10-71 (Amendment 08): punctuation and the dictation hint.
+          expect(call.listenOptions!.autoPunctuation, isTrue);
+          expect(call.listenOptions!.listenMode, ListenMode.dictation);
           expect(call.listenOptions!.partialResults, isTrue);
           expect(call.listenOptions!.cancelOnError, isFalse);
           expect(call.usedDeprecatedArguments, isFalse);

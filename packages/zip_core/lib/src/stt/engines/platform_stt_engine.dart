@@ -230,15 +230,23 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
             timestamp: DateTime.now(),
             sourceId: engineId,
           );
-          // The loop decides whether the app should see it: a result after a
-          // stop or a pause is dropped unless the drain is collecting the last
-          // phrase (BR-U10-55).
-          if (_loop.onResult(sttResult)) _onResult?.call(sttResult);
+          // The loop decides whether the app should see it, and which words:
+          // a result after a stop or a pause is dropped unless the drain is
+          // collecting the last phrase (BR-U10-55), and words already
+          // committed at a pause are trimmed off (BR-U10-69).
+          final delivered = _loop.onResult(sttResult);
+          if (delivered != null) _onResult?.call(delivered);
         },
         // BR-U10-20: partial results on and cancel-on-error off are the
         // plugin's defaults; the 'listen options' test pins both so a change
         // to the defaults cannot silently change the engine's behaviour.
-        listenOptions: SpeechListenOptions(onDevice: true),
+        // BR-U10-71: punctuation and Apple's dictation task hint, for running
+        // speech (the plugin applies both on iOS only).
+        listenOptions: SpeechListenOptions(
+          onDevice: true,
+          autoPunctuation: true,
+          listenMode: ListenMode.dictation,
+        ),
       );
       _log.info('Listening started for locale $localeId');
       return _ListenOutcome.started;
@@ -449,6 +457,9 @@ class _SessionLoop {
   void startingSession() {
     _starting = true;
     _held.clear();
+    // BR-U10-69: a new plugin session counts its words from zero.
+    _committedWords = 0;
+    _cancelPauseTimer();
   }
 
   /// The start did not produce a session (refused or threw): drop what was
@@ -490,37 +501,97 @@ class _SessionLoop {
     _deliveredResult = false;
     _worst = _ErrorClass.none;
     _pendingInterim = null;
+    _cancelPauseTimer();
   }
 
-  /// A recognition result arrived. Returns whether the app's callback should
-  /// receive it now.
+  /// A recognition result arrived. Returns what the app's callback should
+  /// receive now, or null for nothing.
   ///
-  /// During a drain (BR-U10-55) only the first final result is passed on; an
-  /// interim is remembered so the end of the wait can flush it as final. After
-  /// a stop or a pause, outside a drain, nothing is passed on.
-  bool onResult(SttResult result) {
-    if (_draining) {
-      if (_drainDeliveredFinal) return false;
-      if (!result.isFinal) {
-        _pendingInterim = result;
-        return false;
-      }
-      _drainDeliveredFinal = true;
-      _pendingInterim = null;
-      _endDrain();
-      return true;
-    }
+  /// The plugin's text is cumulative for its session, so the words already
+  /// committed at a pause are trimmed off first (BR-U10-69); a result with no
+  /// new words is not delivered. During a drain (BR-U10-55) only the first
+  /// final result is passed on; an interim is remembered so the end of the
+  /// wait can flush it as final. After a stop or a pause, outside a drain,
+  /// nothing is passed on.
+  SttResult? onResult(SttResult raw) {
     if (_starting) {
-      _held.add(() => onResult(result));
-      return true;
+      // A new session's words count from zero, so there is nothing to trim.
+      _held.add(() => onResult(raw));
+      return raw;
     }
-    if (_intent == _Intent.stopped || _intent == _Intent.paused) return false;
+    final result = _trimCommitted(raw);
+    if (_draining) {
+      if (_drainDeliveredFinal) return null;
+      if (raw.isFinal) {
+        // A final with no new words still ends the wait.
+        _drainDeliveredFinal = true;
+        _pendingInterim = null;
+        _endDrain();
+        return result;
+      }
+      if (result != null) _pendingInterim = result;
+      return null;
+    }
+    if (_intent == _Intent.stopped || _intent == _Intent.paused) return null;
     if (_intent == _Intent.listening) {
       _deliveredResult = true;
       _failureCount = 0;
-      _pendingInterim = result.isFinal ? null : result;
+      if (raw.isFinal) {
+        // A final delivers the rest of the session at once and closes its
+        // cumulative text, so whatever follows counts from zero.
+        _pendingInterim = null;
+        _cancelPauseTimer();
+        _committedWords = 0;
+      } else if (result != null) {
+        // A result with no new words leaves what is pending as it is.
+        _pendingInterim = result;
+        _armPauseTimer();
+      }
     }
-    return true;
+    return result;
+  }
+
+  /// Words of the session's cumulative text already delivered as final at a
+  /// pause (BR-U10-69). Reset when a new plugin session starts.
+  int _committedWords = 0;
+  Timer? _pauseTimer;
+
+  /// Words by whitespace, as the plugin gave them (punctuation and capitals
+  /// kept).
+  static List<String> _wordsOf(String text) =>
+      text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+
+  /// [raw] without the words already committed, or null when none are new.
+  /// With nothing committed the result is returned untouched.
+  SttResult? _trimCommitted(SttResult raw) {
+    if (_committedWords == 0) return raw;
+    final words = _wordsOf(raw.text);
+    if (words.length <= _committedWords) return null;
+    return SttResult(
+      text: words.skip(_committedWords).join(' '),
+      isFinal: raw.isFinal,
+      confidence: raw.confidence,
+      timestamp: raw.timestamp,
+      sourceId: raw.sourceId,
+    );
+  }
+
+  /// BR-U10-68: each interim result re-arms the timer; when it fires, the
+  /// pending text is a segment. The plugin session is left running.
+  void _armPauseTimer() {
+    _pauseTimer?.cancel();
+    _pauseTimer = Timer(limits.iosSegmentPause, _commitPending);
+  }
+
+  void _cancelPauseTimer() {
+    _pauseTimer?.cancel();
+    _pauseTimer = null;
+  }
+
+  void _commitPending() {
+    _pauseTimer = null;
+    if (_intent != _Intent.listening || _draining || _starting) return;
+    _flushPendingInterim();
   }
 
   /// Whether a stop or a pause is waiting for the platform to finish
@@ -612,6 +683,7 @@ class _SessionLoop {
       _intent = _Intent.failed;
       _timer?.cancel();
       _timer = null;
+      _cancelPauseTimer();
       _restartScheduled = false;
       report(lasting);
       unawaited(cancelPlugin());
@@ -630,6 +702,8 @@ class _SessionLoop {
     if (_intent != _Intent.listening || _restartScheduled) return;
 
     _flushPendingInterim();
+    // The plugin session has ended; any later result belongs to a new one.
+    _committedWords = 0;
 
     final elapsed = now().difference(_startedAt);
     final fastAndEmpty =
@@ -648,6 +722,8 @@ class _SessionLoop {
     final pending = _pendingInterim;
     if (pending == null) return;
     _pendingInterim = null;
+    _cancelPauseTimer();
+    _committedWords += _wordsOf(pending.text).length;
     deliver(
       SttResult(
         text: pending.text,
@@ -757,6 +833,7 @@ class _SessionLoop {
   void _cancelTimer() {
     _timer?.cancel();
     _timer = null;
+    _cancelPauseTimer();
     _restartScheduled = false;
   }
 }

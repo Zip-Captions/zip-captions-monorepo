@@ -441,6 +441,16 @@ class MainActivity : FlutterActivity() {
                 RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS,
                 minimumLengthMs,
             )
+            // BR-U10-72 (Amendment 08): punctuation and capitals, tuned for
+            // real-time use, with no trailing full stop on partial results so
+            // the interim text does not flicker. Both extras are API 33 (this
+            // method refuses below that) and the recogniser may ignore them
+            // (RecognizerIntent.EXTRA_ENABLE_FORMATTING).
+            putExtra(
+                RecognizerIntent.EXTRA_ENABLE_FORMATTING,
+                RecognizerIntent.FORMATTING_OPTIMIZE_LATENCY,
+            )
+            putExtra(RecognizerIntent.EXTRA_HIDE_PARTIAL_TRAILING_PUNCTUATION, true)
         }
         runCatching { recognizer.startListening(intent) }
             .onSuccess {

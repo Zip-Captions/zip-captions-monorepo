@@ -1081,6 +1081,36 @@ void _s8Throws(_Harness h, FakeAsync async, _Phrase phrase) {
     ..flushMicrotasks();
 }
 
+/// S10 (Amendment 08): a pause commit, trimmed later words, and a stop that
+/// drains the trimmed text. The phrase's words reach the sinks; no log
+/// record carries them.
+void _s10(_Harness h, FakeAsync async, _Phrase phrase) {
+  final n = h.notifier;
+  unawaited(n.start());
+  async
+    ..flushMicrotasks()
+    ..elapse(const Duration(milliseconds: 1));
+  expect(h.state, isA<RecordingActiveState>(), reason: 'S10 start');
+
+  final prefix = phrase.prefixes;
+  h.stt.emitResult(prefix[1], isFinal: false);
+  async
+    ..flushMicrotasks()
+    // The pause commit (BR-U10-68).
+    ..elapse(defaultSttListeningLimits.iosSegmentPause)
+    ..flushMicrotasks();
+  h.stt.emitResult(phrase.text, isFinal: false);
+  async.flushMicrotasks();
+
+  unawaited(n.stop());
+  // The stop drains the trimmed text (BR-U10-70), then the writer's chain.
+  async
+    ..flushMicrotasks()
+    ..elapse(const Duration(seconds: 3))
+    ..flushMicrotasks();
+  expect(h.state, isA<StoppedState>(), reason: 'S10 stopped');
+}
+
 // --- The scenario table ----------------------------------------------------
 
 /// One named scenario the runner drives.
@@ -1138,6 +1168,8 @@ final _scenarios = <_Scenario>[
   const _Scenario('S8c segmented exception (G9)', _s8Throws, segmented: true),
   // Amendment 05: the inactivity stop and its log line.
   const _Scenario('S9 inactivity stop (Amendment 05)', _s9),
+  // Amendment 08: the pause commit and the trimmed drain.
+  const _Scenario('S10 pause commit and trim (Amendment 08)', _s10),
 ];
 
 // --- Test scaffolding ------------------------------------------------------
