@@ -3291,3 +3291,13 @@ Start by reading the files above. Then tell me in a few lines what Unit 9 must p
   Recorded as understated rather than wrong: the Coturn accept/reject rows are
   "verified" on prose evidence only, with no committed artefact. Not changed;
   noted as the weakest verified row.
+
+- 2026-10-30T09:45Z - Owner, verbatim: "If there are nit improvements to make,
+  let's make them." Three nits from the review rounds applied: (1) a comment on
+  the `selectedPairId != null` continue in `classifyCandidatePairRoute`, which
+  reads as "stop indexing" but only stops re-selecting; (2) the viewer route
+  tests pinned the two-emission sequence instead of asserting `.last`, since a
+  regression to a single emission would previously have passed - verified by
+  removing the first emission and observing two failures where there were
+  none; (3) dead `statuses`/`allSub` locals removed from `connectAndCollect`.
+  Gates: analyze clean, 964 + 5 skipped / 195 / 195.

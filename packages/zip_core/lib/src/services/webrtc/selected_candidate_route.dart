@@ -36,6 +36,9 @@ CandidatePairRoute classifyCandidatePairRoute(
   for (final report in reports) {
     final id = report['id'];
     if (id is String) byId[id] = report;
+    // Once a pair is chosen this only stops re-selecting; the indexing above
+    // must still run for every report, since the chosen pair names candidates
+    // that may appear later in the list.
     if (selectedPairId != null) continue;
     if (report['type'] != 'transport') continue;
     final selected = report['selectedCandidatePairId'];

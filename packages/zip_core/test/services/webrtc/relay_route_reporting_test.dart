@@ -77,8 +77,6 @@ void main() {
       final sub = transport.status.listen((status) {
         if (status is Connected) types.add(status.connectionType);
       });
-      final statuses = <ConnectionStatus>[];
-      final allSub = transport.status.listen(statuses.add);
 
       await transport.connect(
         ViewerTransportContext(
@@ -96,22 +94,26 @@ void main() {
       await pumpEventQueue();
 
       await sub.cancel();
-      await allSub.cancel();
       return types;
     }
 
-    test('reports turnRelayed for a relay local candidate', () async {
-      expect(
-        (await connectAndCollect(CandidatePairRoute.relayed)).last,
-        ConnectionType.turnRelayed,
-      );
-    });
+    test(
+      'reports turnRelayed for a relay local candidate, in two emissions: '
+      'connecting first so the join is never delayed by the stats query, '
+      'then the resolved route',
+      () async {
+        expect(await connectAndCollect(CandidatePairRoute.relayed), [
+          ConnectionType.connecting,
+          ConnectionType.turnRelayed,
+        ]);
+      },
+    );
 
     test('reports p2pDirect for a host local candidate', () async {
-      expect(
-        (await connectAndCollect(CandidatePairRoute.direct)).last,
+      expect(await connectAndCollect(CandidatePairRoute.direct), [
+        ConnectionType.connecting,
         ConnectionType.p2pDirect,
-      );
+      ]);
     });
 
     test(
