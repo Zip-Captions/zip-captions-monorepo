@@ -214,6 +214,9 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
     final epoch = ++_epoch;
     _intent = _Intent.listening;
     _sessionLive = false;
+    // Amendment 06 revision 3: a stop or pause still stuck in the platform
+    // keeps its drain open; the new session must not run inside it.
+    _abandonDrain();
     // A user start (and `resume`, which calls this) owns the session now:
     // drop any pending renewal and start both budgets fresh (BR-U10-44).
     _cancelRenewal();
@@ -511,39 +514,68 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
   /// Opens the BR-U10-55 drain when a session is live, before the intent
   /// changes. Returns whether one was opened: with no live session there is
   /// nothing to wait for.
-  bool _beginDrain() {
+  ///
+  /// Returns the new drain's number, or null when none was opened. Each stop
+  /// or pause keeps its own number (Amendment 06 revision 3).
+  int? _beginDrain() {
     final live = _intent == _Intent.listening && _sessionLive;
-    if (!live || _draining) return false;
+    if (!live || _draining) return null;
     _draining = true;
     _drainDeliveredFinal = false;
     _drainDone = Completer<void>();
-    return true;
+    return _openDrain = ++_drainCount;
   }
+
+  int _drainCount = 0;
+
+  /// The number of the open drain, or 0 when none is open.
+  int _openDrain = 0;
 
   /// Waits for the drain to end (a final segment, the end of the session, an
   /// error or `finalResultDrainTimeout`), then flushes a pending partial as
   /// final once if no final arrived (BR-U10-16). Always leaves the drain
   /// closed, so a later event is dropped as before.
-  Future<void> _awaitDrain() async {
+  ///
+  /// Acts only while [drain] is still the open drain: one that a new session
+  /// abandoned (Amendment 06 revision 3) returns at once and flushes nothing,
+  /// so it never touches the new session's pending partial.
+  Future<void> _awaitDrain(int drain) async {
     final done = _drainDone;
-    if (done == null) return;
+    if (done == null || _openDrain != drain) return;
     final timer = Timer(_limits.finalResultDrainTimeout, _endDrain);
     try {
       await done.future;
     } finally {
       timer.cancel();
-      final pending = _pendingPartial?.trim();
-      _pendingPartial = null;
-      if (!_drainDeliveredFinal && pending != null && pending.isNotEmpty) {
-        _emit(pending, isFinal: true);
+      if (_openDrain == drain) {
+        final pending = _pendingPartial?.trim();
+        _pendingPartial = null;
+        if (!_drainDeliveredFinal && pending != null && pending.isNotEmpty) {
+          _emit(pending, isFinal: true);
+        }
+        _closeDrain(drain);
       }
-      _closeDrain();
     }
   }
 
-  void _closeDrain() {
+  /// Closes the drain [drain]. Does nothing when that drain is no longer the
+  /// open one.
+  void _closeDrain(int drain) {
+    if (_openDrain != drain) return;
     _draining = false;
     _drainDone = null;
+    _openDrain = 0;
+  }
+
+  /// Ends the open drain without flushing: a waiting [_awaitDrain] returns at
+  /// once and the old pending partial is dropped (Amendment 06 revision 3).
+  void _abandonDrain() {
+    if (!_draining) return;
+    _endDrain();
+    _draining = false;
+    _drainDone = null;
+    _openDrain = 0;
+    _pendingPartial = null;
   }
 
   void _endDrain() {
@@ -585,12 +617,12 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
     try {
       await _bridge.stop();
       _log.info('Segmented session stopped');
-      if (drain) await _awaitDrain();
+      if (drain != null) await _awaitDrain(drain);
     } on Object catch (e) {
       _log.warning('Stop error: ${e.runtimeType}');
     } finally {
       // A throwing stop skipped the wait: close the drain all the same.
-      if (drain) _closeDrain();
+      if (drain != null) _closeDrain(drain);
     }
     // BR-U10-55: a stop ends with the platform session cancelled, unless a
     // new start has begun meanwhile (Amendment 06 revision 3): the cancel
@@ -608,13 +640,13 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
     try {
       await _bridge.stop();
       _log.info('Paused (via stop)');
-      if (drain) await _awaitDrain();
+      if (drain != null) await _awaitDrain(drain);
       return true;
     } on Object catch (e) {
       _log.warning('Pause error: ${e.runtimeType}');
       return false;
     } finally {
-      if (drain) _closeDrain();
+      if (drain != null) _closeDrain(drain);
     }
   }
 

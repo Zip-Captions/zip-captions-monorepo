@@ -484,6 +484,131 @@ void main() {
     );
   });
 
+  group('languages without spaces (BR-U10-69 revision 3, TP-46)', () {
+    test('Dart accepts the script escapes the tokenizer relies on', () {
+      final scripts = RegExp(
+        r'[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}'
+        r'\p{Script=Thai}\p{Script=Lao}\p{Script=Khmer}\p{Script=Myanmar}]',
+        unicode: true,
+      );
+      for (final char in ['你', 'い', 'カ', 'ก', 'ກ', 'ក', 'က']) {
+        expect(scripts.hasMatch(char), isTrue, reason: char);
+      }
+      expect(scripts.hasMatch('a'), isFalse);
+      expect(scripts.hasMatch('，'), isFalse);
+    });
+
+    test('Chinese: a commit, then the cumulative text, delivers only the '
+        'new characters', () {
+      fakeAsync((async) {
+        final rig = live(async);
+        addTearDown(rig.engine.dispose);
+
+        rig.stt.emitResult('你好', isFinal: false);
+        async.elapse(pause);
+        rig.stt.emitResult('你好世界', isFinal: false);
+        async.elapse(pause);
+
+        expect(finals(rig.results), ['你好', '世界']);
+      });
+    });
+
+    test('Chinese punctuation added later does not shift the cut', () {
+      fakeAsync((async) {
+        final rig = live(async);
+        addTearDown(rig.engine.dispose);
+
+        rig.stt.emitResult('你好', isFinal: false);
+        async.elapse(pause);
+        rig.stt.emitResult('你好，世界。', isFinal: false);
+        async.elapse(pause);
+
+        expect(finals(rig.results), ['你好', '世界。']);
+      });
+    });
+
+    test('Japanese with kanji and kana', () {
+      fakeAsync((async) {
+        final rig = live(async);
+        addTearDown(rig.engine.dispose);
+
+        rig.stt.emitResult('今日は', isFinal: false);
+        async.elapse(pause);
+        rig.stt.emitResult('今日はいい天気', isFinal: false);
+        async.elapse(pause);
+
+        expect(finals(rig.results), ['今日は', 'いい天気']);
+      });
+    });
+
+    test('a reset in Chinese is delivered whole', () {
+      fakeAsync((async) {
+        final rig = live(async);
+        addTearDown(rig.engine.dispose);
+
+        rig.stt.emitResult('你好世界', isFinal: false);
+        async.elapse(pause);
+        rig.stt.emitResult('谢谢', isFinal: false);
+        async.elapse(pause);
+
+        expect(finals(rig.results), ['你好世界', '谢谢']);
+      });
+    });
+
+    test('one revised character still counts as a continuation', () {
+      fakeAsync((async) {
+        final rig = live(async);
+        addTearDown(rig.engine.dispose);
+
+        rig.stt.emitResult('一二三四', isFinal: false);
+        async.elapse(pause);
+        // The fourth character is revised and two are new.
+        rig.stt.emitResult('一二三五六七', isFinal: false);
+        async.elapse(pause);
+
+        expect(finals(rig.results), ['一二三四', '六七']);
+      });
+    });
+
+    pbt.Glados(
+      pbt.any.listWithLengthInRange(
+        1,
+        10,
+        pbt.any.combine2<int, bool, (int, bool)>(
+          pbt.any.intInRange(1, 6),
+          pbt.any.boolGen,
+          (chars, continues) => (chars, continues),
+        ),
+      ),
+    ).test(
+      'delivered finals joined equal the characters spoken, whether each '
+      'phrase continues the cumulative text or resets it',
+      (steps) {
+        fakeAsync((async) {
+          final rig = live(async);
+          final cumulative = <String>[];
+          final spoken = <String>[];
+          var n = 0;
+          for (final (chars, continues) in steps) {
+            if (!continues) cumulative.clear();
+            for (var i = 0; i < chars; i++) {
+              // Every character is distinct, so no phrase repeats another.
+              final char = String.fromCharCode(0x4E00 + n++);
+              cumulative.add(char);
+              spoken.add(char);
+              rig.stt.emitResult(cumulative.join(), isFinal: false);
+              async.elapse(const Duration(milliseconds: 200));
+            }
+            async.elapse(pause);
+          }
+
+          expect(finals(rig.results).join(), spoken.join());
+          rig.engine.dispose();
+        });
+      },
+    );
+  });
+
   group('drain after a commit (BR-U10-70, TP-47)', () {
     for (final isPause in [false, true]) {
       final name = isPause ? 'pause' : 'stop';

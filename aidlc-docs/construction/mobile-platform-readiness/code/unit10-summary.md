@@ -196,7 +196,7 @@ Every id is named in a test, except:
 - the writer's "a failing write does not block the writes after it", which now fails a save, not the create;
 - the listen-options test, extended for Amendment 08.
 
-**Test totals** (2026-10-30, after Step 29k): `zip_core` 1308 passed, 5 skipped; `zip_captions` 443 passed; `zip_broadcast` 195 passed. `dart analyze --fatal-infos` clean in all three.
+**Test totals** (2026-10-30, after Step 29l): `zip_core` 1321 passed, 5 skipped; `zip_captions` 443 passed; `zip_broadcast` 195 passed. `dart analyze --fatal-infos` clean in all three.
 
 ## 4. Self-check tables (plan section 5, filled in)
 
@@ -282,6 +282,7 @@ Every id is named in a test, except:
 | 2026-10-30 | CodeRabbit, full review | Info.plist wording declined, as the approved text. No writes after a failed create. Amendment 06 revision 3 | 29i |
 | 2026-10-30 | Device passes | Amendment 07 (Android pass) and Amendment 08 (iOS pass) | 29h, 29j |
 | 2026-10-30 | CodeRabbit, incremental review of `9b171cc` (the full review exceeds 100 files) | 7 findings. Fixed: the iOS late cancel during an in-flight start; reset detection (Amendment 08 revision 2); a test assertion; comments. Declined C, D and E with replies | 29k |
+| 2026-10-30 | CodeRabbit, incremental review of `0beea12` | 5 findings. Fixed: drain isolation on both engines; tokens for languages without spaces (Amendment 08 revision 3). Declined: broadcast early results (not reachable); Unicode normalization | 29l |
 
 ## 8. Known gaps
 

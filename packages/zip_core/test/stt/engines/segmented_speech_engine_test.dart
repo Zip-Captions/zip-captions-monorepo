@@ -1410,6 +1410,67 @@ void main() {
       });
     });
 
+    // Amendment 06 revision 3: abandoned work never touches a new session. A
+    // stop or pause stuck in the platform keeps its drain open; a new session
+    // must not run inside it.
+    for (final isPause in [false, true]) {
+      final name = isPause ? 'pause' : 'stop';
+
+      test('a new session started while a hung $name() is pending is not '
+          'held in its drain (Amendment 06 revision 3)', () {
+        fakeAsync((async) {
+          final rig = _rig(drainTimeout: production);
+          addTearDown(rig.engine.dispose);
+          final results = _Results();
+          startSession(async, rig, results);
+          final stalled = Completer<void>();
+          rig.bridge.stopGate = stalled.future;
+
+          unawaited(isPause ? rig.engine.pause() : rig.engine.stopListening());
+          async.flushMicrotasks();
+          unawaited(
+            isPause
+                ? rig.engine.resume()
+                : rig.engine.startListening(
+                    localeId: 'en-CA',
+                    onResult: results.add,
+                  ),
+          );
+          async.flushMicrotasks();
+          final cancelsBefore = rig.log.where('segment-cancel').length;
+
+          rig.bridge
+            ..sendPartial('hello')
+            ..sendSegment('hello there')
+            ..sendSegment('and more')
+            ..sendPartial('tail');
+          async.flushMicrotasks();
+          expect(
+            results.texts,
+            ['hello', 'hello there', 'and more', 'tail'],
+            reason: 'the new session is shown as it speaks',
+          );
+          expect(results.finals, [false, true, true, false]);
+
+          stalled.complete();
+          async.flushMicrotasks();
+          expect(
+            results.texts,
+            ['hello', 'hello there', 'and more', 'tail'],
+            reason: 'the old stop delivers nothing',
+          );
+          expect(rig.log.where('segment-cancel').length, cancelsBefore);
+
+          // The new session's pending partial survived the old stop.
+          unawaited(rig.engine.stopListening());
+          async.elapse(const Duration(seconds: 2));
+          expect(results.texts.last, 'tail');
+          expect(results.finals.last, isTrue);
+          expect(results.texts, hasLength(5));
+        });
+      });
+    }
+
     test('a stop with no live session does not wait', () {
       fakeAsync((async) {
         final rig = _rig(drainTimeout: production);

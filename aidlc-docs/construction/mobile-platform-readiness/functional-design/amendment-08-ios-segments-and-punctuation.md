@@ -1,8 +1,9 @@
 # Functional Design Amendment 08: iOS segments at pauses, and punctuation on both platforms
 
-**Unit**: 10, Mobile Platform Readiness (S-22). **Date**: 2026-10-30. **Revision**: 2. **Status**: APPROVED by James Petersen, 2026-10-30.
+**Unit**: 10, Mobile Platform Readiness (S-22). **Date**: 2026-10-30. **Revision**: 3. **Status**: APPROVED by James Petersen, 2026-10-30.
 - **Revision 1:** approach B (split inside the session), `iosSegmentPause` = 1.5 s, and the rest as drafted.
 - **Revision 2:** reset detection in BR-U10-69 (section 7), from CodeRabbit's review of `9b171cc`.
+- **Revision 3:** tokens for languages written without spaces (section 8), from CodeRabbit's review of `0beea12`.
 
 **Decisions recorded** (James Petersen, 2026-10-30, after the iOS Simulator pass):
 - **iOS segments:** a pause in speech should start a new segment. Fix in Unit 10, before merge.
@@ -93,3 +94,26 @@
 - Later results trim against the reset text.
 - A result that changes fewer than half of the committed words is still trimmed.
 - Across generated sequences with resets, no word of the plugin's text after a reset is lost.
+
+## 8. Revision 3: languages written without spaces
+
+**Why:**
+- Chinese, Japanese, Thai, Lao, Khmer and Burmese are written without spaces between words.
+- Splitting by whitespace makes a whole phrase one "word". So after "你好" is committed, the cumulative "你好世界" doesn't match it:
+  - revision 2 delivers the whole phrase again, repeating "你好";
+  - revision 1 dropped it.
+
+**Rule (extends BR-U10-69):**
+- **Tokens:** the trim compares tokens, not whitespace words. A token is either:
+  - one character of the Han, Hiragana, Katakana, Thai, Lao, Khmer or Myanmar scripts; or
+  - a run of other non-space characters.
+- **Empty tokens:** a token that is empty once case and punctuation are removed, such as "，" or "。", is ignored, so punctuation the recogniser adds later doesn't shift the positions.
+- **The cut:** the trimmed text starts at the first new token in the result's **original** text. Its punctuation and capitals are kept. Runs of whitespace collapse to one space, and leading and trailing spaces are removed, as in revision 2.
+- **Unchanged:** the continuation test (more than half of the committed positions match) and the reset handling.
+- **Languages with spaces:** the result is the same as revision 2. A word with punctuation attached ("there,") is one token.
+
+**Testable property TP-46 (extended again):**
+- Chinese: a commit, then cumulative text that continues it, delivers only the new characters, with the reset and revision rules applied per character.
+- Japanese: the same, with mixed kanji and kana.
+- English: the existing results are unchanged.
+- Generated sequences in a no-space script lose and repeat no character.

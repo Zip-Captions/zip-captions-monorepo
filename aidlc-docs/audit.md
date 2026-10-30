@@ -3885,6 +3885,26 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 
 ---
 
+## CONSTRUCTION - Phase 2 Unit 10: CodeRabbit review of 0beea12; Amendment 08 revision 3 (Step 29l)
+**Timestamp**: 2026-10-30
+**User Input** (James Petersen), answers:
+- Fix scope: "Fix both (Recommended)"
+- Finish: "One more review, then approve (Recommended)"
+
+**AI Response** (Opus):
+- **The review:** CodeRabbit reviewed `9b171cc..0beea12` and requested changes, with five findings. Each was checked against the code.
+- **Fixed** (plan Step 29l, test-first, by a Sonnet builder; Opus reviews):
+  - **Drain isolation on both engines:** a stop or pause whose platform call hangs no longer captures a new session's results and `done`. This falls under Amendment 06 revision 3's rule.
+  - **Tokens for languages written without spaces:** Amendment 08 revision 3, approved.
+- **Declined, with replies:**
+  - **Early results reaching the broadcast handler:** not reachable (G10, BR-U10-14).
+  - **Unicode normalization:** one form per recogniser session; a fix would need a dependency.
+- **Next:** one more CodeRabbit review. Fix only real defects in it, reply to the rest, then `@coderabbitai approve`.
+
+**Context**: Worktree `.claude/worktrees/unit10-qa`.
+
+---
+
 ## Unit 9 (Integration Milestones) — Session Start
 **Timestamp**: 2026-10-30T00:00:00Z
 **User Input**: "You are starting Unit 9 (Integration Milestones) of Phase 2 in the Zip Captions monorepo at /Users/oblivious/Documents/zip-captions-monorepo. It's a Flutter/Dart monorepo with four packages: zip_core, zip_captions, zip_broadcast and zip_supabase. Work with me, James Petersen, the project owner. I approve every stage.

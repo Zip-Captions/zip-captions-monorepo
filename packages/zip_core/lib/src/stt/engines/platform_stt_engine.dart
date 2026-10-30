@@ -301,7 +301,7 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
       // BR-U10-55: `stop()` lets the platform finish the speech it already
       // captured (Android and iOS alike); cancelling at once would discard
       // the iOS final result. Wait for it, bounded, then cancel.
-      if (drain) await _loop.awaitDrain();
+      if (drain != null) await _loop.awaitDrain(drain);
       // Amendment 06 revision 3: a stop that returns after a new start, or
       // while one is in flight, must not cancel the plugin session that start
       // began or is beginning (its intent is still `stopped` until `listen()`
@@ -311,7 +311,7 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
     } on Exception catch (e) {
       _log.warning('stopListening error: ${e.runtimeType}');
     } finally {
-      if (drain) _loop.closeDrain();
+      if (drain != null) _loop.closeDrain(drain);
     }
   }
 
@@ -324,14 +324,14 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
       // BR-U10-55: the last phrase is accepted before pause returns, so the
       // notifier saves it before it sets the paused state (BR-U10-56). The
       // plugin is left stopped, not cancelled.
-      if (drain) await _loop.awaitDrain();
+      if (drain != null) await _loop.awaitDrain(drain);
       _log.info('Paused (via stop)');
       return true;
     } on Exception catch (e) {
       _log.warning('Pause error: ${e.runtimeType}');
       return false;
     } finally {
-      if (drain) _loop.closeDrain();
+      if (drain != null) _loop.closeDrain(drain);
     }
   }
 
@@ -472,6 +472,9 @@ class _SessionLoop {
     // BR-U10-69: a new plugin session counts its words from zero.
     _committed.clear();
     _cancelPauseTimer();
+    // Amendment 06 revision 3: a stop or pause still stuck in the plugin keeps
+    // its drain open; the new session must not run inside it.
+    _abandonDrain();
   }
 
   /// The start did not produce a session (refused or threw): drop what was
@@ -573,42 +576,73 @@ class _SessionLoop {
   final List<String> _committed = [];
   Timer? _pauseTimer;
 
-  /// Words by whitespace, as the plugin gave them (punctuation and capitals
-  /// kept).
-  static List<String> _wordsOf(String text) =>
-      text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+  // Scripts written without spaces: each character is a token (BR-U10-69
+  // revision 3).
+  static const _unspacedScripts =
+      r'\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}'
+      r'\p{Script=Lao}\p{Script=Khmer}\p{Script=Myanmar}';
 
-  static final _notLetterOrDigit = RegExp(r'[^\p{L}\p{N}]', unicode: true);
+  /// A token is one character of an unspaced script, or a run of other
+  /// non-space characters.
+  static final _tokenPattern = RegExp(
+    '[$_unspacedScripts]|[^\\s$_unspacedScripts]+',
+    unicode: true,
+  );
 
-  /// A word compared without case, punctuation or symbols.
-  static String _normalize(String word) =>
-      word.toLowerCase().replaceAll(_notLetterOrDigit, '');
+  static final _notLetterDigitMark = RegExp(
+    r'[^\p{L}\p{N}\p{M}]',
+    unicode: true,
+  );
 
-  /// [raw] without the words already committed, or null when none are new.
+  /// A token compared without case, punctuation or symbols. Combining marks
+  /// stay: Thai and other scripts need them.
+  static String _normalize(String token) =>
+      token.toLowerCase().replaceAll(_notLetterDigitMark, '');
+
+  /// The normalized tokens of [text] with their start offsets in it. A token
+  /// that is empty once normalized (pure punctuation) is dropped.
+  static List<({String token, int start})> _tokensOf(String text) {
+    final tokens = <({String token, int start})>[];
+    for (final match in _tokenPattern.allMatches(text)) {
+      final token = _normalize(match[0]!);
+      if (token.isNotEmpty) tokens.add((token: token, start: match.start));
+    }
+    return tokens;
+  }
+
+  /// [raw] without the tokens already committed, or null when none are new.
   /// With nothing committed the result is returned untouched.
   ///
   /// BR-U10-69 revision 2: the plugin may rewrite or restart its cumulative
-  /// text (iOS does, mid-session). The text continues the committed words when
+  /// text (iOS does, mid-session). The text continues the committed tokens when
   /// more than half of them match, position by position, so a revised word or
-  /// two is tolerated. Otherwise it is a reset: the committed words are
+  /// two is tolerated. Otherwise it is a reset: the committed tokens are
   /// forgotten and [raw] is returned whole. Accepted trade-off: a rewrite of
-  /// more than half of the committed words looks like a reset, so that phrase
+  /// more than half of the committed tokens looks like a reset, so that phrase
   /// repeats; repeated words are preferred to lost words.
+  ///
+  /// BR-U10-69 revision 3: tokens are single characters in scripts written
+  /// without spaces. The trimmed text is cut from [raw]'s own text at the
+  /// first new token, so its punctuation and capitals are kept; runs of
+  /// whitespace are collapsed to one space.
   SttResult? _trimCommitted(SttResult raw) {
     if (_committed.isEmpty) return raw;
-    final words = _wordsOf(raw.text);
-    final compared = min(_committed.length, words.length);
+    final tokens = _tokensOf(raw.text);
+    final compared = min(_committed.length, tokens.length);
     var matches = 0;
     for (var i = 0; i < compared; i++) {
-      if (_normalize(words[i]) == _committed[i]) matches++;
+      if (tokens[i].token == _committed[i]) matches++;
     }
     if (matches * 2 <= _committed.length) {
       _committed.clear();
       return raw;
     }
-    if (words.length <= _committed.length) return null;
+    if (tokens.length <= _committed.length) return null;
     return SttResult(
-      text: words.skip(_committed.length).join(' '),
+      text: raw.text
+          .substring(tokens[_committed.length].start)
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim(),
       isFinal: raw.isFinal,
       confidence: raw.confidence,
       timestamp: raw.timestamp,
@@ -648,45 +682,71 @@ class _SessionLoop {
   /// Waits for the drain to end (a final result, the status `done`, an error
   /// or `finalResultDrainTimeout`), then delivers a pending interim as final
   /// once if no final arrived (BR-U10-16).
-  Future<void> awaitDrain() async {
+  ///
+  /// Acts only while [drain] is still the open drain: one that a new session
+  /// abandoned (Amendment 06 revision 3) returns at once and flushes nothing,
+  /// so it never touches the new session's pending text.
+  Future<void> awaitDrain(int drain) async {
     final done = _drainDone;
-    if (done == null) return;
+    if (done == null || _openDrain != drain) return;
     final timer = Timer(limits.finalResultDrainTimeout, _endDrain);
     try {
       await done.future;
     } finally {
       timer.cancel();
-      if (_drainDeliveredFinal) {
-        _pendingInterim = null;
-      } else {
-        _flushPendingInterim();
+      if (_openDrain == drain) {
+        if (_drainDeliveredFinal) {
+          _pendingInterim = null;
+        } else {
+          _flushPendingInterim();
+        }
+        closeDrain(drain);
       }
-      closeDrain();
     }
   }
 
-  /// Closes the drain; later results are dropped again.
-  void closeDrain() {
+  /// Closes the drain [drain]; later results are dropped again. Does nothing
+  /// when that drain is no longer the open one.
+  void closeDrain(int drain) {
+    if (_openDrain != drain) return;
     _draining = false;
     _drainDone = null;
+    _openDrain = 0;
     _pendingInterim = null;
   }
+
+  /// Ends the open drain without flushing: a waiting [awaitDrain] returns at
+  /// once and its text is dropped (Amendment 06 revision 3).
+  void _abandonDrain() {
+    if (!_draining) return;
+    _endDrain();
+    _draining = false;
+    _drainDone = null;
+    _openDrain = 0;
+    _pendingInterim = null;
+  }
+
+  int _drainCount = 0;
+
+  /// The number of the open drain, or 0 when none is open.
+  int _openDrain = 0;
 
   /// Opens a drain when a session is live (not while a start or a restart is
   /// still in flight, and not after the session already ended with a restart
   /// pending: neither has anything to finish). Called before the intent
-  /// changes; the pending interim is kept for the flush.
-  bool _beginDrain() {
+  /// changes; the pending interim is kept for the flush. Returns the new
+  /// drain's number, or null when none was opened.
+  int? _beginDrain() {
     final live =
         _intent == _Intent.listening &&
         !_starting &&
         !_restartScheduled &&
         !_draining;
-    if (!live) return false;
+    if (!live) return null;
     _draining = true;
     _drainDeliveredFinal = false;
     _drainDone = Completer<void>();
-    return true;
+    return _openDrain = ++_drainCount;
   }
 
   /// A plugin status arrived. Only `done` drives a restart (BR-U10-15).
@@ -763,7 +823,7 @@ class _SessionLoop {
     if (pending == null) return;
     _pendingInterim = null;
     _cancelPauseTimer();
-    _committed.addAll(_wordsOf(pending.text).map(_normalize));
+    _committed.addAll(_tokensOf(pending.text).map((t) => t.token));
     deliver(
       SttResult(
         text: pending.text,
@@ -837,9 +897,9 @@ class _SessionLoop {
     }
   }
 
-  /// Records the pause. Returns whether a drain was opened, which the caller
-  /// must wait on and close.
-  bool pauseRequested() {
+  /// Records the pause. Returns the number of the drain it opened, if any,
+  /// which the caller must wait on and close.
+  int? pauseRequested() {
     final drain = _beginDrain();
     _epoch++;
     _intent = _Intent.paused;
@@ -848,16 +908,16 @@ class _SessionLoop {
     return drain;
   }
 
-  /// Records the stop. Returns whether a drain was opened, which the caller
-  /// must wait on and close.
-  bool stopRequested() {
+  /// Records the stop. Returns the number of the drain it opened, if any,
+  /// which the caller must wait on and close.
+  int? stopRequested() {
     final drain = _beginDrain();
     _epoch++;
     _intent = _Intent.stopped;
     abandonStarting();
     _cancelTimer();
     // Without a drain nothing will flush the interim, so it is dropped.
-    if (!drain) _pendingInterim = null;
+    if (drain == null) _pendingInterim = null;
     return drain;
   }
 

@@ -337,6 +337,101 @@ void main() {
       });
     });
 
+    // Amendment 06 revision 3: abandoned work never touches a new session. A
+    // stop or pause stuck in the plugin keeps its drain open; a new session
+    // must not run inside it.
+    for (final isPause in [false, true]) {
+      final name = isPause ? 'pause' : 'stop';
+
+      Future<void> interrupt(PlatformSttEngine engine) =>
+          isPause ? engine.pause() : engine.stopListening();
+
+      Future<void> startAgain(PlatformSttEngine engine, List<SttResult> into) =>
+          isPause
+          ? engine.resume()
+          : engine.startListening(localeId: 'en-US', onResult: into.add);
+
+      test('a new session started while a hung $name() is pending is not '
+          'held in its drain (Amendment 06 revision 3)', () {
+        fakeAsync((async) {
+          final rig = live(async);
+          addTearDown(rig.engine.dispose);
+          final stalled = Completer<void>();
+          rig.stt.stopGate = stalled.future;
+          // The replacement listen() is held, then released while the old
+          // stop is still stuck.
+          final held = Completer<void>();
+
+          unawaited(interrupt(rig.engine));
+          async.flushMicrotasks();
+          rig.stt.listenGate = held.future;
+          unawaited(startAgain(rig.engine, rig.results));
+          async.flushMicrotasks();
+          expect(rig.stt.listenCalls, hasLength(2));
+          held.complete();
+          async.flushMicrotasks();
+          final cancelsBefore = rig.stt.cancelCalls;
+
+          rig.stt.emitResult('hello', isFinal: false);
+          async.flushMicrotasks();
+          expect(
+            rig.results.map((r) => (r.text, r.isFinal)),
+            [('hello', false)],
+            reason: 'the new session shows its interim',
+          );
+
+          stalled.complete();
+          async.flushMicrotasks();
+          expect(
+            rig.results.map((r) => (r.text, r.isFinal)),
+            [('hello', false)],
+            reason: 'the old stop delivers nothing',
+          );
+          expect(rig.stt.cancelCalls, cancelsBefore);
+
+          // The new session's pending interim survived the old stop.
+          async.elapse(defaultSttListeningLimits.iosSegmentPause);
+          expect(
+            rig.results.map((r) => (r.text, r.isFinal)),
+            [('hello', false), ('hello', true)],
+          );
+        });
+      });
+
+      test('the status done of a new session renews it while a hung $name() '
+          'is pending (Amendment 06 revision 3)', () {
+        fakeAsync((async) {
+          final rig = live(async);
+          addTearDown(rig.engine.dispose);
+          final stalled = Completer<void>();
+          rig.stt.stopGate = stalled.future;
+
+          unawaited(interrupt(rig.engine));
+          async.flushMicrotasks();
+          unawaited(startAgain(rig.engine, rig.results));
+          async.flushMicrotasks();
+          expect(rig.stt.listenCalls, hasLength(2));
+
+          rig.stt
+            ..emitResult('hello', isFinal: false)
+            ..emitStatus('done');
+          async.elapse(const Duration(seconds: 1));
+
+          expect(rig.stt.listenCalls, hasLength(3), reason: 'renewed');
+          expect(
+            rig.results.map((r) => (r.text, r.isFinal)),
+            [('hello', false), ('hello', true)],
+          );
+          final cancelsBefore = rig.stt.cancelCalls;
+
+          stalled.complete();
+          async.flushMicrotasks();
+          expect(rig.results, hasLength(2));
+          expect(rig.stt.cancelCalls, cancelsBefore);
+        });
+      });
+    }
+
     test('a stop with no live session does not wait', () {
       fakeAsync((async) {
         final stt = FakeSpeechToText();
