@@ -1,4 +1,6 @@
-import 'package:flutter/foundation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'stt_error_source.freezed.dart';
 
 /// Why an engine reports a lasting error after `startListening` succeeded.
 ///
@@ -24,24 +26,15 @@ enum SttEngineErrorKind {
 }
 
 /// A lasting engine error. By construction it carries **no free text**, so it
-/// cannot carry a transcript (SECURITY-03).
-@immutable
-final class SttEngineError {
+/// cannot carry a transcript (SECURITY-03). Its one field is the kind, so
+/// its equality and textual form are the kind alone.
+@freezed
+abstract class SttEngineError with _$SttEngineError {
   /// Creates an [SttEngineError].
-  const SttEngineError(this.kind);
-
-  /// What went wrong.
-  final SttEngineErrorKind kind;
-
-  @override
-  bool operator ==(Object other) =>
-      other is SttEngineError && other.kind == kind;
-
-  @override
-  int get hashCode => kind.hashCode;
-
-  @override
-  String toString() => 'SttEngineError(${kind.name})';
+  const factory SttEngineError(
+    /// What went wrong.
+    SttEngineErrorKind kind,
+  ) = _SttEngineError;
 }
 
 /// An engine that can report lasting errors after `startListening` succeeded.

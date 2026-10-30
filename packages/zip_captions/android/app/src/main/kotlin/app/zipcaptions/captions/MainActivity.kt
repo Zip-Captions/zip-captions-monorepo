@@ -589,15 +589,19 @@ class MainActivity : FlutterActivity() {
         Log.w(recogniserTag, "$operation failed: ${error.javaClass.simpleName}")
     }
 
+    // Both sinks are cleared: a model download can outlive the engine, and
+    // its listener must not reach the old engine's sink.
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
         destroyRecogniser()
         eventSink = null
+        languagePackSink = null
         super.cleanUpFlutterEngine(flutterEngine)
     }
 
     override fun onDestroy() {
         destroyRecogniser()
         eventSink = null
+        languagePackSink = null
         super.onDestroy()
     }
 

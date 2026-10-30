@@ -1,4 +1,6 @@
-import 'package:flutter/foundation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'language_pack_service.freezed.dart';
 
 /// Whether the phone has the on-device speech model for a language
 /// (Amendment 04 section 3).
@@ -20,29 +22,18 @@ enum LanguagePackStatus {
 }
 
 /// The answer to "what is the state of this language's model?".
-@immutable
-class LanguagePackInfo {
+@freezed
+abstract class LanguagePackInfo with _$LanguagePackInfo {
   /// Creates an answer.
-  const LanguagePackInfo({required this.status, required this.displayName});
+  const factory LanguagePackInfo({
+    /// The model's state.
+    required LanguagePackStatus status,
 
-  /// The model's state.
-  final LanguagePackStatus status;
-
-  /// The language's name in the app's language, from the platform (Flutter
-  /// has no locale display names). The locale tag when the platform gave none.
-  final String displayName;
-
-  @override
-  bool operator ==(Object other) =>
-      other is LanguagePackInfo &&
-      other.status == status &&
-      other.displayName == displayName;
-
-  @override
-  int get hashCode => Object.hash(status, displayName);
-
-  @override
-  String toString() => 'LanguagePackInfo(${status.name})';
+    /// The language's name in the app's language, from the platform (Flutter
+    /// has no locale display names). The locale tag when the platform gave
+    /// none.
+    required String displayName,
+  }) = _LanguagePackInfo;
 }
 
 /// One thing the platform reported about a language-pack download.

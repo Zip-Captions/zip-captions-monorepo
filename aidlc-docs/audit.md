@@ -3708,3 +3708,35 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 - **Gates:** `dart analyze --fatal-infos` clean ×3; `zip_core` 1233 passed, 4 skipped; `zip_captions` 426; `zip_broadcast` 195.
 
 **Context**: Worktree `.claude/worktrees/unit10-fixes`. Committed and pushed to PR #44.
+
+---
+
+## CONSTRUCTION - Phase 2 Unit 10: CodeRabbit's merge items; second review pass (Step 29g)
+**Timestamp**: 2026-10-30
+**User Input** (James Petersen):
+- "check the PR again, looks like coderabbit requested changes"
+- "code rabbit left us a response, check the PR again, then let's figure out what we need to do to get the pr approved"
+- "yes, start step 1 in a worktree, and if it fits within the design and rules we've decided on, convert to freezed, otherwise leave it as is"
+
+**AI Response** (Opus):
+- **Merge state:**
+  - The `develop` ruleset needs 0 approvals.
+  - The merge is blocked only by CodeRabbit's round-1 "changes requested" review.
+  - `request_changes_workflow: true` is CodeRabbit's Automatic Approvals.
+  - CodeRabbit's incremental review of `44dfb31` and `c38480e` was skipped, so it has not reviewed Amendment 06.
+- **CodeRabbit's three merge items:**
+  - The device QA.
+  - The Step 31 summary and the document links. Both documents are committed; `.coderabbit.yaml` excludes `aidlc-docs/**`.
+  - The PR template's Security Review section.
+- **Agreed order:**
+  1. The fixes and the PR description now.
+  2. The device QA and Step 31 with James Petersen.
+  3. `@coderabbitai full review`, then `@coderabbitai approve`.
+- **Built (plan Step 29g):**
+  - **#17 and #18 freezed conversion:** within the rules (`docs/04-technical-specification.md` section 2) and Amendment 01's kind-only design.
+  - **`MainActivity`:** both teardown paths clear the language-pack sink.
+  - **Amendment 06 section 8** updated.
+  - **PR description** rewritten to the template.
+- **Gates:** `dart analyze --fatal-infos` clean ×3; `zip_core` 1233 passed, 4 skipped; `zip_captions` 426; `zip_broadcast` 195.
+
+**Context**: Worktree `.claude/worktrees/unit10-fixes` (one-off, because the main checkout holds Unit 9).

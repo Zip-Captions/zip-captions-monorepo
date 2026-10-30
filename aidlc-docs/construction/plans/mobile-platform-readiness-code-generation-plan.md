@@ -148,6 +148,18 @@ Inputs: `functional-design/amendment-05-stop-after-silence.md` (BR-U10-51 to 54,
     - Restored 110 files that a package-wide `dart format` had changed only in formatting.
   - **Gates, run by Opus:** `dart analyze --fatal-infos` clean ×3; `zip_core` 1233 passed, 4 skipped; `zip_captions` 426; `zip_broadcast` 195.
 
+- [x] **Step 29g. Second CodeRabbit pass on PR #44 (2026-10-30).** Built by Opus.
+  - **#17 and #18 accepted:** `LanguagePackInfo` and `SttEngineError` are now freezed.
+    - The decline had cited AGENTS.md ("freezed for state classes"). `docs/04-technical-specification.md` section 2 is wider: freezed for data/value classes and error objects.
+    - Amendment 01's kind-only `SttEngineError` is unchanged.
+    - The `toString` test changed first (red), then the conversion (green).
+    - Two riverpod hash-only `.g.dart` changes from `build_runner` were restored.
+  - **Round-1 additional comment:** `MainActivity` clears `languagePackSink` in `cleanUpFlutterEngine` and `onDestroy`.
+  - **The other additional comment (iOS `statusString`)** is assumption A-1, decided by the iOS QA rerun.
+  - **PR description** rewritten to the PR template. Security Review links to the recorded approvals.
+  - **Step 31 to-do:** the summary's line "No `*.freezed.dart` changed" is now wrong; two were added.
+  - **Gates:** `dart analyze --fatal-infos` clean ×3; `zip_core` 1233 passed, 4 skipped; `zip_captions` 426; `zip_broadcast` 195.
+
 - [ ] **Step 30. Emulator QA pass (recorded).** *Rerun rules added 2026-10-26 (James Petersen): a captions run counts only with recognised text on screen, `segmentCount > 0`, the expected locale, and no SnackBar or toast. Speech is played only after the recogniser reports it is ready. Android sounds are checked against BR-U10-43.* Per NFR section 8, with the **committed** change (no throwaway edits) and permissions **not** pre-granted: Android `Pixel_9_Pro_API_36` (grant and deny paths; the failure panel with no spinner; the explainer is absent; `dumpsys window` keep-screen-on flag during captioning and after Stop) and the iPhone 17 Simulator (the explainer, then the microphone and speech prompts; `simctl privacy … reset all` and a second run; the failure panel, including the on-device-refusal path if the Simulator does not support on-device recognition). **Expected Android path:** the `Pixel_9_Pro_API_36` image has no en-US on-device pack (NFR-U10-04), so the device-level check passes and listening then fails with `error_language_unavailable`; record that as the **expected refusal path** (the lasting error and the failure panel), not a defect, unless the pack is installed first. **Optional sub-step, only if James Petersen wants captions on the emulator:** install the en-US on-device pack and repeat. The Simulator taps are manual by James Petersen. Evidence (screenshots, `adb` and `simctl` output, `git status`) goes in `evidence/code-generation-qa.md`. **Nothing here is claimed as physical-device behaviour.**
 - [ ] **Step 31. Code summary and records.** Write `aidlc-docs/construction/mobile-platform-readiness/code/unit10-summary.md`: modified versus created files, tests by property (TP-1 to TP-20, TP-2b, TP-2c, and which existing tests were reused or changed), the self-check tables in section 5 filled in, deviations, known gaps (the Android on-device fallback below API 31 now refuses; desktop and `zip_broadcast` untouched; the upstream notes), and the items for the later physical-device gate. Update `aidlc-state.md` and `audit.md` with normal entries.
 - [ ] **Step 32. Hand-off to the physical-device gate.** List, in the summary, the device-pass checks that remain (NFR section 8 item 3 and the Amendment 01 restart observations) for James Petersen. Do not mark G1 closed.

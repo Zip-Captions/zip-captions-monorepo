@@ -94,9 +94,10 @@ The items in this section come from the CodeRabbit review of PR #44 (findings #1
 | TP-41 | An engine pause that throws an `Error` leaves the session Recording with the inactivity timer armed. After a stop and a new start, a pause on the old session cannot arm a timer for the new one. |
 | TP-42 | Widget tests, fake time: a status reply that never comes shows failed with Try again at 5 s; a stall after progress shows failed at the limit; Android `downloading` after a tap shows scheduled; iOS `downloading` after a tap does not. |
 
-**Declined from the same review**, each with a reply on its thread:
+**Declined from the same review**, with a reply on its thread:
 - **#14** (an unbounded write queue): BR-U10-58 stops it from blocking Stop, and the queue holds text only. Recorded in the Backlog.
-- **#17 and #18** (freezed for `LanguagePackInfo` and `SttEngineError`): AGENTS.md calls for freezed on *state* classes, and `SttEngineError`'s shape was approved in Amendment 01.
+
+**#17 and #18** (freezed for `LanguagePackInfo` and `SttEngineError`): first declined, then accepted on 2026-10-30. The decline cited AGENTS.md ("freezed for state classes"). The project rule is wider: `docs/04-technical-specification.md` section 2 says "Use freezed for immutable data/value classes (settings, locale models, error objects)". Both classes are now freezed. What Amendment 01 approved is unchanged: `SttEngineError` holds only its kind, has value equality on the kind, and has no free-text field (SECURITY-03, TP-12). Its textual form is now freezed's `SttEngineError(kind: SttEngineErrorKind.<name>)`. `LanguagePackInfo` keeps its two fields and its equality.
 
 **Fixed without a design change:**
 - #5: the Android bridge `onError` gets the same live-session guard as `_onEvent`.
@@ -105,3 +106,4 @@ The items in this section come from the CodeRabbit review of PR #44 (findings #1
 - The `// ignore` removals in tests.
 - The split of the two Unit 10 test helpers (one public class per file).
 - The test-coverage nitpicks.
+- An "additional comment" (2026-10-30): the Android activity's two teardown paths now also clear the language-pack event sink, so a model download that outlives the engine cannot reach the old engine's sink.

@@ -32,7 +32,10 @@ void main() {
       expect(error.kind, SttEngineErrorKind.restartCapReached);
       // The textual form is the type and the kind name, nothing else, so it
       // can never carry a transcript (SECURITY-03).
-      expect(error.toString(), 'SttEngineError(restartCapReached)');
+      expect(
+        error.toString(),
+        'SttEngineError(kind: SttEngineErrorKind.restartCapReached)',
+      );
     });
 
     test('has value equality on the kind', () {
