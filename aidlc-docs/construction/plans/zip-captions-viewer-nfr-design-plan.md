@@ -164,7 +164,7 @@ C) Other (write in)
 ### Design Q3: How is `join()`/`leave()` made idempotent and safe against re-entrancy given `join()` awaits three times?
 
 Rule 1 requires "`join()` for the current broadcast is a no-op" and "`leave()` twice
-equals once", and FD F-7.2's flow awaits `resolve()`, `iceServersFor()` and
+equals once", and FD F-7.2's flow awaits `resolve()`, `iceServersForBroadcast()` and
 `connect()`. Between those awaits, a second `join()` or a `leave()` can be
 interleaved (the back gesture during `Resolving`, "Try again" double-tapped). Unit 6
 solved the equivalent with synchronous state assignment before the first await; Unit

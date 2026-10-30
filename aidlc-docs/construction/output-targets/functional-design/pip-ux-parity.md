@@ -51,7 +51,7 @@ Each row names the V1 user-facing behaviour, the V2 requirement, and the identif
 | UX-PIP-07 | Controls available while popped out | Orientation toggle, pane swap, translation target select, download button and progress all travel into the floating window | All of these must be operable from the pop-out window. The main window's sidebar is not reachable from it. |
 | UX-PIP-08 | Drawer behaviour | Opening PiP closes the settings drawer | Opening the pop-out closes the drawer. |
 | UX-PIP-09 | Theme | Theme applied on open and kept live | Applied on open and kept live while open. |
-| UX-PIP-10 | Window defaults | 640x320, user-resizable | Same default size, resizable, with a sensible minimum size. |
+| UX-PIP-10 | Window defaults | 640x320, user-resizable | 75% of the active display's work-area width, two rendered caption lines plus the toggle row tall, bottom-anchored, minimum 320x96, decorated and resizable. Amended by the project owner 2026-10-21 (Q9); the 640x320 values were v1's and are superseded. |
 | UX-PIP-11 | Always on top | Inherent to the browser PiP window | The pop-out window stays above other application windows until closed. This is the defining property of the feature. |
 
 ---
@@ -180,7 +180,14 @@ The pop-out unit is complete on this section when all of the following are demon
 10. Orientation toggle, pane swap, translation target select, and download progress all function inside the pop-out window.
 11. Opening the pop-out closes the drawer.
 12. Theme matches on open and updates live.
-13. The window opens at 640x320 and is resizable.
+13. The window opens at 75% of the active display's work-area width, two
+    rendered caption lines plus the toggle row tall, anchored to the bottom of
+    the work area, at least 320x96, decorated, and resizable.
+
+The 640x320 default recorded above was v1's. The 2026-10-21 owner decision
+supersedes it so the pop-out matches the app's own caption surface. This table
+records v1 parity, and this row is a recorded, owner-approved divergence from
+it.
 14. Only one pop-out can exist; a double toggle does not create a second.
 15. The window stays above other application windows until closed.
 16. Closing by the OS close button leaves the main window in a coherent state.

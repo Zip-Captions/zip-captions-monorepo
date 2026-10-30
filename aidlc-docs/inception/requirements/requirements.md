@@ -210,7 +210,7 @@ Requirements are derived from:
 
 **NFR-04.1** — Conventional Commits format for all commits. Scope with package name: `feat(zip_core): ...`, `chore(ci): ...`.
 
-**NFR-04.2** — All work developed in git worktrees (one per unit), one PR per worktree targeting `develop`.
+**NFR-04.2** — All work developed on one branch at a time in the main checkout, one PR per branch targeting `develop`. Worktrees are not used: each duplicates the working tree, the local test stack and the Supabase volumes, which share state. Superseded the original "one worktree per unit" wording.
 
 ---
 

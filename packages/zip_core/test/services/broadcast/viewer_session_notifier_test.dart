@@ -236,7 +236,6 @@ void main() {
       },
     );
 
-
     test('a different id leaves first, then resolves', () async {
       await joinLive();
       resolver.defaultResolution = const BroadcastResolution.offline();
@@ -732,10 +731,19 @@ void main() {
     });
   });
 
-  test('AC: iceServersFor receives the resolved session id', () async {
-    await joinLive();
-    expect(iceProvider.sessionIdsRequested, equals(['session-1']));
-  });
+  test(
+    'AC: iceServersForBroadcast receives the resolved broadcast id, and the '
+    'authenticated session-scoped call is never made (Unit 9, B2: the viewer '
+    'is anonymous)',
+    () async {
+      await joinLive();
+      expect(
+        iceProvider.broadcastIdsRequested,
+        equals([_validInput.toUpperCase()]),
+      );
+      expect(iceProvider.sessionIdsRequested, isEmpty);
+    },
+  );
 }
 
 /// An `SttResult` carrying [text], for the caption-path rows.

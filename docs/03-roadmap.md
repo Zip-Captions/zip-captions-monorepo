@@ -93,10 +93,10 @@ None — this is the starting point.
 - Establish agent autonomy boundaries and human gate points (inception phase approval, PR review)
 
 **Task coordination:**
-- Git worktrees as the unit-of-work isolation mechanism — one worktree per feature, one PR per worktree
+- One branch at a time as the unit-of-work isolation mechanism — one branch per feature, one PR per branch, worked in the main checkout. Worktrees were the original plan and were dropped during Phase 2: each duplicates the working tree, the local test stack and the Supabase volumes, which share state
 - AI-DLC inception as the single source of feature requirements (derived from roadmap and user personas)
 - `Using AI-DLC, determine the next feature to build` as the standard entry point for discovering work
-- Document the workflow for multi-developer coordination: each developer or agent runs inception independently, parallel worktrees avoid conflicts
+- Document the workflow for multi-developer coordination: each developer or agent runs inception independently; parallel work needs separate clones with separate stacks, not worktrees
 
 ### Research Spikes (complete during or before Phase 0)
 - **Spike 0.1:** Confirm Flutter desktop builds work on macOS, Windows, and Linux for both app shells. Identify and document any platform-specific setup requirements.

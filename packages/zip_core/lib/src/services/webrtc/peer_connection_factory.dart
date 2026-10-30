@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:zip_core/src/models/ice_server.dart';
+import 'package:zip_core/src/services/webrtc/ice_transport_policy.dart';
 import 'package:zip_core/src/services/webrtc/peer_connection_handle.dart';
+import 'package:zip_core/src/services/webrtc/selected_candidate_route.dart';
 
 /// Creates a [PeerConnectionHandle] configured with a given ICE server list
 /// (fixed shape, Application Design).
@@ -32,6 +34,10 @@ class WebRtcPeerConnectionFactory implements PeerConnectionFactory {
             if (server.credential != null) 'credential': server.credential,
           },
       ],
+      // Debug-only relay forcing for EC3b (Unit 9, B3/B4). `null` — always,
+      // in release builds — leaves the plugin's own default in place.
+      if (iceTransportPolicyOverride != null)
+        'iceTransportPolicy': iceTransportPolicyOverride,
     };
     final connection = await createPeerConnection(configuration);
     return _WebRtcPeerConnectionHandle(connection);
@@ -49,8 +55,7 @@ class _WebRtcPeerConnectionHandle implements PeerConnectionHandle {
   final _iceStateController =
       StreamController<RTCIceConnectionState>.broadcast();
   final _dataChannelController = StreamController<RTCDataChannel>.broadcast();
-  final _iceCandidateController =
-      StreamController<RTCIceCandidate>.broadcast();
+  final _iceCandidateController = StreamController<RTCIceCandidate>.broadcast();
 
   @override
   Future<RTCDataChannel> createDataChannel(String label) =>
@@ -83,6 +88,11 @@ class _WebRtcPeerConnectionHandle implements PeerConnectionHandle {
 
   @override
   Stream<RTCIceCandidate> get onIceCandidate => _iceCandidateController.stream;
+
+  @override
+  Future<CandidatePairRoute> selectedCandidateRoute() async {
+    return classifyStatsReports(await _connection.getStats());
+  }
 
   @override
   Future<void> close() async {

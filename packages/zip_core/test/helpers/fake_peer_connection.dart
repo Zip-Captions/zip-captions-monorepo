@@ -127,8 +127,7 @@ class FakePeerConnectionHandle implements PeerConnectionHandle {
 
   final _iceController = StreamController<RTCIceConnectionState>.broadcast();
   final _dataChannelController = StreamController<RTCDataChannel>.broadcast();
-  final _iceCandidateController =
-      StreamController<RTCIceCandidate>.broadcast();
+  final _iceCandidateController = StreamController<RTCIceCandidate>.broadcast();
 
   @override
   Future<RTCDataChannel> createDataChannel(String label) async {
@@ -183,6 +182,28 @@ class FakePeerConnectionHandle implements PeerConnectionHandle {
   /// Lets a test simulate an ICE state transition directly — there is no
   /// real ICE negotiation to derive this from.
   void emitIceState(RTCIceConnectionState state) => _iceController.add(state);
+
+  /// The route [selectedCandidateRoute] reports. Defaults to
+  /// [CandidatePairRoute.direct], since a fake pair is "already connected by
+  /// construction" with no relay involved unless a test says otherwise.
+  CandidatePairRoute route = CandidatePairRoute.direct;
+
+  /// When set, [selectedCandidateRoute] throws it instead of returning
+  /// [route] — for the "stats query failed" path.
+  Object? routeError;
+
+  /// How many times [selectedCandidateRoute] was called.
+  int routeQueryCount = 0;
+
+  @override
+  Future<CandidatePairRoute> selectedCandidateRoute() async {
+    routeQueryCount++;
+    final error = routeError;
+    // A test may supply any object here, to prove the transport survives
+    // arbitrary failures and not just well-typed ones.
+    if (error != null) Error.throwWithStackTrace(error, StackTrace.current);
+    return route;
+  }
 
   @override
   Future<void> close() async {

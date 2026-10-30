@@ -109,23 +109,30 @@ CI runs `melos bootstrap` which invokes `dart pub get` for each package. Lock fi
 
 ---
 
-## Melos Test Scripts
+## Test Commands
 
-Defined under the `melos:` key in the root `pubspec.yaml` (Melos 7.x convention):
+CI runs these two commands, in this order, from the repository root:
 
-```yaml
-test:
-  run: melos exec --fail-fast -- flutter test
-  description: Run all tests across packages that have a test directory
-  packageFilters:
-    dirExists: test
-
-test:coverage:
-  run: melos exec --fail-fast -- flutter test --coverage
-  description: Run all tests with coverage collection (used by CI)
+```bash
+melos run analyze
+melos run test:coverage --no-select
 ```
 
-CI uses `melos run test:coverage --no-select` (the `--no-select` flag prevents interactive package selection prompts).
+Both scripts are defined in `melos.yaml`; that file is the single source of
+truth for what they do, and this document deliberately does not reproduce its
+contents. An earlier revision did, and drifted: it showed a `test:coverage`
+script that had never actually been defined, so CI was relying on `melos run`
+failing to find the script and falling back to executing the name as a raw
+command through `melos exec`. That fallback worked, but it is undocumented
+behaviour rather than a contract. The script now exists and the workflow is
+unchanged.
+
+Both scripts filter on `dirExists: test`, so a package without a `test/`
+directory is skipped rather than failing the run. Any new test script must keep
+its filter identical to `test`'s, or the two will disagree about what the suite
+is.
+
+The `--no-select` flag prevents interactive package selection prompts.
 
 ---
 

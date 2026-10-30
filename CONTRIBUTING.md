@@ -11,60 +11,69 @@
 Every piece of work begins with an AI-DLC inception session. Requirements come directly from the `docs/` directory — there is no separate story authoring step.
 
 ```
-Intent / Roadmap Item --> AI-DLC Inception --> Approved Design --> Worktree + Construction --> PR --> Merged
+Intent / Roadmap Item --> AI-DLC Inception --> Approved Design --> Branch + Construction --> PR --> Merged
 ```
 
 | Transition | Who | What happens |
 |---|---|---|
 | Intent --> Inception | Human or Agent | State intent (`Using AI-DLC, ...`) or ask agent to determine next feature; agent guides through requirements and design — human approves each phase gate |
 | Inception --> Approved Design | **Human only** | Human approves the final inception stage (workflow plan, application design, units) |
-| Approved Design --> Worktree | Agent | Agent creates an isolated git worktree and feature branch for the unit |
-| Worktree --> Tests Written | Agent | Agent runs AI-DLC Construction Phase, gets human approval on code generation plan, writes failing tests, commits |
+| Approved Design --> Branch | Agent | Agent creates a feature branch for the unit in the main checkout |
+| Branch --> Tests Written | Agent | Agent runs AI-DLC Construction Phase, gets human approval on code generation plan, writes failing tests, commits |
 | Tests Written --> Implemented | Agent (autonomous) | Agent implements until all tests pass |
-| Implemented --> PR Open | Agent | Agent opens PR from the worktree branch targeting `develop` |
-| PR Open --> Merged | **Human only** | Human reviews and merges; worktree cleaned up after merge |
+| Implemented --> PR Open | Agent | Agent opens the PR from the feature branch targeting `develop` |
+| PR Open --> Merged | **Human only** | Human reviews and merges; branch deleted after merge |
 
 **AI-DLC Inception is a collaborative phase** — the agent proposes, the human approves at each stage gate. **Construction is largely autonomous** once the code generation plan is approved, subject to the stop conditions in Section 5.
 
 ---
 
-## 2. Git Worktrees
+## 2. Branching
 
-Each unit of work is developed in an isolated git worktree. This keeps the main workspace clean and allows parallel work on multiple units without interference.
+One unit of work, one branch, worked in the main checkout.
 
-### Creating a Worktree
+**Do not use git worktrees.** A worktree duplicates the working tree, the local
+test stack and the Docker Supabase volumes, all of which share state — so a
+second copy makes it ambiguous which one the running stack and its data belong
+to. It also splits the one thing that most needs to be singular: the set of
+uncommitted changes you are reasoning about.
 
-After AI-DLC inception is approved, create a worktree from the monorepo root:
+One branch at a time follows from the same reasoning. If a second unit must
+start before the first PR merges, that is a signal to finish the first unit
+rather than to parallelise.
+
+### Creating a Branch
+
+After AI-DLC inception is approved, branch from an up-to-date `develop`:
 
 ```bash
-git worktree add ../zip-captions-<feature-name> -b feature/<feature-name>
+git checkout develop && git pull
+git checkout -b feature/<feature-name>
 ```
 
-This creates a sibling directory containing a full, independent working copy on a fresh branch.
-
-### Working in a Worktree
+### Working on the Branch
 
 ```bash
-cd ../zip-captions-<feature-name>
-melos bootstrap               # Install dependencies in the worktree
+melos bootstrap               # Install dependencies
 # Run the AI-DLC construction phase here
 melos run test                # Tests, analysis, and generation all work normally
 melos run analyze
 ```
 
-### Completing a Worktree
+### Completing the Branch
 
 Open the PR from the feature branch targeting `develop`, then after it merges:
 
 ```bash
-git worktree remove ../zip-captions-<feature-name>
+git checkout develop
+git pull
 git branch -d feature/<feature-name>
 ```
 
-### Listing Active Worktrees
+### Listing Branches
 
 ```bash
-git worktree list
+git branch
 ```
 
 ### Naming Convention
@@ -75,7 +84,7 @@ git worktree list
 | Spike | `spike/<description>` |
 | Bug fix | `fix/<description>` |
 
-Worktree directory: `../zip-captions-<description>` (sibling to the monorepo root)
+One branch at a time, in the main checkout. No worktrees.
 
 ### Dependencies Between Units
 

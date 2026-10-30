@@ -70,7 +70,7 @@ active is a no-op (Rule 1).
    watch, Q5): state → `ConnectingState`; build
    `ViewerTransportContext(sessionId, broadcastId, signalingService,
    iceServers: await ref.read(iceServerProviderProvider)
-   .iceServersFor(sessionId))`; `await transport.connect(context)`.
+   .iceServersForBroadcast(broadcastId))`; `await transport.connect(context)`.
    `connect()` returns after the handshake is *dispatched*; the outcome
    arrives on the `status` stream (step 6). A thrown exception from
    `connect()` itself (programming error, missing native stack, or a failed
@@ -80,8 +80,9 @@ active is a no-op (Rule 1).
    (NFR-4.1: never crash). `ConnectFailure.Timeout` is **not** used for a
    raw throw — it stays reserved for the transport's own reported outcome.
    This is a session-layer mapping, not a change to the shipped transport.
-   - Failure of `iceServersFor()` (TURN credential fetch, Unit 4 NFR Design:
-     failures propagate uncaught) is caught here and maps to
+   - Failure of `iceServersForBroadcast()` (broadcast-scoped TURN credential
+     fetch, Unit 9 B2; like its predecessor it propagates uncaught) is caught
+     here and maps to
      `CannotConnectState(ResolutionFailed)`'s sibling: **it maps to
      `CannotConnectState(IceFailed)`** — "couldn't reach this broadcast" is
      the user-understandable framing for a missing ICE configuration

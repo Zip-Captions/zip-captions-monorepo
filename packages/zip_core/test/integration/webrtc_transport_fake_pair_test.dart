@@ -53,6 +53,7 @@ class _TrackingPeerConnectionFactory implements PeerConnectionFactory {
   _TrackingPeerConnectionFactory(this._inner);
   final FakePeerConnectionFactory _inner;
   final handles = <FakePeerConnectionHandle>[];
+  final iceServersSeen = <List<IceServer>>[];
 
   /// Called with every handle as it's created — lets a test observe each
   /// one (e.g. its `peer`'s `onDataChannel`) without having to predict in
@@ -62,6 +63,7 @@ class _TrackingPeerConnectionFactory implements PeerConnectionFactory {
 
   @override
   Future<PeerConnectionHandle> create(List<IceServer> iceServers) async {
+    iceServersSeen.add(List<IceServer>.of(iceServers));
     final handle = await _inner.create(iceServers) as FakePeerConnectionHandle;
     handles.add(handle);
     onCreated?.call(handle);
@@ -155,6 +157,10 @@ class _HoldableHandle implements PeerConnectionHandle {
 
   @override
   Stream<RTCIceCandidate> get onIceCandidate => _inner.onIceCandidate;
+
+  @override
+  Future<CandidatePairRoute> selectedCandidateRoute() =>
+      _inner.selectedCandidateRoute();
 
   @override
   Future<void> close() => _inner.close();

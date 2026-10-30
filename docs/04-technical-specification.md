@@ -358,6 +358,20 @@ These are hard rules. Violations are blocking — no exceptions, no workarounds.
 - Migrations in `packages/zip_supabase/migrations/`, numbered sequentially
 - Migrations are forward-only — no editing existing migrations, create new ones to alter
 
+### Function Grants
+
+This image's `public` schema carries a default ACL granting `EXECUTE` to `anon`,
+`authenticated`, and `service_role` on every newly created function, and it
+re-applies on `CREATE OR REPLACE`. A `REVOKE` therefore does not survive a
+redeploy.
+
+Authorization for any `SECURITY DEFINER` function must be enforced in the
+function body — existence checks, `auth.uid()` guards, and
+`RAISE ... USING ERRCODE = '42501'` — and the function's grant must be
+documented and reviewed as defence in depth, never treated as the control.
+Neither `get_turn_credentials()` nor `get_broadcast_turn_credentials()` relies
+on its grant; both guard in the body.
+
 ### Realtime
 - Channel naming: `broadcast:{session_id}`, `status:{broadcast_id}`, `signaling:{session_id}`
 - Payload format: JSON with `type` field for message discrimination
