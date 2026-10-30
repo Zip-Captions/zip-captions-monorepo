@@ -180,8 +180,7 @@ void main() {
       expect(strings.languagePackIosInstructions('X'), 'ios X / X');
     });
 
-    test('AC: a language name that looks like a placeholder stays literal',
-        () {
+    test('AC: a language name that looks like a placeholder stays literal', () {
       const strings = ZcStrings.fromMap({
         'languagePackDownloadingPercent': 'dling {language} {percent}',
       });
@@ -336,6 +335,81 @@ void main() {
       expect(
         real.inactivityStopNoticeFor(1),
         'Captioning stopped after 1 minute without speech.',
+      );
+    });
+
+    test('TP-44: the combined stop notices fill their templates, with the '
+        'singular "1 minute" (Amendment 07, BR-U10-66)', () {
+      const strings = ZcStrings.fromMap({
+        'inactivityStopNotice': 'quiet {minutes} minutes.',
+        'transcriptSaveFailedNotice': 'save-failed.',
+        'inactivityStopNoTranscriptNotice': 'quiet-nts {minutes} minutes.',
+        'inactivityStopSaveFailedNotice':
+            '{inactivityNotice} + {saveFailedNotice}',
+        'stopErrorWithSaveOutcomeNotice': '{errorTitle} + {saveOutcomeNotice}',
+      });
+      expect(
+        strings.inactivityStopNoTranscriptNoticeFor(5),
+        'quiet-nts 5 minutes.',
+      );
+      expect(
+        strings.inactivityStopNoTranscriptNoticeFor(1),
+        'quiet-nts 1 minute.',
+      );
+      expect(
+        strings.inactivityStopSaveFailedNoticeFor(5),
+        'quiet 5 minutes. + save-failed.',
+      );
+      expect(
+        strings.inactivityStopSaveFailedNoticeFor(1),
+        'quiet 1 minute. + save-failed.',
+      );
+      expect(
+        strings.stopErrorWithSaveOutcomeNotice(
+          errorTitle: 'err-title',
+          saveOutcomeNotice: 'outcome.',
+        ),
+        'err-title + outcome.',
+      );
+    });
+
+    test('TP-44: the real ARB carries the approved Amendment 07 text', () {
+      final raw = File('l10n/arb/app_en.arb').readAsStringSync();
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      final real = ZcStrings.fromMap({
+        for (final entry in decoded.entries)
+          if (!entry.key.startsWith('@') && entry.value is String)
+            entry.key: entry.value as String,
+      });
+      expect(
+        real.inactivityStopNoTranscriptNoticeFor(5),
+        'Captioning stopped after 5 minutes without speech, so no transcript '
+        'was saved.',
+      );
+      expect(
+        real.inactivityStopNoTranscriptNoticeFor(1),
+        'Captioning stopped after 1 minute without speech, so no transcript '
+        'was saved.',
+      );
+      expect(
+        real.inactivityStopSaveFailedNoticeFor(5),
+        'Captioning stopped after 5 minutes without speech. The transcript '
+        'could not be saved.',
+      );
+      expect(
+        real.stopErrorWithSaveOutcomeNotice(
+          errorTitle: real.failureEngineStartFailedTitle,
+          saveOutcomeNotice: real.noTranscriptSavedNotice,
+        ),
+        "Captioning couldn't start. No speech was recognised, so no "
+        'transcript was saved.',
+      );
+      expect(
+        real.stopErrorWithSaveOutcomeNotice(
+          errorTitle: real.failureEngineStartFailedTitle,
+          saveOutcomeNotice: real.transcriptSaveFailedNotice,
+        ),
+        "Captioning couldn't start. The transcript could not be saved.",
       );
     });
 

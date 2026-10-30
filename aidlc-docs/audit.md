@@ -3740,3 +3740,33 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 - **Gates:** `dart analyze --fatal-infos` clean ×3; `zip_core` 1233 passed, 4 skipped; `zip_captions` 426; `zip_broadcast` 195.
 
 **Context**: Worktree `.claude/worktrees/unit10-fixes` (one-off, because the main checkout holds Unit 9).
+
+---
+
+## CONSTRUCTION - Phase 2 Unit 10: Step 30 physical Android pass; Amendment 07 approved and built (Step 29h)
+**Timestamp**: 2026-10-30
+**User Input** (James Petersen, in order, selected):
+- "For the device QA, can we use the attached pixel 6 or do we require the grapheneos pixel 10 device?"
+- "pixel 6 is now available to this session, no other sessions are using it"
+- "Make sure you use the flutter mcp as appropriate"
+- "It's up, you can use adb as well as the flutter mcp, you don't need me to tell you what's on screen"
+- "proceed with the rest of the android checks, let's be thorough"
+- "The two separate toast messages for stopping after 5 minutes of no speech and the no transcript was saved should appear in one combined toast, rather than two separate toasts that are shown to the user one after another"
+- Answers: "One sentence (Recommended)"; "Combine every pair (Recommended)"
+- "For all of the testing that we're doing on device, is there any way to define these tests in code so that we can re-run the entire suite with an automation rather than requiring an active LLM session?"
+- "docs-mcp is reconnected, record the plan in the backlog, write the android results, then let's draft and implement amendment 7 before we move to ios"
+- "yes, approved" (Amendment 07)
+
+**AI Response** (Opus):
+- **Android device pass:**
+  - Run on the Pixel 6 (Android 17) from a QA worktree at `a437719`, through the app's own screens.
+  - Every Android check passes: Steps 6, 6b, 7 and 8; the sounds; the last phrase at Stop and Pause; the renewal; the screen on and off; the inactivity stop; the empty session; airplane mode; the denied microphone with Open settings and Try again.
+  - Results in `evidence/code-generation-qa.md` ("Physical Android device pass, 2026-10-30"); screenshots archived locally.
+- **Backlog:** the automated device test suite (Patrol on the attached phones) is recorded in `aidlc-state.md`.
+- **docs-mcp:** indexing started for `patrol`, `flutter-integration-testing`, `flutter-ios-setup`, `apple-devicectl` and `pymobiledevice3`.
+- **Amendment 07** (`functional-design/amendment-07-combined-stop-notice.md`) drafted, approved, and built test-first (plan Step 29h):
+  - `zip_captions` only;
+  - TP-43 and TP-44 seen failing, then passing;
+  - `dart analyze --fatal-infos` clean ×3; `zip_captions` 443 passed; `zip_core` and `zip_broadcast` unchanged.
+
+**Context**: Worktree `.claude/worktrees/unit10-qa` (approved one-off, because Unit 9 held the main checkout). Unit 9 has since merged to `develop`.

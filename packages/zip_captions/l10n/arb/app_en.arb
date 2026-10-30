@@ -292,6 +292,39 @@
       }
     }
   },
+  "inactivityStopNoTranscriptNotice": "Captioning stopped after {minutes} minutes without speech, so no transcript was saved.",
+  "@inactivityStopNoTranscriptNotice": {
+    "description": "Unit 10 Amendment 07 (BR-U10-66): the single SnackBar when the app stopped a session after the inactivity timeout and nothing was recognised. ZcStrings.inactivityStopNoTranscriptNoticeFor reads the singular as '1 minute'",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "inactivityStopSaveFailedNotice": "{inactivityNotice} {saveFailedNotice}",
+  "@inactivityStopSaveFailedNotice": {
+    "description": "Unit 10 Amendment 07 (BR-U10-66): the single SnackBar when the app stopped a session after the inactivity timeout and the transcript could not be saved. Joins inactivityStopNotice and transcriptSaveFailedNotice",
+    "placeholders": {
+      "inactivityNotice": {
+        "type": "String"
+      },
+      "saveFailedNotice": {
+        "type": "String"
+      }
+    }
+  },
+  "stopErrorWithSaveOutcomeNotice": "{errorTitle}. {saveOutcomeNotice}",
+  "@stopErrorWithSaveOutcomeNotice": {
+    "description": "Unit 10 Amendment 07 (BR-U10-66): the single SnackBar when a session stopped with an error and nothing was recognised or the transcript could not be saved. errorTitle is a failure title (no full stop of its own); saveOutcomeNotice is noTranscriptSavedNotice or transcriptSaveFailedNotice",
+    "placeholders": {
+      "errorTitle": {
+        "type": "String"
+      },
+      "saveOutcomeNotice": {
+        "type": "String"
+      }
+    }
+  },
   "languagePackDownload": "Download {language}",
   "@languagePackDownload": {
     "description": "Unit 10 Amendment 04 (BR-U10-46): failure panel button that downloads the missing on-device language",

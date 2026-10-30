@@ -207,3 +207,50 @@ Build under test: the fixed tree (`flutter build ios --simulator --debug` succee
 | 8 | History and shutdown | History screenshot; Simulator shut down | History: `rerun/stop2/f-30.png` ("No transcripts yet"). The Simulator was shut down (`xcrun simctl list devices` shows `Shutdown`). A separate History tap was not requested after the Not now run. | PASS |
 
 **Open finding (not a code defect proven): no recognised text on the Simulator.** With the real engine registered, the on-device check true, the session listening and speech audible on the Mac, neither phrase produced a result or an error. The Android emulator showed an input failure at this point, which was an emulator fault; for the Simulator no error was logged, so whether the Mac microphone reaches the Simulator, or the recogniser returns nothing, is unknown. It needs a Simulator input check by James (I/O menu, input device) or the physical-device pass. Steps 3 to 5 and the A-1 assumption remain open.
+
+## Physical Android device pass, 2026-10-30
+
+**Device**: Pixel 6 (`25071FDF600953`), Android 17 (API 37), stock Google build `CP3A.261005.002.A1`. Default recognition service: Speech Services by Google (`com.google.android.tts`). Phone language en-CA. James Petersen cleared the phone for this session.
+
+**Build**: `feature/mobile-platform-readiness` at `a437719`, debug, `flutter run -d 25071FDF600953` from a QA worktree. The app was freshly installed and the microphone was not granted beforehand.
+
+**Method**: Opus drove the app through its own screens with `adb input` taps. James Petersen authorised adb for driving and observing, and was present to report sounds.
+- **App state and the Dart log:** the Flutter MCP (`flutter-agent-lens`).
+- **Native timestamps:** `adb logcat -s ZipCaptionsSegmented`.
+- **Keep-screen-on and screen state:** `dumpsys window` and `dumpsys power`.
+- **Speech:** a YouTube video playing near the phone, then macOS `say` from the host speakers.
+
+The screenshots are archived with the other evidence (`~/Documents/zip-captions-evidence/unit10-mobile-platform-readiness/step30-pixel6/`).
+
+**Result: every Android check passes. The session found one design change request and four observations.**
+
+| Step | Result | Evidence |
+|---|---|---|
+| B0 Permission and start | PASS | System prompt with no explainer. "Engine platform initialized for locale en-CA", "On-device support check: true", "Segmented session started for en-CA, lengthMs=300000". No panel, no toast |
+| B1 Step 6, captions | PASS | Recognised text from the video on screen, segments saved (`createSession`, then `saveSegment`), en-CA, no toast. The app log carries IDs only, never recognised text (SECURITY-03) |
+| B2 Step 6b, silence between phrases | PASS | Three `say` phrases with 8 s and 20 s silences, all captioned correctly. No session end or restart in the native log during the silences |
+| B3 Sounds (BR-U10-43) | PASS | James heard sounds only at Start, Pause, Resume, Stop and renewal. Volumes set to maximum through Settings first (see observation 3) |
+| B4 Step 7, Stop | PASS | History opens ("9m 33s · 21 segments"). `KEEP_SCREEN_ON` set while captioning, cleared after Stop |
+| B5 Stop sound, ×3 | PASS | One sound at Stop in runs 1 and 3. Run 2 was "I think one" (James was not listening closely) |
+| B6 Step 8, Pause and Resume | PASS | One sound on each. Captions continue, and "session continued" logs the same transcript session |
+| B7 Amendment 06, last phrase (BR-U10-55/56) | PASS | Stop straight after speech, ×3: the phrase arrives during the drain after "Segmented session stopped", is saved, and then `finalizeSession` runs. Pause straight after speech, ×1: "Paused (via stop)", then `saveSegment`, then "Session paused"; the phrase stays on screen above the "paused" marker |
+| B8 Quick Pause and Resume, ×3 | PASS | Three clean pairs in the log. Six sounds, one per tap, nothing extra |
+| B9 Renewal (D-2) | PASS | Session 10:50:45.255 to 10:55:45.574 (300.3 s), then a new session 0.34 s later, with one chime. Second run with twelve numbered `say` sentences: due at 11:10:26, ended at 11:10:43.088 after the speech finished. All twelve sentences captioned with no gap (see observation 1) |
+| B10 Screen on | PASS | Screen timeout set to 30 s for the test, then restored to 30 minutes. `mWakefulness=Awake` more than 5 minutes after the last touch while captioning, then `Dozing` about 45 s after the stop |
+| B11 Amendment 05 inactivity stop | PASS with change request | "Session stopping: inactivity after 300s without speech", then "skipped, no row", then History. Both notices are queued in order (`recording_screen.dart:135-182`). The second was captured; the first had already gone before the first capture. James asked for one combined notice (Amendment 07) |
+| Empty session (Q-2) | PASS | A 10 s silent session shows "No speech was recognised, so no transcript was saved." and creates no row |
+| Airplane mode (NFR, "works without an internet connection") | PASS | Airplane mode on and Wi-Fi off, confirmed with `cmd connectivity` and `cmd wifi`. A sentence was recognised and the session saved with `segmentCount=1` |
+| AC-2, microphone denied | PASS | Revoked in App info, then Start. Android asks again; after Don't allow the panel shows "Microphone access is blocked" with Try again, Open settings and Back, and no crash |
+| Open settings, grant, Try again | PASS | Open settings goes to Zip Captions' App info. After granting, Try again starts captioning (on-device check, then session started) |
+| Amendment 06 recovery twice (BR-U10-57) | Not provoked | No way to cause a recogniser failure through the app. Covered by unit tests (TP-36) |
+| Amendment 06 5 s Stop bound (BR-U10-58) | Not provoked | Unit tests only (TP-37), as section 6 states |
+| Language-pack download (Steps 4 and 5) | Not reached | The en-CA pack was already installed. Passed on the emulator on 2026-10-26 |
+
+**Change request (James Petersen, 2026-10-30)**: the inactivity notice and the no-transcript notice should be one combined notice, not two shown one after the other. The same applies to every pair of stop notices. Built as Amendment 07.
+
+**Observations (no defect in Unit 10's code)**:
+1. **The renewal waits for a pause.** The recogniser keeps a segmented session open past `EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS` while speech continues (16.6 s past 300 s here) and renews at the next pause. No words were lost. So D-2's renewal comes at 5 minutes or later, at the first pause.
+2. **The app requests `ACCESS_LOCAL_NETWORK`**, a new Android 17 runtime permission shown as "Nearby devices", which is granted. Something the app pulls in requests it. For the Unit 11 manifest review.
+3. **The shell cannot set volume on Android 17.** `cmd media_session volume --set` returns but does not change the level. The volumes were raised through Settings.
+4. **The text-size button is drawn very small** on the permission-denied panel (full size on the recording screen). It's cosmetic and was recorded for a later UI pass.
+5. **Tooling: the Flutter MCP's device screenshot hung** for about 40 minutes on the Settings screens. `adb exec-out screencap` with a timeout worked at once. Revoking the microphone in Settings killed the app's process, as Android does, which ended `flutter run`; the app was relaunched with `flutter run`.

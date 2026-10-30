@@ -97,6 +97,44 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
     await _runStart();
   }
 
+  /// The one notice for a stop (Amendment 07, BR-U10-65/66), or `null` for
+  /// none.
+  ///
+  /// The cause is [errorTitle] (BR-U10-23) or, without an error, the
+  /// inactivity stop after [inactivityMinutes] (BR-U10-53). The save outcome
+  /// is [outcome]: `nothingRecognised`, `saveFailed` or `null` (BR-U10-60).
+  static String? _stopNotice(
+    ZcStrings strings, {
+    required String? errorTitle,
+    required int? inactivityMinutes,
+    required TranscriptSaveResult? outcome,
+  }) {
+    final outcomeNotice = switch (outcome) {
+      TranscriptSaveResult.nothingRecognised => strings.noTranscriptSavedNotice,
+      TranscriptSaveResult.saveFailed => strings.transcriptSaveFailedNotice,
+      TranscriptSaveResult.saved || null => null,
+    };
+    if (errorTitle != null) {
+      return outcomeNotice == null
+          ? errorTitle
+          : strings.stopErrorWithSaveOutcomeNotice(
+              errorTitle: errorTitle,
+              saveOutcomeNotice: outcomeNotice,
+            );
+    }
+    if (inactivityMinutes != null) {
+      return switch (outcome) {
+        TranscriptSaveResult.nothingRecognised =>
+          strings.inactivityStopNoTranscriptNoticeFor(inactivityMinutes),
+        TranscriptSaveResult.saveFailed =>
+          strings.inactivityStopSaveFailedNoticeFor(inactivityMinutes),
+        TranscriptSaveResult.saved ||
+        null => strings.inactivityStopNoticeFor(inactivityMinutes),
+      };
+    }
+    return outcomeNotice;
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(recordingStateNotifierProvider);
@@ -108,78 +146,68 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
     ref.listen<RecordingState>(recordingStateNotifierProvider, (prev, next) {
       if (next is StoppedState && context.mounted) {
         final strings = ref.read(zcStringsProvider).valueOrNull;
+        // Amendment 07 (BR-U10-65/66): one notice per stop, built from the
+        // stop's cause and its save outcome, instead of two queued SnackBars.
+        //
+        // The cause. BR-U10-23: an error stop -> the failure title,
+        // classified the same way as the failure panel, and never with
+        // "Open settings". Once per session.
         final error = recordingNotifier.lastError;
+        String? errorTitle;
         if (error != null && _noticeShownFor != next.sessionId) {
-          // BR-U10-23: a one-time notice, classified the same way as the
-          // failure panel, and never with "Open settings".
           _noticeShownFor = next.sessionId;
-          final view = StartFailureView.from(
-            error,
-            platform: _platform,
-            isWeb: kIsWeb,
-          );
           if (strings != null) {
-            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-              SnackBar(content: Text(view.title(strings))),
-            );
+            errorTitle = StartFailureView.from(
+              error,
+              platform: _platform,
+              isWeb: kIsWeb,
+            ).title(strings);
           }
         }
         // BR-U10-53 (Amendment 05): the app stopped the session after a long
-        // silence -> a one-time notice, read once from zip_core's stop-reason
-        // provider (`take` resets it). Shown before the no-transcript notice
-        // below (ScaffoldMessenger queues), and never for a user, error or
-        // refused-resume stop, which record no reason.
+        // silence, read once from zip_core's stop-reason provider (`take`
+        // resets it). A user, error or refused-resume stop records no reason.
         final stopReason = ref
             .read(sessionStopReasonNotifierProvider.notifier)
             .take();
-        if (stopReason == SessionStopReason.inactivity && strings != null) {
+        int? inactivityMinutes;
+        if (stopReason == SessionStopReason.inactivity) {
           final timeout = ref.read(speechInactivityTimeoutProvider);
-          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            SnackBar(
-              content: Text(
-                strings.inactivityStopNoticeFor(
-                  timeout.inMinutes < 1 ? 1 : timeout.inMinutes,
-                ),
-              ),
-            ),
-          );
+          inactivityMinutes = timeout.inMinutes < 1 ? 1 : timeout.inMinutes;
         }
-        // Q-2 (Amendment 03 section 7): capture on and nothing saved -> the
-        // one-time notice. The save outcome comes from the writer target
-        // provider's stop callback (zip_core's transcriptSaveOutcomeProvider),
-        // so no RecordingState or notifier API had to change. Shown after the
-        // error notice above (ScaffoldMessenger queues), and never with
-        // capture off or after a save.
+        // The save outcome. Q-2 (Amendment 03 section 7, Step 29b): the
+        // outcome read here is this session's, because the writer target owns
+        // its lifetime: it records the result on stop and forgets it when a
+        // new session starts. The screen only reads it, never writes or
+        // clears it; a provider write from inside this listener re-created
+        // the provider's notifier and threw riverpod 2.6's
+        // `LateInitializationError`. BR-U10-60: only nothing recognised and a
+        // failed save have a notice, and only with capture on. Once per
+        // session.
         final captureOn = ref
             .read(transcriptSettingsNotifierProvider)
             .captureEnabled;
-        // Q-2 (Amendment 03 section 7, Step 29b): the outcome read here is
-        // this session's, because the writer target owns its lifetime: it
-        // records the result on stop and forgets it when a new session
-        // starts. The screen only reads it, never writes or clears it; a
-        // provider write from inside this listener re-created the provider's
-        // notifier and threw riverpod 2.6's `LateInitializationError`.
-        final outcome = ref.read(transcriptSaveOutcomeProvider);
-        // BR-U10-60: three outcomes. Nothing recognised and a failed save
-        // each get their own one-time notice; a saved session and an unknown
-        // outcome get none.
-        final noticeText = switch (outcome) {
-          TranscriptSaveResult.nothingRecognised =>
-            strings?.noTranscriptSavedNotice,
-          TranscriptSaveResult.saveFailed =>
-            strings?.transcriptSaveFailedNotice,
-          TranscriptSaveResult.saved || null => null,
-        };
+        final read = ref.read(transcriptSaveOutcomeProvider);
+        TranscriptSaveResult? outcome;
         if (captureOn &&
-            (outcome == TranscriptSaveResult.nothingRecognised ||
-                outcome == TranscriptSaveResult.saveFailed) &&
+            (read == TranscriptSaveResult.nothingRecognised ||
+                read == TranscriptSaveResult.saveFailed) &&
             _noTranscriptNoticeShownFor != next.sessionId) {
           _noTranscriptNoticeShownFor = next.sessionId;
-          if (noticeText != null) {
-            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-              SnackBar(content: Text(noticeText)),
-            );
-          }
+          outcome = read;
+        }
+        final notice = strings == null
+            ? null
+            : _stopNotice(
+                strings,
+                errorTitle: errorTitle,
+                inactivityMinutes: inactivityMinutes,
+                outcome: outcome,
+              );
+        if (notice != null) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(content: Text(notice)),
+          );
         }
         ref.invalidate(transcriptSessionListProvider);
         context.go('/history');

@@ -321,8 +321,36 @@ class ZcStrings {
   ///
   /// The ARB sentence is written in the plural ("{minutes} minutes"); for 1
   /// the unit becomes the singular, so it reads "1 minute".
-  String inactivityStopNoticeFor(int minutes) {
-    final template = _value('inactivityStopNotice');
+  String inactivityStopNoticeFor(int minutes) =>
+      _withMinutes(_value('inactivityStopNotice'), minutes);
+
+  /// The single notice when the app stopped a session after [minutes]
+  /// minutes without speech and nothing was recognised (Amendment 07,
+  /// BR-U10-66). The singular reads "1 minute", as above.
+  String inactivityStopNoTranscriptNoticeFor(int minutes) =>
+      _withMinutes(_value('inactivityStopNoTranscriptNotice'), minutes);
+
+  /// The single notice when the app stopped a session after [minutes]
+  /// minutes without speech and the transcript could not be saved
+  /// (Amendment 07, BR-U10-66).
+  String inactivityStopSaveFailedNoticeFor(int minutes) =>
+      _value('inactivityStopSaveFailedNotice')
+          .replaceAll('{inactivityNotice}', inactivityStopNoticeFor(minutes))
+          .replaceAll('{saveFailedNotice}', transcriptSaveFailedNotice);
+
+  /// The single notice when a session stopped with an error whose failure
+  /// title is [errorTitle], and the save outcome's notice is
+  /// [saveOutcomeNotice] (Amendment 07, BR-U10-66).
+  String stopErrorWithSaveOutcomeNotice({
+    required String errorTitle,
+    required String saveOutcomeNotice,
+  }) => _value('stopErrorWithSaveOutcomeNotice')
+      .replaceAll('{errorTitle}', errorTitle)
+      .replaceAll('{saveOutcomeNotice}', saveOutcomeNotice);
+
+  /// Fills `{minutes}` in a sentence written in the plural, reading the
+  /// singular as "1 minute".
+  static String _withMinutes(String template, int minutes) {
     if (minutes == 1) {
       return template.replaceAll('{minutes} minutes', '1 minute');
     }
