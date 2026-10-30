@@ -71,9 +71,17 @@ without recording anything about the viewer.
 that this schema has no place for (see the note in
 `20261001000000_broadcast_identity_signaling.sql` about FR-2.6 ruling out
 persisted session rows). The guard is broadcast existence only. The risk this
-accepts: anyone who knows a live broadcast id can obtain relay credentials for
-it, limited by Kong's per-IP rate and by Coturn's own allocation limits. Those
-per-IP limits are the only ceiling.
+accepts: anyone who knows a broadcast id that has ever been issued can obtain
+relay credentials for it, limited by Kong's per-IP rate and by Coturn's own
+allocation limits. Those per-IP limits are the only ceiling.
+
+"Ever been issued" rather than "live": the guard tests existence in
+`broadcast_identities`, which has no liveness column and no deletion path in
+Phase 2, so a dormant broadcaster's id still mints a credential. That is no
+worse in practice - no media is flowing for a dormant broadcast - but the set is
+monotonic and should be described as what it is. Enumeration stays infeasible:
+the id is 6 Crockford-Base32 characters (about 1.07 billion), and Kong caps one
+IP at 1,800 attempts an hour.
 
 **The grant is not the control.** `has_function_privilege('anon', …)` returns
 `true` for both credential functions regardless of their `GRANT` statements,

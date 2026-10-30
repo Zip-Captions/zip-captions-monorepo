@@ -131,7 +131,7 @@ contract this codebase's other seams avoid.
 | Threat | Mitigation | Residual |
 |---|---|---|
 | Anonymous caller mints unlimited TURN credentials | 30/min, 2/s per IP via Kong; 1-hour TTL bounds each credential's life | A caller with many IPs can mint more; TURN quota and Coturn's own denied-peer list remain the backstop |
-| Caller probes for valid broadcast ids | Same `42501` error shape whether the id is unknown; the existing `resolve_broadcast_id` limit governs discovery | None beyond the existing `resolve_broadcast_id` exposure |
+| Caller probes for valid broadcast ids | Same `42501` error shape whether the id is unknown; the existing `resolve_broadcast_id` limit governs discovery | None beyond the existing `resolve_broadcast_id` exposure. Note the id set is every id ever issued, not only live ones: `broadcast_identities` has no liveness column and Phase 2 has no deletion path, so it grows monotonically |
 | Credential shared with a non-viewer | Credentials are not secret-keyed to a viewer; TURN REST credentials are bearer tokens by design (RFC 8656 §5.1) | Any viewer could share a working credential for its 1-hour life; accepted, unchanged from the broadcaster path |
 | Long session outlives the credential | Username timestamp is checked at ALLOCATE only; an existing allocation survives past expiry (draft-uberti §2.2, RFC 8656 §5) | A viewer joining after the 1-hour mark gets a fresh credential on join; mid-session re-join is the only re-fetch |
 | Credentials leak into logs | The function returns them only in the RPC body; nothing is logged server-side | Client-side: no transcript content is involved; the credential itself is not written to any log |

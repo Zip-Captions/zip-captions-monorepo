@@ -3273,3 +3273,21 @@ Start by reading the files above. Then tell me in a few lines what Unit 9 must p
   is accepted as intended: a pair with no `remoteCandidateId` now degrades to
   `unknown` rather than `direct`, per the owner's "one direct leg is not
   proof" ruling. Gates: analyze clean, 964 + 5 skipped / 195 / 195.
+
+- 2026-10-30T09:10Z - Owner, verbatim: "Delegate an agentic review of the PR to
+  a sub-agent". A third, independent reviewer ran against head d851c29 with no
+  knowledge of earlier rounds. Verdict: approve-with-nits. No blockers and no
+  new code defects; it mutation-tested seven properties (both-leg relay, the
+  stats adapter, the id/type fallback, empty selected-pair id, broadcaster
+  projection, viewer single and double emission) and confirmed every one is
+  caught by a real test, so the earlier vacuity is genuinely fixed. Two
+  documentation inconsistencies reported, both fixed: (a) the accepted-risk
+  wording "live broadcast id" understated the id set - broadcast_identities
+  has no liveness column and no deletion path, so it is every id ever issued;
+  corrected in the phase record and the approach note; (b) the PR body still
+  claimed no CI run had happened, contradicting the corrected phase record;
+  PR body updated. It also found the viewer credential step missing from
+  phase2-services.md F4; added as step 5 with the list renumbered.
+  Recorded as understated rather than wrong: the Coturn accept/reject rows are
+  "verified" on prose evidence only, with no committed artefact. Not changed;
+  noted as the weakest verified row.
