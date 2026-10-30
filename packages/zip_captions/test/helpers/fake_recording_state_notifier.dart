@@ -66,7 +66,7 @@ class FakeRecordingStateNotifier extends RecordingStateNotifier {
   /// the notifier does when a session stops because of an engine error.
   void stopWithError(RecordingError error) {
     _lastErrorOverride = error;
-    state = RecordingState.stopped(sessionId: _nextSessionId);
+    state = RecordingState.stopped(sessionId: nextSessionIdOnStop);
   }
 
   @override
@@ -79,18 +79,14 @@ class FakeRecordingStateNotifier extends RecordingStateNotifier {
   ///
   /// Unique per stop, so a test can tell one session's StoppedState from the
   /// next one's, the way the real notifier's uuid does.
-  String _nextSessionId = 'test-session';
-
-  /// Sets the session id the next stop or stop-with-error reports.
-  // ignore: use_setters_to_change_properties
-  void setSessionIdOnStop(String id) => _nextSessionId = id;
+  String nextSessionIdOnStop = 'test-session';
 
   @override
   Future<void> stop() async {
     calls.add('stop');
     final before = beforeStopGate;
     if (before != null) await before.future;
-    state = RecordingState.stopped(sessionId: _nextSessionId);
+    state = RecordingState.stopped(sessionId: nextSessionIdOnStop);
     final gate = stopGate;
     if (gate != null) await gate.future;
   }

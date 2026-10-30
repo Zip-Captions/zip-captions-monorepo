@@ -71,6 +71,84 @@ void main() {
       }
     });
 
+    // Table-pinned: each factory maps to exactly this kind and this panel
+    // copy, so a swapped title, body or kind fails one named row.
+    final pinned =
+        <
+          String,
+          ({
+            RecordingError Function() factory,
+            StartFailureKind kind,
+            String title,
+            String body,
+          })
+        >{
+          'permissionDenied': (
+            factory: RecordingErrorFactories.permissionDenied,
+            kind: StartFailureKind.micDenied,
+            title: 'md-title',
+            body: 'md-body',
+          ),
+          'permissionPermanentlyDenied': (
+            factory: RecordingErrorFactories.permissionPermanentlyDenied,
+            kind: StartFailureKind.micPermanentlyDenied,
+            title: 'mpd-title',
+            body: 'mpd-body',
+          ),
+          'engineInitFailed': (
+            factory: RecordingErrorFactories.engineInitFailed,
+            kind: StartFailureKind.engineInitFailed,
+            title: 'eif-title',
+            body: 'eif-body',
+          ),
+          'engineStartFailed': (
+            factory: RecordingErrorFactories.engineStartFailed,
+            kind: StartFailureKind.engineStartFailed,
+            title: 'esf-title',
+            body: 'esf-body',
+          ),
+          'onDeviceRecognitionUnavailable': (
+            factory: RecordingErrorFactories.onDeviceRecognitionUnavailable,
+            kind: StartFailureKind.onDeviceUnavailable,
+            title: 'od-title',
+            body: 'od-body',
+          ),
+          // The two that fall through to `other` show their own message.
+          'engineRequiresModelDownload': (
+            factory: RecordingErrorFactories.engineRequiresModelDownload,
+            kind: StartFailureKind.other,
+            title: 'other-title',
+            body: RecordingErrorFactories.engineRequiresModelDownload().message,
+          ),
+          'localeNotSupported': (
+            factory: () => RecordingErrorFactories.localeNotSupported('en-GB'),
+            kind: StartFailureKind.other,
+            title: 'other-title',
+            body: RecordingErrorFactories.localeNotSupported('en-GB').message,
+          ),
+        };
+
+    test('every factory is pinned in the table', () {
+      expect(
+        pinned.keys.toSet(),
+        _factoryErrors.keys.map((k) => k.replaceAll('(', '')).toSet(),
+      );
+    });
+
+    for (final entry in pinned.entries) {
+      test('${entry.key}: kind, title and body', () {
+        final view = StartFailureView.from(
+          entry.value.factory(),
+          platform: TargetPlatform.android,
+          isWeb: false,
+        );
+
+        expect(view.kind, entry.value.kind);
+        expect(view.title(_strings), entry.value.title);
+        expect(view.body(_strings), entry.value.body);
+      });
+    }
+
     test('AC: showOpenSettings is true exactly on iOS and Android for '
         'micPermanentlyDenied and engineInitFailed', () {
       for (final entry in _factoryErrors.entries) {
@@ -81,17 +159,20 @@ void main() {
               platform: platform,
               isWeb: isWeb,
             );
-            final mobile = !isWeb &&
+            final mobile =
+                !isWeb &&
                 (platform == TargetPlatform.iOS ||
                     platform == TargetPlatform.android);
-            final expected = mobile &&
+            final expected =
+                mobile &&
                 (view.kind == StartFailureKind.micPermanentlyDenied ||
                     view.kind == StartFailureKind.engineInitFailed);
 
             expect(
               view.showOpenSettings,
               expected,
-              reason: '${entry.key} kind=${view.kind} '
+              reason:
+                  '${entry.key} kind=${view.kind} '
                   'platform=$platform isWeb=$isWeb',
             );
           }
@@ -126,25 +207,28 @@ void main() {
       }
     });
 
-    test('AC: engineRequiresModelDownload is other, not onDeviceUnavailable',
-        () {
-      // That message means the engine needs its own model downloaded
-      // (Sherpa-ONNX). Showing "this device cannot do on-device speech" for it
-      // would be false, so it falls through to other with its own message.
-      final error = RecordingErrorFactories.engineRequiresModelDownload();
-      for (final platform in _platforms) {
-        for (final isWeb in [false, true]) {
-          final view = StartFailureView.from(
-            error,
-            platform: platform,
-            isWeb: isWeb,
-          );
-          expect(view.kind, StartFailureKind.other);
-          expect(view.showOpenSettings, isFalse);
-          expect(view.body(_strings), error.message);
+    test(
+      'AC: engineRequiresModelDownload is other, not onDeviceUnavailable',
+      () {
+        // That message means the engine needs its own model downloaded
+        // (Sherpa-ONNX). Showing "this device cannot do on-device speech" for
+        // it would be false, so it falls through to other with its own
+        // message.
+        final error = RecordingErrorFactories.engineRequiresModelDownload();
+        for (final platform in _platforms) {
+          for (final isWeb in [false, true]) {
+            final view = StartFailureView.from(
+              error,
+              platform: platform,
+              isWeb: isWeb,
+            );
+            expect(view.kind, StartFailureKind.other);
+            expect(view.showOpenSettings, isFalse);
+            expect(view.body(_strings), error.message);
+          }
         }
-      }
-    });
+      },
+    );
 
     test('AC: localeNotSupported is other and shows its own message', () {
       final error = RecordingErrorFactories.localeNotSupported('en-GB');

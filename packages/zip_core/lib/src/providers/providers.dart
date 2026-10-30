@@ -24,6 +24,7 @@ export 'sherpa_model_manager_provider.dart';
 export 'signaling_service_provider.dart';
 export 'speech_inactivity_timeout_provider.dart';
 export 'speech_locale_provider.dart';
+export 'stop_finalise_timeout_provider.dart';
 export 'stt_engine_provider.dart';
 export 'stt_engine_registry_provider.dart';
 export 'stt_session_manager_provider.dart';

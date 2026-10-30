@@ -1,1 +1,0 @@
-[zip_core.CaptionOutputTargetRegistry] Target added: on_screen

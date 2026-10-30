@@ -129,6 +129,24 @@ Inputs: `functional-design/amendment-05-stop-after-silence.md` (BR-U10-51 to 54,
     5. Local-only tooling notes removed from tracked docs, and the stale status lines in `aidlc-state.md` corrected.
   - **Opus review addition (test-first, red then green):** a stale restart whose `listen()` returns while a resume's `listen()` is in flight no longer cancels the plugin. The plugin's `cancel()` ends whatever session the platform has (`speech_to_text` 7.3.0 `cancel()`/`_cancel()`; Apple `SFSpeechRecognitionTask.cancel()` cancels the current task), so it would have ended the user's resumed session.
   - **Gates, run by Opus:** `dart analyze --fatal-infos` clean ×3; `zip_core` 1159 passed, 4 skipped (9 new tests); `zip_captions` 402; `zip_broadcast` 195.
+- [x] **Step 29f. Amendment 06 and the CodeRabbit review of PR #44 (2026-10-29).** Built test-first by a Sonnet builder, against docs-mcp and the platform sources.
+  - **Amendment 06, revision 1:**
+    - BR-U10-55/56: Stop and Pause drain the last phrase for up to 1 s on both engines.
+    - BR-U10-57: recovery re-armed by the first non-empty result.
+    - BR-U10-58/59: the Stop routine bounded at 5 s.
+  - **Revision 2:**
+    - BR-U10-60: three save outcomes, plus the notice "The transcript could not be saved.".
+    - BR-U10-61: a throwing engine stop at finish.
+    - BR-U10-62: results held while a start or a resume is in flight, and replayed.
+    - BR-U10-63: a throwing pause.
+    - BR-U10-64: the language-pack panel deadlines and the Android scheduled state.
+  - **CodeRabbit fixes with no design change:** #5, #11, `_regionOf`, the `// ignore` removals in tests, the split of the two test helpers, #8, and nitpicks N1 to N6 and N8.
+  - **N7 not done:** covering the non-overlay `runZipCaptions` call needs Supabase, a database and secure storage in a widget test. Declined as disproportionate.
+  - **Declined:** #14, #17 and #18 (Amendment 06 section 8).
+  - **Opus review:**
+    - Read the engine, notifier and writer diffs against BR-U10-19, 35 and 55 to 64.
+    - Restored 110 files that a package-wide `dart format` had changed only in formatting.
+  - **Gates, run by Opus:** `dart analyze --fatal-infos` clean ×3; `zip_core` 1233 passed, 4 skipped; `zip_captions` 426; `zip_broadcast` 195.
 
 - [ ] **Step 30. Emulator QA pass (recorded).** *Rerun rules added 2026-10-26 (James Petersen): a captions run counts only with recognised text on screen, `segmentCount > 0`, the expected locale, and no SnackBar or toast. Speech is played only after the recogniser reports it is ready. Android sounds are checked against BR-U10-43.* Per NFR section 8, with the **committed** change (no throwaway edits) and permissions **not** pre-granted: Android `Pixel_9_Pro_API_36` (grant and deny paths; the failure panel with no spinner; the explainer is absent; `dumpsys window` keep-screen-on flag during captioning and after Stop) and the iPhone 17 Simulator (the explainer, then the microphone and speech prompts; `simctl privacy … reset all` and a second run; the failure panel, including the on-device-refusal path if the Simulator does not support on-device recognition). **Expected Android path:** the `Pixel_9_Pro_API_36` image has no en-US on-device pack (NFR-U10-04), so the device-level check passes and listening then fails with `error_language_unavailable`; record that as the **expected refusal path** (the lasting error and the failure panel), not a defect, unless the pack is installed first. **Optional sub-step, only if James Petersen wants captions on the emulator:** install the en-US on-device pack and repeat. The Simulator taps are manual by James Petersen. Evidence (screenshots, `adb` and `simctl` output, `git status`) goes in `evidence/code-generation-qa.md`. **Nothing here is claimed as physical-device behaviour.**
 - [ ] **Step 31. Code summary and records.** Write `aidlc-docs/construction/mobile-platform-readiness/code/unit10-summary.md`: modified versus created files, tests by property (TP-1 to TP-20, TP-2b, TP-2c, and which existing tests were reused or changed), the self-check tables in section 5 filled in, deviations, known gaps (the Android on-device fallback below API 31 now refuses; desktop and `zip_broadcast` untouched; the upstream notes), and the items for the later physical-device gate. Update `aidlc-state.md` and `audit.md` with normal entries.

@@ -312,6 +312,10 @@ class ZcStrings {
   /// section 7, Q-2).
   String get noTranscriptSavedNotice => _value('noTranscriptSavedNotice');
 
+  /// One-time notice when a session with capture enabled recognised speech
+  /// but its transcript could not be saved (Amendment 06, BR-U10-60).
+  String get transcriptSaveFailedNotice => _value('transcriptSaveFailedNotice');
+
   /// One-time notice when the app stopped a session after [minutes] minutes
   /// without speech (Amendment 05, BR-U10-53).
   ///

@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:zip_core/src/stt/engines/platform_stt_engine.dart';
 import 'package:zip_core/src/stt/stt_error_source.dart';
 
+import '../helpers/call_log.dart';
 import '../helpers/fake_on_device_checker.dart';
 import '../helpers/fake_speech_to_text.dart';
 import '../helpers/mock_audio_device_service.dart';
@@ -137,8 +138,12 @@ void main() {
           ),
         );
         async.flushMicrotasks();
+        // The pause of a live session waits out the BR-U10-55 drain, and a
+        // resume can only follow once the pause has returned.
         unawaited(engine.pause());
-        async.flushMicrotasks();
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(seconds: 1));
 
         final gate = Completer<void>();
         stt.listenGate = gate.future;

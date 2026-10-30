@@ -1,5 +1,7 @@
 # Unit 10, Step 30: Android emulator QA (Group H tree)
 
+> **Evidence files (2026-10-29):** only the `.md` reports in this folder are kept in the repository (James Petersen's decision). The screenshots, logcat and `simctl` output, crash reports and helper files cited in these reports are kept in a local archive outside the repository.
+
 **Date**: 2026-10-26. **Emulator**: `emulator-5560`, AVD `ZipCaptions_QA_API_36` (confirmed with `adb -s emulator-5560 emu avd name`). **Build**: `packages/zip_captions/build/app/outputs/flutter-apk/app-debug.apk` (21:38, built from the tree after the Group H review fixes). **Runner**: the Group H builder session, acting as QA runner at James Petersen's authorisation. Evidence folder: `evidence/step30-android/`.
 
 **Result: blocked at Step 4. Steps 5 to 10 were not run.** The first captions start after the microphone grant fails in the Android runner, so the on-device panel and the language download were never reached. Nothing was fixed.

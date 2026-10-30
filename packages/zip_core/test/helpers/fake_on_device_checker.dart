@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'fake_speech_to_text.dart';
+import 'call_log.dart';
 
 /// A scripted fake with the shape of `OnDeviceSupportChecker`.
 ///

@@ -3,42 +3,8 @@ import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
-/// An ordered log of calls shared between fakes, so a test can assert what
-/// happened *before* what (for example "a check precedes every listen").
-class CallLog {
-  /// The entries, oldest first.
-  final List<String> entries = [];
-
-  /// Appends [entry].
-  void add(String entry) => entries.add(entry);
-
-  /// Entries that are, or start with, [prefix].
-  List<String> where(String prefix) =>
-      entries.where((e) => e.startsWith(prefix)).toList();
-}
-
-/// One recorded `listen()` call.
-class FakeListenCall {
-  /// Creates a record of a `listen()` call.
-  FakeListenCall({
-    required this.localeId,
-    required this.listenOptions,
-    required this.onResult,
-    required this.usedDeprecatedArguments,
-  });
-
-  /// The locale passed to `listen()`.
-  final String? localeId;
-
-  /// The options passed to `listen()`, if any.
-  final SpeechListenOptions? listenOptions;
-
-  /// The result callback passed to `listen()`.
-  final SpeechResultListener? onResult;
-
-  /// Whether any of the deprecated per-option arguments were passed.
-  final bool usedDeprecatedArguments;
-}
+import 'call_log.dart';
+import 'fake_listen_call.dart';
 
 /// A hand-written stand-in for the `speech_to_text` 7.3.0 plugin class.
 ///
@@ -136,7 +102,8 @@ class FakeSpeechToText extends Fake implements SpeechToText {
         localeId: localeId,
         listenOptions: listenOptions,
         onResult: onResult,
-        usedDeprecatedArguments: cancelOnError != false ||
+        usedDeprecatedArguments:
+            cancelOnError != false ||
             partialResults != true ||
             onDevice != false ||
             listenMode != ListenMode.confirmation ||

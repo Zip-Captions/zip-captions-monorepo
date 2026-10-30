@@ -141,8 +141,7 @@ void main() {
     testWidgets('a status that throws is unknown, with the tag as name', (
       tester,
     ) async {
-      final fake = FakeLanguagePackService()
-        ..statusError = Exception('boom');
+      final fake = FakeLanguagePackService()..statusError = Exception('boom');
       addTearDown(fake.close);
       await tester.pumpWidget(
         ProviderScope(
@@ -384,8 +383,7 @@ void main() {
       expect(fake.statusCalls.length, calls);
     });
 
-    testWidgets('a percent event ends the polling: the limit no longer applies',
-        (tester) async {
+    testWidgets('a percent event ends the polling', (tester) async {
       final fake = await _pump(tester);
       await tester.tap(find.text('dl-label $_name'));
       await tester.pump();
@@ -393,7 +391,7 @@ void main() {
       await tester.pump();
       final calls = fake.statusCalls.length;
 
-      await tester.pump(const Duration(minutes: 20));
+      await tester.pump(const Duration(minutes: 4));
 
       expect(fake.statusCalls.length, calls);
       expect(find.text('dling-pct $_name 5'), findsOneWidget);
@@ -470,6 +468,162 @@ void main() {
       await tester.pump(const Duration(minutes: 10));
 
       expect(fake.statusCalls.length, calls);
+    });
+  });
+
+  // TP-42 (BR-U10-64): the panel never sits silent or spins for ever.
+  group('deadlines and the Android pending re-check (TP-42, BR-U10-64)', () {
+    testWidgets('(a) a status reply that never comes shows the failed state at '
+        '5 seconds', (tester) async {
+      final fake = FakeLanguagePackService()
+        ..statusGate = Completer<void>().future;
+      await _pump(tester, service: fake);
+
+      await tester.pump(const Duration(seconds: 4));
+      expect(find.textContaining('failed'), findsNothing);
+      expect(find.byType(FilledButton), findsNothing);
+
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+
+      // No reply, so no display name: the tag stands in for it.
+      expect(find.text('failed $_locale'), findsOneWidget);
+      expect(find.byType(FilledButton), findsNothing);
+      expect(fake.downloadCalls, isEmpty);
+    });
+
+    testWidgets('(a) a reply inside the deadline is unaffected', (
+      tester,
+    ) async {
+      final gate = Completer<void>();
+      final fake = FakeLanguagePackService()..statusGate = gate.future;
+      await _pump(tester, service: fake);
+
+      await tester.pump(const Duration(seconds: 4));
+      gate.complete();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(find.text('dl-label $_name'), findsOneWidget);
+      expect(find.textContaining('failed'), findsNothing);
+    });
+
+    testWidgets('(a) a re-check that never answers cannot stop the limit '
+        'from failing the download', (tester) async {
+      final fake = await _pump(tester);
+      await tester.tap(find.text('dl-label $_name'));
+      await tester.pump();
+      fake.statusGate = Completer<void>().future;
+
+      await tester.pump(const Duration(minutes: 5, seconds: 6));
+      await tester.pump();
+
+      expect(find.text('failed $_name'), findsOneWidget);
+    });
+
+    testWidgets('(b) a stall after progress fails at the limit', (
+      tester,
+    ) async {
+      final fake = await _pump(tester);
+      await tester.tap(find.text('dl-label $_name'));
+      await tester.pump();
+      fake.send(const LanguagePackProgress(_locale, percent: 30));
+      await tester.pump();
+
+      await tester.pump(kLanguagePackRecheckLimit - const Duration(seconds: 1));
+      expect(find.text('dling-pct $_name 30'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+
+      expect(find.text('failed $_name'), findsOneWidget);
+    });
+
+    testWidgets('(b) each progress event restarts the stall limit', (
+      tester,
+    ) async {
+      final fake = await _pump(tester);
+      await tester.tap(find.text('dl-label $_name'));
+      await tester.pump();
+      fake.send(const LanguagePackProgress(_locale, percent: 10));
+      await tester.pump(const Duration(minutes: 4));
+
+      fake.send(const LanguagePackProgress(_locale, percent: 60));
+      await tester.pump(const Duration(minutes: 4));
+
+      expect(find.text('dling-pct $_name 60'), findsOneWidget);
+
+      await tester.pump(const Duration(minutes: 1));
+      await tester.pump();
+      expect(find.text('failed $_name'), findsOneWidget);
+    });
+
+    testWidgets('(b) done after progress stops the stall limit', (
+      tester,
+    ) async {
+      final fake = await _pump(tester);
+      await tester.tap(find.text('dl-label $_name'));
+      await tester.pump();
+      fake.send(const LanguagePackProgress(_locale, percent: 90));
+      await tester.pump();
+      fake.send(const LanguagePackDone(_locale));
+      await tester.pump();
+
+      await tester.pump(const Duration(minutes: 10));
+
+      expect(find.text('ready $_name'), findsOneWidget);
+      expect(find.text('failed $_name'), findsNothing);
+    });
+
+    testWidgets('(c) Android: a re-check that finds downloading shows the '
+        'scheduled state and stops polling', (tester) async {
+      final fake = await _pump(tester);
+      await tester.tap(find.text('dl-label $_name'));
+      await tester.pump();
+
+      fake.setStatus(
+        _locale,
+        LanguagePackStatus.downloading,
+        displayName: _name,
+      );
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump();
+
+      expect(find.text('scheduled $_name'), findsOneWidget);
+      expect(find.text('failed $_name'), findsNothing);
+      final calls = fake.statusCalls.length;
+
+      await tester.pump(const Duration(minutes: 10));
+
+      expect(find.text('scheduled $_name'), findsOneWidget);
+      expect(find.text('failed $_name'), findsNothing);
+      expect(fake.statusCalls.length, calls, reason: 'no more re-checks');
+    });
+
+    testWidgets('(c) iOS: downloading after a tap is a real transfer, so it '
+        'keeps showing progress and still fails at the limit', (tester) async {
+      final fake = await _pump(
+        tester,
+        platform: TargetPlatform.iOS,
+        osVersion: 26,
+      );
+      await tester.tap(find.text('dl-label $_name'));
+      await tester.pump();
+
+      fake.setStatus(
+        _locale,
+        LanguagePackStatus.downloading,
+        displayName: _name,
+      );
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump();
+
+      expect(find.text('scheduled $_name'), findsNothing);
+      expect(find.text('dling $_name'), findsOneWidget);
+
+      await tester.pump(kLanguagePackRecheckLimit);
+      await tester.pump();
+      expect(find.text('failed $_name'), findsOneWidget);
     });
   });
 

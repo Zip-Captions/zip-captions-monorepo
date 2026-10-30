@@ -113,9 +113,15 @@ String? _languageOf(String localeId) {
   return language.isEmpty ? null : language;
 }
 
+/// The region subtag, lower-cased: the subtag after the language, skipping a
+/// four-letter script subtag (`zh-Hant-CA` has region `ca`). `null` when the
+/// tag has no region (`zh`, `zh-Hant`).
 String? _regionOf(String localeId) {
-  final canonical = _canonical(localeId);
-  final separator = canonical.indexOf('-');
-  if (separator == -1 || separator == canonical.length - 1) return null;
-  return canonical.substring(separator + 1);
+  final parts = _canonical(localeId).split('-');
+  var index = 1;
+  if (index < parts.length && _isScript(parts[index])) index++;
+  return index < parts.length && parts[index].isNotEmpty ? parts[index] : null;
 }
+
+/// A script subtag is exactly four ASCII letters (BCP 47), such as `hant`.
+bool _isScript(String subtag) => RegExp(r'^[a-z]{4}$').hasMatch(subtag);

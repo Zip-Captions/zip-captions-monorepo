@@ -19,6 +19,7 @@ class SttListeningLimits {
     required this.restartDelay,
     required this.onDeviceCheckTimeout,
     required this.segmentedSessionLength,
+    this.finalResultDrainTimeout = const Duration(seconds: 1),
   });
 
   /// How many counted failures in a row stop the engine's own restarts.
@@ -49,6 +50,18 @@ class SttListeningLimits {
   /// also bounds what a crash or a platform-side stall can lose; the caption
   /// bus and the transcript writer are unaffected by the change of session.
   final Duration segmentedSessionLength;
+
+  /// How long a stop or a pause waits for the platform to finish recognising
+  /// the speech it already captured (BR-U10-55, Amendment 06).
+  ///
+  /// Both platforms keep recognising what was said before the stop (Android's
+  /// `SpeechRecognizer.stopListening()`, iOS
+  /// `SFSpeechRecognitionTask.finish()`) and deliver the last phrase shortly
+  /// after. The wait ends early at the final result or the platform's end
+  /// signal, so this is only the worst case. It is part of the 5 s Stop bound
+  /// (BR-U10-58). Optional so existing call sites keep their value; tests pass
+  /// a shorter or longer one.
+  final Duration finalResultDrainTimeout;
 }
 
 /// The Unit 10 starting values (see [SttListeningLimits]).

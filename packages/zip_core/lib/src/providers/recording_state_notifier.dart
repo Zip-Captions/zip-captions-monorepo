@@ -9,13 +9,16 @@ import 'package:zip_core/src/models/recording_error.dart';
 import 'package:zip_core/src/models/recording_error_factories.dart';
 import 'package:zip_core/src/models/recording_state.dart';
 import 'package:zip_core/src/models/stt_result.dart';
+import 'package:zip_core/src/models/transcript_save_result.dart';
 import 'package:zip_core/src/providers/caption_bus_provider.dart';
 import 'package:zip_core/src/providers/resolved_locale_id_provider.dart';
 import 'package:zip_core/src/providers/session_stop_callback_provider.dart';
 import 'package:zip_core/src/providers/session_stop_reason_provider.dart';
 import 'package:zip_core/src/providers/speech_inactivity_timeout_provider.dart';
+import 'package:zip_core/src/providers/stop_finalise_timeout_provider.dart';
 import 'package:zip_core/src/providers/stt_engine_provider.dart';
 import 'package:zip_core/src/providers/stt_session_manager_provider.dart';
+import 'package:zip_core/src/providers/transcript_save_outcome_provider.dart';
 import 'package:zip_core/src/providers/wake_lock_service_provider.dart';
 import 'package:zip_core/src/services/caption/caption_bus.dart';
 import 'package:zip_core/src/services/stt/stt_session_manager.dart';
@@ -24,6 +27,9 @@ import 'package:zip_core/src/services/wake_lock/wake_lock_service.dart';
 part 'recording_state_notifier.g.dart';
 
 const _uuid = Uuid();
+
+/// Which step of the stop routine was running, for the BR-U10-58 timeout log.
+enum _FinishStep { engineStop, finalise, done }
 
 /// Recording state machine (BR-01, BR-02, BR-03).
 ///
@@ -51,6 +57,15 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
   /// manager reported meanwhile (first error wins, BR-U10-28 and BR-U10-36).
   RecordingError? _captured;
   bool _capturing = false;
+
+  /// Results that arrive while `start()` or `resume()` is running, in order
+  /// (BR-U10-62). Memory only and never logged (SECURITY-03): they are
+  /// replayed once the state is Recording and dropped on every other outcome.
+  final List<SttResult> _heldResults = [];
+
+  /// Whether a successful REL-U2.1 recovery is waiting for its first result
+  /// with text, which re-arms the recovery (BR-U10-57).
+  bool _awaitingRecoveryProof = false;
 
   /// Set synchronously by the first call to [_finishSession]; every later
   /// caller shares it, so a session is finalised and stopped exactly once
@@ -161,7 +176,9 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
   Future<void> _startSession(String? localeId) async {
     _lastError = null;
     _hasAttemptedRestart = false;
+    _awaitingRecoveryProof = false;
     _finishing = null;
+    _heldResults.clear();
     _cancelInactivityTimer();
     ref.read(sessionStopReasonNotifierProvider.notifier).clear();
 
@@ -220,6 +237,7 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
       state = RecordingState.recording(sessionId: sessionId);
       _armInactivityTimer(sessionId);
       _captionBus.publish(SessionStateEvent(state));
+      _replayHeldResults();
       await _wakeLockService.acquire();
     } on Object catch (e) {
       // SECURITY-15: fail closed. Never log the exception itself.
@@ -234,7 +252,20 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
       }
     } finally {
       _capturing = false;
+      // Every path that did not reach Recording drops what was held.
+      _heldResults.clear();
     }
+  }
+
+  /// Replays the results held while a start or a resume was running, through
+  /// the normal path and in order, now that the state is Recording
+  /// (BR-U10-62). The list is emptied first, so a replayed result cannot be
+  /// replayed twice.
+  void _replayHeldResults() {
+    if (_heldResults.isEmpty) return;
+    final held = List<SttResult>.of(_heldResults);
+    _heldResults.clear();
+    held.forEach(_handleSttResult);
   }
 
   /// The `onError` handed to the session manager. While `start()` or
@@ -267,7 +298,23 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
     // Paused time does not count (BR-U10-51); cancelled again below, because a
     // result may land while the engine pauses.
     _cancelInactivityTimer();
-    await _sessionManager.pause();
+    try {
+      await _sessionManager.pause();
+    } on Object catch (e) {
+      // BR-U10-63: the session manager's own catch lets an Error through. The
+      // session stays Recording and usable; only the type is logged.
+      _log.warning('Engine pause failed: ${e.runtimeType}');
+      // Re-arm only when this same session still owns the recording and no
+      // finish has begun: a late failure of an old pause must never replace
+      // the timer of a newer session.
+      final now = state;
+      if (_finishing == null &&
+          now is RecordingActiveState &&
+          now.sessionId == current.sessionId) {
+        _armInactivityTimer(current.sessionId);
+      }
+      return;
+    }
     // A stop that landed while the engine paused has set Stopped; do not
     // overwrite it with Paused.
     if (_finishing != null) return;
@@ -344,9 +391,11 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
       );
       _armInactivityTimer(current.sessionId);
       _captionBus.publish(SessionStateEvent(state));
+      _replayHeldResults();
       await _wakeLockService.acquire();
     } finally {
       _capturing = false;
+      _heldResults.clear();
     }
   }
 
@@ -386,6 +435,9 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
 
     final done = Completer<void>();
     _finishing = done.future;
+    // Stop wins (BR-U10-35, BR-U10-62): anything held for a start or resume in
+    // flight is dropped.
+    _heldResults.clear();
     _cancelInactivityTimer();
     unawaited(
       _runFinish(sessionId).then(
@@ -397,15 +449,37 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
   }
 
   Future<void> _runFinish(String sessionId) async {
-    await _sessionManager.stop();
-    _log.info('Session stopped');
+    var step = _FinishStep.engineStop;
+    // The engine stop and the finalise are bounded together (BR-U10-58),
+    // measured from here. The work catches everything itself (BR-U10-61), so
+    // when the deadline passes and it is abandoned it cannot raise an
+    // unhandled error later.
+    final work = () async {
+      await _stopManagerQuietly();
+      step = _FinishStep.finalise;
+      _log.info('Session stopped');
+      try {
+        await _finalizeTranscript();
+      } on Object catch (e) {
+        // A failing transcript finaliser must not strand the session: the
+        // user sees Stopped, the event is published, the wake lock is
+        // released. Only the exception's type is logged (SECURITY-03).
+        _log.severe('Transcript finalisation failed: ${e.runtimeType}');
+      }
+      step = _FinishStep.done;
+    }();
     try {
-      await _finalizeTranscript();
-    } on Object catch (e) {
-      // A failing transcript finaliser must not strand the session: the user
-      // sees Stopped, the event is published, the wake lock is released.
-      // Only the exception's type is logged (SECURITY-03).
-      _log.severe('Transcript finalisation failed: ${e.runtimeType}');
+      await work.timeout(ref.read(stopFinaliseTimeoutProvider));
+    } on TimeoutException {
+      // Not cancelled: a late completion of either step is harmless to the
+      // state below, and a late finalise may still write the transcript
+      // (BR-U10-58).
+      _log.severe('Stop timed out while ${step.name} was pending');
+      // With no transcript writer registered there is no transcript to lose.
+      if (ref.read(sessionStopCallbackProvider).callback != null) {
+        ref.read(transcriptSaveOutcomeProvider.notifier).outcome =
+            TranscriptSaveResult.saveFailed;
+      }
     } finally {
       state = RecordingState.stopped(
         sessionId: sessionId,
@@ -438,6 +512,12 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
   ///
   /// **Security (SECURITY-03)**: Must never log result.text.
   void _handleSttResult(SttResult result) {
+    // BR-U10-62: while a start or a resume is running the state is not yet
+    // Recording, so keep the result (in order, in memory) for the replay.
+    if (_capturing) {
+      _heldResults.add(result);
+      return;
+    }
     // BR-U10-51: every result, interim or final, restarts the timer, while it
     // is armed (not paused, not finishing).
     final current = state;
@@ -449,6 +529,14 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
       }
     }
     if (current is! RecordingActiveState) return;
+
+    // BR-U10-57: the first result with text after a successful recovery shows
+    // the recovered session works, so a later engine error gets its own
+    // recovery attempt. Whitespace is not speech.
+    if (_awaitingRecoveryProof && result.text.trim().isNotEmpty) {
+      _awaitingRecoveryProof = false;
+      _hasAttemptedRestart = false;
+    }
 
     if (result.isFinal) {
       state = RecordingActiveState(
@@ -494,6 +582,7 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
     }
 
     _hasAttemptedRestart = true;
+    _awaitingRecoveryProof = false;
     _log.info('Engine error — attempting restart');
     state = RecordingState.reconnecting(
       sessionId: active.sessionId,
@@ -517,6 +606,7 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
         if (recovered) {
           _log.info('Engine restart succeeded');
           _lastError = null;
+          _awaitingRecoveryProof = true;
           state = RecordingState.recording(
             sessionId: active.sessionId,
           );

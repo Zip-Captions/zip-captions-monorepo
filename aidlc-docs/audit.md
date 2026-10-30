@@ -3647,3 +3647,64 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 - **Gates:** `dart analyze --fatal-infos` clean ×3; `zip_core` 1159 passed, 4 skipped; `zip_captions` 402; `zip_broadcast` 195.
 
 **Context**: Branch `feature/mobile-platform-readiness`. Committed and pushed to PR #44.
+
+---
+## CONSTRUCTION - Phase 2 Unit 10: open decisions answered; Amendment 06 proposed
+**Timestamp**: 2026-10-29
+**User Input** (James Petersen): "let's work through the open questions, and leave the QA on the phone and ios simulator work for after". Answers:
+- **Last phrase:** "Keep it, bounded (Recommended)".
+- **Recovery:** "Re-arm after real text (Recommended)".
+- **Stop timeout:** "Yes, 5 s (Recommended)".
+- **Evidence:** "Reports only".
+- **BR-U10-40:** "Approve as written".
+- **Where:** "Worktree again (Recommended)".
+
+**AI Response** (Opus):
+- **Root cause traced** against `speech_to_text` 7.3.0, the Android SDK 36 `SpeechRecognizer` source and Apple's Speech docs:
+  - Android drops every event once Stop or Pause has run.
+  - iOS calls `cancel()` straight after `stop()`, which discards the final result `finish()` would have delivered.
+  - A result that arrives after Pause is dropped by the notifier.
+- **Amendment 06 drafted** (BR-U10-55 to 59, TP-34 to 37) for approval: a 1 s drain at Stop and Pause, recovery re-armed by the first non-empty result after a successful recovery, and a 5 s bound on the whole Stop routine that reports "not saved" when the finalise is still pending. BR-U10-59 records that the microphone cannot be guaranteed released if the platform's stop never returns.
+- **BR-U10-40** corrected in Amendment 03.
+- **Evidence:** only the `.md` reports stay in the repo. Screenshots and logs go to a local archive once Amendment 06's build is done.
+
+**Context**: Worktree `.claude/worktrees/unit10-fixes` on `feature/mobile-platform-readiness` (approved). Nothing committed yet.
+
+---
+## CONSTRUCTION - Phase 2 Unit 10: Amendment 06 approved; CodeRabbit PR #44 review triaged
+**Timestamp**: 2026-10-29
+**User Input** (James Petersen): "approved, and before you delegate the work to sonnet, check the pr, coderabbit left us feedback". Answers:
+- **Triage:** "Approve as proposed (Recommended)".
+- **Notice text:** "\"The transcript could not be saved.\"".
+- **Test helpers:** "Split the two Unit 10 helpers".
+- **Language-pack status wait:** "Failed, with Try again (Recommended)".
+
+**AI Response** (Opus):
+- **Amendment 06 revision 1:** recorded as APPROVED.
+- **CodeRabbit's review of `08a4ccd`:** 29 findings (20 inline, 1 follow-up, 8 nitpicks), each checked against the code, AGENTS.md and the merged test-helper precedent.
+- **Amendment 06 revision 2** (section 8; BR-U10-60 to 64, TP-38 to 42) adds:
+  - three save outcomes, and the new notice;
+  - an engine stop at finish that never strands the session;
+  - results kept while a start or a resume is in flight;
+  - a throwing pause that keeps the session usable;
+  - the language-pack panel deadlines.
+- **Fixed without a design change:** #5, #11, `_regionOf`, the `// ignore` lines in tests, the helper split, and the coverage nitpicks.
+- **Declined with reasons:** #14, #17 and #18.
+
+**Context**: Revision 2 awaits approval before the Sonnet build.
+
+---
+## CONSTRUCTION - Phase 2 Unit 10: Amendment 06 revision 2 approved; build delegated
+**Timestamp**: 2026-10-29
+**User Input** (James Petersen): "approved"
+
+**AI Response** (Opus): Amendment 06 revision 2 recorded as APPROVED. The build of Amendment 06 and the CodeRabbit fixes is delegated to a Sonnet builder, test-first, in the Unit 10 worktree, with docs-mcp and the platform sources required as reference. Opus reviews the result and re-runs the gates.
+
+**Built** (plan Step 29f):
+- **What was built:** Amendment 06 revisions 1 and 2, and the CodeRabbit fixes without a design change.
+- **N7 declined:** it would need a disproportionate test harness.
+- **Formatting restored:** the builder ran `dart format` over the whole of `zip_core`, which changed 110 unrelated files in formatting only. Opus checked samples were formatting-only and restored the files from HEAD.
+- **Opus review:** read the engine, notifier and writer diffs against the rules.
+- **Gates:** `dart analyze --fatal-infos` clean ×3; `zip_core` 1233 passed, 4 skipped; `zip_captions` 426; `zip_broadcast` 195.
+
+**Context**: Worktree `.claude/worktrees/unit10-fixes`. Committed and pushed to PR #44.

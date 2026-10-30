@@ -62,8 +62,8 @@ final transcriptWriterTargetProvider = Provider<void>((ref) {
   // before the stopped state is published, so RecordingScreen can tell a
   // saved session from one that captioned nothing.
   stopCallback.callback = () async {
-    final saved = await target.finalizeCurrentSession();
-    ref.read(transcriptSaveOutcomeProvider.notifier).saved = saved;
+    final outcome = await target.finalizeCurrentSession();
+    ref.read(transcriptSaveOutcomeProvider.notifier).outcome = outcome;
   };
 
   // If saving is re-enabled while a session is already active, replay the

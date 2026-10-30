@@ -99,18 +99,20 @@ void main() {
       });
     }
 
-    test('an unknown status string is unknown, with the locale as name',
-        () async {
-      statusReply = <String, Object?>{
-        'status': 'bogus',
-        'displayName': 'English',
-      };
+    test(
+      'an unknown status string is unknown, with the locale as name',
+      () async {
+        statusReply = <String, Object?>{
+          'status': 'bogus',
+          'displayName': 'English',
+        };
 
-      final info = await MethodChannelLanguagePackService().status('en-US');
+        final info = await MethodChannelLanguagePackService().status('en-US');
 
-      expect(info.status, LanguagePackStatus.unknown);
-      expect(info.displayName, 'en-US');
-    });
+        expect(info.status, LanguagePackStatus.unknown);
+        expect(info.displayName, 'en-US');
+      },
+    );
 
     final malformed = <String, Object?>{
       'a null reply': null,
@@ -122,34 +124,34 @@ void main() {
         'displayName': 'English',
       },
     };
-    // The table reads better as a named declaration than as a cascade.
-    // ignore: cascade_invocations
-    malformed.forEach((name, reply) {
-      test('$name is unknown, with the locale as name', () async {
-        statusReply = reply;
+    for (final entry in malformed.entries) {
+      test('${entry.key} is unknown, with the locale as name', () async {
+        statusReply = entry.value;
 
         final info = await MethodChannelLanguagePackService().status('en-US');
 
         expect(info.status, LanguagePackStatus.unknown);
         expect(info.displayName, 'en-US');
       });
-    });
+    }
 
-    test('a valid status with a missing or empty name keeps the status',
-        () async {
-      statusReply = <String, Object?>{'status': 'downloadable'};
-      var info = await MethodChannelLanguagePackService().status('de-DE');
-      expect(info.status, LanguagePackStatus.downloadable);
-      expect(info.displayName, 'de-DE');
+    test(
+      'a valid status with a missing or empty name keeps the status',
+      () async {
+        statusReply = <String, Object?>{'status': 'downloadable'};
+        var info = await MethodChannelLanguagePackService().status('de-DE');
+        expect(info.status, LanguagePackStatus.downloadable);
+        expect(info.displayName, 'de-DE');
 
-      statusReply = <String, Object?>{
-        'status': 'downloadable',
-        'displayName': '',
-      };
-      info = await MethodChannelLanguagePackService().status('de-DE');
-      expect(info.status, LanguagePackStatus.downloadable);
-      expect(info.displayName, 'de-DE');
-    });
+        statusReply = <String, Object?>{
+          'status': 'downloadable',
+          'displayName': '',
+        };
+        info = await MethodChannelLanguagePackService().status('de-DE');
+        expect(info.status, LanguagePackStatus.downloadable);
+        expect(info.displayName, 'de-DE');
+      },
+    );
 
     test('a PlatformException is unknown, with the locale as name', () async {
       statusError = PlatformException(code: 'boom', message: 'secret words');
@@ -280,11 +282,9 @@ void main() {
         'code': 'x',
       },
     };
-    // The table reads better as a named declaration than as a cascade.
-    // ignore: cascade_invocations
-    malformed.forEach((name, raw) {
-      test('$name is dropped without the payload in the log', () async {
-        await send(raw);
+    for (final entry in malformed.entries) {
+      test('${entry.key} is dropped without the payload in the log', () async {
+        await send(entry.value);
 
         expect(received, isEmpty);
         expect(records, isNotEmpty);
@@ -292,6 +292,6 @@ void main() {
         expect(text, isNot(contains('en-US')));
         expect(text, isNot(contains('"40"')));
       });
-    });
+    }
   });
 }

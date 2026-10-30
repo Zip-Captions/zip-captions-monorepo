@@ -10,9 +10,9 @@ import 'package:zip_core/src/stt/engines/segmented_speech_engine_factory.dart';
 import 'package:zip_core/src/stt/stt_engine.dart';
 import 'package:zip_core/src/stt/stt_error_source.dart';
 
+import '../../helpers/call_log.dart';
 import '../../helpers/fake_on_device_checker.dart';
 import '../../helpers/fake_segmented_recognizer_bridge.dart';
-import '../../helpers/fake_speech_to_text.dart';
 
 /// A hand-set clock (BR-U10-44): the test decides whether an end of session
 /// is early by advancing the time, not by waiting. The engine's injected
@@ -39,6 +39,9 @@ _rig({
   int restartCap = 3,
   bool checkResult = true,
   Duration sessionLength = const Duration(minutes: 60),
+  // Short by default so a test that awaits a stop in real time does not wait
+  // the production second; the drain tests pass the production value.
+  Duration drainTimeout = const Duration(milliseconds: 20),
 }) {
   final log = CallLog();
   final bridge = FakeSegmentedRecognizerBridge(log);
@@ -53,6 +56,7 @@ _rig({
       restartDelay: const Duration(milliseconds: 250),
       onDeviceCheckTimeout: const Duration(seconds: 2),
       segmentedSessionLength: sessionLength,
+      finalResultDrainTimeout: drainTimeout,
     ),
     now: clock.now,
   );
@@ -215,6 +219,48 @@ void main() {
         );
         async.flushMicrotasks();
 
+        expect(started, isFalse);
+        expect(rig.bridge.startedLocales, isEmpty);
+        expect(errors, [SttEngineErrorKind.onDeviceModelMissing]);
+      });
+    });
+
+    test('a check that never answers refuses after the timeout: no session, '
+        'one lasting error', () {
+      fakeAsync((async) {
+        final rig = _rig();
+        rig.checker.script.add(FakeOnDeviceChecker.hang);
+        addTearDown(rig.engine.dispose);
+        final errors = <SttEngineErrorKind>[];
+        rig.engine.setErrorListener((e) => errors.add(e.kind));
+        var finished = false;
+        var started = true;
+
+        unawaited(
+          rig.engine
+              .initialize()
+              .then(
+                (_) => rig.engine.startListening(
+                  localeId: 'en-CA',
+                  onResult: _Results().add,
+                ),
+              )
+              .then((ok) {
+                started = ok;
+                finished = true;
+              }),
+        );
+        async.flushMicrotasks();
+        expect(finished, isFalse, reason: 'still waiting for the checker');
+
+        async
+          ..elapse(
+            defaultSttListeningLimits.onDeviceCheckTimeout +
+                const Duration(milliseconds: 1),
+          )
+          ..flushMicrotasks();
+
+        expect(finished, isTrue);
         expect(started, isFalse);
         expect(rig.bridge.startedLocales, isEmpty);
         expect(errors, [SttEngineErrorKind.onDeviceModelMissing]);
@@ -552,8 +598,9 @@ void main() {
 
         // A user pause and resume restarts the budget (BR-U10-44: only a
         // user start resets it).
+        // The pause waits out its short drain (BR-U10-55) before returning.
         unawaited(rig.engine.pause());
-        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 50));
         unawaited(rig.engine.resume());
         async.flushMicrotasks();
         expect(rig.bridge.startedLocales, hasLength(4));
@@ -564,7 +611,8 @@ void main() {
           expect(
             errors,
             isEmpty,
-            reason: 'the counter was reset by resume, early end ${i + 1} '
+            reason:
+                'the counter was reset by resume, early end ${i + 1} '
                 'after it is not the third overall',
           );
         }
@@ -901,6 +949,47 @@ void main() {
     });
   });
 
+  group('BR-U10-40 a lone transient code is retried then capped', () {
+    test('without an end of session, each code retries once and the second '
+        'reaches the cap', () {
+      for (final code in [1, 2, 3, 4, 8, 10, 99]) {
+        fakeAsync((async) {
+          final rig = _rig(restartCap: 2);
+          addTearDown(rig.engine.dispose);
+          final errors = <SttEngineErrorKind>[];
+          rig.engine.setErrorListener((e) => errors.add(e.kind));
+          unawaited(rig.engine.initialize());
+          async.flushMicrotasks();
+          unawaited(
+            rig.engine.startListening(
+              localeId: 'en-CA',
+              onResult: _Results().add,
+            ),
+          );
+          async.flushMicrotasks();
+
+          rig.bridge.sendError(code);
+          async.elapse(const Duration(seconds: 1));
+          expect(
+            rig.bridge.startedLocales,
+            hasLength(2),
+            reason: 'code $code alone schedules the retry',
+          );
+          expect(errors, isEmpty, reason: 'code $code is below the cap');
+
+          rig.bridge.sendError(code);
+          async.elapse(const Duration(seconds: 1));
+          expect(
+            errors,
+            [SttEngineErrorKind.restartCapReached],
+            reason: 'code $code reaches the cap',
+          );
+          expect(rig.bridge.startedLocales, hasLength(2), reason: 'code $code');
+        });
+      }
+    });
+  });
+
   group('BR-U10-41 recreate after a dead service (TP-24)', () {
     test('codes 5 and 11 recreate before the retry', () {
       for (final code in [5, 11]) {
@@ -1030,7 +1119,8 @@ void main() {
 
         var paused = false;
         unawaited(rig.engine.pause().then((ok) => paused = ok));
-        async.flushMicrotasks();
+        // The pause waits out its short drain (BR-U10-55) before returning.
+        async.elapse(const Duration(milliseconds: 50));
         expect(paused, isTrue);
         expect(rig.log.where('segment-stop'), isNotEmpty);
 
@@ -1061,6 +1151,374 @@ void main() {
       await rig.engine.stopListening();
 
       expect(rig.log.where('segment-stop'), hasLength(1));
+    });
+  });
+
+  group('BR-U10-55 the last phrase is drained (TP-34)', () {
+    final production = defaultSttListeningLimits.finalResultDrainTimeout;
+
+    /// Starts a session inside the fake-async zone.
+    void startSession(
+      FakeAsync async,
+      ({
+        SegmentedSpeechEngine engine,
+        FakeSegmentedRecognizerBridge bridge,
+        FakeOnDeviceChecker checker,
+        CallLog log,
+        _Clock clock,
+      })
+      rig,
+      _Results results,
+    ) {
+      unawaited(rig.engine.initialize());
+      async.flushMicrotasks();
+      unawaited(
+        rig.engine.startListening(localeId: 'en-CA', onResult: results.add),
+      );
+      async.flushMicrotasks();
+    }
+
+    test('the default drain timeout is one second', () {
+      expect(production, const Duration(seconds: 1));
+    });
+
+    for (final pause in [false, true]) {
+      final name = pause ? 'pause' : 'stop';
+
+      test('a final segment after $name() is delivered once, before the call '
+          'returns', () {
+        fakeAsync((async) {
+          final rig = _rig(drainTimeout: production);
+          addTearDown(rig.engine.dispose);
+          final results = _Results();
+          startSession(async, rig, results);
+          final order = <String>[];
+
+          unawaited(
+            (pause ? rig.engine.pause() : rig.engine.stopListening()).then(
+              (_) => order.add('returned'),
+            ),
+          );
+          async.flushMicrotasks();
+          expect(order, isEmpty, reason: 'waiting for the last phrase');
+          rig.bridge.sendSegment(' the last phrase ');
+          async.flushMicrotasks();
+          order.add('after');
+
+          expect(results.texts, ['the last phrase']);
+          expect(results.finals, [true]);
+          expect(order, ['returned', 'after']);
+          // The platform session is cancelled on stop and left on pause.
+          expect(
+            rig.log.where('segment-cancel'),
+            pause ? isEmpty : hasLength(1),
+          );
+          expect(rig.bridge.startedLocales, ['en-CA'], reason: 'no restart');
+        });
+      });
+
+      test('a result after the $name() deadline is never delivered', () {
+        fakeAsync((async) {
+          final rig = _rig(drainTimeout: production);
+          addTearDown(rig.engine.dispose);
+          final results = _Results();
+          startSession(async, rig, results);
+          var returned = false;
+
+          unawaited(
+            (pause ? rig.engine.pause() : rig.engine.stopListening()).then(
+              (_) => returned = true,
+            ),
+          );
+          async.elapse(production - const Duration(milliseconds: 1));
+          expect(returned, isFalse, reason: 'still inside the window');
+          async.elapse(const Duration(milliseconds: 2));
+          expect(returned, isTrue);
+
+          rig.bridge
+            ..sendSegment('too late')
+            ..sendPartial('too late');
+          async.elapse(const Duration(seconds: 5));
+          expect(results.texts, isEmpty);
+          expect(rig.bridge.startedLocales, ['en-CA']);
+        });
+      });
+
+      test('a pending partial with no final is delivered once as final at '
+          'the end of the $name() wait', () {
+        fakeAsync((async) {
+          final rig = _rig(drainTimeout: production);
+          addTearDown(rig.engine.dispose);
+          final results = _Results();
+          startSession(async, rig, results);
+          rig.bridge.sendPartial('almost there');
+          async.flushMicrotasks();
+
+          unawaited(pause ? rig.engine.pause() : rig.engine.stopListening());
+          async.elapse(production + const Duration(milliseconds: 1));
+
+          expect(results.texts, ['almost there', 'almost there']);
+          expect(results.finals, [false, true]);
+        });
+      });
+
+      test('a partial that arrives during the $name() wait is flushed as '
+          'final too, and only once', () {
+        fakeAsync((async) {
+          final rig = _rig(drainTimeout: production);
+          addTearDown(rig.engine.dispose);
+          final results = _Results();
+          startSession(async, rig, results);
+
+          unawaited(pause ? rig.engine.pause() : rig.engine.stopListening());
+          async.flushMicrotasks();
+          rig.bridge.sendPartial('during the wait');
+          async.elapse(production + const Duration(seconds: 3));
+
+          // The drain remembers a partial; it does not show it as interim.
+          expect(results.texts, ['during the wait']);
+          expect(results.finals, [true]);
+        });
+      });
+
+      test('the end of session ends the $name() wait early and renews '
+          'nothing', () {
+        fakeAsync((async) {
+          final rig = _rig(drainTimeout: production);
+          addTearDown(rig.engine.dispose);
+          final errors = <SttEngineErrorKind>[];
+          rig.engine.setErrorListener((e) => errors.add(e.kind));
+          startSession(async, rig, _Results());
+          var returned = false;
+
+          unawaited(
+            (pause ? rig.engine.pause() : rig.engine.stopListening()).then(
+              (_) => returned = true,
+            ),
+          );
+          async.flushMicrotasks();
+          rig.bridge.sendEndOfSession();
+          async.flushMicrotasks();
+
+          expect(returned, isTrue, reason: 'no need to wait the full second');
+          async.elapse(const Duration(seconds: 10));
+          expect(rig.bridge.startedLocales, ['en-CA']);
+          expect(rig.checker.localesChecked, ['en-CA']);
+          expect(errors, isEmpty);
+        });
+      });
+
+      test('an error code during the $name() wait ends it and counts, '
+          'recreates and reports nothing', () {
+        fakeAsync((async) {
+          // A cap of 1 would report on any counted failure.
+          final rig = _rig(restartCap: 1, drainTimeout: production);
+          addTearDown(rig.engine.dispose);
+          final errors = <SttEngineErrorKind>[];
+          rig.engine.setErrorListener((e) => errors.add(e.kind));
+          startSession(async, rig, _Results());
+          var returned = false;
+
+          unawaited(
+            (pause ? rig.engine.pause() : rig.engine.stopListening()).then(
+              (_) => returned = true,
+            ),
+          );
+          async.flushMicrotasks();
+          rig.bridge.sendError(5);
+          async.flushMicrotasks();
+
+          expect(returned, isTrue);
+          async.elapse(const Duration(seconds: 10));
+          expect(rig.bridge.startedLocales, ['en-CA']);
+          expect(rig.log.where('segment-recreate'), isEmpty);
+          expect(errors, isEmpty);
+        });
+      });
+    }
+
+    test('only the first final segment of a drain is delivered', () {
+      fakeAsync((async) {
+        final rig = _rig(drainTimeout: production);
+        addTearDown(rig.engine.dispose);
+        final results = _Results();
+        startSession(async, rig, results);
+
+        unawaited(rig.engine.stopListening());
+        async.flushMicrotasks();
+        rig.bridge
+          ..sendSegment('first')
+          ..sendSegment('second');
+        async.elapse(const Duration(seconds: 2));
+
+        expect(results.texts, ['first']);
+      });
+    });
+
+    test('an empty segment does not end the wait', () {
+      fakeAsync((async) {
+        final rig = _rig(drainTimeout: production);
+        addTearDown(rig.engine.dispose);
+        final results = _Results();
+        startSession(async, rig, results);
+
+        unawaited(rig.engine.stopListening());
+        async.flushMicrotasks();
+        rig.bridge
+          ..sendSegment('   ')
+          ..sendSegment('real');
+        async.flushMicrotasks();
+
+        expect(results.texts, ['real']);
+      });
+    });
+
+    test('a stop with no live session does not wait', () {
+      fakeAsync((async) {
+        final rig = _rig(drainTimeout: production);
+        addTearDown(rig.engine.dispose);
+        var returned = false;
+
+        unawaited(rig.engine.stopListening().then((_) => returned = true));
+        async.flushMicrotasks();
+
+        expect(returned, isTrue);
+      });
+    });
+
+    test('a resume after a drained pause starts a fresh checked session', () {
+      fakeAsync((async) {
+        final rig = _rig(drainTimeout: production);
+        addTearDown(rig.engine.dispose);
+        final results = _Results();
+        startSession(async, rig, results);
+
+        unawaited(rig.engine.pause());
+        async.flushMicrotasks();
+        rig.bridge.sendSegment('kept');
+        async.flushMicrotasks();
+        var resumed = false;
+        unawaited(rig.engine.resume().then((ok) => resumed = ok));
+        async.flushMicrotasks();
+
+        expect(resumed, isTrue);
+        expect(results.texts, ['kept']);
+        expect(rig.bridge.startedLocales, ['en-CA', 'en-CA']);
+      });
+    });
+  });
+
+  group('review fix #5: the stream onError honours the live-session guard', () {
+    /// Starts a session and returns the rig.
+    ({
+      SegmentedSpeechEngine engine,
+      FakeSegmentedRecognizerBridge bridge,
+      FakeOnDeviceChecker checker,
+      CallLog log,
+      _Clock clock,
+    })
+    liveRig(FakeAsync async, {Duration? drain}) {
+      final rig = _rig(restartCap: 1, drainTimeout: drain ?? Duration.zero);
+      addTearDown(rig.engine.dispose);
+      unawaited(rig.engine.initialize());
+      async.flushMicrotasks();
+      unawaited(
+        rig.engine.startListening(localeId: 'en-CA', onResult: _Results().add),
+      );
+      async.flushMicrotasks();
+      return rig;
+    }
+
+    test(
+      'a stream error while listening still counts as a transient failure',
+      () {
+        fakeAsync((async) {
+          final rig = liveRig(async);
+          final errors = <SttEngineErrorKind>[];
+          rig.engine.setErrorListener((e) => errors.add(e.kind));
+
+          rig.bridge.sendStreamError(StateError('channel'));
+          async.flushMicrotasks();
+
+          expect(errors, [SttEngineErrorKind.restartCapReached]);
+        });
+      },
+    );
+
+    test('a stream error after stop counts nothing, reports nothing and '
+        'starts nothing', () {
+      fakeAsync((async) {
+        final rig = liveRig(async);
+        final errors = <SttEngineErrorKind>[];
+        rig.engine.setErrorListener((e) => errors.add(e.kind));
+        unawaited(rig.engine.stopListening());
+        async.elapse(const Duration(seconds: 1));
+
+        rig.bridge.sendStreamError(StateError('channel'));
+        async.elapse(const Duration(seconds: 5));
+
+        expect(errors, isEmpty);
+        expect(rig.bridge.startedLocales, ['en-CA']);
+      });
+    });
+
+    test('a stream error after pause counts nothing and starts nothing', () {
+      fakeAsync((async) {
+        final rig = liveRig(async);
+        final errors = <SttEngineErrorKind>[];
+        rig.engine.setErrorListener((e) => errors.add(e.kind));
+        unawaited(rig.engine.pause());
+        async.elapse(const Duration(seconds: 1));
+
+        rig.bridge.sendStreamError(StateError('channel'));
+        async.elapse(const Duration(seconds: 5));
+
+        expect(errors, isEmpty);
+        expect(rig.bridge.startedLocales, ['en-CA']);
+      });
+    });
+
+    test('a stream error while a resume is in flight counts nothing', () {
+      fakeAsync((async) {
+        final rig = liveRig(async);
+        final errors = <SttEngineErrorKind>[];
+        rig.engine.setErrorListener((e) => errors.add(e.kind));
+        unawaited(rig.engine.pause());
+        async.flushMicrotasks();
+        final held = Completer<void>();
+        rig.checker.hangNext = held.future;
+        unawaited(rig.engine.resume());
+        async.flushMicrotasks();
+
+        rig.bridge.sendStreamError(StateError('channel'));
+        async.elapse(const Duration(seconds: 1));
+
+        expect(errors, isEmpty);
+        held.complete();
+        async.flushMicrotasks();
+      });
+    });
+
+    test('a stream error during a drain ends the wait without a count', () {
+      fakeAsync((async) {
+        final rig = liveRig(
+          async,
+          drain: defaultSttListeningLimits.finalResultDrainTimeout,
+        );
+        final errors = <SttEngineErrorKind>[];
+        rig.engine.setErrorListener((e) => errors.add(e.kind));
+        var returned = false;
+        unawaited(rig.engine.stopListening().then((_) => returned = true));
+        async.flushMicrotasks();
+
+        rig.bridge.sendStreamError(StateError('channel'));
+        async.flushMicrotasks();
+
+        expect(returned, isTrue);
+        expect(errors, isEmpty);
+        async.elapse(const Duration(seconds: 5));
+        expect(rig.bridge.startedLocales, ['en-CA']);
+      });
     });
   });
 
@@ -1130,20 +1588,36 @@ void main() {
       expect(await rig.engine.supportedLocales(), isEmpty);
     });
 
-    test('a throwing bridge gives an empty list and logs the type only',
-        () async {
-      final rig = _rig();
-      addTearDown(rig.engine.dispose);
-      rig.bridge.supportedLocalesError = const FormatException('secret words');
-      final records = <String>[];
-      Logger.root.level = Level.ALL;
-      final sub = Logger.root.onRecord.listen((r) => records.add(r.message));
-      addTearDown(sub.cancel);
+    test(
+      'a throwing bridge gives an empty list and logs the type only',
+      () async {
+        final rig = _rig();
+        addTearDown(rig.engine.dispose);
+        rig.bridge.supportedLocalesError = const FormatException(
+          'secret words',
+        );
+        final records = <LogRecord>[];
+        Logger.root.level = Level.ALL;
+        final sub = Logger.root.onRecord.listen(records.add);
+        addTearDown(sub.cancel);
 
-      expect(await rig.engine.supportedLocales(), isEmpty);
-      expect(records, contains(contains('FormatException')));
-      expect(records.join(), isNot(contains('secret words')));
-    });
+        expect(await rig.engine.supportedLocales(), isEmpty);
+        expect(
+          records.map((r) => r.message),
+          contains(contains('FormatException')),
+        );
+        // Nothing on any record, not only its message, carries the secret.
+        for (final r in records) {
+          expect(r.message, isNot(contains('secret words')));
+          expect(r.object?.toString() ?? '', isNot(contains('secret words')));
+          expect(r.error?.toString() ?? '', isNot(contains('secret words')));
+          expect(
+            r.stackTrace?.toString() ?? '',
+            isNot(contains('secret words')),
+          );
+        }
+      },
+    );
   });
 
   group('review fix F1: codes 5 and 11 are counted', () {
@@ -1184,7 +1658,8 @@ void main() {
           expect(
             rig.log.where('segment-recreate'),
             hasLength(2),
-            reason: 'code $code: the failure that reaches the cap does not '
+            reason:
+                'code $code: the failure that reaches the cap does not '
                 'recreate',
           );
         });

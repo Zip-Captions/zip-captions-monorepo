@@ -159,14 +159,25 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
         // starts. The screen only reads it, never writes or clears it; a
         // provider write from inside this listener re-created the provider's
         // notifier and threw riverpod 2.6's `LateInitializationError`.
-        final saved = ref.read(transcriptSaveOutcomeProvider);
+        final outcome = ref.read(transcriptSaveOutcomeProvider);
+        // BR-U10-60: three outcomes. Nothing recognised and a failed save
+        // each get their own one-time notice; a saved session and an unknown
+        // outcome get none.
+        final noticeText = switch (outcome) {
+          TranscriptSaveResult.nothingRecognised =>
+            strings?.noTranscriptSavedNotice,
+          TranscriptSaveResult.saveFailed =>
+            strings?.transcriptSaveFailedNotice,
+          TranscriptSaveResult.saved || null => null,
+        };
         if (captureOn &&
-            saved == false &&
+            (outcome == TranscriptSaveResult.nothingRecognised ||
+                outcome == TranscriptSaveResult.saveFailed) &&
             _noTranscriptNoticeShownFor != next.sessionId) {
           _noTranscriptNoticeShownFor = next.sessionId;
-          if (strings != null) {
+          if (noticeText != null) {
             ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-              SnackBar(content: Text(strings.noTranscriptSavedNotice)),
+              SnackBar(content: Text(noticeText)),
             );
           }
         }

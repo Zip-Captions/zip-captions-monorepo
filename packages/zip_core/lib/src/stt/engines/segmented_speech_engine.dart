@@ -38,6 +38,10 @@ import 'package:zip_core/src/stt/stt_error_source.dart';
 ///   [SttListeningLimits.segmentedSessionLength] is an early end, counted in
 ///   its own budget which only a user start or resume resets; the one that
 ///   reaches the cap reports `restartCapReached` once and stops.
+/// - BR-U10-55: stop and pause wait up to
+///   [SttListeningLimits.finalResultDrainTimeout] for the platform to finish
+///   recognising the speech already captured, deliver it, and only then
+///   return; nothing in the wait renews, counts or reports.
 /// - BR-U10-45: every renewal waits `restartDelay` (a cancellable timer, as
 ///   in `PlatformSttEngine`) before checking and starting, and a refused or
 ///   throwing renewal is a transient failure that retries until the cap
@@ -56,13 +60,23 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
     required OnDeviceSupportChecker onDeviceSupportChecker,
     SttListeningLimits limits = defaultSttListeningLimits,
     DateTime Function() now = DateTime.now,
-  })  : _bridge = bridge,
-        _checker = onDeviceSupportChecker,
-        _limits = limits,
-        _now = now {
+  }) : _bridge = bridge,
+       _checker = onDeviceSupportChecker,
+       _limits = limits,
+       _now = now {
     _subscription = bridge.events.listen(
       _onEvent,
       onError: (Object _) {
+        // The same guard as `_onEvent`: a channel error after a stop or a
+        // pause, or while a start is in flight, belongs to no session anyone
+        // asked for and must not count or renew.
+        if (_draining) {
+          // Nothing more will come from a broken channel, so the wait for the
+          // last phrase is over (BR-U10-55); nothing is counted.
+          _endDrain();
+          return;
+        }
+        if (_intent != _Intent.listening || !_sessionLive) return;
         // A broken channel is a transient failure of the session in flight:
         // treat it as an error without a code.
         _onTransientError();
@@ -115,6 +129,24 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
   /// While it is `false` the bridge's events belong to a superseded session
   /// and are dropped.
   bool _sessionLive = false;
+
+  /// Whether a stop or a pause is waiting for the platform to finish
+  /// recognising the speech it already captured (BR-U10-55). While it is
+  /// `true` the bridge's events are read by [_onDrainEvent] only.
+  bool _draining = false;
+
+  /// Completed when the drain ends: a final segment, the end of the session,
+  /// an error, or the deadline.
+  Completer<void>? _drainDone;
+
+  /// Whether a final segment was delivered during the drain.
+  bool _drainDeliveredFinal = false;
+
+  /// The latest partial of the session in flight (cleared by a segment or a
+  /// new session). Held in memory only, never logged (SECURITY-03), so the
+  /// drain can deliver it as final when the platform sends no final
+  /// (the BR-U10-16 flush).
+  String? _pendingPartial;
 
   @override
   String get engineId => _engineIdValue;
@@ -214,8 +246,9 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
   /// "unsupported". Logs the boolean only.
   Future<bool> _onDeviceAllowed(String localeId) async {
     try {
-      final allowed =
-          await _checker(localeId).timeout(_limits.onDeviceCheckTimeout);
+      final allowed = await _checker(
+        localeId,
+      ).timeout(_limits.onDeviceCheckTimeout);
       _log.info('On-device support check: $allowed');
       return allowed;
     } on Object catch (e) {
@@ -234,8 +267,10 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
       );
       if (started) {
         _beginSession();
-        _log.info('Segmented session started for $localeId, '
-            'lengthMs=$minimumLengthMs');
+        _log.info(
+          'Segmented session started for $localeId, '
+          'lengthMs=$minimumLengthMs',
+        );
       } else {
         _log.warning('Segmented session refused');
         _countFailure();
@@ -255,11 +290,19 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
     _worst = _ErrorClass.none;
     _recreatedForSession = false;
     _renewing = false;
+    _pendingPartial = null;
     // BR-U10-44: the early-end test is measured from the session's own start.
     _budget.onSessionStarted();
   }
 
   void _onEvent(SegmentedRecognizerEvent event) {
+    // BR-U10-55: after a stop or a pause the platform still finishes the
+    // speech it captured; only that is accepted, and only until the drain
+    // ends.
+    if (_draining) {
+      _onDrainEvent(event);
+      return;
+    }
     // Events for a session nobody asked for (after stop, pause or dispose)
     // are dropped, so a trailing segment cannot reach a stopped session.
     // Likewise for a session that has not begun since the last start, stop or
@@ -270,11 +313,13 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
       case SegmentedReady():
         break;
       case SegmentedPartial(:final text):
+        _pendingPartial = text;
         _deliver(text, isFinal: false);
       case SegmentedSegment(:final text):
         // BR-U10-38: trim, drop an empty one, deliver once as final.
         final trimmed = text.trim();
         if (trimmed.isEmpty) return;
+        _pendingPartial = null;
         _deliver(trimmed, isFinal: true);
       case SegmentedEndOfSession():
         _onEndOfSession();
@@ -288,6 +333,12 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
     // early-end count through delivered results.
     _budget.onDeliveredResult();
     _worst = _ErrorClass.none;
+    _emit(text, isFinal: isFinal);
+  }
+
+  /// Hands one result to the app without touching the budgets, so a drained
+  /// result (BR-U10-55) never counts, resets or renews anything.
+  void _emit(String text, {required bool isFinal}) {
     _onResult?.call(
       SttResult(
         text: text,
@@ -457,9 +508,76 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
     _errorListener?.call(SttEngineError(kind));
   }
 
+  /// Opens the BR-U10-55 drain when a session is live, before the intent
+  /// changes. Returns whether one was opened: with no live session there is
+  /// nothing to wait for.
+  bool _beginDrain() {
+    final live = _intent == _Intent.listening && _sessionLive;
+    if (!live || _draining) return false;
+    _draining = true;
+    _drainDeliveredFinal = false;
+    _drainDone = Completer<void>();
+    return true;
+  }
+
+  /// Waits for the drain to end (a final segment, the end of the session, an
+  /// error or `finalResultDrainTimeout`), then flushes a pending partial as
+  /// final once if no final arrived (BR-U10-16). Always leaves the drain
+  /// closed, so a later event is dropped as before.
+  Future<void> _awaitDrain() async {
+    final done = _drainDone;
+    if (done == null) return;
+    final timer = Timer(_limits.finalResultDrainTimeout, _endDrain);
+    try {
+      await done.future;
+    } finally {
+      timer.cancel();
+      final pending = _pendingPartial?.trim();
+      _pendingPartial = null;
+      if (!_drainDeliveredFinal && pending != null && pending.isNotEmpty) {
+        _emit(pending, isFinal: true);
+      }
+      _closeDrain();
+    }
+  }
+
+  void _closeDrain() {
+    _draining = false;
+    _drainDone = null;
+  }
+
+  void _endDrain() {
+    final done = _drainDone;
+    if (done != null && !done.isCompleted) done.complete();
+  }
+
+  /// BR-U10-55: during a drain only a segment or a partial is accepted. The
+  /// first non-empty segment is delivered as final and ends the wait; a
+  /// partial is remembered, not shown; the end of the session or an error
+  /// ends the wait. Nothing is counted, renewed or reported.
+  void _onDrainEvent(SegmentedRecognizerEvent event) {
+    switch (event) {
+      case SegmentedReady():
+        break;
+      case SegmentedPartial(:final text):
+        if (!_drainDeliveredFinal) _pendingPartial = text;
+      case SegmentedSegment(:final text):
+        final trimmed = text.trim();
+        if (trimmed.isEmpty || _drainDeliveredFinal) return;
+        _drainDeliveredFinal = true;
+        _pendingPartial = null;
+        _emit(trimmed, isFinal: true);
+        _endDrain();
+      case SegmentedEndOfSession():
+      case SegmentedError():
+        _endDrain();
+    }
+  }
+
   @override
   Future<void> stopListening() async {
     // Intent first, then the platform, so a trailing event never renews.
+    final drain = _beginDrain();
     _epoch++;
     _intent = _Intent.stopped;
     _sessionLive = false;
@@ -467,13 +585,20 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
     try {
       await _bridge.stop();
       _log.info('Segmented session stopped');
+      if (drain) await _awaitDrain();
     } on Object catch (e) {
       _log.warning('Stop error: ${e.runtimeType}');
+    } finally {
+      // A throwing stop skipped the wait: close the drain all the same.
+      if (drain) _closeDrain();
     }
+    // BR-U10-55: a stop ends with the platform session cancelled.
+    await _cancelQuietly();
   }
 
   @override
   Future<bool> pause() async {
+    final drain = _beginDrain();
     _epoch++;
     _intent = _Intent.paused;
     _sessionLive = false;
@@ -481,10 +606,13 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
     try {
       await _bridge.stop();
       _log.info('Paused (via stop)');
+      if (drain) await _awaitDrain();
       return true;
     } on Object catch (e) {
       _log.warning('Pause error: ${e.runtimeType}');
       return false;
+    } finally {
+      if (drain) _closeDrain();
     }
   }
 
@@ -504,6 +632,7 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
     _intent = _Intent.stopped;
     _sessionLive = false;
     _cancelRenewal();
+    _endDrain();
     unawaited(_subscription.cancel());
     unawaited(_cancelQuietly());
     unawaited(_disposeBridge());

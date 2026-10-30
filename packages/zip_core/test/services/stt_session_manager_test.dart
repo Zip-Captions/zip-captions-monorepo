@@ -9,6 +9,7 @@ import 'package:zip_core/src/services/stt/stt_engine_registry.dart';
 import 'package:zip_core/src/services/stt/stt_session_manager.dart';
 import 'package:zip_core/src/stt/stt_error_source.dart';
 
+import '../helpers/mock_error_source_stt_engine.dart';
 import '../helpers/mock_permission_handler.dart';
 import '../helpers/mock_stt_engine.dart';
 import '../helpers/pbt.dart' as pbt;
@@ -33,22 +34,26 @@ void main() {
   });
 
   void stubPermissionGranted() {
-    when(() => mockPermissions.checkPermissionStatus(Permission.microphone))
-        .thenAnswer((_) async => PermissionStatus.granted);
+    when(
+      () => mockPermissions.checkPermissionStatus(Permission.microphone),
+    ).thenAnswer((_) async => PermissionStatus.granted);
   }
 
   void stubPermissionDenied() {
-    when(() => mockPermissions.checkPermissionStatus(Permission.microphone))
-        .thenAnswer((_) async => PermissionStatus.denied);
-    when(() => mockPermissions.requestPermissions([Permission.microphone]))
-        .thenAnswer(
+    when(
+      () => mockPermissions.checkPermissionStatus(Permission.microphone),
+    ).thenAnswer((_) async => PermissionStatus.denied);
+    when(
+      () => mockPermissions.requestPermissions([Permission.microphone]),
+    ).thenAnswer(
       (_) async => {Permission.microphone: PermissionStatus.denied},
     );
   }
 
   void stubPermissionPermanentlyDenied() {
-    when(() => mockPermissions.checkPermissionStatus(Permission.microphone))
-        .thenAnswer((_) async => PermissionStatus.permanentlyDenied);
+    when(
+      () => mockPermissions.checkPermissionStatus(Permission.microphone),
+    ).thenAnswer((_) async => PermissionStatus.permanentlyDenied);
   }
 
   group('SttSessionManager', () {
@@ -111,27 +116,28 @@ void main() {
       });
 
       test(
-          'succeeds without permission check when requiresMicrophone is false',
-          () async {
-        // Engine declares it does not need the microphone — no permission
-        // stub is set up, so any call to the permission handler would throw.
-        final noMicEngine = MockSttEngine(
-          engineId: 'no-mic',
-          requiresMicrophone: false,
-        );
-        final noMicRegistry = SttEngineRegistry()..register(noMicEngine);
-        final noMicManager = SttSessionManager(registry: noMicRegistry);
+        'succeeds without permission check when requiresMicrophone is false',
+        () async {
+          // Engine declares it does not need the microphone — no permission
+          // stub is set up, so any call to the permission handler would throw.
+          final noMicEngine = MockSttEngine(
+            engineId: 'no-mic',
+            requiresMicrophone: false,
+          );
+          final noMicRegistry = SttEngineRegistry()..register(noMicEngine);
+          final noMicManager = SttSessionManager(registry: noMicRegistry);
 
-        final ok = await noMicManager.initialize(
-          engineId: 'no-mic',
-          localeId: 'en-US',
-          onResult: capturedResults.add,
-          onError: capturedErrors.add,
-        );
+          final ok = await noMicManager.initialize(
+            engineId: 'no-mic',
+            localeId: 'en-US',
+            onResult: capturedResults.add,
+            onError: capturedErrors.add,
+          );
 
-        expect(ok, isTrue);
-        expect(capturedErrors, isEmpty);
-      });
+          expect(ok, isTrue);
+          expect(capturedErrors, isEmpty);
+        },
+      );
     });
 
     group('full lifecycle', () {
@@ -178,8 +184,9 @@ void main() {
       });
 
       test('recovers on first error', () async {
-        final recovered =
-            await manager.handleEngineError(Exception('test error'));
+        final recovered = await manager.handleEngineError(
+          Exception('test error'),
+        );
         expect(recovered, isTrue);
         expect(engine.isListening, isTrue);
       });
@@ -209,10 +216,10 @@ void main() {
         stubPermissionGranted();
       });
 
-      Future<void> initialize() async {
+      Future<void> initialize({String localeId = 'en-US'}) async {
         final ok = await manager.initialize(
           engineId: sourceEngine.engineId,
-          localeId: 'en-US',
+          localeId: localeId,
           onResult: capturedResults.add,
           onError: capturedErrors.add,
         );
@@ -225,20 +232,42 @@ void main() {
         expect(sourceEngine.hasErrorListener, isTrue);
       });
 
-      test('each kind is forwarded exactly once, mapped to its factory error',
-          () async {
-        await initialize();
-        for (final kind in SttEngineErrorKind.values) {
-          capturedErrors.clear();
-          sourceEngine.emitError(kind);
+      test(
+        'each kind is forwarded exactly once, mapped to its factory error',
+        () async {
+          await initialize();
+          for (final kind in SttEngineErrorKind.values) {
+            capturedErrors.clear();
+            sourceEngine.emitError(kind);
 
-          expect(capturedErrors, hasLength(1), reason: kind.name);
-          final expected = expectedFor(kind, 'en-US');
-          expect(capturedErrors.single.message, expected.message,
-              reason: kind.name);
-          expect(capturedErrors.single.severity, expected.severity);
-        }
-      });
+            expect(capturedErrors, hasLength(1), reason: kind.name);
+            final expected = expectedFor(kind, 'en-US');
+            expect(
+              capturedErrors.single.message,
+              expected.message,
+              reason: kind.name,
+            );
+            expect(capturedErrors.single.severity, expected.severity);
+          }
+        },
+      );
+
+      test(
+        'localeUnsupported reports the session locale, not a fixed one',
+        () async {
+          await initialize(localeId: 'fr-CA');
+
+          sourceEngine.emitError(SttEngineErrorKind.localeUnsupported);
+
+          expect(capturedErrors, hasLength(1));
+          expect(
+            capturedErrors.single.message,
+            RecordingErrorFactories.localeNotSupported('fr-CA').message,
+          );
+          expect(capturedErrors.single.message, contains('fr-CA'));
+          expect(capturedErrors.single.message, isNot(contains('en-US')));
+        },
+      );
 
       test('dispose clears the listener', () async {
         await initialize();
@@ -263,8 +292,9 @@ void main() {
 
       test('a failed initialize registers no listener', () async {
         // Permission is denied, so the engine is never initialised.
-        when(() => mockPermissions.checkPermissionStatus(Permission.microphone))
-            .thenAnswer((_) async => PermissionStatus.permanentlyDenied);
+        when(
+          () => mockPermissions.checkPermissionStatus(Permission.microphone),
+        ).thenAnswer((_) async => PermissionStatus.permanentlyDenied);
         final ok = await manager.initialize(
           engineId: sourceEngine.engineId,
           localeId: 'en-US',

@@ -279,6 +279,10 @@
   "@noTranscriptSavedNotice": {
     "description": "Unit 10 Step 29b (Amendment 03 section 7, Q-2): one-time SnackBar on RecordingScreen when a session with transcription enabled ended without any recognised speech"
   },
+  "transcriptSaveFailedNotice": "The transcript could not be saved.",
+  "@transcriptSaveFailedNotice": {
+    "description": "Unit 10 Amendment 06 (BR-U10-60): one-time SnackBar on RecordingScreen when a session with transcription enabled recognised speech but its transcript could not be saved (the create or every save failed, or Stop gave up before the transcript was finalised)"
+  },
   "inactivityStopNotice": "Captioning stopped after {minutes} minutes without speech.",
   "@inactivityStopNotice": {
     "description": "Unit 10 Amendment 05 (BR-U10-53): one-time SnackBar on RecordingScreen when the app stopped a session because no speech was recognised for the inactivity timeout. ZcStrings.inactivityStopNoticeFor reads the singular as '1 minute'",

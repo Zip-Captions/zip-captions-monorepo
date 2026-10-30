@@ -65,8 +65,7 @@ const _punctuation = ['!', '?', '.', ';'];
 class _Phrase {
   /// Builds a phrase from [tokens], joining them with punctuation so a leak of
   /// a delimiter-bearing fragment is caught too.
-  _Phrase(this.tokens)
-      : text = '${tokens[0]}, ${tokens[1]} ${tokens[2]}!';
+  _Phrase(this.tokens) : text = '${tokens[0]}, ${tokens[1]} ${tokens[2]}!';
 
   /// A phrase whose text is fixed (the PBT-10 example), so it can be const.
   const _Phrase.fixed(this.tokens, this.text);
@@ -137,6 +136,10 @@ class _Sink {
   /// Whether a token of [phrase] (or the whole phrase) reached a sink.
   bool reachedThisPhrase(_Phrase phrase) =>
       allTexts.any((t) => phrase.tokens.any(t.contains));
+
+  /// Whether a token of [phrase] reached the transcript writer's repository.
+  bool savedThisPhrase(_Phrase phrase) =>
+      savedTexts.any((t) => phrase.tokens.any(t.contains));
 }
 
 /// Decorator that records every lasting error before forwarding it (TP-12).
@@ -346,7 +349,6 @@ int _finalizeRuns = 0;
 /// The mock instance captured on the first run, so later runs reuse it.
 late SharedPreferences _prefs;
 
-
 // --- Log capture -----------------------------------------------------------
 
 final _records = <LogRecord>[];
@@ -482,10 +484,12 @@ void _s1(_Harness h, FakeAsync async, _Phrase phrase) {
   h.stt.emitResult(prefix[0], isFinal: false);
   async.flushMicrotasks();
 
+  // The pause waits out the BR-U10-55 drain (nothing arrives in it here).
   unawaited(n.pause());
   async
     ..flushMicrotasks()
-    ..elapse(const Duration(milliseconds: 1));
+    ..elapse(defaultSttListeningLimits.finalResultDrainTimeout)
+    ..flushMicrotasks();
   expect(h.state, isA<PausedState>(), reason: 'S1 paused');
 
   unawaited(n.resume());
@@ -498,9 +502,10 @@ void _s1(_Harness h, FakeAsync async, _Phrase phrase) {
   async.flushMicrotasks();
 
   unawaited(n.stop());
+  // The stop waits out the BR-U10-55 drain, then the writer's chain.
   async
     ..flushMicrotasks()
-    ..elapse(const Duration(seconds: 1))
+    ..elapse(const Duration(seconds: 3))
     ..flushMicrotasks();
   expect(h.state, isA<StoppedState>(), reason: 'S1 stopped');
 }
@@ -535,9 +540,10 @@ void _s2(_Harness h, FakeAsync async, _Phrase phrase) {
   );
 
   unawaited(n.stop());
+  // The stop waits out the BR-U10-55 drain, then the writer's chain.
   async
     ..flushMicrotasks()
-    ..elapse(const Duration(seconds: 1))
+    ..elapse(const Duration(seconds: 3))
     ..flushMicrotasks();
 }
 
@@ -594,9 +600,9 @@ void _s3(_Harness h, FakeAsync async, _Phrase phrase) {
     reason: 'S3 recovery started a fresh session',
   );
 
-  // Second cap on the recovered session: no restart left, so it stops.
-  h.stt.emitResult(phrase.prefixes[0], isFinal: false);
-  async.flushMicrotasks();
+  // Second cap on the recovered session, before it delivered any text (a
+  // result with text would re-arm the recovery, BR-U10-57): no restart left,
+  // so it stops.
   _fillOneCap(h, async);
   async
     ..flushMicrotasks()
@@ -647,17 +653,17 @@ const _lastingCodes = <String, SttEngineErrorKind>{
 /// The error `SttSessionManager` reports for [kind] (Amendment 01 section 3.3,
 /// with Amendment 02's change to the `onDeviceModelMissing` row).
 RecordingError _mappedError(SttEngineErrorKind kind) => switch (kind) {
-      SttEngineErrorKind.recognizerUnavailable =>
-        RecordingErrorFactories.engineInitFailed(),
-      SttEngineErrorKind.onDeviceModelMissing =>
-        RecordingErrorFactories.onDeviceRecognitionUnavailable(),
-      SttEngineErrorKind.localeUnsupported =>
-        RecordingErrorFactories.localeNotSupported('en-US'),
-      SttEngineErrorKind.permissionRevoked =>
-        RecordingErrorFactories.permissionDenied(),
-      SttEngineErrorKind.restartCapReached =>
-        RecordingErrorFactories.engineStartFailed(),
-    };
+  SttEngineErrorKind.recognizerUnavailable =>
+    RecordingErrorFactories.engineInitFailed(),
+  SttEngineErrorKind.onDeviceModelMissing =>
+    RecordingErrorFactories.onDeviceRecognitionUnavailable(),
+  SttEngineErrorKind.localeUnsupported =>
+    RecordingErrorFactories.localeNotSupported('en-US'),
+  SttEngineErrorKind.permissionRevoked =>
+    RecordingErrorFactories.permissionDenied(),
+  SttEngineErrorKind.restartCapReached =>
+    RecordingErrorFactories.engineStartFailed(),
+};
 
 /// Breaks a session with [code] and lets the notifier's single recovery run.
 void _reportLastingAndRecover(
@@ -727,11 +733,14 @@ void _s4(
     reason: 'S4 ($code) recovery listened again (log: $recoveryCall)',
   );
   expect(
-    recoveryCall.take(firstListenAfterCheck).any(
+    recoveryCall
+        .take(firstListenAfterCheck)
+        .any(
           (e) => e.startsWith('check:'),
         ),
     isTrue,
-    reason: 'S4 ($code) a check precedes the recovery listen '
+    reason:
+        'S4 ($code) a check precedes the recovery listen '
         '(log: $recoveryCall)',
   );
   expect(
@@ -740,9 +749,9 @@ void _s4(
     reason: 'S4 ($code) recovery made a listen call',
   );
 
-  // Second report: no restart left, so the session stops.
-  h.stt.emitResult(phrase.prefixes[1], isFinal: false);
-  async.flushMicrotasks();
+  // Second report, before the recovered session delivered any text (a result
+  // with text would re-arm the recovery, BR-U10-57): no restart left, so the
+  // session stops.
   _reportLastingAndRecover(h, async, code);
 
   expect(
@@ -790,9 +799,10 @@ void _s4b(_Harness h, FakeAsync async, _Phrase phrase) {
   expect(_finalizeRuns, 0, reason: 'S4b not finalised before the stop');
 
   unawaited(n.stop());
+  // The stop waits out the BR-U10-55 drain, then the writer's chain.
   async
     ..flushMicrotasks()
-    ..elapse(const Duration(seconds: 1))
+    ..elapse(const Duration(seconds: 3))
     ..flushMicrotasks();
 
   expect(h.state, isA<StoppedState>(), reason: 'S4b stopped');
@@ -874,6 +884,8 @@ void _s9(_Harness h, FakeAsync async, _Phrase phrase) {
   async
     ..flushMicrotasks()
     ..elapse(defaultSpeechInactivityTimeout)
+    // The inactivity stop drains the last phrase like any stop (BR-U10-55).
+    ..elapse(const Duration(seconds: 3))
     ..flushMicrotasks();
   expect(h.state, isA<StoppedState>(), reason: 'S9 inactivity stop');
 }
@@ -920,7 +932,7 @@ void _s7(
       unawaited(n.stop());
       async
         ..flushMicrotasks()
-        ..elapse(const Duration(seconds: 2))
+        ..elapse(const Duration(seconds: 3))
         ..flushMicrotasks();
     case 'stopCallback':
       h.container.read(sessionStopCallbackProvider).callback = () async {
@@ -931,7 +943,7 @@ void _s7(
       unawaited(n.stop());
       async
         ..flushMicrotasks()
-        ..elapse(const Duration(seconds: 2))
+        ..elapse(const Duration(seconds: 3))
         ..flushMicrotasks();
   }
 }
@@ -969,7 +981,8 @@ void _s8(_Harness h, FakeAsync async, _Phrase phrase) {
   unawaited(n.pause());
   async
     ..flushMicrotasks()
-    ..elapse(const Duration(milliseconds: 1));
+    ..elapse(defaultSttListeningLimits.finalResultDrainTimeout)
+    ..flushMicrotasks();
   expect(h.state, isA<PausedState>(), reason: 'S8 paused');
 
   unawaited(n.resume());
@@ -979,9 +992,10 @@ void _s8(_Harness h, FakeAsync async, _Phrase phrase) {
   expect(h.state, isA<RecordingActiveState>(), reason: 'S8 resumed');
 
   unawaited(n.stop());
+  // The stop waits out the BR-U10-55 drain, then the writer's chain.
   async
     ..flushMicrotasks()
-    ..elapse(const Duration(seconds: 1))
+    ..elapse(const Duration(seconds: 3))
     ..flushMicrotasks();
 }
 
@@ -1008,9 +1022,10 @@ void _s8Cap(_Harness h, FakeAsync async, _Phrase phrase) {
   }
 
   unawaited(n.stop());
+  // The stop waits out the BR-U10-55 drain, then the writer's chain.
   async
     ..flushMicrotasks()
-    ..elapse(const Duration(seconds: 1))
+    ..elapse(const Duration(seconds: 3))
     ..flushMicrotasks();
 }
 
@@ -1032,9 +1047,10 @@ void _s8Lasting(_Harness h, FakeAsync async, _Phrase phrase) {
     ..flushMicrotasks();
 
   unawaited(n.stop());
+  // The stop waits out the BR-U10-55 drain, then the writer's chain.
   async
     ..flushMicrotasks()
-    ..elapse(const Duration(seconds: 1))
+    ..elapse(const Duration(seconds: 3))
     ..flushMicrotasks();
 }
 
@@ -1058,9 +1074,10 @@ void _s8Throws(_Harness h, FakeAsync async, _Phrase phrase) {
     ..flushMicrotasks();
 
   unawaited(n.stop());
+  // The stop waits out the BR-U10-55 drain, then the writer's chain.
   async
     ..flushMicrotasks()
-    ..elapse(const Duration(seconds: 1))
+    ..elapse(const Duration(seconds: 3))
     ..flushMicrotasks();
 }
 
@@ -1223,10 +1240,7 @@ void main() {
     );
   });
 
-  // The generator is a top-level function, so const-ness is decided by the
-  // runner, not this call site.
-  // ignore: prefer_const_constructors
-  pbt.Glados<_Phrase>(_generatePhrase).test(
+  const pbt.Glados<_Phrase>(_generatePhrase).test(
     'TP-6/TP-12: for any generated phrase, no log record, SttEngineError, '
     'RecordingError or state contains it on any Unit 10 path',
     (phrase) {
@@ -1248,10 +1262,21 @@ void main() {
             !scenario.refuses,
             reason: scenario.refuses
                 ? '${scenario.name}: a token reached a sink on a path that '
-                    'refuses to listen'
+                      'refuses to listen'
                 : '${scenario.name}: no token of the phrase reached a sink, '
-                    'so the run proved nothing',
+                      'so the run proved nothing',
           );
+          // The segmented scenarios must also reach the transcript writer:
+          // a saved segment carries a token of the phrase.
+          if (scenario.segmented) {
+            expect(
+              sink.savedThisPhrase(phrase),
+              isTrue,
+              reason:
+                  '${scenario.name}: no saved segment holds a token of '
+                  'the phrase, so the writer path proved nothing',
+            );
+          }
         }
       });
     },
@@ -1293,7 +1318,7 @@ void main() {
           !scenario.refuses,
           reason: scenario.refuses
               ? '${scenario.name}: a token reached a sink on a path that '
-                  'refuses to listen'
+                    'refuses to listen'
               : '${scenario.name}: no token of the phrase reached a sink',
         );
       });

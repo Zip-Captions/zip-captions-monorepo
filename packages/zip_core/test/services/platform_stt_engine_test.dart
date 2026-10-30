@@ -9,6 +9,7 @@ import 'package:zip_core/src/models/stt_result.dart';
 import 'package:zip_core/src/stt/engines/platform_stt_engine.dart';
 import 'package:zip_core/src/stt/stt_error_source.dart';
 
+import '../helpers/call_log.dart';
 import '../helpers/fake_on_device_checker.dart';
 import '../helpers/fake_speech_to_text.dart';
 import '../helpers/mock_audio_device_service.dart';
@@ -128,6 +129,219 @@ void main() {
     });
   });
 
+  // ---- Amendment 06: BR-U10-55 the last phrase is drained (TP-34) ---------
+
+  group('PlatformSttEngine drain (BR-U10-55, TP-34)', () {
+    final production = defaultSttListeningLimits.finalResultDrainTimeout;
+
+    /// An engine with a started session, inside the fake-async zone.
+    ({
+      PlatformSttEngine engine,
+      FakeSpeechToText stt,
+      List<SttResult> results,
+      List<SttEngineError> errors,
+    })
+    live(FakeAsync async) {
+      final stt = FakeSpeechToText();
+      final audio = MockAudioDeviceService();
+      when(() => audio.currentPreferredDeviceId).thenReturn(null);
+      final engine = PlatformSttEngine(
+        stt: stt,
+        deviceService: audio,
+        onDeviceSupportChecker: FakeOnDeviceChecker().call,
+      );
+      final results = <SttResult>[];
+      final errors = <SttEngineError>[];
+      engine.setErrorListener(errors.add);
+      unawaited(engine.initialize());
+      async.flushMicrotasks();
+      unawaited(
+        engine.startListening(localeId: 'en-US', onResult: results.add),
+      );
+      async.flushMicrotasks();
+      return (engine: engine, stt: stt, results: results, errors: errors);
+    }
+
+    for (final pause in [false, true]) {
+      final name = pause ? 'pause' : 'stop';
+
+      test('a final result after $name() is delivered once, before the call '
+          'returns, and nothing restarts', () {
+        fakeAsync((async) {
+          final rig = live(async);
+          addTearDown(rig.engine.dispose);
+          final order = <String>[];
+
+          unawaited(
+            (pause ? rig.engine.pause() : rig.engine.stopListening()).then(
+              (_) => order.add('returned'),
+            ),
+          );
+          async.flushMicrotasks();
+          expect(order, isEmpty, reason: 'waiting for the last phrase');
+          rig.stt.emitResult('the last phrase', isFinal: true);
+          async.flushMicrotasks();
+          order.add('after');
+
+          expect(rig.results.map((r) => r.text), ['the last phrase']);
+          expect(rig.results.map((r) => r.isFinal), [true]);
+          expect(order, ['returned', 'after']);
+          expect(rig.stt.stopCalls, 1);
+          // Stop cancels the plugin after the wait; pause leaves it stopped.
+          expect(rig.stt.cancelCalls, pause ? 0 : 1);
+          async.elapse(const Duration(seconds: 5));
+          expect(rig.stt.listenCalls, hasLength(1), reason: 'no restart');
+        });
+      });
+
+      test('a result after the $name() deadline is never delivered', () {
+        fakeAsync((async) {
+          final rig = live(async);
+          addTearDown(rig.engine.dispose);
+          var returned = false;
+
+          unawaited(
+            (pause ? rig.engine.pause() : rig.engine.stopListening()).then(
+              (_) => returned = true,
+            ),
+          );
+          async.elapse(production - const Duration(milliseconds: 1));
+          expect(returned, isFalse, reason: 'still inside the window');
+          async.elapse(const Duration(milliseconds: 2));
+          expect(returned, isTrue);
+
+          rig.stt.emitResult('too late', isFinal: true);
+          rig.stt.emitResult('too late', isFinal: false);
+          async.elapse(const Duration(seconds: 5));
+          expect(rig.results, isEmpty);
+        });
+      });
+
+      test('a pending interim with no final is delivered once as final at '
+          'the end of the $name() wait', () {
+        fakeAsync((async) {
+          final rig = live(async);
+          addTearDown(rig.engine.dispose);
+          rig.stt.emitResult('almost there', isFinal: false);
+          async.flushMicrotasks();
+
+          unawaited(pause ? rig.engine.pause() : rig.engine.stopListening());
+          async.elapse(production + const Duration(milliseconds: 1));
+
+          expect(
+            rig.results.map((r) => r.text),
+            ['almost there', 'almost there'],
+          );
+          expect(rig.results.map((r) => r.isFinal), [false, true]);
+        });
+      });
+
+      test('the status done ends the $name() wait early, flushes the interim '
+          'and restarts nothing', () {
+        fakeAsync((async) {
+          final rig = live(async);
+          addTearDown(rig.engine.dispose);
+          rig.stt.emitResult('tail', isFinal: false);
+          async.flushMicrotasks();
+          var returned = false;
+
+          unawaited(
+            (pause ? rig.engine.pause() : rig.engine.stopListening()).then(
+              (_) => returned = true,
+            ),
+          );
+          async.flushMicrotasks();
+          rig.stt.emitStatus('done');
+          async.flushMicrotasks();
+
+          expect(returned, isTrue, reason: 'no need to wait the full second');
+          expect(rig.results.map((r) => r.isFinal), [false, true]);
+          async.elapse(const Duration(seconds: 10));
+          expect(rig.stt.listenCalls, hasLength(1));
+          expect(rig.errors, isEmpty);
+        });
+      });
+
+      test('an error ends the $name() wait early and reports, counts and '
+          'restarts nothing', () {
+        fakeAsync((async) {
+          final rig = live(async);
+          addTearDown(rig.engine.dispose);
+          var returned = false;
+
+          unawaited(
+            (pause ? rig.engine.pause() : rig.engine.stopListening()).then(
+              (_) => returned = true,
+            ),
+          );
+          async.flushMicrotasks();
+          rig.stt.emitError('error_permission');
+          async.flushMicrotasks();
+
+          expect(returned, isTrue);
+          async.elapse(const Duration(seconds: 10));
+          expect(rig.stt.listenCalls, hasLength(1));
+          expect(rig.errors, isEmpty);
+        });
+      });
+    }
+
+    test('only the first final result of a drain is delivered', () {
+      fakeAsync((async) {
+        final rig = live(async);
+        addTearDown(rig.engine.dispose);
+
+        unawaited(rig.engine.stopListening());
+        async.flushMicrotasks();
+        rig.stt
+          ..emitResult('first', isFinal: true)
+          ..emitResult('second', isFinal: true);
+        async.elapse(const Duration(seconds: 2));
+
+        expect(rig.results.map((r) => r.text), ['first']);
+      });
+    });
+
+    test('a stop with no live session does not wait', () {
+      fakeAsync((async) {
+        final stt = FakeSpeechToText();
+        final audio = MockAudioDeviceService();
+        final engine = PlatformSttEngine(
+          stt: stt,
+          deviceService: audio,
+          onDeviceSupportChecker: FakeOnDeviceChecker().call,
+        );
+        addTearDown(engine.dispose);
+        var returned = false;
+
+        unawaited(engine.stopListening().then((_) => returned = true));
+        async.flushMicrotasks();
+
+        expect(returned, isTrue);
+        expect(stt.cancelCalls, 1);
+      });
+    });
+
+    test('a resume after a drained pause listens again', () {
+      fakeAsync((async) {
+        final rig = live(async);
+        addTearDown(rig.engine.dispose);
+
+        unawaited(rig.engine.pause());
+        async.flushMicrotasks();
+        rig.stt.emitResult('kept', isFinal: true);
+        async.flushMicrotasks();
+        var resumed = false;
+        unawaited(rig.engine.resume().then((ok) => resumed = ok));
+        async.flushMicrotasks();
+
+        expect(resumed, isTrue);
+        expect(rig.results.map((r) => r.text), ['kept']);
+        expect(rig.stt.listenCalls, hasLength(2));
+      });
+    });
+  });
+
   // ---- Unit 10: on-device guard, listen options and listener wiring ------
 
   group('PlatformSttEngine (Unit 10 guard)', () {
@@ -166,18 +380,20 @@ void main() {
     });
 
     group('listen options (BR-U10-20, 32)', () {
-      test('listens on-device with partial results and no cancelOnError',
-          () async {
-        expect(await start(), isTrue);
+      test(
+        'listens on-device with partial results and no cancelOnError',
+        () async {
+          expect(await start(), isTrue);
 
-        final call = stt.listenCalls.single;
-        expect(call.localeId, 'en-US');
-        expect(call.listenOptions, isNotNull);
-        expect(call.listenOptions!.onDevice, isTrue);
-        expect(call.listenOptions!.partialResults, isTrue);
-        expect(call.listenOptions!.cancelOnError, isFalse);
-        expect(call.usedDeprecatedArguments, isFalse);
-      });
+          final call = stt.listenCalls.single;
+          expect(call.localeId, 'en-US');
+          expect(call.listenOptions, isNotNull);
+          expect(call.listenOptions!.onDevice, isTrue);
+          expect(call.listenOptions!.partialResults, isTrue);
+          expect(call.listenOptions!.cancelOnError, isFalse);
+          expect(call.usedDeprecatedArguments, isFalse);
+        },
+      );
 
       test('never passes plugin options (so no androidIntentLookup)', () async {
         await start();
@@ -234,17 +450,21 @@ void main() {
         );
       }
 
-      test('iOS: a false check means no listen and one lasting error',
-          () async {
-        checker.defaultResult = false;
-        await expectRefusal(start);
-      });
+      test(
+        'iOS: a false check means no listen and one lasting error',
+        () async {
+          checker.defaultResult = false;
+          await expectRefusal(start);
+        },
+      );
 
-      test('Android API 30: unsupported (false) is refused the same way',
-          () async {
-        checker.script.add(false);
-        await expectRefusal(start);
-      });
+      test(
+        'Android API 30: unsupported (false) is refused the same way',
+        () async {
+          checker.script.add(false);
+          await expectRefusal(start);
+        },
+      );
 
       test('a throwing checker fails closed', () async {
         checker.script.add(Exception('channel exploded'));
@@ -339,7 +559,8 @@ void main() {
           FakeSpeechToText stt,
           List<SttEngineError> errors,
           Completer<void> gate,
-        ) body,
+        )
+        body,
       }) {
         fakeAsync((async) {
           final log = CallLog();
@@ -379,9 +600,9 @@ void main() {
           unawaited(engine.initialize());
           async.flushMicrotasks();
           unawaited(
-            engine
-                .startListening(localeId: 'en-US', onResult: (_) {})
-                .then((v) {
+            engine.startListening(localeId: 'en-US', onResult: (_) {}).then((
+              v,
+            ) {
               started = v;
               finished = true;
             }),
@@ -416,8 +637,9 @@ void main() {
         // if the interrupt lands while listen() is already awaiting its
         // reply, the call cannot be un-made, so exactly one stands and is
         // cancelled.
-        final listenCountWhenStopWins =
-            awaitAt == 'listen()' ? hasLength(1) : isEmpty;
+        final listenCountWhenStopWins = awaitAt == 'listen()'
+            ? hasLength(1)
+            : isEmpty;
 
         test('stop during $awaitAt: no listen() once the stop has won', () {
           held(
@@ -462,10 +684,12 @@ void main() {
           pause: false,
           body: (async, engine, stt, errors, gate) {
             expect(stt.listenCalls, hasLength(1));
-            // Both stopListening() and the superseded startListening() ask
-            // the plugin to cancel; cancelling more than once is harmless, and
-            // the last thing the plugin saw must be a cancel.
-            expect(stt.cancelCalls, greaterThanOrEqualTo(1));
+            // Exactly two cancels: stopListening()'s own (no session was live
+            // yet, so there is no drain and it cancels straight after
+            // stop()), and the superseded startListening()'s, which cancels
+            // the session its in-flight listen() began. The last thing the
+            // plugin saw must be a cancel.
+            expect(stt.cancelCalls, 2);
             expect(stt.log.entries.last, 'cancel');
           },
         );

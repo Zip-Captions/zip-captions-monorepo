@@ -18,11 +18,15 @@ import '../helpers/pbt.dart' as pbt;
 
 const _languages = ['en', 'fr', 'de', 'cmn', 'es'];
 const _regions = ['US', 'CA', 'GB', 'AU', 'CN', 'MX'];
+const _scripts = ['Hant', 'Hans', 'Latn'];
 
 /// A generated locale tag: `lang`, or `lang` + a `-`/`_` + region, with
 /// random casing so separator- and case-insensitivity are exercised.
 String _generateTag(Random r) {
   final language = _languages[r.nextInt(_languages.length)];
+  // About one tag in three carries a script subtag (`zh-Hant-CA`), so the
+  // region is not simply "everything after the language".
+  final script = r.nextInt(3) == 0 ? _scripts[r.nextInt(_scripts.length)] : '';
   if (r.nextBool()) {
     final region = _regions[r.nextInt(_regions.length)];
     final separator = r.nextBool() ? '-' : '_';
@@ -30,9 +34,10 @@ String _generateTag(Random r) {
     final casedLanguage = r.nextBool()
         ? language
         : '${language[0].toUpperCase()}$language';
-    return '$casedLanguage$separator$casedRegion';
+    final scriptPart = script.isEmpty ? '' : '$separator$script';
+    return '$casedLanguage$scriptPart$separator$casedRegion';
   }
-  return language;
+  return script.isEmpty ? language : '$language-$script';
 }
 
 class _Case {
@@ -83,12 +88,15 @@ String? _language(String id) {
   return language.isEmpty ? null : language;
 }
 
+/// The region subtag: the one after the language, skipping a four-letter
+/// script subtag (`zh-Hant-CA` has region `ca`); `null` when there is none.
 String? _region(String id) {
-  final normalised = _norm(id);
-  final index = normalised.indexOf('-');
-  return index == -1 || index == normalised.length - 1
-      ? null
-      : normalised.substring(index + 1);
+  final parts = _norm(id).split('-');
+  var index = 1;
+  if (index < parts.length && RegExp(r'^[a-z]{4}$').hasMatch(parts[index])) {
+    index++;
+  }
+  return index < parts.length && parts[index].isNotEmpty ? parts[index] : null;
 }
 
 String? _exact(List<String> supported, String wanted) {
@@ -138,13 +146,92 @@ bool _matchesAny(List<String> supported, String wanted) =>
     _exact(supported, wanted) != null ||
     _languageOnly(supported, wanted) != null;
 
+/// Resolves with no explicit choice, for the example pins below.
+Future<String> _resolve({
+  required List<String> supported,
+  required List<String> device,
+}) async {
+  SharedPreferences.setMockInitialValues(<String, Object>{});
+  final prefs = await SharedPreferences.getInstance();
+  final container = ProviderContainer(
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      deviceLocalesProvider.overrideWithValue(device),
+      localeInfoProvider.overrideWith(
+        (_) async => [
+          for (final id in supported)
+            SpeechLocale(localeId: id, displayName: id),
+        ],
+      ),
+    ],
+  );
+  addTearDown(container.dispose);
+  await container.read(localeInfoProvider.future);
+  return container.read(resolvedLocaleIdProvider);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  // The generator is a top-level function, so const-ness is decided by the
-  // runner, not this call site.
-  // ignore: prefer_const_constructors
-  pbt.Glados<_Case>(_generateCase).test(
+  group('the region is the subtag after the language, skipping a script', () {
+    test('zh-Hant-CA wins the CA tie-break over zh-Hant-TW', () async {
+      expect(
+        await _resolve(
+          supported: ['zh-Hant-TW', 'zh-Hant-CA', 'zh-Hans-CN'],
+          device: ['zh-HK'],
+        ),
+        'zh-Hant-CA',
+      );
+    });
+
+    test('zh-Hans-US wins the US tie-break when there is no CA', () async {
+      expect(
+        await _resolve(
+          supported: ['zh-Hant-TW', 'zh-Hans-US'],
+          device: ['zh'],
+        ),
+        'zh-Hans-US',
+      );
+    });
+
+    test(
+      'a script with no region has no region: a CA one still wins',
+      () async {
+        expect(
+          await _resolve(
+            supported: ['zh-Hant', 'zh-Hans-CA'],
+            device: ['zh'],
+          ),
+          'zh-Hans-CA',
+        );
+      },
+    );
+
+    test(
+      'a script with no region and no CA or US falls to the first listed',
+      () async {
+        expect(
+          await _resolve(
+            supported: ['zh-Hant', 'zh-Hans'],
+            device: ['zh'],
+          ),
+          'zh-Hant',
+        );
+      },
+    );
+
+    test('case and the underscore separator are still ignored', () async {
+      expect(
+        await _resolve(
+          supported: ['zh_hant_tw', 'ZH_Hant_ca'],
+          device: ['zh'],
+        ),
+        'ZH_Hant_ca',
+      );
+    });
+  });
+
+  const pbt.Glados<_Case>(_generateCase).test(
     'TP-25: for any generated supported and device lists, resolvedLocaleId '
     'equals the section-6 resolution and never matches none of them unless '
     'the list is empty or nothing matches',

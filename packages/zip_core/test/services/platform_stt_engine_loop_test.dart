@@ -9,6 +9,7 @@ import 'package:zip_core/src/models/stt_result.dart';
 import 'package:zip_core/src/stt/engines/platform_stt_engine.dart';
 import 'package:zip_core/src/stt/stt_error_source.dart';
 
+import '../helpers/call_log.dart';
 import '../helpers/fake_on_device_checker.dart';
 import '../helpers/fake_speech_to_text.dart';
 import '../helpers/mock_audio_device_service.dart';
@@ -40,7 +41,10 @@ class _Harness {
 
   Duration get restartDelay => defaultSttListeningLimits.restartDelay;
 
-  T await_<T>(Future<T> future) {
+  /// Completes [future] under fake time. A stop or a pause of a live session
+  /// waits out the BR-U10-55 drain (nothing arrives from the fake plugin), so
+  /// those pass [drained] to let the deadline pass.
+  T await_<T>(Future<T> future, {bool drained = false}) {
     T? value;
     var done = false;
     unawaited(
@@ -50,6 +54,11 @@ class _Harness {
       }),
     );
     async.flushMicrotasks();
+    if (drained) {
+      async
+        ..elapse(defaultSttListeningLimits.finalResultDrainTimeout)
+        ..flushMicrotasks();
+    }
     expect(done, isTrue, reason: 'future should complete without real time');
     return value as T;
   }
@@ -103,8 +112,9 @@ void main() {
       expect(h.checker.localesChecked, ['en-US', 'en-US']);
     });
 
-    scenario('the Android pause-end (speech timeout) restarts with no error',
-        (h) {
+    scenario('the Android pause-end (speech timeout) restarts with no error', (
+      h,
+    ) {
       h.start();
       h.stt.emitError('error_speech_timeout');
       h
@@ -226,17 +236,19 @@ void main() {
       expect(h.errors.single.kind, SttEngineErrorKind.restartCapReached);
     });
 
-    scenario('a quiet session that lasts longer than the window does not count',
-        (h) {
-      h.start();
-      for (var i = 0; i < 6; i++) {
-        h
-          ..sessionEnds()
-          ..settle();
-      }
-      expect(h.errors, isEmpty);
-      expect(h.listens, 7);
-    });
+    scenario(
+      'a quiet session that lasts longer than the window does not count',
+      (h) {
+        h.start();
+        for (var i = 0; i < 6; i++) {
+          h
+            ..sessionEnds()
+            ..settle();
+        }
+        expect(h.errors, isEmpty);
+        expect(h.listens, 7);
+      },
+    );
 
     scenario('a delivered result resets the count', (h) {
       h.start();
@@ -307,8 +319,11 @@ void main() {
       h.start();
       h.stt.emitResult('hello wor', isFinal: false);
       h.stt.emitStatus('notListening');
-      expect(h.results.where((r) => r.isFinal), isEmpty,
-          reason: 'notListening must not flush');
+      expect(
+        h.results.where((r) => r.isFinal),
+        isEmpty,
+        reason: 'notListening must not flush',
+      );
 
       h.stt.emitStatus('done');
       final finals = h.results.where((r) => r.isFinal).toList();
@@ -359,7 +374,7 @@ void main() {
     scenario('the trailing done after stop never restarts', (h) {
       h
         ..start()
-        ..await_(h.engine.stopListening());
+        ..await_(h.engine.stopListening(), drained: true);
       h.stt
         ..emitStatus('notListening')
         ..emitStatus('done');
@@ -367,18 +382,20 @@ void main() {
       expect(h.listens, 1);
     });
 
-    scenario('pause cancels a pending restart; resume listens again (checked)',
-        (h) {
-      h.start();
-      h.stt.emitStatus('done');
-      expect(h.await_(h.engine.pause()), isTrue);
-      h.settle();
-      expect(h.listens, 1, reason: 'a paused engine does not restart');
+    scenario(
+      'pause cancels a pending restart; resume listens again (checked)',
+      (h) {
+        h.start();
+        h.stt.emitStatus('done');
+        expect(h.await_(h.engine.pause()), isTrue);
+        h.settle();
+        expect(h.listens, 1, reason: 'a paused engine does not restart');
 
-      expect(h.await_(h.engine.resume()), isTrue);
-      expect(h.listens, 2);
-      expect(h.checker.localesChecked, hasLength(2));
-    });
+        expect(h.await_(h.engine.resume()), isTrue);
+        expect(h.listens, 2);
+        expect(h.checker.localesChecked, hasLength(2));
+      },
+    );
 
     scenario('dispose cancels the timer and clears the plugin listeners', (h) {
       h.start();
@@ -392,8 +409,9 @@ void main() {
   });
 
   group('a listen() that throws during a restart', () {
-    scenario('is a transient session end; the retry is checked again first',
-        (h) {
+    scenario('is a transient session end; the retry is checked again first', (
+      h,
+    ) {
       h.start();
       // The restart's listen() throws; no done will follow, so the engine
       // itself schedules another attempt.
@@ -415,25 +433,31 @@ void main() {
       }
     });
 
-    scenario('if on-device support has gone, the retry is the lasting refusal',
-        (h) {
-      h.start();
-      h.stt.listenOutcomes.add(ListenFailedException('x'));
-      h
-        ..sessionEnds()
-        ..settle();
-      // The device lost on-device support before the retry.
-      h.checker.script.add(false);
-      h.settle();
-      expect(
-        h.errors,
-        [const SttEngineError(SttEngineErrorKind.onDeviceModelMissing)],
-      );
-      final listensAtRefusal = h.listens;
-      h.settle();
-      expect(h.listens, listensAtRefusal, reason: 'no listen() after refusal');
-      expect(h.errors, hasLength(1));
-    });
+    scenario(
+      'if on-device support has gone, the retry is the lasting refusal',
+      (h) {
+        h.start();
+        h.stt.listenOutcomes.add(ListenFailedException('x'));
+        h
+          ..sessionEnds()
+          ..settle();
+        // The device lost on-device support before the retry.
+        h.checker.script.add(false);
+        h.settle();
+        expect(
+          h.errors,
+          [const SttEngineError(SttEngineErrorKind.onDeviceModelMissing)],
+        );
+        final listensAtRefusal = h.listens;
+        h.settle();
+        expect(
+          h.listens,
+          listensAtRefusal,
+          reason: 'no listen() after refusal',
+        );
+        expect(h.errors, hasLength(1));
+      },
+    );
 
     scenario('a false check on a normal restart is one lasting error, then '
         'failed', (h) {

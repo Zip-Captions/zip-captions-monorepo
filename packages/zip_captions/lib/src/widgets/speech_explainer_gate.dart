@@ -97,8 +97,7 @@ class _GateBodyState extends State<_GateBody> {
   void initState() {
     super.initState();
     final required = SpeechExplainerGate.isRequiredFor(widget.platform);
-    final seen =
-        widget.prefs.getBool(SpeechExplainerGate.seenKey) ?? false;
+    final seen = widget.prefs.getBool(SpeechExplainerGate.seenKey) ?? false;
     _passed = !required || seen;
     if (_passed) {
       // `onStart` reaches notifiers and `setState`, which a build (and so
@@ -115,9 +114,25 @@ class _GateBodyState extends State<_GateBody> {
     await widget.onStart();
   }
 
+  /// Whether Continue's write of the flag is in flight. Both buttons are
+  /// disabled meanwhile, so a second tap cannot write twice and "Not now"
+  /// cannot leave Home-bound while the flag is being recorded.
+  bool _continuing = false;
+
   Future<void> _continue() async {
-    await widget.prefs.setBool(SpeechExplainerGate.seenKey, true);
+    if (_continuing) return;
+    setState(() => _continuing = true);
+    try {
+      await widget.prefs.setBool(SpeechExplainerGate.seenKey, true);
+    } on Object {
+      // A failed write leaves the explainer up with its buttons usable
+      // again, so the user can tap Continue once more. Nothing is logged: the
+      // flag is a convenience and the failure carries nothing to act on.
+      if (mounted) setState(() => _continuing = false);
+      return;
+    }
     if (!mounted) return;
+    _continuing = false;
     setState(() => _passed = true);
     await _startOnce();
   }
@@ -128,8 +143,8 @@ class _GateBodyState extends State<_GateBody> {
       return Scaffold(
         body: _ExplainerView(
           strings: widget.strings,
-          onContinue: _continue,
-          onNotNow: widget.onBackToHome,
+          onContinue: _continuing ? null : _continue,
+          onNotNow: _continuing ? null : widget.onBackToHome,
         ),
       );
     }
@@ -145,8 +160,12 @@ class _ExplainerView extends StatelessWidget {
   });
 
   final ZcStrings strings;
-  final Future<void> Function() onContinue;
-  final VoidCallback onNotNow;
+
+  /// `null` while Continue's write is pending (the button is disabled).
+  final Future<void> Function()? onContinue;
+
+  /// `null` while Continue's write is pending (the button is disabled).
+  final VoidCallback? onNotNow;
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +191,9 @@ class _ExplainerView extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               FilledButton(
-                onPressed: () => unawaited(onContinue()),
+                onPressed: onContinue == null
+                    ? null
+                    : () => unawaited(onContinue!()),
                 child: Text(strings.speechExplainerContinue),
               ),
               const SizedBox(height: 8),

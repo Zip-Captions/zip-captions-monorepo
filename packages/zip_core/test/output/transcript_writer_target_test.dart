@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:zip_core/src/models/caption_event.dart';
 import 'package:zip_core/src/models/recording_state.dart';
 import 'package:zip_core/src/models/stt_result.dart';
+import 'package:zip_core/src/models/transcript_save_result.dart';
 import 'package:zip_core/src/models/transcript_segment.dart';
 import 'package:zip_core/src/models/transcript_settings.dart';
 import 'package:zip_core/src/output/transcript_writer_target.dart';
@@ -98,9 +99,9 @@ void main() {
         ..onCaptionEvent(_recordingEvent('s1'))
         ..onCaptionEvent(_finalEvent());
 
-      final saved = await target.finalizeCurrentSession();
+      final result = await target.finalizeCurrentSession();
 
-      expect(saved, isFalse);
+      expect(result, TranscriptSaveResult.saveFailed);
       // The create never succeeded, so there is no row to finalise.
       verifyNever(
         () => mockRepo.finalizeSession(
@@ -109,6 +110,105 @@ void main() {
           segmentCount: any(named: 'segmentCount'),
         ),
       );
+    });
+  });
+
+  // TP-38 (BR-U10-60): each way a session can end maps to one outcome.
+  group('the save outcome (BR-U10-60, TP-38)', () {
+    Future<TranscriptSaveResult> finishAfter(
+      void Function() events, {
+      void Function()? arrange,
+    }) async {
+      arrange?.call();
+      events();
+      return target.finalizeCurrentSession();
+    }
+
+    test('no segment: nothingRecognised', () async {
+      final result = await finishAfter(
+        () => target.onCaptionEvent(_recordingEvent('s1')),
+      );
+
+      expect(result, TranscriptSaveResult.nothingRecognised);
+    });
+
+    test('no session at all: nothingRecognised', () async {
+      expect(
+        await target.finalizeCurrentSession(),
+        TranscriptSaveResult.nothingRecognised,
+      );
+    });
+
+    test('created and saved: saved', () async {
+      final result = await finishAfter(() {
+        target
+          ..onCaptionEvent(_recordingEvent('s1'))
+          ..onCaptionEvent(_finalEvent());
+      });
+
+      expect(result, TranscriptSaveResult.saved);
+    });
+
+    test('create failed: saveFailed', () async {
+      final result = await finishAfter(
+        () {
+          target
+            ..onCaptionEvent(_recordingEvent('s1'))
+            ..onCaptionEvent(_finalEvent());
+        },
+        arrange: () => when(
+          () => mockRepo.createSession(any(), any()),
+        ).thenAnswer((_) => Future<void>.error(StateError('create failed'))),
+      );
+
+      expect(result, TranscriptSaveResult.saveFailed);
+    });
+
+    test('created but every save failed: saveFailed', () async {
+      final result = await finishAfter(
+        () {
+          target
+            ..onCaptionEvent(_recordingEvent('s1'))
+            ..onCaptionEvent(_finalEvent());
+        },
+        arrange: () => when(
+          () => mockRepo.saveSegment(any(), any()),
+        ).thenAnswer((_) => Future<void>.error(StateError('save failed'))),
+      );
+
+      expect(result, TranscriptSaveResult.saveFailed);
+      // The row exists, so it is still finalised.
+      verify(
+        () => mockRepo.finalizeSession(
+          's1',
+          durationMs: any(named: 'durationMs'),
+          segmentCount: 1,
+        ),
+      ).called(1);
+    });
+
+    test('one save failed and a later merge succeeded: saved', () {
+      fakeAsync((fake) {
+        var calls = 0;
+        when(() => mockRepo.saveSegment(any(), any())).thenAnswer((_) {
+          calls++;
+          return calls == 1
+              ? Future<void>.error(StateError('first save failed'))
+              : Future<void>.microtask(() {});
+        });
+        target
+          ..onCaptionEvent(_recordingEvent('s1'))
+          ..onCaptionEvent(_finalEvent(text: 'a'));
+        fake.elapse(const Duration(milliseconds: 500));
+        // Within the merge window: this goes through the merge path.
+        target.onCaptionEvent(_finalEvent(text: 'b'));
+        TranscriptSaveResult? result;
+        unawaited(target.finalizeCurrentSession().then((v) => result = v));
+        fake.flushMicrotasks();
+
+        expect(calls, 2, reason: 'the first save and the merge');
+        expect(result, TranscriptSaveResult.saved);
+      });
     });
   });
 
@@ -270,13 +370,16 @@ void main() {
     });
 
     test(
-      'finalizeCurrentSession with zero segments returns false and calls '
-      'nothing',
+      'finalizeCurrentSession with zero segments reports nothingRecognised and '
+      'calls nothing',
       () async {
         target.onCaptionEvent(_recordingEvent('s1'));
         await Future<void>.delayed(Duration.zero);
 
-        expect(await target.finalizeCurrentSession(), isFalse);
+        expect(
+          await target.finalizeCurrentSession(),
+          TranscriptSaveResult.nothingRecognised,
+        );
 
         verifyNever(() => mockRepo.createSession(any(), any()));
         verifyNever(() => mockRepo.saveSegment(any(), any()));
@@ -291,13 +394,16 @@ void main() {
     );
 
     test(
-      'finalizeCurrentSession after a segment returns true and finalises',
+      'finalizeCurrentSession after a segment reports saved and finalises',
       () async {
         target
           ..onCaptionEvent(_recordingEvent('s1'))
           ..onCaptionEvent(_finalEvent());
 
-        expect(await target.finalizeCurrentSession(), isTrue);
+        expect(
+          await target.finalizeCurrentSession(),
+          TranscriptSaveResult.saved,
+        );
 
         verify(
           () => mockRepo.finalizeSession(
@@ -618,17 +724,16 @@ void main() {
         );
 
         gate.complete();
-        expect(await done, isTrue);
-        // Both the save and the finalise happened, the save first: the
-        // test above pins the save, and this pins the finalise.
-        verify(() => mockRepo.saveSegment('s1', any())).called(1);
-        verify(
+        expect(await done, TranscriptSaveResult.saved);
+        // Both the save and the finalise happened, the save first.
+        verifyInOrder([
+          () => mockRepo.saveSegment('s1', any()),
           () => mockRepo.finalizeSession(
             's1',
             durationMs: any(named: 'durationMs'),
             segmentCount: 1,
           ),
-        ).called(1);
+        ]);
       },
     );
 

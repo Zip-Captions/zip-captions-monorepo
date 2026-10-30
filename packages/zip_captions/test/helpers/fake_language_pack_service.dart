@@ -30,6 +30,10 @@ class FakeLanguagePackService implements LanguagePackService {
   /// a download open.
   Future<void>? downloadGate;
 
+  /// When set, every `status` call waits for this before answering, so a test
+  /// can leave the reply pending.
+  Future<void>? statusGate;
+
   /// The locale of every `status` call, oldest first.
   final statusCalls = <String>[];
 
@@ -53,6 +57,8 @@ class FakeLanguagePackService implements LanguagePackService {
   @override
   Future<LanguagePackInfo> status(String localeId) async {
     statusCalls.add(localeId);
+    final gate = statusGate;
+    if (gate != null) await gate;
     final error = statusError;
     if (error != null) throw error;
     return statuses[localeId] ??

@@ -71,6 +71,7 @@ const _testStrings = ZcStrings.fromMap({
   'speechExplainerContinue': 'explainer-continue',
   'speechExplainerNotNow': 'explainer-not-now',
   'noTranscriptSavedNotice': 'no-transcript',
+  'transcriptSaveFailedNotice': 'save-failed',
   'inactivityStopNotice': 'inactive-stop {minutes} minutes',
   'languagePackDownload': 'dl-label {language}',
   'languagePackDownloadingPercent': 'dling-pct {language} {percent}',
@@ -81,45 +82,45 @@ const _testStrings = ZcStrings.fromMap({
   'languagePackIosInstructions': 'ios-steps {language}',
 });
 
-/// A [TranscriptSaveOutcome] with a fixed value (Q-2).
+/// A [TranscriptSaveOutcome] with a fixed value (Q-2, BR-U10-60).
 class _FixedOutcome extends TranscriptSaveOutcome {
-  _FixedOutcome({required bool? value}) : _value = value;
+  _FixedOutcome({required TranscriptSaveResult? value}) : _value = value;
 
-  final bool? _value;
+  final TranscriptSaveResult? _value;
 
   @override
-  bool? build() => _value;
+  TranscriptSaveResult? build() => _value;
 }
 
 /// A [TranscriptSaveOutcome] a test can drive, logging every change.
 class _WritableOutcome extends TranscriptSaveOutcome {
   /// The value the writer would write, or `null` for no outcome.
-  bool? value;
+  TranscriptSaveResult? value;
 
   /// Every value the screen read, in order.
-  final reads = <bool?>[];
+  final reads = <TranscriptSaveResult?>[];
 
   /// Every write or clear, in order.
   final mutations = <String>[];
 
   @override
-  bool? build() => null;
+  TranscriptSaveResult? build() => null;
 
   @override
-  bool? get saved {
+  TranscriptSaveResult? get outcome {
     reads.add(value);
     return value;
   }
 
   @override
-  set saved(bool? v) {
-    mutations.add('record=$v');
+  set outcome(TranscriptSaveResult? v) {
+    mutations.add('record=${v?.name}');
     value = v;
     state = v;
   }
 
   @override
-  void clear() => saved = null;
+  void clear() => outcome = null;
 }
 
 /// A [TranscriptSettingsNotifier] pinned to one capture setting.
@@ -560,7 +561,8 @@ void main() {
           notifier,
           extraOverrides: [
             transcriptSaveOutcomeProvider.overrideWith(
-              () => _FixedOutcome(value: false),
+              () =>
+                  _FixedOutcome(value: TranscriptSaveResult.nothingRecognised),
             ),
           ],
         );
@@ -570,6 +572,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.text('no-transcript'), findsOneWidget);
+        expect(find.text('save-failed'), findsNothing);
         // Navigation to /history is unchanged by the notice.
         expect(find.byKey(const Key('history-screen')), findsOneWidget);
       },
@@ -586,7 +589,73 @@ void main() {
         notifier,
         extraOverrides: [
           transcriptSaveOutcomeProvider.overrideWith(
-            () => _FixedOutcome(value: true),
+            () => _FixedOutcome(value: TranscriptSaveResult.saved),
+          ),
+        ],
+      );
+
+      await notifier.stop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    // TP-38 (BR-U10-60): the screen end of the table. The writer end is in
+    // zip_core's transcript_writer_target_test.
+    testWidgets('a failed save shows its own notice, once, and not the '
+        'no-speech one', (tester) async {
+      final notifier = FakeRecordingStateNotifier(
+        const RecordingState.recording(sessionId: 'active'),
+      );
+      await _pump(
+        tester,
+        notifier,
+        extraOverrides: [
+          transcriptSaveOutcomeProvider.overrideWith(
+            () => _FixedOutcome(value: TranscriptSaveResult.saveFailed),
+          ),
+        ],
+      );
+
+      await notifier.stop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('save-failed'), findsOneWidget);
+      expect(find.text('no-transcript'), findsNothing);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byKey(const Key('history-screen')), findsOneWidget);
+    });
+
+    testWidgets('no outcome yet shows nothing', (tester) async {
+      final notifier = FakeRecordingStateNotifier(
+        const RecordingState.recording(sessionId: 'active'),
+      );
+      await _pump(tester, notifier);
+
+      await notifier.stop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('a failed save shows nothing when capture is off', (
+      tester,
+    ) async {
+      final notifier = FakeRecordingStateNotifier(
+        const RecordingState.recording(sessionId: 'active'),
+      );
+      await _pump(
+        tester,
+        notifier,
+        extraOverrides: [
+          transcriptSaveOutcomeProvider.overrideWith(
+            () => _FixedOutcome(value: TranscriptSaveResult.saveFailed),
+          ),
+          transcriptSettingsNotifierProvider.overrideWith(
+            () => _PinnedCaptureSettings(enabled: false),
           ),
         ],
       );
@@ -607,7 +676,7 @@ void main() {
         notifier,
         extraOverrides: [
           transcriptSaveOutcomeProvider.overrideWith(
-            () => _FixedOutcome(value: false),
+            () => _FixedOutcome(value: TranscriptSaveResult.nothingRecognised),
           ),
           transcriptSettingsNotifierProvider.overrideWith(
             () => _PinnedCaptureSettings(enabled: false),
@@ -637,7 +706,7 @@ void main() {
             FakeRecordingStateNotifier(
                 const RecordingState.recording(sessionId: 'first'),
               )
-              ..setSessionIdOnStop('first-stop')
+              ..nextSessionIdOnStop = 'first-stop'
               ..beforeStopGate = Completer<void>();
         await _pump(
           tester,
@@ -649,16 +718,17 @@ void main() {
         // Recorded the way the stop callback does, once the screen (and so
         // the provider) exists, before the stop is published.
         ProviderScope.containerOf(
-          tester.element(find.byType(RecordingScreen)),
-          listen: false,
-        ).read(transcriptSaveOutcomeProvider.notifier).saved = false;
+              tester.element(find.byType(RecordingScreen)),
+              listen: false,
+            ).read(transcriptSaveOutcomeProvider.notifier).outcome =
+            TranscriptSaveResult.nothingRecognised;
         final firstStop = first.stop();
         first.beforeStopGate!.complete();
         await firstStop;
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
         expect(find.text('no-transcript'), findsOneWidget);
-        expect(writer.mutations, ['record=false']);
+        expect(writer.mutations, ['record=nothingRecognised']);
 
         // Session two starts in the same screen and container: the writer
         // target forgetting the old outcome on the session-start event is
@@ -668,7 +738,7 @@ void main() {
         await tester.pump();
         writer.clear();
         first
-          ..setSessionIdOnStop('second-stop')
+          ..nextSessionIdOnStop = 'second-stop'
           ..beforeStopGate = Completer<void>();
         final secondStop = first.stop();
         first.beforeStopGate!.complete();
@@ -678,7 +748,7 @@ void main() {
 
         expect(
           writer.mutations,
-          ['record=false', 'record=null'],
+          ['record=nothingRecognised', 'record=null'],
           reason: 'the screen read and changed nothing',
         );
         // The first session's notice is still on screen (its four-second
@@ -706,7 +776,7 @@ void main() {
         notifier,
         extraOverrides: [
           transcriptSaveOutcomeProvider.overrideWith(
-            () => _FixedOutcome(value: false),
+            () => _FixedOutcome(value: TranscriptSaveResult.nothingRecognised),
           ),
         ],
       );
@@ -730,6 +800,38 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('no-transcript'), findsOneWidget);
+    });
+
+    testWidgets('queues the save-failed notice after the error notice too', (
+      tester,
+    ) async {
+      final notifier = FakeRecordingStateNotifier(
+        const RecordingState.recording(sessionId: 'active'),
+      );
+      await _pump(
+        tester,
+        notifier,
+        extraOverrides: [
+          transcriptSaveOutcomeProvider.overrideWith(
+            () => _FixedOutcome(value: TranscriptSaveResult.saveFailed),
+          ),
+        ],
+      );
+
+      notifier.stopWithError(
+        RecordingErrorFactories.onDeviceRecognitionUnavailable(),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('od-title'), findsOneWidget);
+      expect(find.text('save-failed'), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('save-failed'), findsOneWidget);
     });
   });
 
@@ -828,7 +930,7 @@ void main() {
         notifier,
         extraOverrides: [
           transcriptSaveOutcomeProvider.overrideWith(
-            () => _FixedOutcome(value: false),
+            () => _FixedOutcome(value: TranscriptSaveResult.nothingRecognised),
           ),
         ],
       );
@@ -846,6 +948,36 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('no-transcript'), findsOneWidget);
+    });
+
+    testWidgets('queues the save-failed notice after it (TP-38)', (
+      tester,
+    ) async {
+      final notifier = FakeRecordingStateNotifier(
+        const RecordingState.recording(sessionId: 'active'),
+      );
+      await _pump(
+        tester,
+        notifier,
+        extraOverrides: [
+          transcriptSaveOutcomeProvider.overrideWith(
+            () => _FixedOutcome(value: TranscriptSaveResult.saveFailed),
+          ),
+        ],
+      );
+      recordInactivity(tester);
+
+      await notifier.stop();
+      await pumpAfterStop(tester);
+
+      expect(find.text('inactive-stop 5 minutes'), findsOneWidget);
+      expect(find.text('save-failed'), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('save-failed'), findsOneWidget);
     });
 
     testWidgets('never shows for a user stop', (tester) async {

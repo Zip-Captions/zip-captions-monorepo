@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:zip_core/zip_core.dart';
 
-import 'fake_speech_to_text.dart';
+import 'call_log.dart';
 
 /// A hand-written stand-in for [SegmentedRecognizerBridge].
 ///
@@ -116,6 +116,9 @@ class FakeSegmentedRecognizerBridge implements SegmentedRecognizerBridge {
 
   /// Sends an error code.
   void sendError(int code) => send(SegmentedError(code));
+
+  /// Sends an error on the event stream itself, as a broken channel would.
+  void sendStreamError(Object error) => _events.addError(error);
 
   /// Completes the event stream, as a platform teardown would.
   Future<void> close() => _events.close();

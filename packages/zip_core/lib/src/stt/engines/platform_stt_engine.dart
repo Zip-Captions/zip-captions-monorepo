@@ -230,8 +230,10 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
             timestamp: DateTime.now(),
             sourceId: engineId,
           );
-          _loop.onResult(sttResult);
-          _onResult?.call(sttResult);
+          // The loop decides whether the app should see it: a result after a
+          // stop or a pause is dropped unless the drain is collecting the last
+          // phrase (BR-U10-55).
+          if (_loop.onResult(sttResult)) _onResult?.call(sttResult);
         },
         // BR-U10-20: partial results on and cancel-on-error off are the
         // plugin's defaults; the 'listen options' test pins both so a change
@@ -282,27 +284,39 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
   Future<void> stopListening() async {
     // Intent first, then the plugin (BR-U10-19), so a trailing `done` never
     // restarts.
-    _loop.stopRequested();
+    final drain = _loop.stopRequested();
     try {
       await _stt.stop();
+      // BR-U10-55: `stop()` lets the platform finish the speech it already
+      // captured (Android and iOS alike); cancelling at once would discard
+      // the iOS final result. Wait for it, bounded, then cancel.
+      if (drain) await _loop.awaitDrain();
       await _stt.cancel();
       _log.info('Listening stopped');
     } on Exception catch (e) {
       _log.warning('stopListening error: ${e.runtimeType}');
+    } finally {
+      if (drain) _loop.closeDrain();
     }
   }
 
   @override
   Future<bool> pause() async {
     // speech_to_text has no native pause — stop and record paused state.
-    _loop.pauseRequested();
+    final drain = _loop.pauseRequested();
     try {
       await _stt.stop();
+      // BR-U10-55: the last phrase is accepted before pause returns, so the
+      // notifier saves it before it sets the paused state (BR-U10-56). The
+      // plugin is left stopped, not cancelled.
+      if (drain) await _loop.awaitDrain();
       _log.info('Paused (via stop)');
       return true;
     } on Exception catch (e) {
       _log.warning('Pause error: ${e.runtimeType}');
       return false;
+    } finally {
+      if (drain) _loop.closeDrain();
     }
   }
 
@@ -473,20 +487,98 @@ class _SessionLoop {
     _pendingInterim = null;
   }
 
-  /// A recognition result arrived (before it reaches the app's callback).
-  void onResult(SttResult result) {
+  /// A recognition result arrived. Returns whether the app's callback should
+  /// receive it now.
+  ///
+  /// During a drain (BR-U10-55) only the first final result is passed on; an
+  /// interim is remembered so the end of the wait can flush it as final. After
+  /// a stop or a pause, outside a drain, nothing is passed on.
+  bool onResult(SttResult result) {
+    if (_draining) {
+      if (_drainDeliveredFinal) return false;
+      if (!result.isFinal) {
+        _pendingInterim = result;
+        return false;
+      }
+      _drainDeliveredFinal = true;
+      _pendingInterim = null;
+      _endDrain();
+      return true;
+    }
     if (_starting) {
       _held.add(() => onResult(result));
-      return;
+      return true;
     }
-    if (_intent != _Intent.listening) return;
-    _deliveredResult = true;
-    _failureCount = 0;
-    _pendingInterim = result.isFinal ? null : result;
+    if (_intent == _Intent.stopped || _intent == _Intent.paused) return false;
+    if (_intent == _Intent.listening) {
+      _deliveredResult = true;
+      _failureCount = 0;
+      _pendingInterim = result.isFinal ? null : result;
+    }
+    return true;
+  }
+
+  /// Whether a stop or a pause is waiting for the platform to finish
+  /// recognising the speech it already captured (BR-U10-55).
+  bool _draining = false;
+  Completer<void>? _drainDone;
+  bool _drainDeliveredFinal = false;
+
+  void _endDrain() {
+    final done = _drainDone;
+    if (done != null && !done.isCompleted) done.complete();
+  }
+
+  /// Waits for the drain to end (a final result, the status `done`, an error
+  /// or `finalResultDrainTimeout`), then delivers a pending interim as final
+  /// once if no final arrived (BR-U10-16).
+  Future<void> awaitDrain() async {
+    final done = _drainDone;
+    if (done == null) return;
+    final timer = Timer(limits.finalResultDrainTimeout, _endDrain);
+    try {
+      await done.future;
+    } finally {
+      timer.cancel();
+      if (_drainDeliveredFinal) {
+        _pendingInterim = null;
+      } else {
+        _flushPendingInterim();
+      }
+      closeDrain();
+    }
+  }
+
+  /// Closes the drain; later results are dropped again.
+  void closeDrain() {
+    _draining = false;
+    _drainDone = null;
+    _pendingInterim = null;
+  }
+
+  /// Opens a drain when a session is live (not while a start or a restart is
+  /// still in flight, and not after the session already ended with a restart
+  /// pending: neither has anything to finish). Called before the intent
+  /// changes; the pending interim is kept for the flush.
+  bool _beginDrain() {
+    final live =
+        _intent == _Intent.listening &&
+        !_starting &&
+        !_restartScheduled &&
+        !_draining;
+    if (!live) return false;
+    _draining = true;
+    _drainDeliveredFinal = false;
+    _drainDone = Completer<void>();
+    return true;
   }
 
   /// A plugin status arrived. Only `done` drives a restart (BR-U10-15).
   void onStatus(String status) {
+    if (_draining) {
+      if (status == SpeechToText.doneStatus) _endDrain();
+      return;
+    }
     if (_starting) {
       _held.add(() => onStatus(status));
       return;
@@ -497,6 +589,12 @@ class _SessionLoop {
   /// A plugin error arrived, classified by code and never by the plugin's
   /// `permanent` flag, which is always true (BR-U10-18).
   void onError(String code) {
+    if (_draining) {
+      // Any error ends the wait for the last phrase; it is not classified,
+      // counted or reported (BR-U10-55).
+      _endDrain();
+      return;
+    }
     if (_starting) {
       _held.add(() => onError(code));
       return;
@@ -618,19 +716,28 @@ class _SessionLoop {
     }
   }
 
-  void pauseRequested() {
+  /// Records the pause. Returns whether a drain was opened, which the caller
+  /// must wait on and close.
+  bool pauseRequested() {
+    final drain = _beginDrain();
     _epoch++;
     _intent = _Intent.paused;
     abandonStarting();
     _cancelTimer();
+    return drain;
   }
 
-  void stopRequested() {
+  /// Records the stop. Returns whether a drain was opened, which the caller
+  /// must wait on and close.
+  bool stopRequested() {
+    final drain = _beginDrain();
     _epoch++;
     _intent = _Intent.stopped;
     abandonStarting();
     _cancelTimer();
-    _pendingInterim = null;
+    // Without a drain nothing will flush the interim, so it is dropped.
+    if (!drain) _pendingInterim = null;
+    return drain;
   }
 
   void dispose() {
@@ -639,6 +746,7 @@ class _SessionLoop {
     abandonStarting();
     _cancelTimer();
     _pendingInterim = null;
+    _endDrain();
   }
 
   void _cancelTimer() {

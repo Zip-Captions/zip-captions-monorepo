@@ -14,6 +14,10 @@ const Duration kLanguagePackRecheckInterval = Duration(seconds: 5);
 /// How long the re-check goes on before the download counts as failed.
 const Duration kLanguagePackRecheckLimit = Duration(minutes: 5);
 
+/// How long a status request may take before the section gives up on it
+/// (BR-U10-64 (a)).
+const Duration kLanguagePackStatusTimeout = Duration(seconds: 5);
+
 enum _Phase { checking, idle, downloading, scheduled, ready, failed }
 
 /// The part of the on-device-unavailable panel that deals with a missing
@@ -30,9 +34,14 @@ enum _Phase { checking, idle, downloading, scheduled, ready, failed }
 /// state: not a failure, no time limit and no re-check (BR-U10-47a). After a
 /// tap that produces no event at all (Android 13 fires and forgets), the
 /// status is re-checked every [kLanguagePackRecheckInterval] for at most
-/// [kLanguagePackRecheckLimit], then the download counts as failed. A
+/// [kLanguagePackRecheckLimit], then the download counts as failed; on
+/// Android a re-check that finds `downloading` means the platform has only
+/// queued it, so it shows the scheduled state instead (BR-U10-64 (c)). A
 /// progress event with a percent ends that polling: the platform is then
-/// telling us how it is going.
+/// telling us how it is going, and if no further event arrives within
+/// [kLanguagePackRecheckLimit] the download counts as failed (BR-U10-64 (b)).
+/// A status request that gets no reply within [kLanguagePackStatusTimeout]
+/// shows the failed state too (BR-U10-64 (a)).
 ///
 /// **Security (SECURITY-03)**: logs carry exception type names only; never the
 /// locale, the display name or an exception message.
@@ -65,6 +74,10 @@ class _LanguagePackSectionState extends ConsumerState<LanguagePackSection> {
   LanguagePackService? _service;
   StreamSubscription<LanguagePackEvent>? _subscription;
   Timer? _timer;
+
+  /// Fails the download when no progress event follows the last one within
+  /// [kLanguagePackRecheckLimit] (BR-U10-64 (b)).
+  Timer? _stallTimer;
   Duration _polled = Duration.zero;
 
   _Phase _phase = _Phase.checking;
@@ -92,6 +105,7 @@ class _LanguagePackSectionState extends ConsumerState<LanguagePackSection> {
   @override
   void dispose() {
     _timer?.cancel();
+    _stallTimer?.cancel();
     unawaited(_subscription?.cancel());
     super.dispose();
   }
@@ -103,9 +117,16 @@ class _LanguagePackSectionState extends ConsumerState<LanguagePackSection> {
   bool _isMine(LanguagePackEvent event) =>
       _canonical(event.localeId) == _canonical(widget.localeId);
 
-  Future<LanguagePackInfo> _fetch() async {
+  /// Asks for the status, bounded by [kLanguagePackStatusTimeout]. A failure
+  /// is `unknown`; a request with no reply in time is `null`.
+  Future<LanguagePackInfo?> _fetch() async {
     try {
-      return await _service!.status(widget.localeId);
+      return await _service!
+          .status(widget.localeId)
+          .timeout(kLanguagePackStatusTimeout);
+    } on TimeoutException {
+      _log.warning('Language-pack status timed out');
+      return null;
     } on Object catch (e) {
       _log.warning('Language-pack status failed: ${e.runtimeType}');
       return LanguagePackInfo(
@@ -116,13 +137,26 @@ class _LanguagePackSectionState extends ConsumerState<LanguagePackSection> {
   }
 
   Future<void> _loadStatus() async {
-    final info = _service == null
+    final fetched = _service == null
         ? LanguagePackInfo(
             status: LanguagePackStatus.unknown,
             displayName: widget.localeId,
           )
         : await _fetch();
     if (!mounted) return;
+    if (fetched == null) {
+      // BR-U10-64 (a): no reply is a failure the user can see, not a panel
+      // that sits empty. The tag stands in for the display name.
+      setState(() {
+        _info = LanguagePackInfo(
+          status: LanguagePackStatus.unknown,
+          displayName: widget.localeId,
+        );
+        _phase = _Phase.failed;
+      });
+      return;
+    }
+    final info = fetched;
     setState(() {
       _info = info;
       // BR-U10-47a: pending at the first check is a deferred download, not
@@ -139,8 +173,12 @@ class _LanguagePackSectionState extends ConsumerState<LanguagePackSection> {
       case LanguagePackProgress(:final percent):
         if (_phase != _Phase.downloading) return;
         setState(() => _percent = percent?.clamp(0, 100));
-        // The platform reports a percentage: no polling needed.
-        if (percent != null) _stopPolling();
+        // The platform reports a percentage: no polling needed, but the
+        // platform must keep reporting (BR-U10-64 (b)).
+        if (percent != null) {
+          _stopPolling();
+          _armStallTimer();
+        }
       case LanguagePackScheduled():
         if (_phase == _Phase.downloading) _finish(_Phase.scheduled);
       case LanguagePackDone():
@@ -154,6 +192,8 @@ class _LanguagePackSectionState extends ConsumerState<LanguagePackSection> {
 
   void _finish(_Phase phase) {
     _stopPolling();
+    _stallTimer?.cancel();
+    _stallTimer = null;
     if (!mounted) return;
     setState(() => _phase = phase);
   }
@@ -189,12 +229,28 @@ class _LanguagePackSectionState extends ConsumerState<LanguagePackSection> {
     _timer = null;
   }
 
+  /// (Re)starts the stall limit: a progress event arrived, so the next one is
+  /// due within [kLanguagePackRecheckLimit] or the download counts as failed.
+  void _armStallTimer() {
+    _stallTimer?.cancel();
+    _stallTimer = Timer(kLanguagePackRecheckLimit, () {
+      _stallTimer = null;
+      if (mounted && _phase == _Phase.downloading) _finish(_Phase.failed);
+    });
+  }
+
   Future<void> _recheck() async {
     _polled += kLanguagePackRecheckInterval;
     final info = await _fetch();
     if (!mounted || _phase != _Phase.downloading || _timer == null) return;
-    if (info.status == LanguagePackStatus.installed) {
+    if (info?.status == LanguagePackStatus.installed) {
       _finish(_Phase.ready);
+    } else if (info?.status == LanguagePackStatus.downloading &&
+        widget.platform == TargetPlatform.android) {
+      // BR-U10-64 (c): on Android `downloading` is "pending", the platform has
+      // queued the download (as at the first check, BR-U10-47a). On iOS it is
+      // a real transfer, so that path is unchanged.
+      _finish(_Phase.scheduled);
     } else if (_polled >= kLanguagePackRecheckLimit) {
       _finish(_Phase.failed);
     }

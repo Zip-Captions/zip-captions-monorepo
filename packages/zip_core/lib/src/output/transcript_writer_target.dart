@@ -4,6 +4,7 @@ import 'package:logging/logging.dart';
 import 'package:uuid/uuid.dart';
 import 'package:zip_core/src/models/caption_event.dart';
 import 'package:zip_core/src/models/recording_state.dart';
+import 'package:zip_core/src/models/transcript_save_result.dart';
 import 'package:zip_core/src/models/transcript_segment.dart';
 import 'package:zip_core/src/models/transcript_settings.dart';
 import 'package:zip_core/src/output/transcript_repository.dart';
@@ -104,12 +105,15 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
   /// await completion. Clears session state immediately so any subsequent
   /// [StoppedState] delivery via the caption bus is a safe no-op.
   ///
-  /// Returns whether a transcript was actually saved (Q-2): `false` when the
-  /// session never reached its first segment, in which case there is no row
-  /// to finalize and nothing is called on the repository. The caller (the
-  /// provider's stop callback) publishes the outcome for `RecordingScreen`.
-  Future<bool> finalizeCurrentSession() async {
-    if (_sessionId == null) return false;
+  /// Returns how the session turned out (Q-2, BR-U10-60):
+  /// [TranscriptSaveResult.nothingRecognised] when it never reached its first
+  /// segment (no row to finalize, nothing is called on the repository),
+  /// [TranscriptSaveResult.saved] when the row was created and at least one
+  /// segment save or merge succeeded, and [TranscriptSaveResult.saveFailed]
+  /// otherwise. The caller (the provider's stop callback) publishes the
+  /// outcome for `RecordingScreen`.
+  Future<TranscriptSaveResult> finalizeCurrentSession() async {
+    if (_sessionId == null) return TranscriptSaveResult.nothingRecognised;
     final sessionId = _sessionId!;
     final row = _row;
     final durationMs = _sessionStartMs == null
@@ -128,7 +132,7 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
       _log.fine(
         'finalizeCurrentSession: sessionId=$sessionId skipped, no row',
       );
-      return false;
+      return TranscriptSaveResult.nothingRecognised;
     }
     _log.fine(
       'finalizeCurrentSession: sessionId=$sessionId'
@@ -146,8 +150,10 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
       );
     });
     await _writes;
-    // The create ran ahead of this step in the chain, so its outcome is known.
-    return row.created;
+    // Every save ran ahead of this step in the chain, so the outcome is known.
+    return row.succeeded
+        ? TranscriptSaveResult.saved
+        : TranscriptSaveResult.saveFailed;
   }
 
   @override
@@ -201,7 +207,12 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
       );
       // A merge always follows a segment that already asked for the row.
       final sessionId = _sessionId!;
-      _appendWrite(() => _repository.saveSegment(sessionId, merged));
+      final row = _row;
+      _appendWrite(() async {
+        await _repository.saveSegment(sessionId, merged);
+        // A merge that succeeds counts as a save (BR-U10-60): the text is in.
+        row?.segmentSaved = true;
+      });
     } else {
       // New segment: gap > 2s or no prior segment for this source.
       final segment = TranscriptSegment(
@@ -230,7 +241,7 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
     final sessionId = _sessionId!;
     final existing = _row;
     if (existing != null) {
-      _appendWrite(() => _repository.saveSegment(sessionId, segment));
+      _appendWrite(() => _saveAndMark(existing, sessionId, segment));
       return;
     }
     final row = _row = _RowMark();
@@ -248,7 +259,19 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
     // A merge cannot precede the first save of the same segment, and the
     // save is appended after the create in the same turn, so this save runs
     // after the create completes.
-    _appendWrite(() => _repository.saveSegment(sessionId, segment));
+    _appendWrite(() => _saveAndMark(row, sessionId, segment));
+  }
+
+  /// Saves [segment] and, only when the repository accepts it, records that
+  /// the session has at least one saved segment (BR-U10-60). A failure
+  /// propagates to the chain, which logs its type.
+  Future<void> _saveAndMark(
+    _RowMark row,
+    String sessionId,
+    TranscriptSegment segment,
+  ) async {
+    await _repository.saveSegment(sessionId, segment);
+    row.segmentSaved = true;
   }
 
   /// Appends [step] to the session's ordered write chain.
@@ -387,8 +410,15 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
   }
 }
 
-/// Whether one session's repository row has been created. Mutable, and shared
-/// by the steps queued for that session.
+/// What one session's repository writes have achieved so far. Mutable, and
+/// shared by the steps queued for that session.
 class _RowMark {
+  /// Whether the create step succeeded.
   bool created = false;
+
+  /// Whether at least one segment save or merge succeeded (BR-U10-60).
+  bool segmentSaved = false;
+
+  /// The session counts as saved only with a row and a saved segment.
+  bool get succeeded => created && segmentSaved;
 }

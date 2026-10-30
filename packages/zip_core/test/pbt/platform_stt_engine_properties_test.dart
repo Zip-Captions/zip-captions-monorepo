@@ -10,6 +10,7 @@ import 'package:zip_core/src/models/stt_result.dart';
 import 'package:zip_core/src/stt/engines/platform_stt_engine.dart';
 import 'package:zip_core/src/stt/stt_error_source.dart';
 
+import '../helpers/call_log.dart';
 import '../helpers/fake_on_device_checker.dart';
 import '../helpers/fake_speech_to_text.dart';
 import '../helpers/mock_audio_device_service.dart';
@@ -43,8 +44,7 @@ const _lastingCodes = <String, SttEngineErrorKind>{
   'error_speech_recognizer_request_not_authorized':
       SttEngineErrorKind.permissionRevoked,
   'error_assets_not_installed': SttEngineErrorKind.onDeviceModelMissing,
-  'error_speech_recognizer_disabled':
-      SttEngineErrorKind.recognizerUnavailable,
+  'error_speech_recognizer_disabled': SttEngineErrorKind.recognizerUnavailable,
 };
 
 enum _Kind {
@@ -84,11 +84,11 @@ class _Cmd {
 
   @override
   String toString() => switch (kind) {
-        _Kind.tick => 'tick(${ms}ms)',
-        _Kind.errorOnly || _Kind.endLasting => '${kind.name}($code)',
-        _Kind.setCheck || _Kind.setListen => '${kind.name}(${slot.name})',
-        _ => kind.name,
-      };
+    _Kind.tick => 'tick(${ms}ms)',
+    _Kind.errorOnly || _Kind.endLasting => '${kind.name}($code)',
+    _Kind.setCheck || _Kind.setListen => '${kind.name}(${slot.name})',
+    _ => kind.name,
+  };
 }
 
 pbt.Generator<_Cmd> get _commandGenerator {
@@ -102,31 +102,32 @@ pbt.Generator<_Cmd> get _commandGenerator {
     for (var i = 0; i < 2; i++) (r) => _Cmd(_Kind.interim, text: 'i${text(r)}'),
     (r) => _Cmd(_Kind.finalResult, text: 'f${text(r)}'),
     (r) => _Cmd(
-          _Kind.tick,
-          ms: const [10, 100, 300, 2500, 60000][r.nextInt(5)],
-        ),
+      _Kind.tick,
+      ms: const [10, 100, 300, 2500, 60000][r.nextInt(5)],
+    ),
     (r) => _Cmd(
-          _Kind.errorOnly,
-          code: [
+      _Kind.errorOnly,
+      code:
+          [
             ..._silenceCodes,
             ..._transientCodes,
             ...lastingCodes,
-          ][r.nextInt(_silenceCodes.length +
-              _transientCodes.length +
-              lastingCodes.length)],
-        ),
+          ][r.nextInt(
+            _silenceCodes.length + _transientCodes.length + lastingCodes.length,
+          )],
+    ),
     for (var i = 0; i < 3; i++) (r) => const _Cmd(_Kind.endQuiet),
     (r) => _Cmd(_Kind.endSilence, code: _silenceCodes[r.nextInt(2)]),
     for (var i = 0; i < 3; i++)
       (r) => _Cmd(
-            _Kind.endTransient,
-            code: _transientCodes[r.nextInt(_transientCodes.length)],
-          ),
+        _Kind.endTransient,
+        code: _transientCodes[r.nextInt(_transientCodes.length)],
+      ),
     (r) => const _Cmd(_Kind.endFast),
     (r) => _Cmd(
-          _Kind.endLasting,
-          code: lastingCodes[r.nextInt(lastingCodes.length)],
-        ),
+      _Kind.endLasting,
+      code: lastingCodes[r.nextInt(lastingCodes.length)],
+    ),
     (r) => _Cmd(_Kind.setCheck, slot: _Slot.values[r.nextInt(3)]),
     (r) => _Cmd(_Kind.setListen, slot: r.nextBool() ? _Slot.ok : _Slot.throws),
   ];
@@ -191,19 +192,30 @@ class _Model {
     }
   }
 
-  void stop() {
-    intent = 'stopped';
+  /// BR-U10-55: a stop or pause of a live session waits for the last phrase;
+  /// the fake plugin sends none, so the wait ends at the deadline and a
+  /// pending interim is flushed once as final.
+  void _drain() {
+    if (intent == 'listening' && pending) finals++;
     pending = false;
   }
 
+  void stop() {
+    _drain();
+    intent = 'stopped';
+  }
+
   void pause() {
+    _drain();
     intent = 'paused';
   }
 
   void result({required bool isFinal}) {
-    // Results always reach the app (the plugin's last final result arrives
-    // after stop()), but only a listening session's results update the
-    // loop's bookkeeping.
+    // After a stop or a pause (outside a drain) a result is dropped, since
+    // BR-U10-55 moved the delivery of the last phrase into the drain. In every
+    // other intent the result reaches the app, but only a listening
+    // session's results update the loop's bookkeeping.
+    if (intent == 'stopped' || intent == 'paused') return;
     if (isFinal) finals++;
     if (intent != 'listening') return;
     delivered = true;
@@ -280,7 +292,10 @@ class _Run {
   final errors = <SttEngineError>[];
   final results = <SttResult>[];
 
-  T await_<T>(Future<T> future) {
+  /// Completes [future] under fake time. A stop or a pause of a live session
+  /// waits for the BR-U10-55 drain, and the fake plugin sends nothing in it,
+  /// so those pass [drained] to let the deadline pass.
+  T await_<T>(Future<T> future, {bool drained = false}) {
     T? value;
     var done = false;
     unawaited(
@@ -290,6 +305,11 @@ class _Run {
       }),
     );
     async.flushMicrotasks();
+    if (drained) {
+      async
+        ..elapse(defaultSttListeningLimits.finalResultDrainTimeout)
+        ..flushMicrotasks();
+    }
     expect(done, isTrue);
     return value as T;
   }
@@ -326,7 +346,6 @@ class _Run {
     async.flushMicrotasks();
     settle();
   }
-
 }
 
 // Coverage counters across all seeds, so the model test cannot pass
@@ -372,12 +391,12 @@ void main() {
                 // its own listen() succeeds.
                 blockedAt = null;
               case _Kind.stop:
-                run.await_(run.engine.stopListening());
+                run.await_(run.engine.stopListening(), drained: true);
                 model.stop();
                 blockedAt ??= run.stt.listenCalls.length;
               case _Kind.pause:
                 if (model.intent != 'listening') continue;
-                run.await_(run.engine.pause());
+                run.await_(run.engine.pause(), drained: true);
                 model.pause();
                 blockedAt ??= run.stt.listenCalls.length;
               case _Kind.resume:
@@ -470,8 +489,10 @@ void main() {
           _coveredListens += run.stt.listenCalls.length;
           _coveredErrors += run.errors.length;
           // A restart is a listen() that is not the first after a start.
-          _coveredRestarts +=
-              max(0, run.stt.listenCalls.length - run.stt.initializeCalls);
+          _coveredRestarts += max(
+            0,
+            run.stt.listenCalls.length - run.stt.initializeCalls,
+          );
 
           // TP-15: every listen() is immediately preceded by a check for the
           // same locale that returned true, and is never skipped or reused.
@@ -486,7 +507,8 @@ void main() {
             expect(
               entries[i - 1],
               'check:en-US:true',
-              reason: 'a listen() without a true check just before it: '
+              reason:
+                  'a listen() without a true check just before it: '
                   '$executed',
             );
           }
@@ -523,8 +545,11 @@ void main() {
           final finalAt = entries.indexOf('result:final');
           final secondListenAt = entries.lastIndexOf('listen');
           expect(finalAt, greaterThanOrEqualTo(0));
-          expect(secondListenAt, greaterThan(finalAt),
-              reason: 'the flush comes before the restart listen()');
+          expect(
+            secondListenAt,
+            greaterThan(finalAt),
+            reason: 'the flush comes before the restart listen()',
+          );
         });
       },
     );
