@@ -50,7 +50,7 @@ broadcaster's `maxViewers=50` cap, which is Unit 5's and Unit 9's concern.
   inside the same helper's discipline: a throw from `disconnect()` must not prevent
   `CannotConnect(IceFailed)` from being set.
 - **F-7.2 step 5's `connect()` throw** maps to `CannotConnect(IceFailed)`; the
-  `iceServersFor()` failure maps to the same. Both are reachable (`channel.open()`,
+  `iceServersForBroadcast()` failure maps to the same. Both are reachable (`channel.open()`,
   `peerConnectionFactory.create()`, `submitJoinRequest()` are all awaited inside
   `_attemptConnect`), so both get an example test, not just a claim.
 - **No window-expiry race:** the `Timer` is cancelled on *every* exit from

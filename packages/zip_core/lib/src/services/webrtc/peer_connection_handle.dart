@@ -54,6 +54,40 @@ abstract interface class PeerConnectionHandle {
   /// remote peer as an `IceCandidate` signaling message.
   Stream<RTCIceCandidate> get onIceCandidate;
 
+  /// Queries this connection's own statistics for the candidate pair that is
+  /// actually carrying traffic, and classifies it (Unit 9, B4).
+  ///
+  /// This is the only honest source for p2p-vs-relay: ICE prefers a direct
+  /// path whenever one exists, so "did we offer a relay candidate" says
+  /// nothing about "did we use it". Reading the *selected* pair's local
+  /// candidate type does.
+  ///
+  /// **Added 2026-10-30** — the gap `web_rtc_broadcast_transport.dart`'s
+  /// "Known simplification" comment of 2026-10-08 flagged and explicitly
+  /// parked: `ViewerConnectionInfo.connectionType` was hardcoded
+  /// `p2pDirect` because this interface had no stats query. That comment
+  /// named the fix ("revisit once a stats-query method is added to
+  /// [PeerConnectionHandle]"); this is that method.
+  ///
+  /// Never throws for "no answer yet": a connection that has not selected a
+  /// pair reports [CandidatePairRoute.unknown]. An implementation may
+  /// propagate a genuine native failure.
+  Future<CandidatePairRoute> selectedCandidateRoute();
+
   /// Closes this connection and releases its native resources.
   Future<void> close();
+}
+
+/// How a peer connection's selected candidate pair is routed.
+enum CandidatePairRoute {
+  /// The selected local candidate is `host`, `srflx`, or `prflx` — traffic
+  /// does not pass through TURN.
+  direct,
+
+  /// The selected local candidate is `relay` — traffic passes through TURN.
+  relayed,
+
+  /// Could not be determined: no selected pair yet, an unreadable report, or
+  /// a candidate type this app does not recognise.
+  unknown,
 }

@@ -2,21 +2,17 @@
 
 Utility scripts for development workflow tasks.
 
-## Git Worktree Helpers
+## Hooks
 
-Each unit of work runs in an isolated git worktree. See `CONTRIBUTING.md` Section 2 for the full worktree workflow.
+`install-hooks.sh` installs the local pre-push hook, which runs
+`dart analyze --fatal-infos` and blocks the push on any warning or info:
 
 ```bash
-# Create a worktree for a new feature (run from monorepo root):
-git worktree add ../zip-captions-<feature-name> -b feature/<feature-name>
-
-# List all active worktrees:
-git worktree list
-
-# Remove a worktree after its PR has merged:
-git worktree remove ../zip-captions-<feature-name>
-git branch -d feature/<feature-name>
+./scripts/install-hooks.sh
 ```
+
+Branching workflow lives in `CONTRIBUTING.md` Section 2. There are no worktree
+helpers: this project works one branch at a time in the main checkout.
 
 ## Adding Scripts
 

@@ -53,7 +53,7 @@ new exit path added later cannot forget it. `disposeAll` cancels it once more de
 owns time.
 
 **Stale-resume suppression around `join()`'s awaits (Design Q3)**: `join()` awaits
-`resolve()`, `iceServersFor()` and `connect()`. An `int _sessionEpoch` is incremented at
+`resolve()`, `iceServersForBroadcast()` and `connect()`. An `int _sessionEpoch` is incremented at
 the start of every `join()`, on every implicit leave, and in `leave()`. After each await,
 `join()` re-reads the epoch and returns without touching state if it changed. Because
 the epoch check precedes F-7.2 step 4 (the first allocating step), a superseded join

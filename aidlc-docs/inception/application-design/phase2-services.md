@@ -48,10 +48,15 @@ On failure at any step, completed steps are unwound in reverse order, the state 
 2. `BroadcastLink.parseInput`: invalid input gives `invalidInput`, with no network call.
 3. `BroadcastResolver.resolve`: `notFound` or `offline` gives `notBroadcasting`, and `rateLimited` gives `cannotConnect(rateLimited)`.
 4. The viewer-scoped `CaptionBus`, registry and `OnScreenCaptionTarget` are created.
-5. `ViewerTransport.connect(sessionChannel, iceServers)` sends a `joinRequest` with a null `viewerIdentity`.
-6. The broadcaster side runs `ViewerAdmission.tryAdmit(peerId)`. `Full` means a `joinRejected(full)` reply and the viewer state `full`. `Admitted` means `joinAccepted`, then SDP and ICE, then the data channel opens.
-7. On `viewerJoined`, `RemoteBroadcastTarget` sends that viewer the current `captionActivity` snapshot. There is no caption backlog (FR-5.4).
-8. `RemoteCaptionReceiver` publishes captions into the viewer bus, and the state becomes `live(activity, connectionType)`.
+5. `IceServerProvider.iceServersForBroadcast(broadcastId)` is called for the
+   relay configuration (Unit 9, B2). It is the broadcast-scoped variant because
+   a viewer is anonymous: `iceServersFor(sessionId)` guards on `auth.uid()` and
+   is reachable only by an authenticated broadcaster. A failure here maps to
+   `CannotConnect(IceFailed)`.
+6. `ViewerTransport.connect(sessionChannel, iceServers)` sends a `joinRequest` with a null `viewerIdentity`.
+7. The broadcaster side runs `ViewerAdmission.tryAdmit(peerId)`. `Full` means a `joinRejected(full)` reply and the viewer state `full`. `Admitted` means `joinAccepted`, then SDP and ICE, then the data channel opens.
+8. On `viewerJoined`, `RemoteBroadcastTarget` sends that viewer the current `captionActivity` snapshot. There is no caption backlog (FR-5.4).
+9. `RemoteCaptionReceiver` publishes captions into the viewer bus, and the state becomes `live(activity, connectionType)`.
 
 ### F5. Viewer reconnection (FR-7.5)
 1. `ViewerTransport.status` emits `interrupted`, and the state becomes `reconnecting`.

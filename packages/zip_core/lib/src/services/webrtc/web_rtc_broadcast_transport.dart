@@ -13,6 +13,7 @@ import 'package:zip_core/src/services/signaling/session_signaling_channel.dart';
 import 'package:zip_core/src/services/webrtc/broadcast_transport.dart';
 import 'package:zip_core/src/services/webrtc/peer_connection_factory.dart';
 import 'package:zip_core/src/services/webrtc/peer_connection_handle.dart';
+import 'package:zip_core/src/services/webrtc/selected_candidate_route.dart';
 
 /// Sentinel `fromPeerId` for broadcaster-originated per-viewer-channel
 /// messages (SDP/ICE/`Leave` are symmetric fields requiring a sender id,
@@ -31,13 +32,26 @@ const joinAckSentinel = '__join_ack__';
 /// Real `flutter_webrtc`-backed [BroadcastTransport] (fixed shape,
 /// Application Design).
 ///
-/// **Known simplification (2026-10-08)**: [ViewerConnectionInfo]'s
-/// `connectionType` is fixed as [ConnectionType.p2pDirect] for every
-/// viewer — this unit's minimal [PeerConnectionHandle] seam has no
-/// candidate-pair/stats query method, so deriving the real p2p-vs-relay
-/// routing (as domain-entities.md describes) isn't possible without
-/// expanding that interface. Flagged explicitly rather than guessed;
-/// revisit once a stats-query method is added to [PeerConnectionHandle].
+/// [ViewerConnectionInfo]'s `connectionType` is read from the connection
+/// itself, never assumed. This replaces the 2026-10-08 "known
+/// simplification" that hardcoded [ConnectionType.p2pDirect] because
+/// [PeerConnectionHandle] had no stats query; that comment named this exact
+/// fix and Unit 9 (B4) implemented it — `selectedCandidateRoute()` reads the
+/// selected candidate pair's local candidate type.
+///
+/// **Why this is asked of the *broadcaster's* connection.** Each viewer has
+/// its own peer connection, and each side of one connection selects the same
+/// candidate pair — the pair is a property of the connection, not of an
+/// endpoint. Reading it here therefore describes the viewer's actual route,
+/// which is what the viewer list is claiming to show.
+///
+/// **Why it is a snapshot, not a subscription.** The route is resolved once
+/// per session, when the join is confirmed, and reported as
+/// [CandidatePairRoute.unknown] if the
+/// statistics are not yet answerable at that moment. This app never
+/// renegotiates ICE mid-session (no `IceRestart` is sent by either side), so
+/// a selected pair that changes after confirmation would mean a new
+/// connection — which is a new session, and a new snapshot.
 class WebRtcBroadcastTransport implements BroadcastTransport {
   /// Creates a [WebRtcBroadcastTransport].
   WebRtcBroadcastTransport({
@@ -324,6 +338,29 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
       ..ackTimer = null
       ..connectedAt = DateTime.now();
     _viewerJoinedController.add(peerId);
+    // Emit immediately with `unknown`, then again with the real route once
+    // the statistics answer. Deliberately two emissions rather than an
+    // `await` before the first: the join confirmation itself must not be
+    // delayed by a diagnostics query, and the viewer list is a display, not
+    // a gate on anything.
+    _emitViewers();
+    unawaited(_resolveRoute(peerId, session));
+  }
+
+  Future<void> _resolveRoute(String peerId, _ViewerSession session) async {
+    CandidatePairRoute route;
+    try {
+      route = await session.connection.selectedCandidateRoute();
+    } on Object {
+      // A failed stats query is a diagnostics failure, never a connection
+      // failure: the session keeps running and the list keeps showing the
+      // honest `unknown`/`disconnected` rather than a guessed route.
+      route = CandidatePairRoute.unknown;
+    }
+    // The session may have been replaced or torn down while the query was in
+    // flight; only the still-installed session may be updated.
+    if (!identical(_sessions[peerId], session)) return;
+    session.route = route;
     _emitViewers();
   }
 
@@ -368,7 +405,7 @@ class WebRtcBroadcastTransport implements BroadcastTransport {
         if (entry.value.connectedAt != null)
           ViewerConnectionInfo(
             peerId: entry.key,
-            connectionType: ConnectionType.p2pDirect,
+            connectionType: connectionTypeOfCandidateRoute(entry.value.route),
             connectedAt: entry.value.connectedAt!,
           ),
     ]);
@@ -475,5 +512,9 @@ class _ViewerSession {
   RTCDataChannel? dataChannel;
   Timer? ackTimer;
   DateTime? connectedAt;
+
+  /// Resolved once, when the join is confirmed. [CandidatePairRoute.unknown]
+  /// until then — and stays that way if the stats query could not answer.
+  CandidatePairRoute route = CandidatePairRoute.unknown;
   final subs = <StreamSubscription<void>>[];
 }

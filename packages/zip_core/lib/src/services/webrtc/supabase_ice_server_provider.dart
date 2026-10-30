@@ -1,4 +1,5 @@
 import 'package:zip_core/src/models/ice_server.dart';
+import 'package:zip_core/src/models/turn_credentials.dart';
 import 'package:zip_core/src/services/webrtc/ice_server_provider.dart';
 import 'package:zip_core/src/services/webrtc/turn_credential_service.dart';
 
@@ -20,25 +21,29 @@ class SupabaseIceServerProvider implements IceServerProvider {
   const SupabaseIceServerProvider({
     required TurnCredentialService turnCredentialService,
     required List<String> urls,
-  })  : _turnCredentialService = turnCredentialService,
-        _urls = urls;
+  }) : _turnCredentialService = turnCredentialService,
+       _urls = urls;
 
   final TurnCredentialService _turnCredentialService;
   final List<String> _urls;
 
   @override
-  Future<List<IceServer>> iceServersFor(String sessionId) async {
-    final credentials = await _turnCredentialService.fetch(sessionId);
-    return [
-      for (final url in _urls)
-        if (url.startsWith('stun:'))
-          IceServer(urls: [url])
-        else
-          IceServer(
-            urls: [url],
-            username: credentials.username,
-            credential: credentials.credential,
-          ),
-    ];
-  }
+  Future<List<IceServer>> iceServersFor(String sessionId) async =>
+      _compose(await _turnCredentialService.fetch(sessionId));
+
+  @override
+  Future<List<IceServer>> iceServersForBroadcast(String broadcastId) async =>
+      _compose(await _turnCredentialService.fetchBroadcast(broadcastId));
+
+  List<IceServer> _compose(TurnCredentials credentials) => [
+    for (final url in _urls)
+      if (url.startsWith('stun:'))
+        IceServer(urls: [url])
+      else
+        IceServer(
+          urls: [url],
+          username: credentials.username,
+          credential: credentials.credential,
+        ),
+  ];
 }

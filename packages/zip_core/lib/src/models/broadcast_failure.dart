@@ -7,7 +7,8 @@ enum BroadcastFailure {
   /// `StatusChannel.publishLive` failed (F2-7).
   signalingUnavailable,
 
-  /// `IceServerProvider.iceServersFor` failed (F2-3).
+  /// `IceServerProvider.iceServersFor` (broadcaster) or
+  /// `iceServersForBroadcast` (anonymous viewer, Unit 9 B2) failed (F2-3).
   relayUnavailable,
 
   /// `BroadcastIdentityRepository.getOrCreateMine` failed (F2-2).

@@ -197,24 +197,23 @@ The standard AI-DLC rule details are in `.aidlc-rule-details/` (symlinked to the
 
 **Operations Phase** — deployment and monitoring (future).
 
-### Git Worktrees
+### Branching
 
-Each unit of work is developed in an isolated git worktree so construction does not interfere with the main workspace or other in-progress units.
+One unit of work, one branch, from `develop`:
 
 ```bash
-# After inception approval, create a worktree for the unit:
-git worktree add ../zip-captions-<feature-name> -b feature/<feature-name>
-
-# Work in the worktree — all melos commands work normally there
-cd ../zip-captions-<feature-name>
-
-# After PR is merged, clean up:
-git worktree remove ../zip-captions-<feature-name>
-git branch -d feature/<feature-name>
-
-# List active worktrees:
-git worktree list
+git checkout develop && git pull
+git checkout -b feature/<feature-name>
 ```
+
+Work happens in the main checkout. Do not create git worktrees: one branch at a
+time keeps the working tree, the test stack, and the local Supabase volumes
+unambiguous, and a worktree adds a second copy of all three. If a second unit
+must start before the first PR merges, that is a signal to finish the first one
+rather than to parallelise.
+
+Commit only immediately before opening a PR or switching branches. Never push or
+open a PR without asking.
 
 ### Workflow
 
@@ -222,21 +221,21 @@ git worktree list
    - `Using AI-DLC, determine the next feature to build for Zip Captions`
    - `Using AI-DLC, [specific feature description]`
 2. Complete the Inception Phase — answer AI-DLC's structured questions and approve each stage
-3. Create a worktree for the approved unit: `git worktree add ../zip-captions-<name> -b feature/<name>`
-4. In the worktree, run AI-DLC Construction Phase — review and approve the code generation plan (Part 1)
+3. Create a branch for the approved unit: `git checkout -b feature/<name>`
+4. Run AI-DLC Construction Phase — review and approve the code generation plan (Part 1)
 5. Write failing tests per acceptance criteria: `test(<pkg>): add failing tests for <feature-name>`
 6. Implement until all tests pass
 7. Run tests: `melos run test`
 8. Run analysis: `melos run analyze`
 9. Run Documentation Refinement — clean up `aidlc-docs/` working documents into lasting reference material, propagate design changes to `docs/`
 10. **Open PR targeting `develop` immediately after Documentation Refinement — do not start the next unit until the PR is open.** Include refined `aidlc-docs/` in the commit.
-11. After PR merges, clean up the worktree
+11. After the PR merges, delete the branch
 
 ### Rules
 
 - Always run AI-DLC inception before writing code — do not start implementation without completing requirements and design stages and receiving human approval at each gate
 - Write failing tests before implementing (within AI-DLC's Code Generation stage, Part 2)
-- One unit of work per worktree, one worktree per PR — open the PR before starting the next unit
+- One unit of work per branch, one branch per PR — open the PR before starting the next unit
 - If blocked, stop and document the blocker — do not work around it
 - Do not modify files outside the assigned package without explicit feature scope
 - Do not add dependencies not on the approved list (see `docs/04-technical-specification.md` Section 6) without human approval

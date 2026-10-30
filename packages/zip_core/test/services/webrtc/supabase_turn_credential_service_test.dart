@@ -21,8 +21,7 @@ class _ImmediateBuilder<T> extends Fake implements PostgrestFilterBuilder<T> {
   Future<S> then<S>(
     FutureOr<S> Function(T) onValue, {
     Function? onError,
-  }) =>
-      _future.then(onValue, onError: onError);
+  }) => _future.then(onValue, onError: onError);
 }
 
 void main() {
@@ -35,8 +34,18 @@ void main() {
   });
 
   void stubRpc(_ImmediateBuilder<List<dynamic>> builder) {
-    when(() => client.rpc<List<dynamic>>('get_turn_credentials'))
-        .thenAnswer((_) => builder);
+    when(
+      () => client.rpc<List<dynamic>>('get_turn_credentials'),
+    ).thenAnswer((_) => builder);
+  }
+
+  void stubBroadcastRpc(_ImmediateBuilder<List<dynamic>> builder) {
+    when(
+      () => client.rpc<List<dynamic>>(
+        'get_broadcast_turn_credentials',
+        params: any(named: 'params'),
+      ),
+    ).thenAnswer((_) => builder);
   }
 
   group('SupabaseTurnCredentialService.fetch', () {
@@ -67,8 +76,7 @@ void main() {
           isTrue,
         );
         expect(
-          result.expiresAt
-              .isBefore(after.add(const Duration(seconds: 3601))),
+          result.expiresAt.isBefore(after.add(const Duration(seconds: 3601))),
           isTrue,
         );
       },
@@ -91,6 +99,96 @@ void main() {
           service.fetch('session-1'),
           throwsA(isA<PostgrestException>()),
         );
+      },
+    );
+
+    test(
+      'does not call the broadcast-scoped RPC — the authenticated path is '
+      'unchanged by Unit 9 (B2)',
+      () async {
+        stubRpc(
+          _ImmediateBuilder<List<dynamic>>.value([
+            {
+              'username': '1735689600',
+              'credential': 'abc123==',
+              'ttl': 3600,
+              'urls': const <String>[],
+            },
+          ]),
+        );
+
+        await service.fetch('session-1');
+
+        verifyNever(
+          () => client.rpc<List<dynamic>>(
+            'get_broadcast_turn_credentials',
+            params: any(named: 'params'),
+          ),
+        );
+      },
+    );
+  });
+
+  group('SupabaseTurnCredentialService.fetchBroadcast', () {
+    test(
+      'calls get_broadcast_turn_credentials with the broadcast id and maps '
+      'the row like the authenticated path',
+      () async {
+        stubBroadcastRpc(
+          _ImmediateBuilder<List<dynamic>>.value([
+            {
+              'username': '1735689600:7KQ2M4XP',
+              'credential': 'xyz789==',
+              'ttl': 3600,
+              'urls': ['turn:localhost:3478', 'stun:localhost:3478'],
+            },
+          ]),
+        );
+
+        final before = DateTime.now().toUtc();
+        final result = await service.fetchBroadcast('7KQ2M4XP');
+        final after = DateTime.now().toUtc();
+
+        verify(
+          () => client.rpc<List<dynamic>>(
+            'get_broadcast_turn_credentials',
+            params: {'p_broadcast_id': '7KQ2M4XP'},
+          ),
+        ).called(1);
+
+        expect(result.username, '1735689600:7KQ2M4XP');
+        expect(result.credential, 'xyz789==');
+        expect(result.urls, ['turn:localhost:3478', 'stun:localhost:3478']);
+        expect(
+          result.expiresAt.isAfter(before.add(const Duration(seconds: 3599))),
+          isTrue,
+        );
+        expect(
+          result.expiresAt.isBefore(after.add(const Duration(seconds: 3601))),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'propagates the server rejection for an unknown broadcast id uncaught '
+      '(no retry, no fallback, and no downgrade to the authenticated RPC)',
+      () async {
+        stubBroadcastRpc(
+          _ImmediateBuilder<List<dynamic>>.error(
+            const PostgrestException(
+              message: 'get_broadcast_turn_credentials: unknown broadcast',
+              code: '42501',
+            ),
+          ),
+        );
+
+        await expectLater(
+          service.fetchBroadcast('UNKNOWN1'),
+          throwsA(isA<PostgrestException>()),
+        );
+
+        verifyNever(() => client.rpc<List<dynamic>>('get_turn_credentials'));
       },
     );
   });
