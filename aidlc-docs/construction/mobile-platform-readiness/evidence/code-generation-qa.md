@@ -1,6 +1,6 @@
 # Unit 10, Step 30: Android emulator QA (Group H tree)
 
-> **Evidence files (2026-10-29):** only the `.md` reports in this folder are kept in the repository (James Petersen's decision). The screenshots, logcat and `simctl` output, crash reports and helper files cited in these reports are kept in a local archive outside the repository.
+> **Evidence files (2026-10-29, updated 2026-10-30):** only the `.md` reports in this folder are kept (James Petersen's decision). The screenshots, logcat and `simctl` output, crash reports, UI dumps and helper files that these reports cite by name were **not retained**: a temporary copy outside the repository was deleted on 2026-10-30 at James Petersen's instruction. Each report records the facts taken from those files (timestamps, log lines, error codes, what each screenshot showed). A file name in these reports is a record of where a fact came from, not a file you can open.
 
 **Date**: 2026-10-26. **Emulator**: `emulator-5560`, AVD `ZipCaptions_QA_API_36` (confirmed with `adb -s emulator-5560 emu avd name`). **Build**: `packages/zip_captions/build/app/outputs/flutter-apk/app-debug.apk` (21:38, built from the tree after the Group H review fixes). **Runner**: the Group H builder session, acting as QA runner at James Petersen's authorisation. Evidence folder: `evidence/step30-android/`.
 
@@ -220,7 +220,7 @@ Build under test: the fixed tree (`flutter build ios --simulator --debug` succee
 - **Keep-screen-on and screen state:** `dumpsys window` and `dumpsys power`.
 - **Speech:** a YouTube video playing near the phone, then macOS `say` from the host speakers.
 
-The screenshots are archived with the other evidence (`~/Documents/zip-captions-evidence/unit10-mobile-platform-readiness/step30-pixel6/`).
+The screenshots were not retained (see the note at the top). The table below records what each one showed.
 
 **Result: every Android check passes. The session found one design change request and four observations.**
 
@@ -248,9 +248,22 @@ The screenshots are archived with the other evidence (`~/Documents/zip-captions-
 
 **Change request (James Petersen, 2026-10-30)**: the inactivity notice and the no-transcript notice should be one combined notice, not two shown one after the other. The same applies to every pair of stop notices. Built as Amendment 07.
 
+**Amendment 07 on the phone (build `fa7b61a`): PASS.**
+- **The passing run:** a silent session from 13:02:28.9. The phone recorded its own screen (`screenrecord`) from 15 s before the inactivity stop to 25 s after it.
+- **What the frames show:**
+  - the recording screen with no captions;
+  - then History, with no new transcript row;
+  - then **one** SnackBar: "Captioning stopped after 5 minutes without speech, so no transcript was saved."
+  - The recording has no later frame (it only writes frames when the screen changes), so no second notice followed.
+- **Earlier attempts:**
+  - Two silent runs, at 12:30:48 and 12:40:35, stopped by themselves with no row. But the screenshots missed the 4 s notice: one was taken too late, and one burst ended before the stop. Both showed nothing on screen more than 10 s after the stop.
+  - Two runs were invalid, because speech in the room was captioned.
+- **Error and save-failed combinations:** they can't be provoked on a device, and are covered by TP-43.
+
 **Observations (no defect in Unit 10's code)**:
 1. **The renewal waits for a pause.** The recogniser keeps a segmented session open past `EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS` while speech continues (16.6 s past 300 s here) and renews at the next pause. No words were lost. So D-2's renewal comes at 5 minutes or later, at the first pause.
 2. **The app requests `ACCESS_LOCAL_NETWORK`**, a new Android 17 runtime permission shown as "Nearby devices", which is granted. Something the app pulls in requests it. For the Unit 11 manifest review.
 3. **The shell cannot set volume on Android 17.** `cmd media_session volume --set` returns but does not change the level. The volumes were raised through Settings.
 4. **The text-size button is drawn very small** on the permission-denied panel (full size on the recording screen). It's cosmetic and was recorded for a later UI pass.
-5. **Tooling: the Flutter MCP's device screenshot hung** for about 40 minutes on the Settings screens. `adb exec-out screencap` with a timeout worked at once. Revoking the microphone in Settings killed the app's process, as Android does, which ended `flutter run`; the app was relaunched with `flutter run`.
+5. **A Stop tap twice did not register** on its first press, on the phone at 12:52 and once on the emulator (Step 9(a), 2026-10-27). The second tap worked both times. The cause is unknown and it has not been reproduced on purpose. Watch for it in later passes.
+6. **Tooling: the Flutter MCP's device screenshot hung** for about 40 minutes on the Settings screens. `adb exec-out screencap` with a timeout worked at once. Revoking the microphone in Settings killed the app's process, as Android does, which ended `flutter run`; the app was relaunched with `flutter run`.
