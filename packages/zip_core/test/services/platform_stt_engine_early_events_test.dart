@@ -162,6 +162,223 @@ void main() {
     },
   );
 
+  /// Starts a normal session (listen() returns at once) and lets it settle.
+  void startSession(FakeAsync async) {
+    unawaited(
+      engine.initialize().then(
+        (_) => engine.startListening(localeId: 'en-US', onResult: (_) {}),
+      ),
+    );
+    async.flushMicrotasks();
+    expect(stt.listenCalls, hasLength(1));
+  }
+
+  const restartDelay = Duration(milliseconds: 250);
+
+  test(
+    'restart: a pause during the restart on-device check makes no listen()',
+    () {
+      fakeAsync((async) {
+        startSession(async);
+        final gate = Completer<void>();
+        checker.hangNext = gate.future;
+
+        stt.emitStatus('done');
+        async.elapse(restartDelay);
+        expect(checker.localesChecked, hasLength(2), reason: 'check pending');
+
+        unawaited(engine.pause());
+        async.flushMicrotasks();
+        gate.complete();
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(seconds: 5));
+
+        expect(
+          stt.listenCalls,
+          hasLength(1),
+          reason: 'no listen() after pause',
+        );
+        expect(errors, isEmpty);
+      });
+    },
+  );
+
+  test(
+    'restart: a stop during the restart on-device check makes no listen()',
+    () {
+      fakeAsync((async) {
+        startSession(async);
+        final gate = Completer<void>();
+        checker.hangNext = gate.future;
+
+        stt.emitStatus('done');
+        async.elapse(restartDelay);
+        expect(checker.localesChecked, hasLength(2), reason: 'check pending');
+
+        unawaited(engine.stopListening());
+        async.flushMicrotasks();
+        gate.complete();
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(seconds: 5));
+
+        expect(stt.listenCalls, hasLength(1), reason: 'no listen() after stop');
+        expect(errors, isEmpty);
+      });
+    },
+  );
+
+  test(
+    'restart: pause then resume during the restart listen() keeps the '
+    'resumed session',
+    () {
+      fakeAsync((async) {
+        startSession(async);
+        final restartGate = Completer<void>();
+        stt
+          ..listenGate = restartGate.future
+          ..emitStatus('done');
+        async.elapse(restartDelay);
+        expect(stt.listenCalls, hasLength(2), reason: 'restart in flight');
+
+        unawaited(engine.pause());
+        async.flushMicrotasks();
+        stt.listenGate = null;
+        var resumed = false;
+        unawaited(engine.resume().then((ok) => resumed = ok));
+        async.flushMicrotasks();
+        expect(resumed, isTrue);
+        expect(stt.listenCalls, hasLength(3));
+
+        restartGate.complete();
+        async.flushMicrotasks();
+        expect(stt.cancelCalls, 0, reason: 'the resumed session lives');
+
+        // The resumed session's own record is intact: it still restarts.
+        stt.emitStatus('done');
+        async.elapse(restartDelay * 2);
+        expect(stt.listenCalls, hasLength(4));
+      });
+    },
+  );
+
+  test(
+    'restart: a stale restart returning while the resume listen() is in '
+    'flight does not cancel the resume',
+    () {
+      fakeAsync((async) {
+        startSession(async);
+        final restartGate = Completer<void>();
+        stt
+          ..listenGate = restartGate.future
+          ..emitStatus('done');
+        async.elapse(restartDelay);
+        expect(stt.listenCalls, hasLength(2), reason: 'restart in flight');
+
+        unawaited(engine.pause());
+        async.flushMicrotasks();
+        final resumeGate = Completer<void>();
+        stt.listenGate = resumeGate.future;
+        var resumed = false;
+        unawaited(engine.resume().then((ok) => resumed = ok));
+        async.flushMicrotasks();
+        expect(stt.listenCalls, hasLength(3), reason: 'resume in flight');
+
+        // The plugin has one session; a cancel now would end the resume's.
+        restartGate.complete();
+        async.flushMicrotasks();
+        expect(stt.cancelCalls, 0, reason: 'the resume owns the plugin');
+
+        resumeGate.complete();
+        async.flushMicrotasks();
+        expect(resumed, isTrue);
+        expect(stt.cancelCalls, 0);
+      });
+    },
+  );
+
+  test(
+    'restart: error then done before the restart listen() returns still '
+    'restarts',
+    () {
+      fakeAsync((async) {
+        startSession(async);
+        final gate = Completer<void>();
+        stt
+          ..listenGate = gate.future
+          ..emitStatus('done');
+        async.elapse(restartDelay);
+        expect(stt.listenCalls, hasLength(2), reason: 'restart in flight');
+
+        stt
+          ..emitError('error_network')
+          ..emitStatus('done')
+          ..listenGate = null;
+        gate.complete();
+        async
+          ..flushMicrotasks()
+          ..elapse(restartDelay * 2);
+
+        expect(stt.listenCalls, hasLength(3), reason: 'not stalled');
+        expect(errors, isEmpty, reason: 'one failure is below the cap');
+      });
+    },
+  );
+
+  test(
+    'restart: done alone before the restart listen() returns still restarts',
+    () {
+      fakeAsync((async) {
+        startSession(async);
+        final gate = Completer<void>();
+        stt
+          ..listenGate = gate.future
+          ..emitStatus('done');
+        async.elapse(restartDelay);
+        expect(stt.listenCalls, hasLength(2), reason: 'restart in flight');
+
+        stt
+          ..emitStatus('done')
+          ..listenGate = null;
+        gate.complete();
+        async
+          ..flushMicrotasks()
+          ..elapse(restartDelay * 2);
+
+        expect(stt.listenCalls, hasLength(3), reason: 'not stalled');
+      });
+    },
+  );
+
+  test('restart: a successful restart does not reset the failure count', () {
+    fakeAsync((async) {
+      startSession(async);
+
+      // Three immediate, empty session ends in a row: the third reaches the
+      // cap of 3 even though two restarts succeeded in between.
+      stt.emitStatus('done');
+      async
+        ..elapse(restartDelay)
+        ..flushMicrotasks();
+      stt.emitStatus('done');
+      async
+        ..elapse(restartDelay)
+        ..flushMicrotasks();
+      expect(stt.listenCalls, hasLength(3));
+      expect(errors, isEmpty);
+
+      stt.emitStatus('done');
+      async
+        ..elapse(restartDelay)
+        ..flushMicrotasks();
+      expect(errors, [
+        const SttEngineError(SttEngineErrorKind.restartCapReached),
+      ]);
+      expect(stt.listenCalls, hasLength(3), reason: 'no restart past the cap');
+    });
+  });
+
   test('F3: a pause during listen() wins too', () {
     fakeAsync((async) {
       final held = startHeld(async);

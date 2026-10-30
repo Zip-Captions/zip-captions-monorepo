@@ -26,7 +26,7 @@
 ## Constraints
 - `SttResult`, `RecordingState`, `RecordingError`, `AudioDeviceService` unchanged; `SttEngine` extended only by `SttErrorSource`.
 - Stay on `speech_to_text` 7.3.0; no new package; nothing from a physical device is claimed; the release build is debug-signed and must not be distributed.
-- At Code Generation Part 2 follow `CLAUDE.local.md` for delegation; the engine loop, error mapping and `RecordingStateNotifier` changes are security- and contract-sensitive and stay with the orchestrator (the delegation protocol decides).
+- The engine loop, error mapping and `RecordingStateNotifier` changes are security- and contract-sensitive and get an Opus review at Code Generation Part 2.
 
 ## Open Questions for Code Generation
 - Items in `logical-components.md` section 6 (the iOS locale mapping, the iOS `onDeviceError` string, error-code strings, `dispose()` reachability). The iOS channel API and the existing `stop()` sequence were settled in the Opus review.

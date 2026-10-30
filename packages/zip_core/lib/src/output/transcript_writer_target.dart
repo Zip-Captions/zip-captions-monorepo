@@ -58,10 +58,12 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
   DateTime? _sessionStartAt;
   int? _sessionStartMs;
   int _totalSegmentCount = 0;
-  // Whether the repository row for the current session exists. It is created
-  // lazily before the first segment (Q-2), and finalising is skipped while it
-  // is false.
-  bool _rowCreated = false;
+  // The repository row of the current session: null until the first segment
+  // asks for it (Q-2). Its `created` flag turns true only when the create step
+  // succeeds, so a failed create is never reported as saved. Each session has
+  // its own mark, so a finalise queued behind the chain still sees the outcome
+  // of its own session's create after the next session has begun.
+  _RowMark? _row;
 
   // The one chain of writes for a session: the lazy create, every save,
   // every merge and the finalise. Each step is stamped with the chain length
@@ -109,7 +111,7 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
   Future<bool> finalizeCurrentSession() async {
     if (_sessionId == null) return false;
     final sessionId = _sessionId!;
-    final hadRow = _rowCreated;
+    final row = _row;
     final durationMs = _sessionStartMs == null
         ? 0
         : _now().millisecondsSinceEpoch - _sessionStartMs!;
@@ -120,8 +122,8 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
     _sessionStartAt = null;
     _sessionStartMs = null;
     _totalSegmentCount = 0;
-    _rowCreated = false;
-    if (!hadRow) {
+    _row = null;
+    if (row == null) {
       // Q-2: nothing was ever saved, so there is no row to finalize.
       _log.fine(
         'finalizeCurrentSession: sessionId=$sessionId skipped, no row',
@@ -136,6 +138,7 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
     // save still in flight, and awaiting the chain means the caller's await
     // covers those writes too.
     _appendWrite(() async {
+      if (!row.created) return;
       await _repository.finalizeSession(
         sessionId,
         durationMs: durationMs,
@@ -143,7 +146,8 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
       );
     });
     await _writes;
-    return true;
+    // The create ran ahead of this step in the chain, so its outcome is known.
+    return row.created;
   }
 
   @override
@@ -154,7 +158,7 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
     _sessionStartAt = null;
     _sessionStartMs = null;
     _totalSegmentCount = 0;
-    _rowCreated = false;
+    _row = null;
   }
 
   void _handleInterimResult(SttResultEvent event) {
@@ -195,8 +199,9 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
         'saveSegment (merge): sessionId=$_sessionId'
         ' segmentId=${merged.segmentId}',
       );
-      // A merge always follows a segment that already created the row.
-      _appendWrite(() => _repository.saveSegment(_sessionId!, merged));
+      // A merge always follows a segment that already asked for the row.
+      final sessionId = _sessionId!;
+      _appendWrite(() => _repository.saveSegment(sessionId, merged));
     } else {
       // New segment: gap > 2s or no prior segment for this source.
       final segment = TranscriptSegment(
@@ -223,16 +228,23 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
   /// an earlier write.
   void _saveNewSegment(TranscriptSegment segment) {
     final sessionId = _sessionId!;
-    if (_rowCreated) {
+    final existing = _row;
+    if (existing != null) {
       _appendWrite(() => _repository.saveSegment(sessionId, segment));
       return;
     }
-    _rowCreated = true;
+    final row = _row = _RowMark();
     final startedAt = _sessionStartAt ?? _now();
     // The create and its save are two steps, so the save starts only once
     // the create has completed, in that order, and nothing else can slip
-    // between them.
-    _appendWrite(() => _repository.createSession(sessionId, startedAt));
+    // between them. The row counts as created only if the create succeeds;
+    // it is not retried, and later saves are still attempted as before (a
+    // failed write never blocks the ones after it); the session is reported
+    // as not saved and is not finalised.
+    _appendWrite(() async {
+      await _repository.createSession(sessionId, startedAt);
+      row.created = true;
+    });
     // A merge cannot precede the first save of the same segment, and the
     // save is appended after the create in the same turn, so this save runs
     // after the create completes.
@@ -312,7 +324,7 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
         _lastFinalBySource.clear();
         _pendingStartBySource.clear();
         _totalSegmentCount = 0;
-        _rowCreated = false;
+        _row = null;
         _log.fine(
           'session started: sessionId=${state.sessionId}',
         );
@@ -325,7 +337,7 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
         _lastFinalBySource.clear();
         _pendingStartBySource.clear();
         _totalSegmentCount = 0;
-        _rowCreated = false;
+        _row = null;
       case PausedState() || ReconnectingState():
         break;
     }
@@ -333,7 +345,8 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
 
   void _handleSessionStopped() {
     if (_sessionId == null) return;
-    if (!_rowCreated) {
+    final row = _row;
+    if (row == null) {
       // Q-2: zero segments means no row — nothing is created, finalized or
       // deleted. Just drop the session state.
       _log.fine(
@@ -357,6 +370,7 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
     final sessionId = _sessionId!;
     final segmentCount = _totalSegmentCount;
     _appendWrite(() async {
+      if (!row.created) return;
       await _repository.finalizeSession(
         sessionId,
         durationMs: durationMs,
@@ -369,6 +383,12 @@ class TranscriptWriterTarget implements CaptionOutputTarget {
     _sessionStartAt = null;
     _sessionStartMs = null;
     _totalSegmentCount = 0;
-    _rowCreated = false;
+    _row = null;
   }
+}
+
+/// Whether one session's repository row has been created. Mutable, and shared
+/// by the steps queued for that session.
+class _RowMark {
+  bool created = false;
 }

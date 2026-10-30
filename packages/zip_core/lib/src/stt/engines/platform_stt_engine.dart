@@ -43,10 +43,10 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
     required OnDeviceSupportChecker onDeviceSupportChecker,
     SttListeningLimits limits = defaultSttListeningLimits,
     DateTime Function() now = DateTime.now,
-  })  : _stt = stt,
-        _deviceService = deviceService,
-        _checker = onDeviceSupportChecker,
-        _limits = limits {
+  }) : _stt = stt,
+       _deviceService = deviceService,
+       _checker = onDeviceSupportChecker,
+       _limits = limits {
     _loop = _SessionLoop(
       limits: limits,
       now: now,
@@ -58,7 +58,6 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
   }
 
   static final _log = Logger('zip_core.PlatformSttEngine');
-
 
   final SpeechToText _stt;
   final AudioDeviceService _deviceService;
@@ -200,14 +199,21 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
     return false;
   }
 
-  /// The single place that calls the plugin's `listen()`. The on-device guard
-  /// runs first, every time (BR-U10-26), before a start and before a restart.
-  Future<_ListenOutcome> _listen(String localeId) async {
-    if (!await _onDeviceAllowed(localeId)) {
+  /// The loop's restart path. The on-device guard runs first, every time
+  /// (BR-U10-26). [epoch] is what the caller captured before any await; if a
+  /// stop, pause or dispose moved it during the check, no `listen()` is made
+  /// (BR-U10-19).
+  Future<_ListenOutcome> _listen(String localeId, int epoch) async {
+    final allowed = await _onDeviceAllowed(localeId);
+    if (_loop.epoch != epoch) return _ListenOutcome.superseded;
+    if (!allowed) {
       // BR-U10-27: refuse. No listen() call; one lasting error.
       _report(SttEngineErrorKind.onDeviceModelMissing);
       return _ListenOutcome.refused;
     }
+    // Hold the new session's events from here (not from before the check, so
+    // a late event of the old, ended session is not taken for the new one).
+    _loop.startingSession();
     return _listenPlugin(localeId);
   }
 
@@ -248,8 +254,9 @@ class PlatformSttEngine implements SttEngine, SttErrorSource {
   /// plugin or a timeout is "unsupported". Logs the boolean only.
   Future<bool> _onDeviceAllowed(String localeId) async {
     try {
-      final allowed =
-          await _checker(localeId).timeout(_limits.onDeviceCheckTimeout);
+      final allowed = await _checker(
+        localeId,
+      ).timeout(_limits.onDeviceCheckTimeout);
       _log.info('On-device support check: $allowed');
       return allowed;
     } on Object catch (e) {
@@ -334,6 +341,10 @@ enum _ListenOutcome {
 
   /// The plugin's `listen()` threw (already cancelled).
   threw,
+
+  /// A stop, pause or dispose arrived during the on-device check, so no
+  /// `listen()` was made.
+  superseded,
 }
 
 /// How a non-lasting error code from the plugin is handled (Amendment 01,
@@ -381,7 +392,7 @@ class _SessionLoop {
 
   final SttListeningLimits limits;
   final DateTime Function() now;
-  final Future<_ListenOutcome> Function(String localeId) listen;
+  final Future<_ListenOutcome> Function(String localeId, int epoch) listen;
   final void Function(SttResult result) deliver;
   final void Function(SttEngineErrorKind kind) report;
   final Future<void> Function() cancelPlugin;
@@ -407,14 +418,15 @@ class _SessionLoop {
 
   bool get isPaused => _intent == _Intent.paused;
 
-  /// Whether a first start or a resume `listen()` is in flight. Plugin events
-  /// that arrive meanwhile are held in [_held] and replayed, in order, once
-  /// [sessionStarted] has marked the session as listening. A stop, pause or
-  /// dispose clears them (BR-U10-19: the interrupt wins).
+  /// Whether a first start, a resume or a restart `listen()` is in flight.
+  /// Plugin events that arrive meanwhile are held in [_held] and replayed, in
+  /// order, once [sessionStarted] or [_restartStarted] has marked the session
+  /// as listening. A stop, pause or dispose clears them (BR-U10-19: the
+  /// interrupt wins).
   bool _starting = false;
   final List<void Function()> _held = [];
 
-  /// Marks a first start or a resume `listen()` as about to be in flight.
+  /// Marks a start, a resume or a restart `listen()` as about to be in flight.
   void startingSession() {
     _starting = true;
     _held.clear();
@@ -434,6 +446,18 @@ class _SessionLoop {
     _failureCount = 0;
     _restartScheduled = false;
     _beginSession();
+    _replayHeld();
+  }
+
+  /// A restart's `listen()` succeeded. Unlike [sessionStarted] this keeps the
+  /// failure count: only a delivered result resets it (Amendment 01).
+  void _restartStarted() {
+    _restartScheduled = false;
+    _beginSession();
+    _replayHeld();
+  }
+
+  void _replayHeld() {
     _starting = false;
     final held = List<void Function()>.of(_held);
     _held.clear();
@@ -505,7 +529,8 @@ class _SessionLoop {
     _flushPendingInterim();
 
     final elapsed = now().difference(_startedAt);
-    final fastAndEmpty = _worst == _ErrorClass.none &&
+    final fastAndEmpty =
+        _worst == _ErrorClass.none &&
         !_deliveredResult &&
         elapsed < limits.immediateFailureWindow;
     final countsAsFailure = _worst == _ErrorClass.transient || fastAndEmpty;
@@ -554,27 +579,42 @@ class _SessionLoop {
     final localeId = _localeId;
     if (localeId == null) return;
 
-    final outcome = await listen(localeId);
+    // BR-U10-19: a stop, pause or dispose moves the epoch. Comparing it (not
+    // the intent) also catches a pause followed by a resume, which would make
+    // the intent look unchanged.
+    final epoch = _epoch;
+    final outcome = await listen(localeId, epoch);
 
-    if (_intent != _Intent.listening) {
-      // Stop or pause won while the restart was in flight; the plugin may
-      // already be listening again, so stop it.
-      if (outcome == _ListenOutcome.started) await cancelPlugin();
+    if (_epoch != epoch) {
+      // Stop, pause or dispose won while the restart was in flight; the plugin
+      // may already be listening again, so stop it. If a resume has since won
+      // (intent listening again) or its listen() is in flight (`_starting`),
+      // the plugin's one session is the user's: the plugin's cancel() ends
+      // whatever session it has, so leave it, and leave its record alone.
+      if (outcome == _ListenOutcome.started &&
+          _intent != _Intent.listening &&
+          !_starting) {
+        await cancelPlugin();
+      }
       return;
     }
     switch (outcome) {
       case _ListenOutcome.started:
-        _restartScheduled = false;
-        _beginSession();
+        _restartStarted();
       case _ListenOutcome.refused:
         // The guard already reported the lasting error.
+        abandonStarting();
         _intent = _Intent.failed;
         _restartScheduled = false;
       case _ListenOutcome.threw:
         // No session exists, so no `done` will follow: the throw is the
         // session end (BR-U10-30). The retry runs the guard again.
+        abandonStarting();
         if (_countFailureReachedCap()) return;
         _scheduleRestart();
+      case _ListenOutcome.superseded:
+        // Only returned when the epoch moved, which is handled above.
+        abandonStarting();
     }
   }
 

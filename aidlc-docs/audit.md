@@ -3194,11 +3194,11 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 ---
 ## CONSTRUCTION - Phase 2 Unit 10: Code Generation plan APPROVED; Part 2 started
 **Timestamp**: 2026-10-25
-**User Input**: "Code Generation plan approved as revised per the Opus review. For Unit 10, Sonnet builds everything itself, with no Qwen delegation (overrides CLAUDE.local.md for this unit). Start Part 2." (James Petersen's own message in this session.)
+**User Input**: "Code Generation plan approved as revised per the Opus review. For Unit 10, Sonnet builds everything itself [local tooling reference removed 2026-10-29]. Start Part 2." (James Petersen's own message in this session.)
 
 **AI Response**:
 - **Approval recorded.** Plan `plans/mobile-platform-readiness-code-generation-plan.md` revision 2 (32 steps, 34 items counting 8a, 9a, 8b, 9b) is APPROVED by James Petersen, 2026-10-25. `aidlc-state.md` marks Code Generation Part 1 complete and Part 2 started.
-- **Delegation.** For Unit 10 only, James Petersen decided Sonnet builds every step with no Qwen delegation; this overrides the Part 2 delegation rule in `CLAUDE.local.md` for this unit. The local `unit-plan-delegation.md` is unused. `CLAUDE.local.md` itself is not edited.
+- **Builder.** For Unit 10, James Petersen decided Sonnet builds every step.
 - **Part 2 begins at Step 1.** `git status --short` was recorded at the start (saved in the session scratchpad) and will be recorded again at the end. The Group C checkpoint note goes to the Opus review session before any `zip_captions` work.
 
 **Context**: Branch `feature/mobile-platform-readiness` at `84e32b7`. All changes are uncommitted. Model: Sonnet.
@@ -3447,7 +3447,7 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 ## CONSTRUCTION - Phase 2 Unit 10: Group H (Amendment 04, missing on-device language)
 **Timestamp**: 2026-10-26
 
-**User Input** (summarised): Builder brief for Group H, Steps H1 to H6, from Amendment 04 (BR-U10-46 to 50, TP-28 to 31, A-1; section 3 revision 1a, a dedicated channel pair). No Qwen delegation, no subagents, no commits, no working-tree-destructive git, no emulator, device or Simulator (build only). Tests red first. Platform APIs from docs-mcp, cited in comments. No recognised text in any log, error or `toString()` in Dart, Kotlin or Swift. No stable-contract change, no `zip_broadcast`/`pubspec`/`opencode.json` change, no new permission, iOS target stays 13.0 (every iOS 26 API behind `#available`), Android API 33/34 calls behind SDK checks. British English strings in `app_en.arb` read through `ZcStrings`. Stop and report after the gate.
+**User Input** (summarised): Builder brief for Group H, Steps H1 to H6, from Amendment 04 (BR-U10-46 to 50, TP-28 to 31, A-1; section 3 revision 1a, a dedicated channel pair). No subagents, no commits, no working-tree-destructive git, no emulator, device or Simulator (build only). Tests red first. Platform APIs from docs-mcp, cited in comments. No recognised text in any log, error or `toString()` in Dart, Kotlin or Swift. No stable-contract change, no `zip_broadcast`/`pubspec`/`opencode.json` change, no new permission, iOS target stays 13.0 (every iOS 26 API behind `#available`), Android API 33/34 calls behind SDK checks. British English strings in `app_en.arb` read through `ZcStrings`. Stop and report after the gate.
 
 **AI Response** (builder):
 - **H1 (BR-U10-50, TP-31).** `SegmentedRecognizerBridge.supportedLocales()` added; `SegmentedSpeechEngine.supportedLocales()` maps the tags to `SpeechLocale` (tag as id and name) and returns an empty list on a throw, logged by `runtimeType`; `MethodChannelSegmentedRecognizerBridge.supportedLocales` gained `@override`; fake bridge updated. 3 engine tests (mapping, empty, throw logged by type only) shown red then green; the channel call was already tested, one interface-typed test added.
@@ -3624,3 +3624,26 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 **AI Response** (Opus): Committed the Step 29d fixes and the Step 31/32 draft on top of the checkpoint (`opencode.json` left out), pushed `feature/mobile-platform-readiness` and opened the Unit 10 PR against `develop`. The PR states that the joint QA (Android Steps 6, 6b, 7 and 8, the chime checks, the iOS Simulator input check), the three open decisions, the BR-U10-40 wording and the keep-or-prune decision on the 43 MB of QA evidence are still open. A code review of the PR was delegated to an Opus subagent; its findings are not posted to the PR.
 
 **Context**: Branch `feature/mobile-platform-readiness`, pushed. Unit 9 may start once the PR is open (AGENTS.md line 232).
+
+---
+## CONSTRUCTION - Phase 2 Unit 10: PR #44 review findings posted; fixes (Step 29e)
+**Timestamp**: 2026-10-29
+**User Input** (James Petersen): "Leave that as feedback on the PR (as a comment, we cannot review ourselves), and then let's consider using a worktree to delegate the fixes to sonnet". On the plan: "Ensure that the sonnet builder uses the docs-mcp reference material as required."
+
+**AI Response** (Opus):
+- **Review comment posted** on PR #44 with five findings:
+  1. An iOS restart in flight ignores Pause and Stop (BR-U10-19).
+  2. The F3 event hold does not cover the loop's own restarts.
+  3. `RecordingStateNotifier.pause()` has no `_finishing` guard.
+  4. A failed `createSession` still reports a saved transcript.
+  5. Tracked docs held local-only tooling notes and stale status lines.
+- **Fixes 1 to 4:** a Sonnet builder fixes them test-first in a separate worktree of `feature/mobile-platform-readiness`, because the main checkout holds Unit 9's branch. Each fix is checked against docs-mcp reference material, and Opus reviews the diff. Recorded as plan Step 29e.
+- **Fix 5:** done directly. The local-only tooling references are removed from `aidlc-state.md`, the NFR Design `handoff-summary.md` and three Unit 10 entries in this file (one verbatim quote is marked as redacted). The stale "nothing is pushed" and OQ-MA-1 lines in `aidlc-state.md` are corrected.
+
+- **Builder result, reviewed by Opus:**
+  - **Fixes 1 to 4:** each new test was shown red before its fix.
+  - **Reference checks:** the builder's docs-mcp lookups were incomplete, so Opus checked the plugin and platform behaviour itself, against the `speech_to_text` 7.3.0 source and docs-mcp `apple-speech`.
+  - **Opus addition, test-first:** a stale restart no longer cancels a resume that is in flight.
+- **Gates:** `dart analyze --fatal-infos` clean ×3; `zip_core` 1159 passed, 4 skipped; `zip_captions` 402; `zip_broadcast` 195.
+
+**Context**: Branch `feature/mobile-platform-readiness`. Committed and pushed to PR #44.

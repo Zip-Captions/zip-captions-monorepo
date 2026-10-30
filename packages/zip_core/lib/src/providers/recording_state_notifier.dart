@@ -262,10 +262,15 @@ class RecordingStateNotifier extends _$RecordingStateNotifier {
   Future<void> pause() async {
     final current = state;
     if (current is! RecordingActiveState) return;
+    // A stop (or the inactivity stop) already began; it wins (BR-U10-35).
+    if (_finishing != null) return;
     // Paused time does not count (BR-U10-51); cancelled again below, because a
     // result may land while the engine pauses.
     _cancelInactivityTimer();
     await _sessionManager.pause();
+    // A stop that landed while the engine paused has set Stopped; do not
+    // overwrite it with Paused.
+    if (_finishing != null) return;
     _log.info('Session paused');
     state = RecordingState.paused(
       sessionId: current.sessionId,

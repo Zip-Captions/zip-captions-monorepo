@@ -86,6 +86,32 @@ void main() {
     mockRepo.disposeController();
   });
 
+  group('a failed session create', () {
+    setUp(() {
+      when(
+        () => mockRepo.createSession(any(), any()),
+      ).thenAnswer((_) => Future<void>.error(StateError('create failed')));
+    });
+
+    test('finalizeCurrentSession reports not saved', () async {
+      target
+        ..onCaptionEvent(_recordingEvent('s1'))
+        ..onCaptionEvent(_finalEvent());
+
+      final saved = await target.finalizeCurrentSession();
+
+      expect(saved, isFalse);
+      // The create never succeeded, so there is no row to finalise.
+      verifyNever(
+        () => mockRepo.finalizeSession(
+          any(),
+          durationMs: any(named: 'durationMs'),
+          segmentCount: any(named: 'segmentCount'),
+        ),
+      );
+    });
+  });
+
   group('saveSegment on final result', () {
     test('final result calls saveSegment immediately', () async {
       target
