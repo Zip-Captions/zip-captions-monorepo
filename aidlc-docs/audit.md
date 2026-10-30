@@ -3241,3 +3241,21 @@ Start by reading the files above. Then tell me in a few lines what Unit 9 must p
   and required no action; (b) Track B is deferred and Unit 9 will merge with
   the four interactive legs recorded as "not verified" in
   phase2-build-and-test.md section 4.
+
+- 2026-10-30T07:40Z - Owner, verbatim: "fix the blockers and ask me the
+  clarification questions". Two agentic reviewers had returned
+  request-changes. Blockers fixed: (1) added the missing broadcaster-side
+  stats-failure test, and confirmed it fails when the `on Object` catch is
+  narrowed to `FormatException`, so it is not vacuous; (2) corrected the phase
+  record's false CI claims (it said no CI run existed; ten jobs were green on
+  PR #45) and reclassified the relay-switch row from "verified by construction"
+  to "inspection only".
+- 2026-10-30T07:55Z - Owner answered six clarification questions, all
+  recommended options: (1) classify relayed if EITHER leg is relay;
+  (2) make `relayOnlyIceEnabled` a `const bool`; (3) add a
+  `classifyStatsReports` adapter test; (4) fix all stale references in this PR;
+  (5) keep the D2 approach note, drop the feasibility scout and the
+  doc-refinement packet; (6) tighten both the credential message assertions and
+  the null/empty/whitespace/lowercase coverage.
+  All six applied. Gates after: melos analyze clean in four packages; tests
+  963 + 5 skipped / 195 / 195; live-stack suite 9/9 (was 5).

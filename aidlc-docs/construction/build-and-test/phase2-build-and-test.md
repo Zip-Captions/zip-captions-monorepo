@@ -31,11 +31,11 @@ matters).
 | Analysis, shared library | `flutter analyze --fatal-infos` in `packages/zip_core` | no issues |
 | Analysis, viewer app | same, `packages/zip_captions` | no issues |
 | Analysis, broadcaster app | same, `packages/zip_broadcast` | no issues |
-| Tests, shared library | `flutter test` | 952 passed, 5 skipped |
+| Tests, shared library | `flutter test` | 963 passed, 5 skipped |
 | Tests, viewer app | `flutter test` | 195 passed |
 | Tests, broadcaster app | `flutter test` | 195 passed |
-| Coverage suite | `melos run test:coverage --no-select` | all three packages green; `lcov.info` produced for each |
-| Live-stack credential suite | `flutter test --tags integration-supabase --run-skipped test/integration/broadcast_turn_credentials_supabase_test.dart` | 5 passed |
+| Coverage suite | `melos run test:coverage --no-select` | `zip_core`, `zip_captions`, `zip_broadcast` green; `lcov.info` produced for each. `zip_supabase` has no Dart tests and is skipped by the `dirExists: test` filter |
+| Live-stack credential suite | `flutter test --tags integration-supabase --run-skipped test/integration/broadcast_turn_credentials_supabase_test.dart` | 9 passed |
 
 The 5 skips are the `integration-supabase`-tagged suites, which skip by default
 because they require the local stack. They are not failures.
@@ -53,7 +53,7 @@ it, without signing in.
 |---|---|---|
 | Function reachable by `anon` for a real broadcast | verified | through Kong, `200` with `username`, `credential`, `ttl`, `urls` |
 | Unknown broadcast id rejected | verified | `401`, `42501 get_broadcast_turn_credentials: unknown broadcast` |
-| Null / empty / whitespace / lowercase id rejected | verified | each `401 42501` (paced to clear Kong's 2/s limit) |
+| Null / empty / whitespace / lowercase id rejected | verified | each `401 42501` (paced to clear Kong's 2/s limit); asserted by name in the live-stack suite |
 | Credential is genuine TURN REST auth | verified | HMAC-SHA1 recomputed independently from the shared secret; **MATCH** |
 | Coturn accepts the credential | verified | `turnutils_uclient` against 127.0.0.1:3478: ALLOCATE success twice, relay address received, refresh success |
 | Coturn rejects a tampered credential | verified | same username, fabricated credential: `Cannot complete Allocation` |
@@ -106,12 +106,13 @@ instead of always claiming a direct path.
 
 | Step | Verdict | Evidence |
 |---|---|---|
-| Route derived from the selected ICE candidate pair | verified | `getStats()` → `classifyStatsReports` → `classifyCandidatePairRoute`, unit-tested |
+| Route derived from the selected ICE candidate pair | verified | `getStats()` → `classifyStatsReports` → `classifyCandidatePairRoute`, unit-tested including the `StatsReport` adapter |
+| Either leg relayed is reported relayed | verified | classifier reads `remoteCandidateId` as well as `localCandidateId`; a host-local / relay-remote pair reports `turnRelayed`, so a relay-only broadcaster is not shown to viewers as direct |
 | `relay` candidate → `turnRelayed` | verified | classifier tests |
 | `host`/`srflx`/`prflx` → `p2pDirect` | verified | classifier tests |
 | Unanswerable/malformed stats → `disconnected`, never a guessed direct path | verified | classifier + transport tests |
-| A stats failure never produces `Failed` or `Interrupted` | verified | transport tests |
-| Relay-only switch cannot be reached in release builds | verified by construction | `kDebugMode && const bool.fromEnvironment(...)` |
+| A stats failure never produces `Failed` or `Interrupted` | verified | transport tests, both sides: the viewer test and a broadcaster test that throws from `selectedCandidateRoute()` |
+| Relay-only switch cannot be reached in release builds | inspection only | `const bool relayOnlyIceEnabled = kDebugMode && bool.fromEnvironment(...)`; a compile-time constant, so the guarantee is structural. Not observed in a built release artefact |
 | A real connection reports its real route in the app | **not verified** | needs Track B |
 
 The relay-only switch (`--dart-define=ZIP_CAPTIONS_RELAY_ONLY_ICE=true`) exists
@@ -159,7 +160,7 @@ none is demonstrated.
 2. TURN relay actually carries captions when direct connectivity fails.
 3. The macOS network entitlement works at runtime, not just in the signature.
 4. Google sign-in, if credentials were supplied.
-5. Any CI workflow against this branch — none has been triggered.
+5. ~~Any CI workflow against this branch~~ — resolved: ten jobs green on PR #45.
 6. Multi-monitor popping-out behaviour (noted as a Unit 9 platform check by the
    pop-out design).
 
@@ -232,9 +233,14 @@ claims a lower deployment target than one of its dependencies supports.
   more permissive than CI's, so "no issues" locally does not guarantee the same
   in CI. Nothing in D1-D4 depends on post-3.38.7 APIs, so the risk is low, but
   it is unverified.
-- **No CI run exists for this branch.** CI triggers on push and on pull
-  requests; this branch has been neither pushed nor opened as a PR. There are
-  no run IDs and no artefacts. No claim in this document rests on CI.
+- **CI ran green on this branch.** Chromium and Flutter are pinned: both
+  workflows use 3.38.7. When the branch was pushed and PR #45 opened, all ten
+  jobs passed - Analyze & Test, Android APK, iOS (no codesign), Linux and
+  Windows and macOS for each of the two apps. That is the first and only
+  evidence that removing `zip_broadcast/{android,ios}` broke nothing: no local
+  gate covers those platform builds. An earlier revision of this document said
+  no CI run existed, which was true when written and false within the hour;
+  corrected here rather than left to rot.
 - **The live stack holds real data** (31 broadcast identities and 84 auth
   users at the time of writing). Verification used it read-mostly; the one
   schema change (the D2 migration) is additive. `supabase db reset` was never
@@ -254,5 +260,7 @@ Stated plainly so this document cannot be cited for more than it says:
 - Phase 2 is not verified end to end in a real app on all platforms. Only the
   macOS signed bundles and the local backend stack were exercised.
 - The 50-viewer capacity target is unobserved.
-- No CI pipeline has validated this branch.
+- CI validated the build matrix (ten jobs, PR #45), but CI runs no
+  `integration-supabase` suite, so it says nothing about the live-stack
+  behaviour above. Local runs are the only evidence for D2.
 - Translation is Phase 8 and nothing here depends on it.

@@ -4,13 +4,15 @@
 ///
 /// 1. `classifyCandidatePairRoute` — pure, over `getStats()`-shaped reports.
 ///    This is where the interpretation lives (`selectedCandidatePairId` →
-///    `transport` report → selected pair → `localCandidateId` →
-///    `candidateType`), so it can be tested without a real peer connection.
+///    `transport` report → selected pair → its local *and* remote
+///    `candidateId` → `candidateType`), so it can be tested without a real
+///    peer connection.
 /// 2. `WebRtcBroadcastTransport` / `WebRtcViewerTransport` — that they ask
 ///    the connection and report what it said, rather than assuming.
 library;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:zip_core/src/models/connection_status.dart';
 import 'package:zip_core/src/services/webrtc/peer_connection_handle.dart';
 import 'package:zip_core/src/services/webrtc/selected_candidate_route.dart';
@@ -22,8 +24,12 @@ Map<String, Object?> _report(
 ]) => {'id': id, 'type': type, 'timestamp': 0.0, ...values};
 
 /// A stats set shaped like the real ones: one `transport`, one
-/// `candidate-pair`, and the two candidates it names.
-List<Map<String, Object?>> _statsWithLocalCandidate(String localType) => [
+/// `candidate-pair`, and the two candidates it names. The remote candidate
+/// defaults to `host`, which is the ordinary case for the far end.
+List<Map<String, Object?>> _statsWithCandidates(
+  String localType, {
+  String remoteType = 'host',
+}) => [
   _report(
     'T01',
     'transport',
@@ -35,21 +41,21 @@ List<Map<String, Object?>> _statsWithLocalCandidate(String localType) => [
     {'localCandidateId': 'C01', 'remoteCandidateId': 'C02'},
   ),
   _report('C01', 'local-candidate', {'candidateType': localType}),
-  _report('C02', 'remote-candidate', {'candidateType': 'host'}),
+  _report('C02', 'remote-candidate', {'candidateType': remoteType}),
 ];
 
 void main() {
   group('classifyCandidatePairRoute', () {
     test('reads a relay local candidate as relayed', () {
       expect(
-        classifyCandidatePairRoute(_statsWithLocalCandidate('relay')),
+        classifyCandidatePairRoute(_statsWithCandidates('relay')),
         CandidatePairRoute.relayed,
       );
     });
 
     test('reads a host local candidate as direct', () {
       expect(
-        classifyCandidatePairRoute(_statsWithLocalCandidate('host')),
+        classifyCandidatePairRoute(_statsWithCandidates('host')),
         CandidatePairRoute.direct,
       );
     });
@@ -60,7 +66,7 @@ void main() {
       'presence of a relay candidate',
       () {
         expect(
-          classifyCandidatePairRoute(_statsWithLocalCandidate('srflx')),
+          classifyCandidatePairRoute(_statsWithCandidates('srflx')),
           CandidatePairRoute.direct,
         );
       },
@@ -68,10 +74,87 @@ void main() {
 
     test('reads prflx as direct', () {
       expect(
-        classifyCandidatePairRoute(_statsWithLocalCandidate('prflx')),
+        classifyCandidatePairRoute(_statsWithCandidates('prflx')),
         CandidatePairRoute.direct,
       );
     });
+
+    test(
+      'reads a relay *remote* candidate as relayed even when the local '
+      'candidate is host — the far end being relay-only still means the media '
+      'transits the relay, and calling that direct is the false claim B4 '
+      'exists to remove',
+      () {
+        expect(
+          classifyCandidatePairRoute(
+            _statsWithCandidates('host', remoteType: 'relay'),
+          ),
+          CandidatePairRoute.relayed,
+        );
+      },
+    );
+
+    test(
+      'reads two relay candidates as relayed',
+      () {
+        expect(
+          classifyCandidatePairRoute(
+            _statsWithCandidates('relay', remoteType: 'relay'),
+          ),
+          CandidatePairRoute.relayed,
+        );
+      },
+    );
+
+    test(
+      'a relay leg wins over an unresolvable far end — relayed is a safe '
+      'answer even when the other candidate cannot be read',
+      () {
+        expect(
+          classifyCandidatePairRoute([
+            _report('T01', 'transport', {'selectedCandidatePairId': 'CP01'}),
+            _report(
+              'CP01',
+              'candidate-pair',
+              {'localCandidateId': 'C01', 'remoteCandidateId': 'MISSING'},
+            ),
+            _report('C01', 'local-candidate', {'candidateType': 'relay'}),
+          ]),
+          CandidatePairRoute.relayed,
+        );
+      },
+    );
+
+    test(
+      'is unknown when the local leg is direct but the remote candidate is '
+      'absent — one direct leg does not by itself prove a direct path',
+      () {
+        expect(
+          classifyCandidatePairRoute([
+            _report('T01', 'transport', {'selectedCandidatePairId': 'CP01'}),
+            _report(
+              'CP01',
+              'candidate-pair',
+              {'localCandidateId': 'C01'},
+            ),
+            _report('C01', 'local-candidate', {'candidateType': 'host'}),
+          ]),
+          CandidatePairRoute.unknown,
+        );
+      },
+    );
+
+    test(
+      'is unknown when the remote candidate has an unrecognised type',
+      () {
+        expect(
+          classifyCandidatePairRoute(
+            _statsWithCandidates('host', remoteType: 'something-new'),
+          ),
+          CandidatePairRoute.unknown,
+        );
+      },
+    );
 
     test('is unknown when no transport report names a selected pair', () {
       expect(
@@ -114,7 +197,7 @@ void main() {
 
     test('is unknown for an unrecognised candidate type', () {
       expect(
-        classifyCandidatePairRoute(_statsWithLocalCandidate('something-new')),
+        classifyCandidatePairRoute(_statsWithCandidates('something-new')),
         CandidatePairRoute.unknown,
       );
     });
@@ -133,7 +216,7 @@ void main() {
         expect(
           classifyCandidatePairRoute([
             _report('T00', 'transport', {'selectedCandidatePairId': ''}),
-            ..._statsWithLocalCandidate('relay'),
+            ..._statsWithCandidates('relay'),
           ]),
           CandidatePairRoute.relayed,
         );
@@ -158,6 +241,100 @@ void main() {
         );
       },
     );
+  });
+
+  // `classifyStatsReports` is the only thing between the plugin's real
+  // `StatsReport` objects and the pure classifier above. Every test in the
+  // first group feeds hand-built maps, so without this group a shape change in
+  // `flutter_webrtc` — or a backend that omits `id`/`type` from `values` —
+  // would silently degrade every connection to `unknown` with a green suite.
+  group('classifyStatsReports (plugin adapter)', () {
+    StatsReport report(
+      String id,
+      String type,
+      Map<dynamic, dynamic> values,
+    ) => StatsReport(id, type, 0, values);
+
+    test('classifies relayed from real StatsReport objects', () {
+      expect(
+        classifyStatsReports([
+          report('T01', 'transport', {'selectedCandidatePairId': 'CP01'}),
+          report('CP01', 'candidate-pair', {
+            'localCandidateId': 'C01',
+            'remoteCandidateId': 'C02',
+          }),
+          report('C01', 'local-candidate', {'candidateType': 'relay'}),
+          report('C02', 'remote-candidate', {'candidateType': 'host'}),
+        ]),
+        CandidatePairRoute.relayed,
+      );
+    });
+
+    test('classifies direct from real StatsReport objects', () {
+      expect(
+        classifyStatsReports([
+          report('T01', 'transport', {'selectedCandidatePairId': 'CP01'}),
+          report('CP01', 'candidate-pair', {
+            'localCandidateId': 'C01',
+            'remoteCandidateId': 'C02',
+          }),
+          report('C01', 'local-candidate', {'candidateType': 'srflx'}),
+          report('C02', 'remote-candidate', {'candidateType': 'host'}),
+        ]),
+        CandidatePairRoute.direct,
+      );
+    });
+
+    test(
+      'falls back to the report typed fields when the values map omits '
+      'id and type',
+      () {
+        // `StatsReport.fromMap` keeps the raw map, so `id`/`type` are
+        // normally present. The adapter must not depend on that.
+        expect(
+          classifyStatsReports([
+            report('T01', 'transport', {'selectedCandidatePairId': 'CP01'}),
+            report('CP01', 'candidate-pair', {
+              'localCandidateId': 'C01',
+              'remoteCandidateId': 'C02',
+            }),
+            report('C01', 'local-candidate', {'candidateType': 'relay'}),
+            report('C02', 'remote-candidate', {'candidateType': 'relay'}),
+          ]),
+          CandidatePairRoute.relayed,
+        );
+      },
+    );
+
+    test(
+      'still classifies when values carries non-string keys, which the '
+      'dynamic native map permits',
+      () {
+        // `StatsReport.values` is Map<dynamic, dynamic>; the adapter keys its
+        // intermediate map with `toString()`, so a non-string key must not
+        // stop the real string keys from resolving.
+        expect(
+          classifyStatsReports([
+            report('T01', 'transport', {
+              1: 'ignored',
+              'selectedCandidatePairId': 'CP01',
+            }),
+            report('CP01', 'candidate-pair', {
+              2: 'ignored',
+              'localCandidateId': 'C01',
+              'remoteCandidateId': 'C02',
+            }),
+            report('C01', 'local-candidate', {'candidateType': 'relay'}),
+            report('C02', 'remote-candidate', {'candidateType': 'host'}),
+          ]),
+          CandidatePairRoute.relayed,
+        );
+      },
+    );
+
+    test('is unknown for an empty report list', () {
+      expect(classifyStatsReports(const []), CandidatePairRoute.unknown);
+    });
   });
 
   group('ConnectionType projection', () {

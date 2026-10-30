@@ -27,8 +27,14 @@ const String relayOnlyIceDefine = 'ZIP_CAPTIONS_RELAY_ONLY_ICE';
 /// Whether every peer connection should be created relay-only.
 ///
 /// `false` in profile and release builds regardless of the dart-define.
-bool get relayOnlyIceEnabled =>
-    kDebugMode && const bool.fromEnvironment(relayOnlyIceDefine);
+///
+/// Declared `const`, not a getter, so the claim above is a property of the
+/// program rather than an observation about it: a getter is evaluated at
+/// runtime on every read, and only a `const` is guaranteed to be folded and
+/// tree-shaken. Both operands — `kDebugMode` and `bool.fromEnvironment` —
+/// are themselves `const`, which is what makes this legal.
+const bool relayOnlyIceEnabled =
+    kDebugMode && bool.fromEnvironment(relayOnlyIceDefine);
 
 /// The `iceTransportPolicy` value to pass in the WebRTC configuration map,
 /// or `null` to leave the plugin's default (`'all'`) in place.
@@ -40,4 +46,5 @@ bool get relayOnlyIceEnabled =>
 /// (`RTCConfiguration` is entirely commented out in `webrtc_interface`
 /// 1.5.1), so the string is passed through the configuration map rather than
 /// through a typed field.
-String? get iceTransportPolicyOverride => relayOnlyIceEnabled ? 'relay' : null;
+const String? iceTransportPolicyOverride =
+    relayOnlyIceEnabled ? 'relay' : null;

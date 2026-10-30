@@ -138,11 +138,20 @@ abstract interface class PeerConnectionFactory {
 
 abstract interface class IceServerProvider {
   /// Only the self-hosted Coturn; TURN entries carry short-lived credentials.
+  ///
+  /// Broadcasters are authenticated and hold a session id.
   Future<List<IceServer>> iceServersFor(String sessionId);
+
+  /// Viewers are anonymous and hold only a broadcast id (Unit 9, B2).
+  /// `iceServersFor` is not usable for them: its RPC guards on `auth.uid()`.
+  Future<List<IceServer>> iceServersForBroadcast(String broadcastId);
 }
 
 abstract interface class TurnCredentialService {
   Future<TurnCredentials> fetch(String sessionId); // username, credential, expiresAt, urls
+
+  /// Broadcast-scoped variant for anonymous viewers (Unit 9, B2).
+  Future<TurnCredentials> fetchBroadcast(String broadcastId);
 }
 
 class TransportSelector {

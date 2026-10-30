@@ -126,11 +126,47 @@ void main() {
             params: {'p_broadcast_id': 'ZZZZZZ'},
           ),
           throwsA(
-            isA<PostgrestException>().having((e) => e.code, 'code', '42501'),
+            isA<PostgrestException>()
+                .having((e) => e.code, 'code', '42501')
+                // Both credential functions raise 42501, so the code alone
+                // cannot tell this apart from the authenticated function's
+                // auth failure. The message is what distinguishes them.
+                .having(
+                  (e) => e.message,
+                  'message',
+                  contains('get_broadcast_turn_credentials'),
+                ),
           ),
         );
       },
     );
+
+    // The PR claims these are rejected; only the well-formed-unknown case was
+    // actually exercised. A broadcast id is Crockford-Base32, so lowercase is
+    // a different id, and the empty/whitespace forms are what a malformed
+    // deep link produces.
+    for (final candidate in <String?, String>{
+      null: 'null',
+      '': 'empty',
+      '   ': 'whitespace',
+      'abcdef': 'lowercase',
+    }.entries) {
+      test(
+        'rejects a ${candidate.value} broadcast id with 42501',
+        () async {
+          await Future<void>.delayed(_kongPaced);
+          await expectLater(
+            anon.rpc<List<dynamic>>(
+              'get_broadcast_turn_credentials',
+              params: {'p_broadcast_id': candidate.key},
+            ),
+            throwsA(
+              isA<PostgrestException>().having((e) => e.code, 'code', '42501'),
+            ),
+          );
+        },
+      );
+    }
 
     test(
       'leaves get_turn_credentials() untouched: still 42501 for anon',
@@ -141,7 +177,13 @@ void main() {
         await expectLater(
           anon.rpc<List<dynamic>>('get_turn_credentials'),
           throwsA(
-            isA<PostgrestException>().having((e) => e.code, 'code', '42501'),
+            isA<PostgrestException>()
+                .having((e) => e.code, 'code', '42501')
+                .having(
+                  (e) => e.message,
+                  'message',
+                  contains('get_turn_credentials: authentication required'),
+                ),
           ),
         );
       },

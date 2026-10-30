@@ -13,10 +13,17 @@ import 'package:zip_core/src/services/webrtc/peer_connection_handle.dart';
 /// The shape being navigated (W3C webrtc-stats):
 ///
 /// - a `transport` report carries `selectedCandidatePairId`;
-/// - that id names a `candidate-pair` report, which carries
-///   `localCandidateId`;
-/// - that id names a `local-candidate` report, which carries
-///   `candidateType` (`host` / `srflx` / `prflx` / `relay`).
+/// - that id names a `candidate-pair` report, which carries both
+///   `localCandidateId` and `remoteCandidateId`;
+/// - those ids name candidate reports carrying `candidateType`
+///   (`host` / `srflx` / `prflx` / `relay`).
+///
+/// Both ends are read, not just the local one. A pair is relayed if *either*
+/// candidate is a relay: when the viewer sits behind an ordinary NAT but the
+/// broadcaster is relay-only, the viewer's own candidate is `host` while the
+/// media still transits Coturn. Reading only `localCandidateId` would report
+/// that connection as `direct`, which is the precise false claim this
+/// classifier exists to prevent.
 ///
 /// Anything that does not resolve cleanly is [CandidatePairRoute.unknown] —
 /// never a guess. Erring towards "unknown" is the whole point: the failure
@@ -36,16 +43,35 @@ CandidatePairRoute classifyCandidatePairRoute(
   }
   if (selectedPairId == null) return CandidatePairRoute.unknown;
 
-  final localId = byId[selectedPairId]?['localCandidateId'];
-  if (localId is! String) return CandidatePairRoute.unknown;
+  final pair = byId[selectedPairId];
+  final localType = _candidateTypeOf(byId, pair?['localCandidateId']);
+  final remoteType = _candidateTypeOf(byId, pair?['remoteCandidateId']);
 
-  final candidateType = byId[localId]?['candidateType'];
-  return switch (candidateType) {
-    'relay' => CandidatePairRoute.relayed,
-    'host' || 'srflx' || 'prflx' => CandidatePairRoute.direct,
-    _ => CandidatePairRoute.unknown,
-  };
+  // Either leg relayed means the media transits the relay. Checked before the
+  // unknown case so a resolvable relay leg cannot be downgraded by an
+  // unresolvable far end.
+  if (localType == 'relay' || remoteType == 'relay') {
+    return CandidatePairRoute.relayed;
+  }
+  if (_isDirectCandidateType(localType) && _isDirectCandidateType(remoteType)) {
+    return CandidatePairRoute.direct;
+  }
+  return CandidatePairRoute.unknown;
 }
+
+/// The `candidateType` of the candidate report named by [id], or `null` when
+/// the id is absent, not a string, or names no report.
+String? _candidateTypeOf(
+  Map<String, Map<String, Object?>> byId,
+  Object? id,
+) {
+  if (id is! String) return null;
+  final type = byId[id]?['candidateType'];
+  return type is String ? type : null;
+}
+
+bool _isDirectCandidateType(String? type) =>
+    type == 'host' || type == 'srflx' || type == 'prflx';
 
 /// Projects a [CandidatePairRoute] onto the [ConnectionType] vocabulary the
 /// viewer list exposes (FR-4.6).

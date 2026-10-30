@@ -167,9 +167,14 @@ void main() {
 
     /// Runs one full join through the in-memory pair and returns the viewer
     /// list once the join is confirmed.
+    ///
+    /// [routeError] makes the handle's `selectedCandidateRoute()` throw
+    /// instead of answering, which is the only way to reach the transport's
+    /// diagnostics-failure branch.
     Future<ViewerConnectionInfo> joinOneViewer(
-      CandidatePairRoute route,
-    ) async {
+      CandidatePairRoute route, {
+      Object? routeError,
+    }) async {
       final viewerLists = <List<ViewerConnectionInfo>>[];
       final sub = transport.viewers.listen(viewerLists.add);
       addTearDown(sub.cancel);
@@ -195,7 +200,9 @@ void main() {
 
       // Every handle created from here reports [route], so it is already in
       // place when `_confirmJoin` reads it mid-handshake.
-      factory.onCreated = (handle) => handle.route = route;
+      factory.onCreated = (handle) => handle
+        ..route = route
+        ..routeError = routeError;
       unawaited(
         viewer.connect(
           ViewerTransportContext(
@@ -236,6 +243,27 @@ void main() {
           (await joinOneViewer(CandidatePairRoute.unknown)).connectionType,
           ConnectionType.disconnected,
         );
+      },
+    );
+
+    test(
+      'a throwing stats query leaves the viewer disconnected and does not '
+      'fail the session',
+      () async {
+        // The broadcaster's `_resolveRoute` wraps the query in a bare
+        // `on Object` so that a diagnostics failure never tears down a live
+        // session. Nothing else in this suite reaches that branch: the rows
+        // above supply a value, not an error.
+        final viewer = await joinOneViewer(
+          CandidatePairRoute.unknown,
+          routeError: StateError('getStats exploded'),
+        );
+
+        // The session outlived the failed query: the viewer is still listed
+        // under the id it joined with, and still reports a connection type
+        // rather than having been dropped.
+        expect(viewer.connectionType, ConnectionType.disconnected);
+        expect(viewer.peerId, isNotEmpty);
       },
     );
   });
