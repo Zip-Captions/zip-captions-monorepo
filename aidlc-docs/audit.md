@@ -3301,3 +3301,24 @@ Start by reading the files above. Then tell me in a few lines what Unit 9 must p
   removing the first emission and observing two failures where there were
   none; (3) dead `statuses`/`allSub` locals removed from `connectAndCollect`.
   Gates: analyze clean, 964 + 5 skipped / 195 / 195.
+
+- 2026-10-30T10:40Z - Owner, verbatim: "Delegate another full PR review to a
+  sub-agent". A fourth independent reviewer ran a full (not delta) review of
+  head 98d7e2d. Verdict: request-changes, on three findings, all verified and
+  fixed:
+  (1) The stats classifier read only camelCase field names
+  (`selectedCandidatePairId`, `localCandidateId`, `candidateType`). The Dart
+  layer passes `getStats()`'s values through opaquely, so the spelling is a
+  property of the native backend; W3C webrtc-stats uses kebab-case. Confirmed
+  the darwin plugin does not hardcode either spelling in ObjC. Both spellings
+  are now accepted via a `_field` helper, with four kebab-case tests; removing
+  the fallback fails three of them.
+  (2) The worktree reversal was half-applied. `CONTRIBUTING.md` Section 2,
+  `docs/TDD.md` step 2, `scripts/README.md`, `ARCHITECTURE.md` and
+  `docs/03-roadmap.md` all still mandated worktrees while AGENTS.md had banned
+  them. All five rewritten to the branch mandate.
+  (3) The phase record's gate counts were ambiguous and its CI job count was
+  wrong: it said "ten jobs" where `gh pr checks` lists nine, and "964 passed,
+  5 skipped" where the reporter's `+N` is passed-only. Both corrected; counts
+  now stated as passed/skipped/run explicitly.
+  Gates after: analyze clean, 968 + 5 skipped / 195 / 195.

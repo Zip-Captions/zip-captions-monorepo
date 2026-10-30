@@ -51,8 +51,8 @@ Open a PR with: story reference, test files, implementation, updated story statu
 TDD is executed within AI-DLC's Construction Phase, Code Generation stage. Before writing any tests or code, the Inception Phase must be complete and the code generation plan (Part 1) must be approved.
 
 1. Run AI-DLC inception: `Using AI-DLC, [feature description]` — approve each stage through to the code generation plan
-2. Create a git worktree for the unit: `git worktree add ../zip-captions-<name> -b feature/<name>`
-3. In the worktree, write failing tests first, referencing acceptance criteria in test descriptions
+2. Create a feature branch in the main checkout: `git checkout develop && git pull && git checkout -b feature/<name>`. Do not use git worktrees (see `CONTRIBUTING.md` Section 2)
+3. On that branch, write failing tests first, referencing acceptance criteria in test descriptions
 4. Commit the failing tests: `test(<pkg>): add failing tests for <feature-name>`
 5. Implement the minimum code to make tests pass — nothing beyond the acceptance criteria
 6. If any file uses `freezed`, `riverpod_generator`, or `json_serializable`, run: `melos run generate`

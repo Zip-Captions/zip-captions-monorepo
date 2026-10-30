@@ -12,11 +12,21 @@ import 'package:zip_core/src/services/webrtc/peer_connection_handle.dart';
 ///
 /// The shape being navigated (W3C webrtc-stats):
 ///
-/// - a `transport` report carries `selectedCandidatePairId`;
-/// - that id names a `candidate-pair` report, which carries both
-///   `localCandidateId` and `remoteCandidateId`;
-/// - those ids name candidate reports carrying `candidateType`
+/// - a `transport` report carries the selected pair id;
+/// - that id names a `candidate-pair` report, which carries both candidate
+///   ids, local and remote;
+/// - those ids name candidate reports carrying a candidate type
 ///   (`host` / `srflx` / `prflx` / `relay`).
+///
+/// The field names are read in both spellings the ecosystem uses: camelCase
+/// (`selectedCandidatePairId`, `localCandidateId`, `candidateType`) as
+/// flutter_webrtc's darwin backend emits, and the W3C webrtc-stats
+/// kebab-case (`selected-candidate-pair-id`, `local-candidate-id`,
+/// `candidate-type`). The Dart layer passes `values` through opaquely from
+/// the native side, so the spelling is a property of the backend rather than
+/// of anything this package controls. Accepting both costs one null-coalesce
+/// and removes a whole class of silent `unknown` if a backend ever emits the
+/// standard spelling.
 ///
 /// Both ends are read, not just the local one. A pair is relayed if *either*
 /// candidate is a relay: when the viewer sits behind an ordinary NAT but the
@@ -41,14 +51,20 @@ CandidatePairRoute classifyCandidatePairRoute(
     // that may appear later in the list.
     if (selectedPairId != null) continue;
     if (report['type'] != 'transport') continue;
-    final selected = report['selectedCandidatePairId'];
+    final selected = _field(report, _selectedPairId);
     if (selected is String && selected.isNotEmpty) selectedPairId = selected;
   }
   if (selectedPairId == null) return CandidatePairRoute.unknown;
 
   final pair = byId[selectedPairId];
-  final localType = _candidateTypeOf(byId, pair?['localCandidateId']);
-  final remoteType = _candidateTypeOf(byId, pair?['remoteCandidateId']);
+  final localType = _candidateTypeOf(
+    byId,
+    pair == null ? null : _field(pair, _localCandidateId),
+  );
+  final remoteType = _candidateTypeOf(
+    byId,
+    pair == null ? null : _field(pair, _remoteCandidateId),
+  );
 
   // Either leg relayed means the media transits the relay. Checked before the
   // unknown case so a resolvable relay leg cannot be downgraded by an
@@ -62,14 +78,43 @@ CandidatePairRoute classifyCandidatePairRoute(
   return CandidatePairRoute.unknown;
 }
 
-/// The `candidateType` of the candidate report named by [id], or `null` when
+/// The stats field names that carry the identity of the selected pair and its
+/// two candidates. See the note on [classifyCandidatePairRoute] for why both
+/// spellings exist.
+typedef _FieldName = ({String camel, String kebab});
+
+const _FieldName _selectedPairId = (
+  camel: 'selectedCandidatePairId',
+  kebab: 'selected-candidate-pair-id',
+);
+const _FieldName _localCandidateId = (
+  camel: 'localCandidateId',
+  kebab: 'local-candidate-id',
+);
+const _FieldName _remoteCandidateId = (
+  camel: 'remoteCandidateId',
+  kebab: 'remote-candidate-id',
+);
+const _FieldName _candidateTypeKey = (
+  camel: 'candidateType',
+  kebab: 'candidate-type',
+);
+
+/// Reads [field] from [report], preferring the camelCase spelling and falling
+/// back to the W3C kebab-case one.
+Object? _field(Map<String, Object?> report, _FieldName field) =>
+    report[field.camel] ?? report[field.kebab];
+
+/// The candidate type of the candidate report named by [id], or `null` when
 /// the id is absent, not a string, or names no report.
 String? _candidateTypeOf(
   Map<String, Map<String, Object?>> byId,
   Object? id,
 ) {
   if (id is! String) return null;
-  final type = byId[id]?['candidateType'];
+  final report = byId[id];
+  if (report == null) return null;
+  final type = _field(report, _candidateTypeKey);
   return type is String ? type : null;
 }
 

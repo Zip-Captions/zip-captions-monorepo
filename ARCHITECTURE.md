@@ -169,7 +169,7 @@ zip-captions-monorepo/
     04-technical-specification.md
     TDD.md
     TEST_SETUP.md
-  scripts/                     # Utility scripts (worktree helpers, etc.)
+  scripts/                     # Developer utility scripts (git hooks, etc.)
   stories/                     # Optional archive of feature definitions
   test-fixtures/               # Shared test data
   ai-dlc/                      # AI-DLC workflow (git submodule)

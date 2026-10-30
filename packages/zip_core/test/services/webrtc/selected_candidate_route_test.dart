@@ -369,6 +369,67 @@ void main() {
     });
   });
 
+  // The Dart layer passes `getStats()`'s `values` through opaquely, so the
+  // field spelling is a property of the native backend, not of this package.
+  // darwin emits camelCase; W3C webrtc-stats (and therefore some backends)
+  // use kebab-case. Both must resolve, or route reporting silently degrades
+  // to `unknown` on that backend with every camelCase-only test still green.
+  group('classifyCandidatePairRoute (W3C kebab-case fields)', () {
+    Map<String, Object?> kebab(
+      String id,
+      String type, [
+      Map<String, Object?> values = const {},
+    ]) => {'id': id, 'type': type, 'timestamp': 0.0, ...values};
+
+    List<Map<String, Object?>> kebabStats(
+      String localType,
+      String remoteType,
+    ) => [
+      kebab(
+        'T01',
+        'transport',
+        {'selected-candidate-pair-id': 'CP01'},
+      ),
+      kebab('CP01', 'candidate-pair', {
+        'local-candidate-id': 'C01',
+        'remote-candidate-id': 'C02',
+      }),
+      kebab('C01', 'local-candidate', {'candidate-type': localType}),
+      kebab('C02', 'remote-candidate', {'candidate-type': remoteType}),
+    ];
+
+    test('classifies a relayed pair written in kebab-case', () {
+      expect(
+        classifyCandidatePairRoute(kebabStats('relay', 'host')),
+        CandidatePairRoute.relayed,
+      );
+    });
+
+    test('classifies a direct pair written in kebab-case', () {
+      expect(
+        classifyCandidatePairRoute(kebabStats('host', 'host')),
+        CandidatePairRoute.direct,
+      );
+    });
+
+    test('honours a relayed remote leg written in kebab-case', () {
+      expect(
+        classifyCandidatePairRoute(kebabStats('host', 'relay')),
+        CandidatePairRoute.relayed,
+      );
+    });
+
+    test('is unknown when no kebab-case transport names a pair', () {
+      expect(
+        classifyCandidatePairRoute([
+          kebab('CP01', 'candidate-pair', {'local-candidate-id': 'C01'}),
+          kebab('C01', 'local-candidate', {'candidate-type': 'relay'}),
+        ]),
+        CandidatePairRoute.unknown,
+      );
+    });
+  });
+
   group('ConnectionType projection', () {
     test(
       'unknown maps to disconnected for the broadcaster viewer list, never '

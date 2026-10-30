@@ -31,9 +31,9 @@ matters).
 | Analysis, shared library | `flutter analyze --fatal-infos` in `packages/zip_core` | no issues |
 | Analysis, viewer app | same, `packages/zip_captions` | no issues |
 | Analysis, broadcaster app | same, `packages/zip_broadcast` | no issues |
-| Tests, shared library | `flutter test` | 964 passed, 5 skipped |
-| Tests, viewer app | `flutter test` | 195 passed |
-| Tests, broadcaster app | `flutter test` | 195 passed |
+| Tests, shared library | `flutter test` | 968 passed, 5 skipped (973 run) |
+| Tests, viewer app | `flutter test` | 195 passed, 0 skipped |
+| Tests, broadcaster app | `flutter test` | 195 passed, 0 skipped |
 | Coverage suite | `melos run test:coverage --no-select` | `zip_core`, `zip_captions`, `zip_broadcast` green; `lcov.info` produced for each. `zip_supabase` has no Dart tests and is skipped by the `dirExists: test` filter |
 | Live-stack credential suite | `flutter test --tags integration-supabase --run-skipped test/integration/broadcast_turn_credentials_supabase_test.dart` | 9 passed |
 
@@ -168,7 +168,8 @@ none is demonstrated.
 2. TURN relay actually carries captions when direct connectivity fails.
 3. The macOS network entitlement works at runtime, not just in the signature.
 4. Google sign-in, if credentials were supplied.
-5. ~~Any CI workflow against this branch~~ — resolved: ten jobs green on PR #45.
+5. ~~Any CI workflow against this branch~~ — resolved: nine checks green
+   on PR #45.
 6. Multi-monitor popping-out behaviour (noted as a Unit 9 platform check by the
    pop-out design).
 
@@ -241,14 +242,15 @@ claims a lower deployment target than one of its dependencies supports.
   more permissive than CI's, so "no issues" locally does not guarantee the same
   in CI. Nothing in D1-D4 depends on post-3.38.7 APIs, so the risk is low, but
   it is unverified.
-- **CI ran green on this branch.** Chromium and Flutter are pinned: both
-  workflows use 3.38.7. When the branch was pushed and PR #45 opened, all ten
-  jobs passed - Analyze & Test, Android APK, iOS (no codesign), Linux and
+- **CI ran green on this branch.** Flutter is pinned at 3.38.7 in both
+  workflows. When the branch was pushed and PR #45 opened, all nine checks
+  passed: Analyze & Test, Android APK (debug), iOS (no codesign), and Linux,
   Windows and macOS for each of the two apps. That is the first and only
   evidence that removing `zip_broadcast/{android,ios}` broke nothing: no local
   gate covers those platform builds. An earlier revision of this document said
   no CI run existed, which was true when written and false within the hour;
-  corrected here rather than left to rot.
+  corrected here rather than left to rot. A later revision said "ten jobs";
+  `gh pr checks` lists nine, and this now matches it.
 - **The live stack holds real data** (31 broadcast identities and 84 auth
   users at the time of writing). Verification used it read-mostly; the one
   schema change (the D2 migration) is additive. `supabase db reset` was never
@@ -268,7 +270,7 @@ Stated plainly so this document cannot be cited for more than it says:
 - Phase 2 is not verified end to end in a real app on all platforms. Only the
   macOS signed bundles and the local backend stack were exercised.
 - The 50-viewer capacity target is unobserved.
-- CI validated the build matrix (ten jobs, PR #45), but CI runs no
+- CI validated the build matrix (nine checks, PR #45), but CI runs no
   `integration-supabase` suite, so it says nothing about the live-stack
   behaviour above. Local runs are the only evidence for D2.
 - Translation is Phase 8 and nothing here depends on it.
