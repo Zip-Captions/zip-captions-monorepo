@@ -541,6 +541,20 @@ void main() {
       });
     });
 
+    test('Thai: each character is a token, marks included', () {
+      fakeAsync((async) {
+        final rig = live(async);
+        addTearDown(rig.engine.dispose);
+
+        rig.stt.emitResult('สวัสดี', isFinal: false);
+        async.elapse(pause);
+        rig.stt.emitResult('สวัสดีครับ', isFinal: false);
+        async.elapse(pause);
+
+        expect(finals(rig.results), ['สวัสดี', 'ครับ']);
+      });
+    });
+
     test('a reset in Chinese is delivered whole', () {
       fakeAsync((async) {
         final rig = live(async);

@@ -608,8 +608,11 @@ class SegmentedSpeechEngine implements SttEngine, SttErrorSource {
 
   @override
   Future<void> stopListening() async {
-    // Intent first, then the platform, so a trailing event never renews.
-    final drain = _beginDrain();
+    // Intent first, then the platform, so a trailing event never renews. A
+    // stop that arrives while a pause's drain is open joins that drain
+    // (BR-U10-55): the last phrase is kept, and the first waiter to finish
+    // flushes it once.
+    final drain = _beginDrain() ?? (_draining ? _openDrain : null);
     _epoch++;
     _intent = _Intent.stopped;
     _sessionLive = false;

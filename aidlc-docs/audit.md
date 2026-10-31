@@ -3905,6 +3905,21 @@ Gate-checked: `dart analyze --fatal-infos` clean across all three Flutter packag
 
 ---
 
+## CONSTRUCTION - Phase 2 Unit 10: last CodeRabbit review round, of e326377 (Step 29m)
+**Timestamp**: 2026-10-31
+**User Input** (James Petersen): none new. This follows the answer "One more review, then approve (Recommended)".
+
+**AI Response** (Opus):
+- **The review:** CodeRabbit reviewed `0beea12..e326377` and requested changes, with four findings. Each was checked against the code.
+- **Real defect, fixed:** a Stop within the drain of a Pause dropped the last phrase on both engines (BR-U10-55). Plan Step 29m, by a Sonnet builder, test-first.
+- **Test gap, fixed:** a Thai case through the engine.
+- **Declined:** a Pause time bound. It isn't in the approved design, and Stop still works. Backlog entry added.
+- **Next:** reply, then `@coderabbitai approve`, per the owner's decision.
+
+**Context**: Worktree `.claude/worktrees/unit10-qa`.
+
+---
+
 ## Unit 9 (Integration Milestones) — Session Start
 **Timestamp**: 2026-10-30T00:00:00Z
 **User Input**: "You are starting Unit 9 (Integration Milestones) of Phase 2 in the Zip Captions monorepo at /Users/oblivious/Documents/zip-captions-monorepo. It's a Flutter/Dart monorepo with four packages: zip_core, zip_captions, zip_broadcast and zip_supabase. Work with me, James Petersen, the project owner. I approve every stage.

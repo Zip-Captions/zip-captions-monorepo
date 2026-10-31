@@ -432,6 +432,56 @@ void main() {
       });
     }
 
+    // BR-U10-55: a Stop that arrives inside Pause's open drain joins it, so
+    // the last phrase is not lost.
+    for (final withFinal in [true, false]) {
+      test('a stop during the pause() drain keeps the last phrase '
+          '(${withFinal ? 'a final arrives' : 'no final arrives'})', () {
+        fakeAsync((async) {
+          final rig = live(async);
+          addTearDown(rig.engine.dispose);
+          rig.stt.emitResult('hello', isFinal: false);
+          async.flushMicrotasks();
+          var pauseDone = false;
+          var stopDone = false;
+
+          unawaited(rig.engine.pause().then((_) => pauseDone = true));
+          async.flushMicrotasks();
+          unawaited(rig.engine.stopListening().then((_) => stopDone = true));
+          async.flushMicrotasks();
+
+          expect(stopDone, isFalse, reason: 'the stop waits for the drain');
+          expect(rig.stt.cancelCalls, 0, reason: 'no cancel before the drain');
+
+          if (withFinal) {
+            rig.stt.emitResult('hello there', isFinal: true);
+            async.flushMicrotasks();
+          } else {
+            async.elapse(
+              defaultSttListeningLimits.finalResultDrainTimeout +
+                  const Duration(milliseconds: 1),
+            );
+          }
+
+          expect(pauseDone, isTrue);
+          expect(stopDone, isTrue);
+          expect(rig.stt.cancelCalls, 1, reason: 'cancel after the drain');
+          final expected = [
+            ('hello', false),
+            (withFinal ? 'hello there' : 'hello', true),
+          ];
+          expect(rig.results.map((r) => (r.text, r.isFinal)), expected);
+
+          async.elapse(const Duration(seconds: 5));
+          expect(
+            rig.results.map((r) => (r.text, r.isFinal)),
+            expected,
+            reason: 'nothing is delivered twice',
+          );
+        });
+      });
+    }
+
     test('a stop with no live session does not wait', () {
       fakeAsync((async) {
         final stt = FakeSpeechToText();

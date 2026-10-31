@@ -909,9 +909,11 @@ class _SessionLoop {
   }
 
   /// Records the stop. Returns the number of the drain it opened, if any,
-  /// which the caller must wait on and close.
+  /// which the caller must wait on and close. A stop that arrives while a
+  /// pause's drain is open joins that drain instead (BR-U10-55): the last
+  /// phrase is kept, and the first waiter to finish flushes it once.
   int? stopRequested() {
-    final drain = _beginDrain();
+    final drain = _beginDrain() ?? (_draining ? _openDrain : null);
     _epoch++;
     _intent = _Intent.stopped;
     abandonStarting();

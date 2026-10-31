@@ -1471,6 +1471,62 @@ void main() {
       });
     }
 
+    // BR-U10-55: a Stop that arrives inside Pause's open drain joins it, so
+    // the last phrase is not lost.
+    for (final withFinal in [true, false]) {
+      test('a stop during the pause() drain keeps the last phrase '
+          '(${withFinal ? 'a final arrives' : 'no final arrives'})', () {
+        fakeAsync((async) {
+          final rig = _rig(drainTimeout: production);
+          addTearDown(rig.engine.dispose);
+          final results = _Results();
+          startSession(async, rig, results);
+          rig.bridge.sendPartial('hello');
+          async.flushMicrotasks();
+          var pauseDone = false;
+          var stopDone = false;
+
+          unawaited(rig.engine.pause().then((_) => pauseDone = true));
+          async.flushMicrotasks();
+          unawaited(rig.engine.stopListening().then((_) => stopDone = true));
+          async.flushMicrotasks();
+
+          expect(stopDone, isFalse, reason: 'the stop waits for the drain');
+          expect(
+            rig.log.where('segment-cancel').length,
+            0,
+            reason: 'no cancel before the drain',
+          );
+
+          if (withFinal) {
+            rig.bridge.sendSegment('hello there');
+            async.flushMicrotasks();
+          } else {
+            async.elapse(const Duration(seconds: 2));
+          }
+
+          expect(pauseDone, isTrue);
+          expect(stopDone, isTrue);
+          expect(
+            rig.log.where('segment-cancel').length,
+            1,
+            reason: 'cancel after the drain',
+          );
+          final last = withFinal ? 'hello there' : 'hello';
+          final expected = ['hello', last];
+          expect(results.texts, expected);
+          expect(results.finals, [false, true]);
+
+          async.elapse(const Duration(seconds: 5));
+          expect(
+            results.texts,
+            expected,
+            reason: 'nothing is delivered twice',
+          );
+        });
+      });
+    }
+
     test('a stop with no live session does not wait', () {
       fakeAsync((async) {
         final rig = _rig(drainTimeout: production);
