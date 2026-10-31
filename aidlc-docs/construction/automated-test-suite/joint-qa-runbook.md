@@ -1,6 +1,11 @@
 # Joint QA runbook: Unit 10 (Mobile Platform Readiness)
 
-For a session with James present, with the Mac, the iPhone 17 Simulator and his own Android 13+ phone.
+**Historical copy.** This is the manual runbook used for Unit 10's device passes on 2026-10-30, kept as a reference for Unit 14. It isn't instructions for a current session.
+- The results are in `aidlc-docs/construction/mobile-platform-readiness/evidence/code-generation-qa.md`.
+- Where this runbook and a later amendment differ, the amendment wins. B11 predates Amendment 07, which replaces its two notices with one.
+- The original's Part D, the Unit 9 agenda, was removed from this copy; Unit 9's decisions are recorded in `aidlc-docs/audit.md`.
+
+Written for a run with James Petersen present, using the Mac, the iPhone 17 Simulator and an Android 13+ phone.
 
 **QA rules (apply to every step)**
 - Everything goes through the app's own flows. No `adb` workarounds: no `pm grant`, no `adb shell am`, no settings changes by `adb`, no injected audio.
@@ -8,7 +13,7 @@ For a session with James present, with the Mac, the iPhone 17 Simulator and his 
 - Play or speak only after the recogniser is ready (the mic is open). Do not speak straight after the tap.
 - For each step, record: time, what you did, what you saw or heard, pass or fail.
 
-Note on step names: Steps 6, 6b, 7 and 8 are defined below from the Step 30 evidence. The original protocol text for 6b and 8 was not available to the author of this runbook (not verified); the definitions are reconstructed, so correct them if the original differs.
+Note on step names: Steps 6, 6b, 7 and 8 are defined below from the Step 30 evidence. The original protocol text for 6b and 8 was not available when this runbook was written; the definitions are reconstructed from the evidence.
 
 ---
 
@@ -22,7 +27,7 @@ Steps 1 to 3 below are already done for the Pixel 6; use `-d 25071FDF600953`.
 2. Settings, System, Developer options, turn on "USB debugging". Connect the phone by USB and accept the "Allow USB debugging?" prompt on the phone.
 3. Find the device id. In a terminal:
    ```
-   cd /Users/oblivious/Documents/zip-captions-monorepo/packages/zip_captions
+   cd packages/zip_captions
    flutter devices
    ```
    Copy the id in the second column for your phone (for example `R58M123ABC`). Call it `<device-id>`.
@@ -108,7 +113,7 @@ Precondition: Part 0.1 complete, language pack ready, app on the Home screen, mi
 
 **B10. Screen-on check.** Action: while captioning, leave the phone untouched for the normal timeout period. Expected: the screen stays on. After Stop, leave it again. Expected: the screen dims and locks at the normal timeout. Record: stays on during captioning (yes/no); times out after Stop (yes/no).
 
-**B11. Amendment 05 (optional, 5 minutes of silence).** Action: start captioning and stay silent for 5 minutes. Expected: the session stops, History opens, the SnackBar "Captioning stopped after 5 minutes without speech." appears, then "No speech was recognised, so no transcript was saved." Record: time of stop and both notices.
+**B11. Amendment 05 (optional, 5 minutes of silence).** Action: start captioning and stay silent for 5 minutes. Expected: the session stops, History opens, the SnackBar "Captioning stopped after 5 minutes without speech." appears, then "No speech was recognised, so no transcript was saved." Record: time of stop and both notices. (Superseded: since Amendment 07, BR-U10-66, this is one notice: "Captioning stopped after 5 minutes without speech, so no transcript was saved.")
 
 **B12. Amendment 01 restart observations.** Record anything unexpected: gaps in words, repeated phrases after a renewal, any transient failure notice.
 
@@ -121,27 +126,4 @@ Precondition: Part 0.1 complete, language pack ready, app on the Home screen, mi
 3. **5 s Stop bound (BR-U10-58):** unit tests only (TP-37). It is not provoked on a device.
 4. **Save outcomes (BR-U10-60):** a normal session shows no save notice. A silent session shows "No speech was recognised, so no transcript was saved." "The transcript could not be saved." is not provoked on a device.
 
-**App state and logs:** read them through the Flutter MCP (`flutter-agent-lens`) connected to the debug run. Use it to read the resolved locale, engine events, errors and segment counts. Never use it to drive the app past a step the user couldn't take.
-
----
-
-## Part D: Unit 9 agenda (decisions and NEEDS-JAMES items only)
-
-Source: the Unit 9 feasibility report. This is an agenda, not a set of steps.
-
-**Decisions that block Unit 9 runs**
-- B1: macOS entitlements lack `com.apple.security.network.client` in both apps; every macOS network check fails until it is added (a repo change you must approve).
-- B2: anonymous viewers cannot get ICE servers (`get_turn_credentials()` is for `authenticated` only). Decide: grant to anon, anonymous sign-in, or a STUN-only fallback.
-- Broadcaster sign-in on the local stack: approve the Google OAuth config (client, compose env, redirect list) and do one Google sign-in on macOS in `zip_broadcast`; or approve a session-injection route over the VM service.
-- B3 and B4: Coturn local config blocks app-level relay, and no way exists to force relay in the app. Decide whether to add a relay-only switch or use a phone hotspot or restricted network.
-- B6: no real-protocol viewer swarm for the 50-viewer cap. Decide whether to build the harness or defer M3 and EC5.
-- Whether to defer the two-hour run at capacity (M3) as not claimable.
-- Windows and Linux broadcaster sign-in is unavailable today; sign-in checks are macOS-only.
-
-**NEEDS-JAMES checks**
-- EC1, EC2, EC3b, EC4, EC5, M1, M2, M3, M5 (signed-in broadcaster, a second device or Chrome, network toggling).
-- EC6, U8-1 to U8-6 (second display, hot-plug, borderless window on three OSes, font, opacity, theme, output-off behaviour).
-- AOT, AOT-FS, A7, B4 (pop-out above other windows, closing from the OS, foreign full-screen window as an accepted limitation).
-- EC7 live-OBS follow-up (OBS install status unknown).
-- R1: a phone viewer is Unit 13, out of Unit 9 scope.
-- Accessibility permission for the driving host (A7, B4 cannot be driven without it).
+**App state and logs:** these were read from the debug run during the 2026-10-30 pass (the resolved locale, engine events, errors and segment counts). Never use any tool to drive the app past a step the user couldn't take.

@@ -4468,3 +4468,33 @@ Start by reading the files above. Then tell me in a few lines what Unit 9 must p
 - **State entry updated** with the verbatim rescope sentence. Stage 1 remains STOPPED for approval.
 
 **Context**: Same branch and checkout. docs-mcp availability noted as a gap for this session; official docs used for factual claims, docs-mcp required before Code Generation writes any Patrol API call.
+
+---
+
+## CONSTRUCTION - Phase 2 Unit 14 (proposed): PR #46, review and fixes
+**Timestamp**: 2026-10-31
+**User Input** (James Petersen, verbatim):
+- "open a pr and then delegate an agentic code review of the patrol work to another session. we can then do step 0 while I answer the questions."
+- "fix it all through a temporary index, the patrol session is finished"
+
+**Earlier user input, not logged at the time.** The unit definition quotes James Petersen twice from 2026-10-30. The quotes are recorded here as the Patrol session wrote them in `phase2-unit-of-work.md`; that session's audit entries above don't contain them:
+- "There's no need for nightly, only for when I'm testing a PR for tier B."
+- "we will be working from that state once that PR is merged"
+
+**AI Response** (Opus):
+- **Rebase and PR.** The Patrol commit (`70d8852`, on the Unit 10 branch) was replayed onto `develop` at `008fd8a` as `01b5174`. It was built with `git merge-tree` and a temporary `GIT_INDEX_FILE`, so the main checkout (`feature/internal-alpha-distribution`, with uncommitted Unit 11 records) was not touched. The `aidlc-state.md` and `audit.md` conflicts were additive. It was pushed and opened as PR #46 to `develop`.
+- **Review.** CodeRabbit excludes `aidlc-docs/**`, so an Opus subagent reviewed the PR read-only: 3 blocking, 9 should-fix and 3 nits. Spot-checked: the two quotes above had no audit entry; BR-U10-53 is the inactivity notice, while the stop is BR-U10-51/52; the repository is public.
+- **Fixed in this commit**, all through a temporary index:
+  - Tier B is on demand everywhere, with nothing scheduled. The state entry no longer says "nightly + pre-release", and the old Backlog lines are marked as superseded.
+  - The branch plan now reflects the merge: one branch off `develop`, built desktop Tier A, then mobile Tier A, then Tier B.
+  - The rescope quote in the state entry is now exact, so the earlier entry's "verbatim" claim holds.
+  - Test counts updated to the Unit 10 merge: 1326 passing and 5 skipped, 443, 195.
+  - No self-hosted GitHub Actions runner by default, because the repository is public. Tier B runs with the local `patrol test`, and any later runner proposal is an Infrastructure Design decision with its controls listed.
+  - The Unit 13 harness change is now conditional: Unit 13's definition is amended only if Unit 14 is approved.
+  - The platform matrix: the Windows desktop jobs are added, and web is out of scope because neither app has a `web/` target.
+  - `integration_test` is described as an SDK package that needs a `pubspec.yaml` entry.
+  - BR citations corrected to BR-U10-51/52, with BR-U10-53/66 for the notice. Amendment 08 is added to the device checks, along with a note that Patrol's iOS permission handling requires an English device language.
+  - The runbook copy is marked historical. B11 is marked as superseded by Amendment 07. The session-directed wording and the local absolute path are removed, and so is Part D (the Unit 9 agenda, whose decisions are already in this file).
+- **Not changed:** the 2026-10-30 audit entries above stay as written, because they record what was true then; this entry records the corrections. The local `/private/tmp` paths inside the verbatim brief quote stay too, because they are part of the quote.
+
+**Context**: PR #46, branch `feature/mobile-device-test-suite`. The Patrol session has finished. The unit definition is still a proposal awaiting James Petersen's approval.
