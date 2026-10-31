@@ -442,6 +442,62 @@ Rules for this table:
 
 ---
 
+### Unit 14: Automated Test Suite (Device QA + Regression Coverage)
+
+**Raised**: 2026-10-30 by James Petersen during the Unit 10 physical-device pass ("is there any way to define these tests in code so that we can re-run the entire suite with an automation rather than requiring an active LLM session?"), and recorded in the Backlog (`aidlc-state.md`). **Rescoped same day by James Petersen**: "The intent of this unit we're describing is to cover the software with high quality tests that can help us during the remainder of the build. We are not going to restrict it to only zip-captions nor restrict it to only on-device tests. I want to ensure that we are using a solid testing approach to cover the platform, so that future automated builds can check quality." The unit is therefore the project's automated quality suite: both apps, all shipped platforms, run by the automated build and available for PR review. **Unit definition PROPOSED 2026-10-30 (rescoped), awaiting James Petersen's approval.** Unit numbers stay James Petersen's to assign (the Units 10-13 precedent): if the parked on-device multilingual STT unit is approved before this one, the numbers are swapped.
+
+**Packages**: zip_captions (`patrol_test/` — Patrol 4's test directory, not `integration_test/` — and app-level desktop tests), zip_broadcast (app-level desktop tests), CI (`.github/workflows/`), both `pubspec.yaml` files (dev dependencies only). `zip_core` is not changed. Production code is not changed except where a test genuinely cannot reach a flow through the UI, which is a stop-and-ask, not a workaround.
+
+**Stories**: none new. Regression protection for the features Units 1 to 11 and 13 ship; it automates the S-22 physical-device gate.
+
+**Test strategy — two tiers** (the pyramid below the app level already exists and stays: `melos run test` / `dart analyze --fatal-infos` in CI, 1233 / 443 / 195 tests across `zip_core`, `zip_captions`, `zip_broadcast` as of the Unit 10 pass):
+
+- **Tier A — app-level tests on virtual devices, run in CI on every PR and build.** This is the regression check for PR review and must stay fast and deterministic.
+  - **zip_captions (Android emulator + iOS Simulator): Patrol.** The same tests run unchanged on physical devices (Tier B), so CI and device exercise one codebase. Deterministic flows use the debug **fake engine** (scripted results): permission grant/deny/blocked with native dialogs via `$.platform.mobile`, Start/Stop/Pause/Resume, History rows, stop notices, empty session, navigation, settings.
+  - **zip_broadcast (macOS, Linux; Windows): `integration_test`.** Patrol does not support Windows or Linux and macOS is alpha (verified against the Patrol supported-platforms docs, 2026-10-30), so desktop app-level tests use Flutter's `integration_test` (ships with the SDK; no new dependency), driven through the existing provider override seams (`sttEngineFactoryProvider`, `captionBusProvider`, `authServiceProvider`, fakes from `test/helpers/`): dashboard, Go Live/End unwind, settings, external-display and pop-out controls.
+  - **zip_captions desktop and web:** non-captioning flows only (Settings, History, navigation). Mobile is where captioning exists until the desktop-engine decision (G10 Backlog).
+  - The existing provider-level tests under `test/integration/` stay; these new tests add the real widget tree and native dialogs on top.
+- **Tier B — the physical-device suite, on demand.** The original scope, unchanged: Unit 10's checks run as Patrol tests on the attached phones with **real on-device recognition** (a bundled speech clip played from the phone's own speaker; no fake engine, no host-microphone routing). Nothing is scheduled (James Petersen, 2026-10-30: "There's no need for nightly, only for when I'm testing a PR for tier B."). The long waits (5-minute renewal, inactivity stop) form a separate **long-running** tag so they run only when asked for; the fast group covers everything else. Tier B runs when James Petersen tests a PR or gates a release.
+
+**Device checks to cover** (source of truth: `aidlc-docs/construction/mobile-platform-readiness/evidence/code-generation-qa.md`, "Physical Android device pass, 2026-10-30", plus the joint QA runbook, in-repo at `aidlc-docs/construction/automated-test-suite/joint-qa-runbook.md` — Part B is the Android checklist, Part A is Simulator input checks that the physical-iOS suite does not carry, Part D is the Unit 9 agenda and is out of scope. The runbook's four pass rules for a captions run apply: recognised text on screen; `segmentCount` > 0; expected locale; no SnackBar or toast. Speech only after the recogniser is ready):
+- the permission grant, deny and "blocked" paths, including Open settings and Try again (the AC-2 checks);
+- captions appearing and segments saved (History rows) (B1, B4);
+- the last phrase kept at Stop and at Pause (B7, BR-U10-55/56, Amendment 06);
+- no words lost at the 5-minute renewal (B9, D-2, Amendment 01; BR-U10-39/44);
+- the stop notices: one combined notice per stop (Amendment 07, BR-U10-65/66/67);
+- the empty session (Q-2, the `nothingRecognised` notice and no History row);
+- the wake lock set while captioning and cleared after Stop (B10, G9, `dumpsys` observation);
+- airplane mode: captioning works with no network (NFR, "works without an internet connection");
+- the 5-minute inactivity stop (B11, Amendment 05, BR-U10-53).
+
+**Stays manual**: the sounds (chimes, BR-U10-43). There is no reliable automated check for audible output; the sounds remain a manual checklist alongside the suite.
+
+**Platform matrix** (Patrol docs, verified 2026-10-30): Android API 21+ and iOS 13+ on physical and virtual devices — Patrol. macOS — Patrol alpha; Windows and Linux — not supported, use `integration_test`. Web — Patrol Web (v4) vs `integration_test` on Chrome, decided at Functional Design.
+
+**Determinism principle**: real recognition lives only in Tier B. Tier A uses the debug fake engine with scripted results, so CI is flake-resistant and fast; the real engine and real microphone path are never claimed by a Tier A pass. No transcript text in logs, test output or artifacts at any tier (SECURITY-03); assertions use counts and states, never recognised words.
+
+**Runner**: Tier A — GitHub-hosted CI jobs added to the existing workflow set (Android emulator job, macOS and Linux desktop jobs; Simulator job if the iOS tier-A suite earns its wall-clock cost — NFR Design sets the budget). Tier B — this Mac with the phones attached, **on demand only**: a self-hosted GitHub Actions runner **locked down so fork pull requests cannot run on it**, triggered by `workflow_dispatch` when James Petersen tests a PR, or the local `patrol test --device <id>` command. No scheduled runs. Hosted runners cannot reach physical devices.
+
+**Constraints that bind this unit** (project rules, restated so the harness cannot violate them):
+- **App flows only.** Every check goes through the app's own screens, driven by the test framework. adb is for setup and observation only (logcat, `dumpsys`, screenshots): no `pm grant`, no `adb input` shortcuts past a step a real user could not take.
+- **Screen on.** The screen stays on while captioning (the consent/visibility constraint). Any test that would let it sleep must keep it awake the way the app does, not with a hidden `adb` keep-awake that hides a wake-lock regression.
+- **No transcript text.** (SECURITY-03, as above.)
+- **Strings.** Any new test-support string that ships in the app goes through `l10n/arb/app_en.arb` with a `ZcStrings` getter. Test-only strings live in the test code, not the app.
+
+**Relation to Unit 13**: Unit 13 keeps G7 (the viewer-join smoke E2E). This unit now makes the harness decisions for the project (Patrol on mobile, `integration_test` on desktop/web); Unit 13's NFR Requirements adopts them and reuses this unit's harness instead of picking independently.
+
+**Closes**: no G gaps; G7 stays with Unit 13. What it closes is the recurring manual cost of the physical-device gate and the missing app-level regression layer for both apps.
+
+**Devices**: Pixel 6, adb serial `25071FDF600953`, Android 17, cleared for this project. iOS: a physical iPhone with Developer Mode and a signing team, device to be named by James Petersen (the Simulator cannot substitute for Tier B: `simctl privacy` cannot pre-grant speech recognition, OQ-MA-1).
+
+**Dependencies**: Unit 10 (decided 2026-10-30). PR #44 is nearly ready to merge; the suite works from that state — `feature/mobile-device-test-suite` is cut from `feature/mobile-platform-readiness` now and Unit 10's new commits are merged in as they land; once PR #44 merges to `develop`, the branch rebases onto `develop` and tracks it from then on. All tiers share that one base (James Petersen: "we will be working from that state once that PR is merged"). `patrol`, `patrol_cli` and any audio-playback package are new dev dependencies and need James Petersen's approval with a SECURITY-10-style record before Code Generation (the Unit 8.1 `window_manager` precedent). `integration_test` needs no dependency.
+
+**Verification**: a Tier B test counts as passing only when it has run on the device. A Tier A test counts as passing only when it has run green in CI on the virtual device or platform it claims. The unit's Build and Test is the full Tier A suite green in CI plus the Tier B suite (including the long-running tag) passing on the Pixel 6 (and on the iPhone once one is assigned) during this unit's own run; afterwards Tier B runs on demand, not on a schedule.
+
+**Sequencing** (James Petersen, 2026-10-30: "as soon as possible so that we can leverage it during the remaining build phases"): Tier A desktop (`zip_broadcast`) first — usable for PR review immediately and independent of Unit 10; then Tier A mobile (`zip_captions` on emulator/Simulator); then Tier B on the physical phones as Unit 10 lands.
+
+---
+
 ## Construction Stage Summary
 
 | Unit | FD | NFR-R | NFR-D | ID | CG | Gate |
@@ -461,3 +517,4 @@ Rules for this table:
 | 11 Internal Alpha Distribution | — | yes | — | yes | yes | Alpha 1: install from both test tracks and complete a session |
 | 12 Staging Backend | — | yes | — | yes (SR-05) | yes | SR-05 before CG; runs after Unit 9 |
 | 13 Mobile Viewer Verification | — | yes | — | — | yes, then Build and Test | Alpha 2: a tester on each platform views a live session; runs after Unit 9 |
+| 14 Automated Test Suite (definition pending) | yes | yes | yes | yes | yes, then Build and Test | `patrol`/`patrol_cli` + audio-playback dependency record (SECURITY-10) before CG; a Tier B test counts as passing only when it has run on the device, a Tier A test only when green in CI on the platform it claims |

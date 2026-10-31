@@ -4411,3 +4411,60 @@ Start by reading the files above. Then tell me in a few lines what Unit 9 must p
   state, unsupported and unknown statuses, iOS 13 to 25 instructions. Finding
   for the owner: the app has no language selector on iOS. Details in the QA
   section "A9 run". No app code was changed and nothing was committed.
+
+---
+
+## CONSTRUCTION - Phase 2 Unit 14 (proposed): Automated Device Test Suite - Stage 1 unit definition
+**Timestamp**: 2026-10-30
+**User Input** (James Petersen, verbatim task brief, selected key passages; full brief given in session):
+- "Turn the manual mobile QA into **Patrol** tests that run on physical phones attached to this Mac, so the suite can be re-run by an automation instead of an LLM session."
+- "The plan is recorded as a Backlog entry, 'Automated device test suite for the mobile QA', in `aidlc-docs/aidlc-state.md` on `feature/mobile-platform-readiness`."
+- "Read these from the branch `feature/mobile-platform-readiness`: the checks (`.../evidence/code-generation-qa.md`, section 'Physical Android device pass, 2026-10-30'); the manual runbook (`/private/tmp/claude-501/-Users-oblivious-Documents-zip-captions-monorepo/ee077d68-5504-4920-ba87-a1d368c07c8f/scratchpad/joint-qa-runbook.md`; it's outside the repository; copy what you need into your design document); the rules being tested (Unit 10's functional design, Amendments 01 to 07, especially BR-U10-43, BR-U10-53/60/65/66, BR-U10-55/56, D-2)."
+- "Tests to cover: the permission grant, deny and 'blocked' paths, including Open settings and Try again; captions appearing, and segments saved (History rows); the last phrase kept at Stop and Pause; no words lost at the 5-minute renewal; the stop notices (Amendment 07: one notice per stop); the empty session; the wake lock on during captioning and off after Stop; airplane mode; the 5-minute inactivity stop. The sounds (chimes) stay a manual checklist; say so in the design."
+- "**Unit 9 has merged to `develop`.** ... **Branch from Unit 10:** `git fetch`, then create `feature/mobile-device-test-suite` from `origin/feature/mobile-platform-readiness`. ... **Hands off Unit 10:** never commit to `feature/mobile-platform-readiness`, and never touch `.claude/worktrees/unit10-qa`. ... **Unit 10 keeps moving:** merge its new commits into your branch when they land. Your PR targets `develop` after PR #44 merges. **No worktrees.** Work in the main checkout. **Commits:** commit only before opening a PR or switching branches. James wants to see live diffs."
+- "**Test folder:** Patrol 4 looks for tests in `patrol_test/`, not `integration_test/`. **Native dialogs:** use the `$.platform.mobile` APIs. Do not write Patrol code from memory."
+- "Stages, with a stop for James at each: 1. Unit definition. ... Stop for approval. 2. Dependency approval. ... Write a short security record, following `aidlc-docs/construction/pop-out/functional-design/window-manager-security-10.md`. ... Stop for approval. 3. Functional design. ... Decide how real speech reaches the phone's microphone. The preferred option is a bundled speech clip played from the phone's own speaker inside the test, so recognition stays real. Put the long tests (5-minute renewal, inactivity stop) in a separate nightly group. Decide how the runner works: a scheduled local job, or a self-hosted GitHub Actions runner on this Mac, locked so fork PRs cannot run on it. Stop for approval. 4. NFR and infrastructure design ... Stop for approval. 5. Code generation. Write a plan, stop for approval, then build test-first and run the suite on the device. A test only counts as passing when it has run on the device."
+- "**The phone:** Pixel 6, adb serial `25071FDF600953`, Android 17, cleared for this project. **Wait for the phone:** don't use it until James says the other session has finished its Amendment 07 check on it. **iOS:** a physical iPhone with Developer Mode and a signing team. James will say which device."
+- "**App flows only.** QA goes through the app's own screens. adb is for setup and observation only: no `pm grant`, and no shortcuts past a step a user couldn't take. **Screen on.** ... **No transcript text.** ... (SECURITY-03). **Strings.** Edit `l10n/arb/app_en.arb`; `zip_captions` adds a `ZcStrings` getter. **Formatting.** Never run `dart format` over a whole package. ... **Tools.** Use `python3`, not `python`. PRs go to `develop`. **Audit log.** Add an `aidlc-docs/audit.md` entry for every user input, with James's words verbatim."
+
+**AI Response** (Opus):
+- **Branch**: created `feature/mobile-device-test-suite` from `origin/feature/mobile-platform-readiness` at `fa7b61a` in the main checkout. Nothing was left to commit or stash on `feature/phase2-integration-milestones` (Unit 9 merged to `develop` as `e227fa3`; the branch is deleted). The only dirty file is the session-local `opencode.json`, untouched.
+- **Read**: the physical Android pass table (B0 to B11, empty session, airplane mode, AC-2 deny paths, Amendment 06 rows); the Backlog entry (lines 291 to 299 of `aidlc-state.md`); Units 10 to 13 and the virtual-device QA section of `phase2-unit-of-work.md`; Amendments 03 (BR-U10-43), 05 (BR-U10-53), 06 (BR-U10-55/56/58/60) and 07 (BR-U10-65/66/67, TP-43); the zip_captions package AGENTS.md; the AI-DLC core workflow and project rule overrides.
+- **Blocker (documented, not worked around)**: the joint QA runbook at `/private/tmp/claude-501/-Users-oblivious-Documents-zip-captions-monorepo/ee077d68-5504-4920-ba87-a1d368c07c8f/scratchpad/joint-qa-runbook.md` cannot be read — the `external_directory` permission config denies `/private/tmp/*` (only the skills dirs and the tool-output/tmp dirs are allowed), for both the read tool and bash. No copy exists in the repo. Needs James to allow the path in `opencode.json`, move the file into the repo, or paste it. The evidence table is the authoritative list of checks in the meantime, per the brief ("the checks" is the source of truth); the runbook is needed for exact step wording at Functional Design (Stage 3).
+- **Stage 1 (unit definition) proposed for approval**: new section "Unit 14: Automated Device Test Suite (Mobile QA)" appended to the Mobile Alpha Units in `aidlc-docs/inception/application-design/phase2-unit-of-work.md`, plus a Construction Stage Summary row (FD, NFR-R, NFR-D, ID, CG then Build and Test; SECURITY-10 dependency record before CG; device-pass-only passing rule). Registered in `aidlc-docs/aidlc-state.md` as "Unit 14 ... PROPOSED 2026-10-30, awaiting James Petersen's approval" under the mobile alpha units, and the Backlog entry now points at it. Number 14 is a proposal; numbers stay James's to assign, and the parked on-device STT unit still takes the next free number at its own approval.
+- **No device use, no commits** (per the brief: wait for the phone; commit only before a PR or branch switch).
+
+**Context**: Main checkout, branch `feature/mobile-device-test-suite` at `fa7b61a` (tracks `origin/feature/mobile-platform-readiness`; PR will retarget to `develop` after PR #44 merges). No worktree, per the brief.
+
+---
+
+## CONSTRUCTION - Phase 2 Unit 14 (proposed): runbook blocker resolved
+**Timestamp**: 2026-10-30
+**User Input** (James Petersen, verbatim):
+- "give me a terminal command to copy the runbook into the repo"
+- "done"
+
+**AI Response** (Opus):
+- Gave the `mkdir -p ... && cp ...` command (option B of the recorded blocker); James ran it. The runbook now lives in-repo at `aidlc-docs/construction/mobile-device-test-suite/joint-qa-runbook.md` and was read in full.
+- Unit definition updated: the runbook is referenced at its in-repo path; Part B is the Android checklist to map, Part A (Simulator input checks) is not carried by a physical-iOS suite, Part D (Unit 9 agenda) is out of scope; the runbook's four pass rules for a captions run (text on screen, `segmentCount` > 0, expected locale, no SnackBar/toast) and the "speak only after the recogniser is ready" rule are recorded in the unit definition.
+- Stage 1 remains STOPPED for approval.
+
+**Context**: Same branch and checkout as the entry above.
+
+---
+
+## CONSTRUCTION - Phase 2 Unit 14 (proposed): rescoped to platform-wide regression suite
+**Timestamp**: 2026-10-30
+**User Input** (James Petersen, verbatim):
+- "I want to implement this improvement as soon as possible so that we can leverage it during the remaining build phases. It would be useful to have a good set of tests covering the app functionality for both zip captions and zip broadcast that we can use to check for regressions during build and PR review."
+- "The intent of this unit we're describing is to cover the software with high quality tests that can help us during the remainder of the build. We are not going to restrict it to only zip-captions nor restrict it to only on-device tests. I want to ensure that we are using a solid testing approach to cover the platform, so that future automated builds can check quality."
+
+**AI Response** (Opus):
+- **Platform facts verified against the Patrol docs (not memory), 2026-10-30** (`patrol.leancode.co/documentation/supported-platforms`, `/documentation/native/usage`): Android API 21+ and iOS 13+ on physical and virtual devices; macOS alpha; Windows and Linux **not** supported; Web via Patrol Web in v4. Native automation confirmed: `$.platform.mobile` permission-dialog APIs (`grantPermissionWhenInUse`, `denyPermission`, `isPermissionDialogVisible`), Android/iOS/web-specific automators. docs-mcp was not reachable this session (empty resource list); the official docs were used directly, and docs-mcp is still required before writing API calls in Code Generation.
+- **Existing coverage surveyed before claiming gaps**: `zip_broadcast/test/integration/` holds three provider-level tests (`audio_config_recording_integration_test.dart`, `caption_bus_flow_test.dart`, `obs_settings_connection_integration_test.dart`) that run on `ProviderContainer` with fakes — no widget tree, no native layer; they stay and the new app-level tests build on the same seams. Counts on record from the Unit 10 gates: zip_core 1233 (+4 skipped), zip_captions 443, zip_broadcast 195.
+- **Unit 14 renamed and rewritten** to "Automated Test Suite (Device QA + Regression Coverage)" in `phase2-unit-of-work.md`: Tier A (virtual devices, CI on every PR: Patrol for zip_captions mobile with the debug fake engine for determinism, `integration_test` for zip_broadcast desktop via the provider-seam fakes, non-captioning flows for zip_captions desktop/web; desktop captioning excluded pending the G10 engine decision) and Tier B (physical devices, nightly/pre-release: the original device checklist with real on-device recognition). The determinism principle separates real-recognition claims (Tier B only) from fast CI regression (Tier A). The Construction Stage Summary row was renamed to match.
+- **Artifacts folder renamed**: `aidlc-docs/construction/mobile-device-test-suite/` → `aidlc-docs/construction/automated-test-suite/` (contains only the runbook copy; untracked at rename time). References updated in the unit definition and the state entry. Branch name kept as `feature/mobile-device-test-suite` per the brief (rename on request).
+- **Sequencing recorded** per "as soon as possible": zip_broadcast desktop Tier A first (independent of Unit 10, could branch off `develop` and land before PR #44 — flagged as an open decision for Functional Design), then mobile Tier A, then Tier B.
+- **State entry updated** with the verbatim rescope sentence. Stage 1 remains STOPPED for approval.
+
+**Context**: Same branch and checkout. docs-mcp availability noted as a gap for this session; official docs used for factual claims, docs-mcp required before Code Generation writes any Patrol API call.
