@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zip_core/src/models/caption_event.dart';
 import 'package:zip_core/src/models/recording_state.dart';
@@ -6,6 +8,7 @@ import 'package:zip_core/src/providers/caption_output_target_registry_provider.d
 import 'package:zip_core/src/providers/recording_state_notifier.dart';
 import 'package:zip_core/src/providers/session_stop_callback_provider.dart';
 import 'package:zip_core/src/providers/transcript_providers.dart';
+import 'package:zip_core/src/providers/transcript_save_outcome_provider.dart';
 
 /// Registers a [TranscriptWriterTarget] with
 /// [captionOutputTargetRegistryProvider] whenever transcript capture is
@@ -33,11 +36,35 @@ final transcriptWriterTargetProvider = Provider<void>((ref) {
 
   final registry = ref.read(captionOutputTargetRegistryProvider);
   final stopCallback = ref.read(sessionStopCallbackProvider);
-  final target = TranscriptWriterTarget(repository: repo, settings: settings);
+  // The target owns the outcome's lifetime (Step 29b): it records the
+  // session's result on stop and forgets it when the next session starts, so
+  // RecordingScreen only ever reads its own session's value and never has to
+  // write to the provider from inside its Stopped listener.
+  final target = TranscriptWriterTarget(
+    repository: repo,
+    settings: settings,
+    onSessionStarted: () {
+      // The provider may be replayed from its own build (a capture toggle
+      // mid-session), and a provider must not write another during its own
+      // initialisation. The write is the same either way, so let the current
+      // stack unwind first.
+      unawaited(
+        Future<void>.microtask(() {
+          ref.read(transcriptSaveOutcomeProvider.notifier).clear();
+        }),
+      );
+    },
+  );
   registry.add(target);
 
   // Register finalize callback so RecordingStateNotifier can await it.
-  stopCallback.callback = target.finalizeCurrentSession;
+  // The save outcome (Q-2) is written to [transcriptSaveOutcomeProvider]
+  // before the stopped state is published, so RecordingScreen can tell a
+  // saved session from one that captioned nothing.
+  stopCallback.callback = () async {
+    final outcome = await target.finalizeCurrentSession();
+    ref.read(transcriptSaveOutcomeProvider.notifier).outcome = outcome;
+  };
 
   // If saving is re-enabled while a session is already active, replay the
   // session-start event so the target initialises and captures remaining

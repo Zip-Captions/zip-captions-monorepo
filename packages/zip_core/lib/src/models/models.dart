@@ -39,6 +39,7 @@ export 'signaling_codec.dart';
 export 'signaling_message.dart';
 export 'speech_locale.dart';
 export 'stt_result.dart';
+export 'transcript_save_result.dart';
 export 'transcript_search_result.dart';
 export 'transcript_segment.dart';
 export 'transcript_session.dart';

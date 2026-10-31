@@ -198,5 +198,197 @@
   "overlayWindowUnavailable": "Window unavailable",
   "@overlayWindowUnavailable": {
     "description": "Pop-out live captions (S-21): overlayWindowUnavailable"
+  },
+  "speechExplainerTitle": "Before your device asks for permission",
+  "@speechExplainerTitle": {
+    "description": "Unit 10 (Amendment 02 section 6.2): title of the iOS speech explainer shown once before the first start"
+  },
+  "speechExplainerBody": "Zip Captions recognises speech on this device and doesn't send your audio anywhere. Next, iOS asks for microphone and speech recognition access. Apple's speech recognition message says speech data is sent to Apple. That's Apple's standard wording for every app. Zip Captions only captions when on-device recognition is available.",
+  "@speechExplainerBody": {
+    "description": "Unit 10 (Amendment 02 section 6.2): body of the iOS speech explainer; makes only claims Zip Captions controls"
+  },
+  "speechExplainerContinue": "Continue",
+  "@speechExplainerContinue": {
+    "description": "Unit 10: explainer action that records onboarding.speechExplainerSeen and starts"
+  },
+  "speechExplainerNotNow": "Not now",
+  "@speechExplainerNotNow": {
+    "description": "Unit 10: explainer action that sets no flag and returns to Home with nothing requested"
+  },
+  "onDeviceUnavailableTitle": "On-device captions aren't available",
+  "@onDeviceUnavailableTitle": {
+    "description": "Unit 10 (Amendment 02 section 6.3): failure title when on-device recognition is unavailable"
+  },
+  "onDeviceUnavailableBody": "This device or language doesn't support on-device speech recognition, so Zip Captions didn't start.",
+  "@onDeviceUnavailableBody": {
+    "description": "Unit 10 (Amendment 02 section 6.3): failure body when on-device recognition is unavailable"
+  },
+  "failureMicDeniedTitle": "Microphone access needed",
+  "@failureMicDeniedTitle": {
+    "description": "Unit 10 (BR-U10-11): failure title for permissionDenied"
+  },
+  "failureMicDeniedBody": "Zip Captions needs microphone access to caption speech.",
+  "@failureMicDeniedBody": {
+    "description": "Unit 10 (BR-U10-11): failure body for permissionDenied"
+  },
+  "failureMicPermanentlyDeniedTitle": "Microphone access is blocked",
+  "@failureMicPermanentlyDeniedTitle": {
+    "description": "Unit 10 (BR-U10-11): failure title for permissionPermanentlyDenied"
+  },
+  "failureMicPermanentlyDeniedBody": "Enable microphone access for Zip Captions in system Settings.",
+  "@failureMicPermanentlyDeniedBody": {
+    "description": "Unit 10 (BR-U10-11): failure body for permissionPermanentlyDenied"
+  },
+  "failureEngineInitFailedTitle": "Speech recognition couldn't start",
+  "@failureEngineInitFailedTitle": {
+    "description": "Unit 10 (BR-U10-11): failure title for engineInitFailed"
+  },
+  "failureEngineInitFailedBody": "The speech recognition engine failed to initialise.",
+  "@failureEngineInitFailedBody": {
+    "description": "Unit 10 (BR-U10-11): failure body for engineInitFailed"
+  },
+  "failureEngineStartFailedTitle": "Captioning couldn't start",
+  "@failureEngineStartFailedTitle": {
+    "description": "Unit 10 (BR-U10-11): failure title for engineStartFailed"
+  },
+  "failureEngineStartFailedBody": "The speech recognition engine failed to start listening.",
+  "@failureEngineStartFailedBody": {
+    "description": "Unit 10 (BR-U10-11): failure body for engineStartFailed"
+  },
+  "failureOtherTitle": "Captioning couldn't start",
+  "@failureOtherTitle": {
+    "description": "Unit 10 (BR-U10-11): fallback failure title for an unclassified error"
+  },
+  "failureOtherBody": "Something went wrong while starting captioning.",
+  "@failureOtherBody": {
+    "description": "Unit 10 (BR-U10-11): fallback failure body for an unclassified error"
+  },
+  "failureTryAgain": "Try again",
+  "@failureTryAgain": {
+    "description": "Unit 10 (BR-U10-10): failure panel action that re-runs start()"
+  },
+  "failureOpenSettings": "Open settings",
+  "@failureOpenSettings": {
+    "description": "Unit 10 (BR-U10-10): failure panel action shown only on iOS and Android for micPermanentlyDenied and engineInitFailed"
+  },
+  "failureBack": "Back",
+  "@failureBack": {
+    "description": "Unit 10 (BR-U10-10): failure panel action that leaves the screen for Home"
+  },
+  "noTranscriptSavedNotice": "No speech was recognised, so no transcript was saved.",
+  "@noTranscriptSavedNotice": {
+    "description": "Unit 10 Step 29b (Amendment 03 section 7, Q-2): one-time SnackBar on RecordingScreen when a session with transcription enabled ended without any recognised speech"
+  },
+  "transcriptSaveFailedNotice": "The transcript could not be saved.",
+  "@transcriptSaveFailedNotice": {
+    "description": "Unit 10 Amendment 06 (BR-U10-60): one-time SnackBar on RecordingScreen when a session with transcription enabled recognised speech but its transcript could not be saved (the create or every save failed, or Stop gave up before the transcript was finalised)"
+  },
+  "inactivityStopNotice": "Captioning stopped after {minutes} minutes without speech.",
+  "@inactivityStopNotice": {
+    "description": "Unit 10 Amendment 05 (BR-U10-53): one-time SnackBar on RecordingScreen when the app stopped a session because no speech was recognised for the inactivity timeout. ZcStrings.inactivityStopNoticeFor reads the singular as '1 minute'",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "inactivityStopNoTranscriptNotice": "Captioning stopped after {minutes} minutes without speech, so no transcript was saved.",
+  "@inactivityStopNoTranscriptNotice": {
+    "description": "Unit 10 Amendment 07 (BR-U10-66): the single SnackBar when the app stopped a session after the inactivity timeout and nothing was recognised. ZcStrings.inactivityStopNoTranscriptNoticeFor reads the singular as '1 minute'",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "inactivityStopSaveFailedNotice": "{inactivityNotice} {saveFailedNotice}",
+  "@inactivityStopSaveFailedNotice": {
+    "description": "Unit 10 Amendment 07 (BR-U10-66): the single SnackBar when the app stopped a session after the inactivity timeout and the transcript could not be saved. Joins inactivityStopNotice and transcriptSaveFailedNotice",
+    "placeholders": {
+      "inactivityNotice": {
+        "type": "String"
+      },
+      "saveFailedNotice": {
+        "type": "String"
+      }
+    }
+  },
+  "stopErrorWithSaveOutcomeNotice": "{errorTitle}. {saveOutcomeNotice}",
+  "@stopErrorWithSaveOutcomeNotice": {
+    "description": "Unit 10 Amendment 07 (BR-U10-66): the single SnackBar when a session stopped with an error and nothing was recognised or the transcript could not be saved. errorTitle is a failure title (no full stop of its own); saveOutcomeNotice is noTranscriptSavedNotice or transcriptSaveFailedNotice",
+    "placeholders": {
+      "errorTitle": {
+        "type": "String"
+      },
+      "saveOutcomeNotice": {
+        "type": "String"
+      }
+    }
+  },
+  "languagePackDownload": "Download {language}",
+  "@languagePackDownload": {
+    "description": "Unit 10 Amendment 04 (BR-U10-46): failure panel button that downloads the missing on-device language",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "languagePackDownloadingPercent": "Downloading {language}… {percent}%",
+  "@languagePackDownloadingPercent": {
+    "description": "Unit 10 Amendment 04 (BR-U10-47): download progress when the platform reports a percentage",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "languagePackDownloading": "Downloading {language}…",
+  "@languagePackDownloading": {
+    "description": "Unit 10 Amendment 04 (BR-U10-47): download progress when the platform reports no percentage",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "languagePackScheduled": "{language} will download later, for example when you're on Wi-Fi. Tap Try again once it has downloaded.",
+  "@languagePackScheduled": {
+    "description": "Unit 10 Amendment 04 (BR-U10-47a): the platform scheduled the download for later, or reports it pending; not a failure, no time limit",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "languagePackReady": "{language} is ready. Tap Try again to start captioning.",
+  "@languagePackReady": {
+    "description": "Unit 10 Amendment 04 (BR-U10-47): shown once the language is installed; the app never starts captioning by itself",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "languagePackFailed": "Couldn't download {language}. Check your connection and try again.",
+  "@languagePackFailed": {
+    "description": "Unit 10 Amendment 04 (BR-U10-47): shown when the download failed or timed out",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "languagePackIosInstructions": "To caption in {language}, turn on Dictation and add a {language} keyboard: open Settings, then General, then Keyboard. Turn on Enable Dictation, then tap Keyboards and Add New Keyboard.",
+  "@languagePackIosInstructions": {
+    "description": "Unit 10 Amendment 04 (BR-U10-46): iOS below 26, or an unknown status; the user adds the language through Dictation",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
   }
 }

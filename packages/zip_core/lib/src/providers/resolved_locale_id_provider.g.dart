@@ -6,16 +6,32 @@ part of 'resolved_locale_id_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$resolvedLocaleIdHash() => r'9f2353d61eddeaa954fc333b9112cc31ff80879d';
+String _$resolvedLocaleIdHash() => r'6e6bee9bb027499bdf7b7ff0ca315d5e398b4e7a';
 
 /// Resolves the best locale ID to use for the active STT engine.
 ///
-/// Implements the fallback chain from the FD:
-/// 1. Exact match for the active locale ID in supported locales
-/// 2. Language-only match (e.g., 'en' prefix)
-/// 3. First supported locale (when no explicit selection)
-/// 4. `activeLocaleId` passed through — the engine or `SttSessionManager`
-///    surfaces a `localeNotSupported` error if it cannot handle it
+/// Implements the resolution order of Amendment 03 section 6, which replaces
+/// the Phase 1 "first supported locale when no explicit selection" rule. The
+/// result is never an arbitrary first supported locale:
+/// 1. The app's explicit choice (`activeLocaleId`), when set: an exact match,
+///    else a language-only match, else passed through — the engine or
+///    `SttSessionManager` surfaces a `localeNotSupported` error if it cannot
+///    handle it.
+/// 2. Otherwise the phone's preferred languages ([deviceLocalesProvider]), in
+///    order: each an exact match, then a language-only match. First hit wins.
+/// 3. Otherwise `en-CA`: an exact match, then a language-only match (`en`).
+/// 4. Otherwise `en-CA` is passed through, so the engine or the session
+///    manager reports `localeNotSupported`.
+/// 5. While the supported list is empty (loading): the first device locale if
+///    there is one, else `en-CA`.
+///
+/// Matching ignores case and treats `-` and `_` as the same; a match returns
+/// the supported list's own id string. A language-only tie prefers region
+/// `CA`, then `US`, then the first listed.
+///
+/// Kept alive, and watches [deviceLocalesProvider] so a device language
+/// change re-resolves. `zip_broadcast`'s `BroadcastRecordingNotifier` reads
+/// this same resolver, so its default changes the same way.
 ///
 /// Copied from [resolvedLocaleId].
 @ProviderFor(resolvedLocaleId)

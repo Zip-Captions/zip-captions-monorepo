@@ -50,7 +50,7 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Zip Captions uses the microphone to transcribe speech into live captions.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Zip Captions uses speech recognition to convert your audio into captions.</string>
+	<string>Zip Captions recognises speech on this device to show captions. It doesn't send your audio anywhere.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

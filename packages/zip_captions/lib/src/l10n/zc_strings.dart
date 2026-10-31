@@ -188,8 +188,7 @@ class ZcStrings {
   String get popOutReturn => _value('popOutReturn');
 
   /// The disabled reason when no session is running (BR-PIP-12/13).
-  String get popOutUnavailableNoSession =>
-      _value('popOutUnavailableNoSession');
+  String get popOutUnavailableNoSession => _value('popOutUnavailableNoSession');
 
   /// The disabled reason when the device has no recognition engine.
   String get popOutUnavailableNoEngine => _value('popOutUnavailableNoEngine');
@@ -200,6 +199,163 @@ class ZcStrings {
   /// The sub-window's fallback frame when its payload does not decode.
   String get overlayWindowUnavailable => _value('overlayWindowUnavailable');
 
+  // Unit 10 (Amendment 02): the iOS speech explainer and the start-failure
+  // copy. British English; see the ARB descriptions for the source of each.
+
+  /// Title of the iOS speech explainer shown once before the first start.
+  String get speechExplainerTitle => _value('speechExplainerTitle');
+
+  /// Body of the iOS speech explainer.
+  String get speechExplainerBody => _value('speechExplainerBody');
+
+  /// Explainer action that records the onboarding flag and continues.
+  String get speechExplainerContinue => _value('speechExplainerContinue');
+
+  /// Explainer action that sets no flag and returns to Home.
+  String get speechExplainerNotNow => _value('speechExplainerNotNow');
+
+  /// Failure title when on-device recognition is unavailable.
+  String get onDeviceUnavailableTitle => _value('onDeviceUnavailableTitle');
+
+  /// Failure body when on-device recognition is unavailable.
+  String get onDeviceUnavailableBody => _value('onDeviceUnavailableBody');
+
+  /// Fills `{language}` and `{percent}` in [key]. The percent goes first so a
+  /// language name that looks like a placeholder stays literal.
+  String _withLanguage(String key, String language, {int? percent}) {
+    var text = _value(key);
+    if (percent != null) text = text.replaceAll('{percent}', '$percent');
+    return text.replaceAll('{language}', language);
+  }
+
+  /// Panel button that downloads the missing on-device [language]
+  /// (Amendment 04, BR-U10-46).
+  String languagePackDownload(String language) =>
+      _withLanguage('languagePackDownload', language);
+
+  /// Download progress for [language] with a [percent] (BR-U10-47).
+  String languagePackDownloadingPercent(String language, int percent) =>
+      _withLanguage(
+        'languagePackDownloadingPercent',
+        language,
+        percent: percent,
+      );
+
+  /// Download progress for [language] with no percentage (BR-U10-47).
+  String languagePackDownloading(String language) =>
+      _withLanguage('languagePackDownloading', language);
+
+  /// Shown when the platform deferred the download of [language]
+  /// (BR-U10-47a).
+  String languagePackScheduled(String language) =>
+      _withLanguage('languagePackScheduled', language);
+
+  /// Shown once [language] is installed (BR-U10-47).
+  String languagePackReady(String language) =>
+      _withLanguage('languagePackReady', language);
+
+  /// Shown when the download of [language] failed or timed out (BR-U10-47).
+  String languagePackFailed(String language) =>
+      _withLanguage('languagePackFailed', language);
+
+  /// iOS instructions for adding [language] through Dictation (BR-U10-46).
+  String languagePackIosInstructions(String language) =>
+      _withLanguage('languagePackIosInstructions', language);
+
+  /// Failure title for a denied (re-requestable) microphone permission.
+  String get failureMicDeniedTitle => _value('failureMicDeniedTitle');
+
+  /// Failure body for a denied (re-requestable) microphone permission.
+  String get failureMicDeniedBody => _value('failureMicDeniedBody');
+
+  /// Failure title for a permanently denied microphone permission.
+  String get failureMicPermanentlyDeniedTitle =>
+      _value('failureMicPermanentlyDeniedTitle');
+
+  /// Failure body for a permanently denied microphone permission.
+  String get failureMicPermanentlyDeniedBody =>
+      _value('failureMicPermanentlyDeniedBody');
+
+  /// Failure title when the engine failed to initialise.
+  String get failureEngineInitFailedTitle =>
+      _value('failureEngineInitFailedTitle');
+
+  /// Failure body when the engine failed to initialise.
+  String get failureEngineInitFailedBody =>
+      _value('failureEngineInitFailedBody');
+
+  /// Failure title when the engine failed to start listening.
+  String get failureEngineStartFailedTitle =>
+      _value('failureEngineStartFailedTitle');
+
+  /// Failure body when the engine failed to start listening.
+  String get failureEngineStartFailedBody =>
+      _value('failureEngineStartFailedBody');
+
+  /// Fallback failure title for an unclassified error.
+  String get failureOtherTitle => _value('failureOtherTitle');
+
+  /// Fallback failure body for an unclassified error.
+  String get failureOtherBody => _value('failureOtherBody');
+
+  /// Failure panel action that re-runs `start()`.
+  String get failureTryAgain => _value('failureTryAgain');
+
+  /// Failure panel action that opens the platform microphone settings.
+  String get failureOpenSettings => _value('failureOpenSettings');
+
+  /// Failure panel action that leaves the screen for Home.
+  String get failureBack => _value('failureBack');
+
+  /// One-time notice when a session with capture enabled ended without any
+  /// recognised speech, so no transcript row was ever created (Amendment 03
+  /// section 7, Q-2).
+  String get noTranscriptSavedNotice => _value('noTranscriptSavedNotice');
+
+  /// One-time notice when a session with capture enabled recognised speech
+  /// but its transcript could not be saved (Amendment 06, BR-U10-60).
+  String get transcriptSaveFailedNotice => _value('transcriptSaveFailedNotice');
+
+  /// One-time notice when the app stopped a session after [minutes] minutes
+  /// without speech (Amendment 05, BR-U10-53).
+  ///
+  /// The ARB sentence is written in the plural ("{minutes} minutes"); for 1
+  /// the unit becomes the singular, so it reads "1 minute".
+  String inactivityStopNoticeFor(int minutes) =>
+      _withMinutes(_value('inactivityStopNotice'), minutes);
+
+  /// The single notice when the app stopped a session after [minutes]
+  /// minutes without speech and nothing was recognised (Amendment 07,
+  /// BR-U10-66). The singular reads "1 minute", as above.
+  String inactivityStopNoTranscriptNoticeFor(int minutes) =>
+      _withMinutes(_value('inactivityStopNoTranscriptNotice'), minutes);
+
+  /// The single notice when the app stopped a session after [minutes]
+  /// minutes without speech and the transcript could not be saved
+  /// (Amendment 07, BR-U10-66).
+  String inactivityStopSaveFailedNoticeFor(int minutes) =>
+      _value('inactivityStopSaveFailedNotice')
+          .replaceAll('{inactivityNotice}', inactivityStopNoticeFor(minutes))
+          .replaceAll('{saveFailedNotice}', transcriptSaveFailedNotice);
+
+  /// The single notice when a session stopped with an error whose failure
+  /// title is [errorTitle], and the save outcome's notice is
+  /// [saveOutcomeNotice] (Amendment 07, BR-U10-66).
+  String stopErrorWithSaveOutcomeNotice({
+    required String errorTitle,
+    required String saveOutcomeNotice,
+  }) => _value('stopErrorWithSaveOutcomeNotice')
+      .replaceAll('{errorTitle}', errorTitle)
+      .replaceAll('{saveOutcomeNotice}', saveOutcomeNotice);
+
+  /// Fills `{minutes}` in a sentence written in the plural, reading the
+  /// singular as "1 minute".
+  static String _withMinutes(String template, int minutes) {
+    if (minutes == 1) {
+      return template.replaceAll('{minutes} minutes', '1 minute');
+    }
+    return template.replaceAll('{minutes}', '$minutes');
+  }
 }
 
 /// Provides the loaded [ZcStrings] for the app lifetime.

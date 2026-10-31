@@ -39,5 +39,16 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+
+    # Unit 10: permission_handler needs this macro so its microphone API is
+    # compiled in. The speech-recognition permission is deliberately not
+    # enabled: a denied speech permission stays a generic init failure and the
+    # failure panel offers "Open settings" for it (BR-U10-10, NFR Q2 = A).
+    target.build_configurations.each do |config|
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+        'PERMISSION_MICROPHONE=1',
+      ]
+    end
   end
 end

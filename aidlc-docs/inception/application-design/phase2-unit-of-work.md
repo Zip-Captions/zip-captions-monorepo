@@ -294,12 +294,18 @@ The evidence trail is the PR #41 thread (runtime comments of 2026-10-23 and 2026
 | G3 | Android declares no `RECORD_AUDIO` and no `RecognitionService` `<queries>` entry | Phase 1 Unit 2 (FR-6.1, FR-6.3) | `android/app/src/main/AndroidManifest.xml` declares no permission; its only `<queries>` intent is `PROCESS_TEXT` | Unit 10 |
 | G4 | The Android release build has no `INTERNET` permission | Phase 2 Unit 7 (NFR-8.2) | Only the `debug` and `profile` manifests declare it | Unit 13 |
 | G5 | Release identity and signing are unset | No unit before Phase 6 | The release build signs with the debug keystore; `android:label` is `zip_captions`; there is no iOS `DEVELOPMENT_TEAM`; the bundle IDs (`com.zipcaptions.zip_captions`, `com.zipcaptions.zipCaptions`) are not reconciled with the v1 store listings | Unit 10 (identity), Unit 11 (signing) |
+| G10 | No real speech recogniser is registered in either app. Captioning "works" on a phone only because the debug build registers a fake engine | Phase 1 Unit 2 delivered `PlatformSttEngine`, `SherpaOnnxSttEngine` and the registry, but no plan document found assigns the app-level registration. Found 2026-10-24 while reproducing G3 | `zip_captions/lib/src/bootstrap.dart:83-85` registers only `FakeSttEngine`, under `kDebugMode`, so a release build registers no engine. `zip_broadcast`'s `sttEngineFactory` returns the fake in debug and throws `UnimplementedError` otherwise. Neither real engine is instantiated outside its own file. Observed on `Pixel_9_Pro_API_36` (debug, `RECORD_AUDIO` not granted): tapping Start Captioning opens `/recording` with no prompt, and `console_logs` shows `Engine fake initialized` and `Engine fake listening`. Detail: `construction/mobile-platform-readiness/evidence/g2-g3-g10-observations.md` | Unit 10 (zip_captions); zip_broadcast is recorded only |
 | G6 | No unit verifies the mobile viewer | NFR-8.2 vs Unit 9's scope | Unit 9's device checks do not name a phone | Unit 13 |
 | G7 | No automated mobile E2E | The Phase 1 Build and Test summary deferred it "to Phase 2" | No Phase 2 unit carries it | Unit 13 |
 | G8 | No hosted non-production backend | The roadmap has only Phase 6 production infrastructure | `zip_core`'s `supabase_config.dart` and `turn_config.dart` default to `localhost` | Unit 12 |
 | G9 | Screen-on during mobile captioning is unverified | Project constraint (the screen stays on while captioning) | `wakelock_plus` is declared in `zip_core` but has never been observed working on a phone | Unit 10 |
 
 G2, G3, G4, G5 and G8 were re-checked against `develop` at `cd0451f` on 2026-10-24. Unit 8.1 changed no `ios/` or `android/` file. G2 and G3 come from reading the configuration, so reproducing them on a device is Unit 10's first task.
+
+**Amendment 2026-10-25 (from the Unit 10 reproduction run of 2026-10-24):**
+- G10 was found. Until a real engine is registered, G2 and G3 cannot be reproduced through the app. The fake engine never reaches the permission check.
+- G3 is partly wrong. The merged debug manifest does declare `RECORD_AUDIO`, supplied by a plugin; the source manifest alone declares none. What is missing is the `RecognitionService` `<queries>` entry. Whether the merged release manifest also carries `RECORD_AUDIO` is not yet checked, and Unit 10 records it.
+- `speech_to_text` and `record` are the plugins to check for who supplies each permission.
 
 ### Virtual-device development and QA (applies to Units 10-13)
 
@@ -335,20 +341,31 @@ Every exit gate in Units 10-13 therefore needs **both** a recorded emulator QA p
 
 ### Unit 10: Mobile Platform Readiness (Alpha 1)
 
-**Package**: zip_captions (`ios/` and `android/` runner configuration). zip_broadcast is checked for the same defects, and the result is only recorded, because zip_broadcast ships on desktop. No `lib/` change is expected beyond fixes the device pass turns up.
+**Package**: zip_captions (`ios/` and `android/` runner configuration, plus app-level STT engine registration in `lib/`). zip_broadcast is checked for the same defects, and the result is only recorded, because zip_broadcast ships on desktop. G10 (added 2026-10-25) makes a `lib/` change part of this unit.
 **Stories**: S-22
-**Stages**: NFR Requirements, then Code Generation, then a device verification pass. Functional Design is skipped because there is no new business logic. NFR Requirements covers:
+**Stages** (amended 2026-10-25 to add G10): Functional Design, then NFR Requirements, then Code Generation, then a device verification pass. Functional Design is no longer skipped, because G10 adds engine-selection behaviour. It covers:
+- which engine each platform registers (`PlatformSttEngine` on iOS and Android is the expected default)
+- what happens when the engine reports unavailable, or `initialize()` fails
+- whether the debug-only fake stays registered alongside the real engine, and how it is kept out of release builds
+- that no transcript content is logged in the new path (AGENTS.md critical constraint)
+
+Functional Design stays small, with no new entities beyond the registration seam. It does not change the `SttEngine` interface or `SttResult`, which AGENTS.md lists as stable contracts. If the work needs either to change, stop and ask.
+
+**Amendment 2026-10-25 (N9):** the work did need the contract surface to grow. The platform engine cannot caption continuously (the locked `speech_to_text` 7.3.0 is built for short phrases, and `PlatformSttEngine` never restarts or listens for errors), and `SttEngine` has no error channel. James Petersen approved an additive error channel on 2026-10-25 and reopened Functional Design narrowly (`construction/mobile-platform-readiness/functional-design/amendment-01-continuous-listening.md`). `SttResult` is still unchanged. Any further change to `SttEngine` or `SttResult` still needs a stop and ask.
+
+NFR Requirements covers:
 - the permission matrix per platform
 - how signing secrets are handled under the Security Baseline (the keystore and `key.properties` are never in git)
 - the app identity and bundle-ID decision against the v1 store listings
+- the G10 real-engine requirements, which are recognizer availability per platform and failure behaviour. Latency stays a physical-device check.
 
 **Gate**: OQ-MA-1 (below) must be answered and recorded before NFR Requirements is approved.
 
-**Closes**: G1, G2, G3, G5 (identity only), G9.
+**Closes**: G1, G2, G3, G5 (identity only), G9, G10.
 
 **Verification**:
-1. Reproduce G2 and G3 on the iPhone 17 Simulator and the `Pixel_9_Pro_API_36` emulator, with permissions **not** pre-granted. Capture evidence through `flutter-agent-lens` (`console_logs`, `screenshot`).
-2. Repeat the same run after the fix.
+1. Reproduce G10 first (done 2026-10-24 on `Pixel_9_Pro_API_36`; see the evidence file). Then reproduce G2 and G3 on the iPhone 17 Simulator and the `Pixel_9_Pro_API_36` emulator, with permissions **not** pre-granted. This needs a real engine registered, so it uses a throwaway local registration that is reverted, never committed, and needs James Petersen's approval first. Capture evidence through `flutter-agent-lens` (`console_logs`, `screenshot`).
+2. Repeat the same run after the fix, with the real engine registered by the committed change.
 3. Run on a physical iPhone and a physical Android device against Phase 1 exit criterion 1 and Phase 1 NFR-1.1 (< 1 s latency).
 
 Evidence is recorded in this unit's artifacts. Phase 1's records stay unchanged.
@@ -359,7 +376,7 @@ Evidence is recorded in this unit's artifacts. Phase 1's records stay unchanged.
 
 | ID | Question | Blocks | How to answer | Answer |
 |---|---|---|---|---|
-| OQ-MA-1 | Can the iOS Simulator's **speech-recognition** consent be pre-granted, as the microphone is with `xcrun simctl privacy <udid> grant microphone <bundle>`? Or does the `NSSpeechRecognitionUsageDescription` prompt need accepting by hand every time the app is installed fresh? | Unit 10 Code Generation (it decides whether repeatable emulator QA is scriptable on iOS, or needs a manual step in the QA procedure) | On the iPhone 17 Simulator, run `xcrun simctl privacy help` and check whether a speech-recognition service is listed. If it is, grant it, run the app with `flutter-agent-lens` attached, and confirm through `console_logs` and `screenshot` that no prompt appears and captioning starts. If it isn't, record the manual step and check whether `simctl privacy … reset all` returns the prompt between runs. | **OPEN** |
+| OQ-MA-1 | Can the iOS Simulator's **speech-recognition** consent be pre-granted, as the microphone is with `xcrun simctl privacy <udid> grant microphone <bundle>`? Or does the `NSSpeechRecognitionUsageDescription` prompt need accepting by hand every time the app is installed fresh? | Unit 10 Code Generation (it decides whether repeatable emulator QA is scriptable on iOS, or needs a manual step in the QA procedure) | On the iPhone 17 Simulator, run `xcrun simctl privacy help` and check whether a speech-recognition service is listed. If it is, grant it, run the app with `flutter-agent-lens` attached, and confirm through `console_logs` and `screenshot` that no prompt appears and captioning starts. If it isn't, record the manual step and check whether `simctl privacy … reset all` returns the prompt between runs. | **ANSWERED 2026-10-25** (iPhone 17 Simulator, iOS 26.0). No speech-recognition service is listed, so consent cannot be pre-granted. `simctl privacy … reset all` brings **both** the microphone and the speech-recognition prompts back on the next Start Captioning, so iOS QA is scriptable for the microphone and needs one manual Allow on the speech prompt after each fresh install or reset. Evidence: `construction/mobile-platform-readiness/evidence/q3-throwaway-check.md`. |
 
 Rules for this table:
 - Each row is answered with evidence (command output plus the MCP screenshot or logs) and recorded in Unit 10's NFR Requirements artifact and in `audit.md`.
@@ -440,7 +457,7 @@ Rules for this table:
 | 8 External Display | yes | yes | yes | yes | yes | Dependency record (SECURITY-10) |
 | 8.1 Pop-out (PiP) | yes | yes | yes | yes | yes | `window_manager` dependency record (SECURITY-10) before CG; spans both apps |
 | 9 Integration | Build and Test + Documentation Refinement | | | | | Exit criteria |
-| 10 Mobile Platform Readiness | — | yes | — | — | yes | OQ-MA-1 answered before NFR-R approval; emulator and physical-device pass |
+| 10 Mobile Platform Readiness | yes (G10, added 2026-10-25) | yes | — | — | yes | OQ-MA-1 answered before NFR-R approval; emulator and physical-device pass |
 | 11 Internal Alpha Distribution | — | yes | — | yes | yes | Alpha 1: install from both test tracks and complete a session |
 | 12 Staging Backend | — | yes | — | yes (SR-05) | yes | SR-05 before CG; runs after Unit 9 |
 | 13 Mobile Viewer Verification | — | yes | — | — | yes, then Build and Test | Alpha 2: a tester on each platform views a live session; runs after Unit 9 |

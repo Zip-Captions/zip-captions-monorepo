@@ -92,8 +92,7 @@ void main() {
 
   group('transcript capture — full session lifecycle', () {
     test('single final result is persisted as one segment', () async {
-      final notifier =
-          container.read(recordingStateNotifierProvider.notifier);
+      final notifier = container.read(recordingStateNotifierProvider.notifier);
 
       await notifier.start();
       expect(
@@ -117,8 +116,7 @@ void main() {
     });
 
     test('multiple finals >2s apart each become a distinct segment', () async {
-      final notifier =
-          container.read(recordingStateNotifierProvider.notifier);
+      final notifier = container.read(recordingStateNotifierProvider.notifier);
       await notifier.start();
 
       mockEngine.emitResult(_finalResult(text: 'first'));
@@ -142,8 +140,7 @@ void main() {
     });
 
     test('finals within 2s are merged into one segment', () async {
-      final notifier =
-          container.read(recordingStateNotifierProvider.notifier);
+      final notifier = container.read(recordingStateNotifierProvider.notifier);
       await notifier.start();
 
       mockEngine.emitResult(_finalResult());
@@ -163,25 +160,56 @@ void main() {
       expect(segments.first.text, equals('hello world'));
     });
 
-    test('stop with no results creates a session with zero segments', () async {
-      final notifier =
-          container.read(recordingStateNotifierProvider.notifier);
+    test('stop with no results saves no session (Q-2: no empty '
+        'transcripts)', () async {
+      final notifier = container.read(recordingStateNotifierProvider.notifier);
       await notifier.start();
       await notifier.stop();
       await Future<void>.delayed(Duration.zero);
 
       final sessions = await repo.getSessions();
+      expect(sessions, isEmpty);
+    });
+
+    test('capture re-enabled mid-session: the replay captures later '
+        'segments', () async {
+      // Start with capture off, so the session begins with no writer target.
+      final transcriptNotifier = container.read(
+        transcriptSettingsNotifierProvider.notifier,
+      );
+      await transcriptNotifier.setCaptureEnabled(value: false);
+      container.read(transcriptWriterTargetProvider);
+
+      final notifier = container.read(recordingStateNotifierProvider.notifier);
+      await notifier.start();
+
+      // Re-enable while the session is still active: the provider replays
+      // the active state to the new target, which must capture the segments
+      // that follow (and lazily create the row before the first one).
+      await transcriptNotifier.setCaptureEnabled(value: true);
+      container.read(transcriptWriterTargetProvider);
+
+      mockEngine.emitResult(_finalResult(text: 'late'));
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      await notifier.stop();
+      await Future<void>.delayed(Duration.zero);
+
+      final sessions = await repo.getSessions();
       expect(sessions, hasLength(1));
-      expect(sessions.first.segmentCount, equals(0));
+      expect(sessions.first.segmentCount, equals(1));
+      final segments = await repo.getSegments(sessions.first.sessionId);
+      expect(segments.single.text, equals('late'));
     });
 
     test('capture disabled: no session or segments written', () async {
-      final transcriptNotifier =
-          container.read(transcriptSettingsNotifierProvider.notifier);
+      final transcriptNotifier = container.read(
+        transcriptSettingsNotifierProvider.notifier,
+      );
       await transcriptNotifier.setCaptureEnabled(value: false);
 
-      final notifier =
-          container.read(recordingStateNotifierProvider.notifier);
+      final notifier = container.read(recordingStateNotifierProvider.notifier);
       await notifier.start();
       mockEngine.emitResult(_finalResult(text: 'should not save'));
       await Future<void>.delayed(Duration.zero);
@@ -192,74 +220,81 @@ void main() {
       expect(sessions, isEmpty);
     });
 
-    test('disable then re-enable capture: subsequent session is saved',
-        () async {
-      final notifier =
-          container.read(recordingStateNotifierProvider.notifier);
-      final transcriptNotifier =
-          container.read(transcriptSettingsNotifierProvider.notifier);
+    test(
+      'disable then re-enable capture: subsequent session is saved',
+      () async {
+        final notifier = container.read(
+          recordingStateNotifierProvider.notifier,
+        );
+        final transcriptNotifier = container.read(
+          transcriptSettingsNotifierProvider.notifier,
+        );
 
-      // Session A — capture enabled.
-      await notifier.start();
-      mockEngine.emitResult(_finalResult(text: 'session a'));
-      await Future<void>.delayed(Duration.zero);
-      await notifier.stop();
-      await Future<void>.delayed(Duration.zero);
-      notifier.clearSession();
+        // Session A — capture enabled.
+        await notifier.start();
+        mockEngine.emitResult(_finalResult(text: 'session a'));
+        await Future<void>.delayed(Duration.zero);
+        await notifier.stop();
+        await Future<void>.delayed(Duration.zero);
+        notifier.clearSession();
 
-      // Disable; read provider to propagate rebuild
-      // (mirrors ZcAppShell eager watch).
-      await transcriptNotifier.setCaptureEnabled(value: false);
-      container.read(transcriptWriterTargetProvider);
+        // Disable; read provider to propagate rebuild
+        // (mirrors ZcAppShell eager watch).
+        await transcriptNotifier.setCaptureEnabled(value: false);
+        container.read(transcriptWriterTargetProvider);
 
-      // Session B — disabled; nothing written.
-      await notifier.start();
-      mockEngine.emitResult(_finalResult(text: 'session b'));
-      await Future<void>.delayed(Duration.zero);
-      await notifier.stop();
-      await Future<void>.delayed(Duration.zero);
-      notifier.clearSession();
+        // Session B — disabled; nothing written.
+        await notifier.start();
+        mockEngine.emitResult(_finalResult(text: 'session b'));
+        await Future<void>.delayed(Duration.zero);
+        await notifier.stop();
+        await Future<void>.delayed(Duration.zero);
+        notifier.clearSession();
 
-      // Re-enable; rebuild provider so new target is registered.
-      await transcriptNotifier.setCaptureEnabled(value: true);
-      container.read(transcriptWriterTargetProvider);
+        // Re-enable; rebuild provider so new target is registered.
+        await transcriptNotifier.setCaptureEnabled(value: true);
+        container.read(transcriptWriterTargetProvider);
 
-      // Session C — re-enabled; should be written.
-      await notifier.start();
-      mockEngine.emitResult(_finalResult(text: 'session c'));
-      await Future<void>.delayed(Duration.zero);
-      await notifier.stop();
-      await Future<void>.delayed(Duration.zero);
+        // Session C — re-enabled; should be written.
+        await notifier.start();
+        mockEngine.emitResult(_finalResult(text: 'session c'));
+        await Future<void>.delayed(Duration.zero);
+        await notifier.stop();
+        await Future<void>.delayed(Duration.zero);
 
-      final sessions = await repo.getSessions();
-      expect(sessions, hasLength(2));
-      final texts = (await Future.wait(
-        sessions.map((s) => repo.getSegments(s.sessionId)),
-      )).expand((segs) => segs).map((s) => s.text).toList();
-      expect(texts, containsAll(['session a', 'session c']));
-      expect(texts, isNot(contains('session b')));
-    });
+        final sessions = await repo.getSessions();
+        expect(sessions, hasLength(2));
+        final texts = (await Future.wait(
+          sessions.map((s) => repo.getSegments(s.sessionId)),
+        )).expand((segs) => segs).map((s) => s.text).toList();
+        expect(texts, containsAll(['session a', 'session c']));
+        expect(texts, isNot(contains('session b')));
+      },
+    );
 
-    test('toggling captureEnabled does not throw during provider rebuild',
-        () async {
-      final transcriptNotifier =
-          container.read(transcriptSettingsNotifierProvider.notifier);
-      final stopCallback = container.read(sessionStopCallbackProvider);
+    test(
+      'toggling captureEnabled does not throw during provider rebuild',
+      () async {
+        final transcriptNotifier = container.read(
+          transcriptSettingsNotifierProvider.notifier,
+        );
+        final stopCallback = container.read(sessionStopCallbackProvider);
 
-      // Enabled from setUp — callback registered.
-      expect(stopCallback.callback, isNotNull);
+        // Enabled from setUp — callback registered.
+        expect(stopCallback.callback, isNotNull);
 
-      await transcriptNotifier.setCaptureEnabled(value: false);
-      container.read(transcriptWriterTargetProvider);
-      expect(stopCallback.callback, isNull);
+        await transcriptNotifier.setCaptureEnabled(value: false);
+        container.read(transcriptWriterTargetProvider);
+        expect(stopCallback.callback, isNull);
 
-      await transcriptNotifier.setCaptureEnabled(value: true);
-      container.read(transcriptWriterTargetProvider);
-      expect(stopCallback.callback, isNotNull);
+        await transcriptNotifier.setCaptureEnabled(value: true);
+        container.read(transcriptWriterTargetProvider);
+        expect(stopCallback.callback, isNotNull);
 
-      await transcriptNotifier.setCaptureEnabled(value: false);
-      container.read(transcriptWriterTargetProvider);
-      expect(stopCallback.callback, isNull);
-    });
+        await transcriptNotifier.setCaptureEnabled(value: false);
+        container.read(transcriptWriterTargetProvider);
+        expect(stopCallback.callback, isNull);
+      },
+    );
   });
 }

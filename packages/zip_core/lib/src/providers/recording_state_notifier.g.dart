@@ -7,7 +7,7 @@ part of 'recording_state_notifier.dart';
 // **************************************************************************
 
 String _$recordingStateNotifierHash() =>
-    r'be0b6206ff6117778558d2fc5c7561faa5a43495';
+    r'05f519c2a2698f367d8daab31147e3d89ad9cf37';
 
 /// Recording state machine (BR-01, BR-02, BR-03).
 ///

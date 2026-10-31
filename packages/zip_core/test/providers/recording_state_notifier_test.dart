@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -30,22 +32,26 @@ void main() {
     mockEngine = MockSttEngine();
 
     // Default stubs.
-    when(() => mockSessionManager.initialize(
-          engineId: any(named: 'engineId'),
-          localeId: any(named: 'localeId'),
-          onResult: any(named: 'onResult'),
-          onError: any(named: 'onError'),
-        )).thenAnswer((_) async => true);
-    when(() => mockSessionManager.startListening())
-        .thenAnswer((_) async => true);
+    when(
+      () => mockSessionManager.initialize(
+        engineId: any(named: 'engineId'),
+        localeId: any(named: 'localeId'),
+        onResult: any(named: 'onResult'),
+        onError: any(named: 'onError'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(
+      () => mockSessionManager.startListening(),
+    ).thenAnswer((_) async => true);
     when(() => mockSessionManager.pause()).thenAnswer((_) async => true);
     when(() => mockSessionManager.resume()).thenAnswer((_) async => true);
     when(() => mockSessionManager.stop()).thenAnswer((_) async {});
     when(() => mockWakeLockService.acquire()).thenAnswer((_) async {});
     when(() => mockWakeLockService.release()).thenAnswer((_) async {});
     when(() => mockWakeLockService.onPause()).thenAnswer((_) async {});
-    when(() => mockWakeLockService.settings)
-        .thenReturn(const WakeLockSettings());
+    when(
+      () => mockWakeLockService.settings,
+    ).thenReturn(const WakeLockSettings());
 
     container = ProviderContainer(
       overrides: [
@@ -66,8 +72,7 @@ void main() {
   RecordingStateNotifier notifier() =>
       container.read(recordingStateNotifierProvider.notifier);
 
-  RecordingState state() =>
-      container.read(recordingStateNotifierProvider);
+  RecordingState state() => container.read(recordingStateNotifierProvider);
 
   group('RecordingStateNotifier', () {
     test('initial state is idle', () {
@@ -135,6 +140,26 @@ void main() {
         expect(state(), isA<IdleState>());
       });
 
+      test('a stop that lands while pause is pending wins', () async {
+        await notifier().start();
+        final pauseGate = Completer<bool>();
+        when(
+          () => mockSessionManager.pause(),
+        ).thenAnswer((_) => pauseGate.future);
+
+        final pausing = notifier().pause();
+        await notifier().stop();
+        expect(state(), isA<StoppedState>());
+
+        pauseGate.complete(true);
+        await pausing;
+        expect(state(), isA<StoppedState>(), reason: 'pause must not undo it');
+
+        notifier().clearSession();
+        await notifier().start();
+        expect(state(), isA<RecordingActiveState>());
+      });
+
       test('start from recording is no-op', () async {
         await notifier().start();
         final sessionId = (state() as RecordingActiveState).sessionId;
@@ -173,12 +198,14 @@ void main() {
     group('SttSessionManager integration', () {
       test('start calls initialize + startListening', () async {
         await notifier().start();
-        verify(() => mockSessionManager.initialize(
-              engineId: any(named: 'engineId'),
-              localeId: any(named: 'localeId'),
-              onResult: any(named: 'onResult'),
-              onError: any(named: 'onError'),
-            )).called(1);
+        verify(
+          () => mockSessionManager.initialize(
+            engineId: any(named: 'engineId'),
+            localeId: any(named: 'localeId'),
+            onResult: any(named: 'onResult'),
+            onError: any(named: 'onError'),
+          ),
+        ).called(1);
         verify(() => mockSessionManager.startListening()).called(1);
       });
 

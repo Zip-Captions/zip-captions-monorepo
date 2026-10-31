@@ -41,6 +41,32 @@ void main() {
       expect(error.severity, RecordingErrorSeverity.fatal);
     });
 
+    test('onDeviceRecognitionUnavailable names on-device recognition', () {
+      final error = RecordingErrorFactories.onDeviceRecognitionUnavailable();
+      expect(error.message, contains('On-device'));
+      expect(error.severity, RecordingErrorSeverity.fatal);
+    });
+
+    test('onDeviceRecognitionUnavailable is distinct from every other message',
+        () {
+      final others = <String>{
+        RecordingErrorFactories.permissionDenied().message,
+        RecordingErrorFactories.permissionPermanentlyDenied().message,
+        RecordingErrorFactories.engineInitFailed().message,
+        RecordingErrorFactories.engineStartFailed().message,
+        RecordingErrorFactories.engineRequiresModelDownload().message,
+        RecordingErrorFactories.localeNotSupported('en-US').message,
+      };
+      expect(
+        others,
+        isNot(
+          contains(
+            RecordingErrorFactories.onDeviceRecognitionUnavailable().message,
+          ),
+        ),
+      );
+    });
+
     test('all factories produce distinct timestamps', () async {
       final a = RecordingErrorFactories.permissionDenied();
       await Future<void>.delayed(const Duration(milliseconds: 1));

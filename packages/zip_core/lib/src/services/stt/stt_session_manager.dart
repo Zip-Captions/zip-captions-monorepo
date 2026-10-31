@@ -5,6 +5,7 @@ import 'package:zip_core/src/models/recording_error_factories.dart';
 import 'package:zip_core/src/models/stt_result.dart';
 import 'package:zip_core/src/services/stt/stt_engine_registry.dart';
 import 'package:zip_core/src/stt/stt_engine.dart';
+import 'package:zip_core/src/stt/stt_error_source.dart';
 
 /// Owns the full STT engine lifecycle for a single captioning session.
 ///
@@ -24,6 +25,9 @@ class SttSessionManager {
   final SttEngineRegistry _registry;
   SttEngine? _engine;
   String? _activeEngineId;
+
+  /// Bumped by every [stop]; lets an in-flight [handleEngineError] notice it.
+  int _stopGeneration = 0;
   String? _activeLocaleId;
   void Function(SttResult)? _onResult;
   void Function(RecordingError)? _onError;
@@ -76,8 +80,35 @@ class SttSessionManager {
       return false;
     }
 
+    // An engine that can report lasting errors after listening has started
+    // (BR-U10-22): forward each one once through the same `onError` path as
+    // every other engine error. Registered only once the engine is ready, so
+    // a failed initialize leaves no stale listener behind.
+    if (_engine case final SttErrorSource source) {
+      source.setErrorListener(_forwardEngineError);
+    }
+
     _log.info('Engine $engineId initialized for locale $localeId');
     return true;
+  }
+
+  /// Maps an engine's lasting error to an existing [RecordingError] factory
+  /// and reports it once (Amendment 02, section 5). Only the kind is logged.
+  void _forwardEngineError(SttEngineError error) {
+    _log.warning('Engine error reported: ${error.kind.name}');
+    final mapped = switch (error.kind) {
+      SttEngineErrorKind.recognizerUnavailable =>
+        RecordingErrorFactories.engineInitFailed(),
+      SttEngineErrorKind.onDeviceModelMissing =>
+        RecordingErrorFactories.onDeviceRecognitionUnavailable(),
+      SttEngineErrorKind.localeUnsupported =>
+        RecordingErrorFactories.localeNotSupported(_activeLocaleId ?? ''),
+      SttEngineErrorKind.permissionRevoked =>
+        RecordingErrorFactories.permissionDenied(),
+      SttEngineErrorKind.restartCapReached =>
+        RecordingErrorFactories.engineStartFailed(),
+    };
+    _onError?.call(mapped);
   }
 
   /// Begins listening on the initialized engine.
@@ -130,7 +161,12 @@ class SttSessionManager {
   }
 
   /// Stops the active engine.
+  ///
+  /// Also tells an in-flight [handleEngineError] recovery that a stop was
+  /// requested, so it will not start listening again afterwards (Unit 10,
+  /// TP-2c: Stop must win against the REL-U2.1 recovery).
   Future<void> stop() async {
+    _stopGeneration++;
     if (_engine == null) return;
     try {
       await _engine!.stopListening();
@@ -148,10 +184,14 @@ class SttSessionManager {
       'Engine error (${error.runtimeType}), attempting restart',
     );
 
+    // A user stop that arrives during this recovery bumps the generation; the
+    // recovery then gives up before it can start the engine listening again.
+    final generation = _stopGeneration;
     try {
       await _engine?.stopListening();
+      if (generation != _stopGeneration) return false;
       final initOk = await _engine!.initialize();
-      if (!initOk) return false;
+      if (!initOk || generation != _stopGeneration) return false;
       return await _engine!.startListening(
         localeId: _activeLocaleId!,
         onResult: _onResult!,
@@ -164,6 +204,9 @@ class SttSessionManager {
 
   /// Releases all engine resources.
   void dispose() {
+    if (_engine case final SttErrorSource source) {
+      source.setErrorListener(null);
+    }
     _engine?.dispose();
     _engine = null;
     _onResult = null;

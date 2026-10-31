@@ -623,7 +623,7 @@ Then no caption text appears in the logs
 
 > As a Zip Captions user on iPhone or Android, I can start captioning, speak, and see live captions, with the screen kept on, then save and share the transcript.
 
-**Brownfield note:** Added 2026-10-24 from the mobile alpha plan, which James Petersen approved on 2026-10-22. Units 10 and 11 deliver it (`phase2-unit-of-work.md`, "Mobile Alpha Units"). **Story ID S-22 is new; it adds no FR.** The behaviour was specified in Phase 1, but Phase 1's mobile exit criterion was never verified on a device (gap G1). The configuration also suggests that microphone permission fails on both platforms (G2, G3). The Phase 1 records are not reopened, and the evidence is recorded in Units 10 and 11.
+**Brownfield note:** Added 2026-10-24 from the mobile alpha plan, which James Petersen approved on 2026-10-22. Units 10 and 11 deliver it (`phase2-unit-of-work.md`, "Mobile Alpha Units"). **Story ID S-22 is new; it adds no FR.** The behaviour was specified in Phase 1, but Phase 1's mobile exit criterion was never verified on a device (gap G1). The configuration also suggests that microphone permission fails on both platforms (G2, G3). **G10 (2026-10-24):** neither app registers a real speech recogniser, only a debug-only fake, so no phone can caption real speech until Unit 10 registers one. The Phase 1 records are not reopened, and the evidence is recorded in Units 10 and 11.
 
 **Acceptance Criteria:**
 
